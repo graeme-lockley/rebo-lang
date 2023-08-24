@@ -1,13 +1,13 @@
 package org.rebo.parser
 
-public enum class TokenType {
+enum class TokenType {
     UpperIdentifier,
     LowerIdentifier,
     LiteralChar,
     LiteralString,
     LiteralInt,
-    TTrue,
-    TFalse,
+    True,
+    False,
 
     As,
 
@@ -18,8 +18,8 @@ public enum class TokenType {
     ERROR
 }
 
-public data class Token(
-    public val type: TokenType,
-    public val lexeme: String,
-    public val location: Location
+data class Token(
+    val type: TokenType,
+    val lexeme: String,
+    val location: Location
 )

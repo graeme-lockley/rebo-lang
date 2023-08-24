@@ -25,6 +25,14 @@ class ScannerTest : FunSpec({
         Scanner("   ").token shouldBe Token(TokenType.EOS, "", Position(1, 4, 3))
     }
 
+    test("Scanner should return Keyword tokens") {
+        tokenTypesLexemes(" as  False  True ") shouldBe listOf(
+            Pair(TokenType.As, "as"),
+            Pair(TokenType.False, "False"),
+            Pair(TokenType.True, "True")
+        )
+    }
+
     test("Scanner should return LiteralInt tokens") {
         tokenTypesLexemes("0") shouldBe listOf(Pair(TokenType.LiteralInt, "0"))
         tokenTypesLexemes("1 23 456 -1 -23 -456") shouldBe listOf(

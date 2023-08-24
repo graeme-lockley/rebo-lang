@@ -1,5 +1,12 @@
 package org.rebo.parser
 
+private val keywords = mapOf(
+    "as" to TokenType.As,
+
+    "False" to TokenType.False,
+    "True" to TokenType.True
+)
+
 class Scanner(private val input: String) {
     private val inputLength = input.length
     private var offset = 0
@@ -72,16 +79,22 @@ class Scanner(private val input: String) {
                 val start = positionAt()
                 skipCharacter()
                 skipWhile { isAlpha(it) || isDigit(it) }
-                token =
-                    Token(TokenType.LowerIdentifier, input.substring(start.offset, offset), Range(start, positionAt()))
+
+                val lexeme = input.substring(start.offset, offset)
+                val type = keywords[lexeme] ?: TokenType.LowerIdentifier
+
+                token = Token(type, input.substring(start.offset, offset), Range(start, positionAt()))
             }
 
             isUpperAlpha(c) -> {
                 val start = positionAt()
                 skipCharacter()
                 skipWhile { isAlpha(it) || isDigit(it) }
-                token =
-                    Token(TokenType.UpperIdentifier, input.substring(start.offset, offset), Range(start, positionAt()))
+
+                val lexeme = input.substring(start.offset, offset)
+                val type = keywords[lexeme] ?: TokenType.UpperIdentifier
+
+                token = Token(type, input.substring(start.offset, offset), Range(start, positionAt()))
             }
 
             else -> TODO("Unknown token")
