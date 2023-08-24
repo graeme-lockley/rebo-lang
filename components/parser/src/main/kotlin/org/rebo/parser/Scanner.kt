@@ -97,7 +97,12 @@ class Scanner(private val input: String) {
                 token = Token(type, input.substring(start.offset, offset), Range(start, positionAt()))
             }
 
-            else -> TODO("Unknown token")
+            else -> {
+                val position = positionAt()
+                skipCharacter()
+
+                token = Token(TokenType.ERROR, "$c", position)
+            }
         }
 
     }

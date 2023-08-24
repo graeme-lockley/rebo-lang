@@ -25,6 +25,10 @@ class ScannerTest : FunSpec({
         Scanner("   ").token shouldBe Token(TokenType.EOS, "", Position(1, 4, 3))
     }
 
+    test("Scanner should return ERROR token when input is invalid") {
+        Scanner(" @ ").token shouldBe Token(TokenType.ERROR, "@", Position(1, 2, 1))
+    }
+
     test("Scanner should return Keyword tokens") {
         tokenTypesLexemes(" as  False  True ") shouldBe listOf(
             Pair(TokenType.As, "as"),
