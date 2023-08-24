@@ -1,12 +1,12 @@
 package org.rebo.parser
 
-class Scanner(val input: String) {
+class Scanner(private val input: String) {
     private val inputLength = input.length
     private var offset = 0
     private var column = 1
     private var line = 1
-    private var token = Token(TokenType.EOS, "", Position(line, column, offset))
-        get() = field
+    var token = Token(TokenType.EOS, "", Position(line, column, offset))
+        private set
 
     init {
         next()
