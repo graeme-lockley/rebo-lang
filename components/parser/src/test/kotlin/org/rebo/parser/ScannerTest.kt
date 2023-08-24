@@ -25,6 +25,12 @@ class ScannerTest : FunSpec({
         Scanner("   ").token shouldBe Token(TokenType.EOS, "", Position(1, 4, 3))
     }
 
+    test("Scanner should return LowerIdentifier tokens") {
+        tokenTypesLexemes("hello") shouldBe listOf(Pair(TokenType.LowerIdentifier, "hello"))
+        tokenTypesLexemes("hello world") shouldBe listOf(Pair(TokenType.LowerIdentifier, "hello"), Pair(TokenType.LowerIdentifier, "world"))
+        tokenTypesLexemes("  hello   world   ") shouldBe listOf(Pair(TokenType.LowerIdentifier, "hello"), Pair(TokenType.LowerIdentifier, "world"))
+    }
+
     test("Scanner should return UpperIdentifier tokens") {
         tokenTypesLexemes("Hello") shouldBe listOf(Pair(TokenType.UpperIdentifier, "Hello"))
         tokenTypesLexemes("Hello World") shouldBe listOf(Pair(TokenType.UpperIdentifier, "Hello"), Pair(TokenType.UpperIdentifier, "World"))

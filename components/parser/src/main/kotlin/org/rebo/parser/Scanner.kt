@@ -47,6 +47,14 @@ class Scanner(private val input: String) {
                 return
             }
 
+            isLowerAlpha(c) -> {
+                val start = positionAt()
+                skipCharacter()
+                skipWhile { isAlpha(it) || isDigit(it) }
+                token =
+                    Token(TokenType.LowerIdentifier, input.substring(start.offset, offset), Range(start, positionAt()))
+            }
+
             isUpperAlpha(c) -> {
                 val start = positionAt()
                 skipCharacter()
