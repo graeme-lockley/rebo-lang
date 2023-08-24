@@ -37,6 +37,20 @@ class ScannerTest : FunSpec({
         )
     }
 
+    test("Scanner should return LiteralChar tokens") {
+        tokenTypesLexemes("  'a'  '1'  ") shouldBe listOf(
+            Pair(TokenType.LiteralChar, "'a'"),
+            Pair(TokenType.LiteralChar, "'1'")
+        )
+
+        tokenTypesLexemes("  '\\''  '\\\\'  '\\n'   '\\0'  ") shouldBe listOf(
+            Pair(TokenType.LiteralChar, "'\\''"),
+            Pair(TokenType.LiteralChar, "'\\\\'"),
+            Pair(TokenType.LiteralChar, "'\\n'"),
+            Pair(TokenType.LiteralChar, "'\\0'"),
+        )
+    }
+
     test("Scanner should return LiteralInt tokens") {
         tokenTypesLexemes("0") shouldBe listOf(Pair(TokenType.LiteralInt, "0"))
         tokenTypesLexemes("1 23 456 -1 -23 -456") shouldBe listOf(

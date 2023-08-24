@@ -67,6 +67,42 @@ class Scanner(private val input: String) {
                 return
             }
 
+            c == '\'' -> {
+                val start = positionAt()
+                skipCharacter()
+                if (atEnd()) {
+                    token = Token(TokenType.ERROR, "'", start)
+                    return
+                }
+                if (input[offset] == '\\') {
+                    skipCharacter()
+                    if (atEnd()) {
+                        token =
+                            Token(TokenType.ERROR, input.substring(start.offset, offset), Range(start, positionAt()))
+                        return
+                    }
+                }
+                skipCharacter()
+                if (atEnd()) {
+                    token = Token(TokenType.ERROR, input.substring(start.offset, offset), Range(start, positionAt()))
+                    return
+                }
+                if (input[offset] != '\'') {
+                    token = Token(TokenType.ERROR, input.substring(start.offset, offset), Range(start, positionAt()))
+                    return
+                }
+                skipCharacter()
+
+                val lexeme = input.substring(start.offset, offset)
+                if (lexeme.startsWith("'\\")) {
+                    if (!isCharSpecial(lexeme[2])) {
+                        token = Token(TokenType.ERROR, lexeme, Range(start, positionAt()))
+                        return
+                    }
+                }
+                token = Token(TokenType.LiteralChar, input.substring(start.offset, offset), Range(start, positionAt()))
+            }
+
             isDigit(c) -> {
                 val start = positionAt()
                 skipCharacter()
@@ -106,6 +142,9 @@ class Scanner(private val input: String) {
         }
 
     }
+
+    private fun isCharSpecial(c: Char) =
+        c == '\'' || c == '\\' || c == 'n' || c == '0'
 
     private fun ignoreWhitespace() {
         while (!atEnd()) {
