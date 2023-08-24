@@ -47,6 +47,27 @@ class Scanner(private val input: String) {
                 return
             }
 
+            c == '-' -> {
+                val start = positionAt()
+                skipCharacter()
+                if (!atEnd() && isDigit(input[offset])) {
+                    skipWhile { isDigit(it) }
+                    token =
+                        Token(TokenType.LiteralInt, input.substring(start.offset, offset), Range(start, positionAt()))
+                    return
+                }
+                token = Token(TokenType.Minus, "-", Position(line, column, offset))
+                return
+            }
+
+            isDigit(c) -> {
+                val start = positionAt()
+                skipCharacter()
+                skipWhile { isDigit(it) }
+                token =
+                    Token(TokenType.LiteralInt, input.substring(start.offset, offset), Range(start, positionAt()))
+            }
+
             isLowerAlpha(c) -> {
                 val start = positionAt()
                 skipCharacter()
