@@ -31,3 +31,10 @@ It is super early so, for now, star the project or periodically check back for u
 ## See also
 
 - Where does the name "Rebo" come from?  I am an annoying Star Wars fan and it is a reference to the [Max Rebo Band](https://starwars.fandom.com/wiki/Max_Rebo_Band) from Return of the Jedi.
+
+## Languages of interest
+
+The list are languages that I am keeping an eye - they are interesting and I am curious to see how they evolve.
+
+- [Gleam](https://gleam.run) is very similar to Rebo.  It is a strongly typed functional language that compiles to Erlang.  I think if Gleam had Deno's remote package support it would be a very good fit for me.
+- [Oak](https://oaklang.org) is an interpreted language written in Go.
