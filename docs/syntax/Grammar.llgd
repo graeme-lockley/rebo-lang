@@ -86,7 +86,7 @@ Factor
     | LiteralChar
     | "True"
     | "False"
-    | "\" ["<" UpperIdentifier {"," UpperIdentifier} ">"] Parameter {Parameter} [":" Type] "=" Expression
+    | "\" OptionalTypeParameters Parameter {Parameter} [":" Type] "=" Expression
     | "let" ["rec"] ValueDeclaration {"and" ValueDeclaration} ["in" Expression]
     | "if" "(" Expression ")" Expression "else" Expression
     | UpperIdentifier ["." Identifier]
@@ -103,7 +103,7 @@ Identifier
     ;
 
 ValueDeclaration
-    : ValueDeclarationIdentifier ["<" UpperIdentifier {"," UpperIdentifier} ">"] {Parameter} [":" Type] "=" Expression
+    : ValueDeclarationIdentifier OptionalTypeParameters {Parameter} [":" Type] "=" Expression
     ;
 
 ValueDeclarationIdentifier
@@ -152,7 +152,7 @@ DataDeclaration
     ;
 
 TypeDeclaration
-    : UpperIdentifier["*" | "-"] {LowerIdentifier} "=" ["|"] ConstructorDeclaration {"|" ConstructorDeclaration}
+    : UpperIdentifier["*" | "-"] OptionalTypeParameters {LowerIdentifier} "=" ["|"] ConstructorDeclaration {"|" ConstructorDeclaration}
     ;
 
 ConstructorDeclaration
@@ -183,7 +183,7 @@ TypeAliasDeclarations
     ;
 
 TypeAliasDeclaration
-    : UpperIdentifier["*" | "-"] ["<" UpperIdentifier {"," UpperIdentifier} ">"] "=" TermType
+    : UpperIdentifier["*" | "-"] OptionalTypeParameters "=" TermType
     ;
 
 ImportStatement
@@ -198,4 +198,8 @@ ImportItems
 ImportItem
     : UpperIdentifier ["*" | "-"]
     | LowerIdentifier ["as" LowerIdentifier] ["*"]
+    ;
+
+OptionalTypeParameters
+    : ["<" UpperIdentifier {"," UpperIdentifier} ">"]
     ;
