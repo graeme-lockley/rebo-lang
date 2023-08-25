@@ -103,6 +103,38 @@ class Scanner(private val input: String) {
                 token = Token(TokenType.LiteralChar, input.substring(start.offset, offset), Range(start, positionAt()))
             }
 
+            c == '"' -> {
+                val start = positionAt()
+                skipCharacter()
+
+                while(true) {
+                    if (atEnd()) {
+                        token = Token(TokenType.ERROR, input.substring(start.offset, offset), Range(start, positionAt()))
+                        return
+                    }
+
+                    if (input[offset] == '"') {
+                        skipCharacter()
+                        token = Token(TokenType.LiteralString, input.substring(start.offset, offset), Range(start, positionAt()))
+                        break
+                    }
+
+                    if (input[offset] == '\\') {
+                        skipCharacter()
+                        if (atEnd()) {
+                            token = Token(TokenType.ERROR, input.substring(start.offset, offset), Range(start, positionAt()))
+                            return
+                        }
+                        if (!isStringSpecial(input[offset])) {
+                            token = Token(TokenType.ERROR, input.substring(start.offset, offset), Range(start, positionAt()))
+                            return
+                        }
+                    }
+
+                    skipCharacter()
+                }
+            }
+
             isDigit(c) -> {
                 val start = positionAt()
                 skipCharacter()
@@ -143,8 +175,12 @@ class Scanner(private val input: String) {
 
     }
 
+
     private fun isCharSpecial(c: Char) =
         c == '\'' || c == '\\' || c == 'n' || c == '0'
+
+    private fun isStringSpecial(c: Char) =
+        c == '"' || c == '\\' || c == 'n'
 
     private fun ignoreWhitespace() {
         while (!atEnd()) {

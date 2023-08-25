@@ -63,6 +63,18 @@ class ScannerTest : FunSpec({
         )
     }
 
+    test("Scanner should return LiteralString tokens") {
+        tokenTypesLexemes("\"\"") shouldBe listOf(Pair(TokenType.LiteralString, "\"\""))
+        tokenTypesLexemes("  \"\" \"Hello\" \"\\\\\\n\\\"\" ") shouldBe listOf(
+            Pair(TokenType.LiteralString, "\"\""),
+            Pair(TokenType.LiteralString, "\"Hello\""),
+            Pair(TokenType.LiteralString, "\"\\\\\\n\\\"\"")
+        )
+
+        tokenTypesLexemes("\"hello") shouldBe listOf(Pair(TokenType.ERROR, "\"hello"))
+        tokenTypesLexemes("\"he\\'\"") shouldBe listOf(Pair(TokenType.ERROR, "\"he\\"), Pair(TokenType.ERROR, "'\""))
+    }
+
     test("Scanner should return LowerIdentifier tokens") {
         tokenTypesLexemes("hello") shouldBe listOf(Pair(TokenType.LowerIdentifier, "hello"))
         tokenTypesLexemes("hello world") shouldBe listOf(
