@@ -107,26 +107,39 @@ class Scanner(private val input: String) {
                 val start = positionAt()
                 skipCharacter()
 
-                while(true) {
+                while (true) {
                     if (atEnd()) {
-                        token = Token(TokenType.ERROR, input.substring(start.offset, offset), Range(start, positionAt()))
+                        token =
+                            Token(TokenType.ERROR, input.substring(start.offset, offset), Range(start, positionAt()))
                         return
                     }
 
                     if (input[offset] == '"') {
                         skipCharacter()
-                        token = Token(TokenType.LiteralString, input.substring(start.offset, offset), Range(start, positionAt()))
+                        token = Token(
+                            TokenType.LiteralString,
+                            input.substring(start.offset, offset),
+                            Range(start, positionAt())
+                        )
                         break
                     }
 
                     if (input[offset] == '\\') {
                         skipCharacter()
                         if (atEnd()) {
-                            token = Token(TokenType.ERROR, input.substring(start.offset, offset), Range(start, positionAt()))
+                            token = Token(
+                                TokenType.ERROR,
+                                input.substring(start.offset, offset),
+                                Range(start, positionAt())
+                            )
                             return
                         }
                         if (!isStringSpecial(input[offset])) {
-                            token = Token(TokenType.ERROR, input.substring(start.offset, offset), Range(start, positionAt()))
+                            token = Token(
+                                TokenType.ERROR,
+                                input.substring(start.offset, offset),
+                                Range(start, positionAt())
+                            )
                             return
                         }
                     }
@@ -147,6 +160,7 @@ class Scanner(private val input: String) {
                 val start = positionAt()
                 skipCharacter()
                 skipWhile { isAlpha(it) || isDigit(it) }
+                skipWhile { it == '\'' }
 
                 val lexeme = input.substring(start.offset, offset)
                 val type = keywords[lexeme] ?: TokenType.LowerIdentifier
@@ -158,6 +172,7 @@ class Scanner(private val input: String) {
                 val start = positionAt()
                 skipCharacter()
                 skipWhile { isAlpha(it) || isDigit(it) }
+                skipWhile { it == '\'' }
 
                 val lexeme = input.substring(start.offset, offset)
                 val type = keywords[lexeme] ?: TokenType.UpperIdentifier
@@ -214,7 +229,7 @@ class Scanner(private val input: String) {
     }
 
     private fun isAlpha(c: Char): Boolean {
-        return c in 'a'..'z' || c in 'A'..'Z'
+        return c in 'a'..'z' || c in 'A'..'Z' || c == '_'
     }
 
     private fun isUpperAlpha(c: Char): Boolean {
