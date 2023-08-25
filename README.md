@@ -2,7 +2,7 @@
 
 Rebo is a strongly typed interpreted programming language. It is a work in progress.
 
-I love tinkering around with programming languages trying to understand the techniques used to implement them.  I have been working on a number of projects that have been leading up to this one.  I have been working on a number of [little languages](https://github.com/littlelanguages) exploring techniques.
+I love tinkering around with programming languages trying to understand the techniques used to implement them.  I have been working on a number of projects in [little languages](https://github.com/littlelanguages) exploring techniques leading up to this one.
 
 Primary influences:
 
@@ -34,7 +34,7 @@ It is super early so, for now, star the project or periodically check back for u
 
 ## Languages of interest
 
-The list are languages that I am keeping an eye - they are interesting and I am curious to see how they evolve.
+This list is of languages that I am keeping an eye on - they are interesting and I am curious to see how they evolve.
 
 - [Gleam](https://gleam.run) is very similar to Rebo.  It is a strongly typed functional language that compiles to Erlang.  I think if Gleam had Deno's remote package support it would be a very good fit for me.
 - [Oak](https://oaklang.org) is an interpreted language written in Go.
