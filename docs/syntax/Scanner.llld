@@ -1,12 +1,8 @@
 tokens
-    UpperIdentifier = upperID {digit | id};
-    LowerIdentifier = lowerID {digit | id};
-    LiteralChar = "'" (char | chr(92) ('0' + 'n' + chr(39) + chr(92))) "'";
-    LiteralInt = ['-'] digits;
-    LiteralString = '"' {!('"' + cr) | "\" '"'}  '"';
+    Identifier = id {digit | id} ['?' | '!'] {chr(39)};
 
 comments
-   "--" {!cr};
+   "//" {!cr};
 
 whitespace
   chr(0)-' ';
@@ -15,7 +11,5 @@ fragments
   digit = '0'-'9';
   digits = digit {digit};
   id = 'A'-'Z' + 'a'-'z' + '_';
-  upperID = 'A'-'Z';
-  lowerID = 'a'-'z' + '_';
   cr = chr(10);
   char = chr(32)-chr(38) + chr(40)-chr(91) + chr(93)-chr(255);
