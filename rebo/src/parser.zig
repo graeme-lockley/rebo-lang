@@ -18,13 +18,13 @@ pub const Parser = struct {
         const token = self.lexer.current;
 
         switch (token.kind) {
-            Lexer.Lexer.TokenKind.LiteralBoolFalse => {
+            Lexer.TokenKind.LiteralBoolFalse => {
                 const v = try self.allocator.create(Eval.Expr);
                 v.literalBool = false;
                 self.lexer.next();
                 return v;
             },
-            Lexer.Lexer.TokenKind.LiteralBoolTrue => {
+            Lexer.TokenKind.LiteralBoolTrue => {
                 const v = try self.allocator.create(Eval.Expr);
                 v.literalBool = true;
                 self.lexer.next();

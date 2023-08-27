@@ -2,17 +2,22 @@ const std = @import("std");
 
 const expectEqual = std.testing.expectEqual;
 
+pub const TokenKind = enum {
+    EOS,
+    Invalid,
+    Identifier,
+    LiteralBoolFalse,
+    LiteralBoolTrue,
+};
+
+pub const Token = struct { kind: TokenKind, start: usize, end: usize };
+
+const keywords = std.ComptimeStringMap(TokenKind, .{
+    .{ "true", TokenKind.LiteralBoolTrue },
+    .{ "false", TokenKind.LiteralBoolFalse },
+});
+
 pub const Lexer = struct {
-    pub const TokenKind = enum {
-        EOS,
-        Invalid,
-        Identifier,
-        LiteralBoolFalse,
-        LiteralBoolTrue,
-    };
-
-    pub const Token = struct { kind: TokenKind, start: usize, end: usize };
-
     source: []const u8,
     sourceLength: u8,
     offset: u8,
@@ -88,13 +93,9 @@ pub const Lexer = struct {
                 }
 
                 var text = self.source[tokenStart..self.offset];
-                if (std.mem.eql(u8, text, "true")) {
-                    self.current.kind = TokenKind.LiteralBoolTrue;
-                } else if (std.mem.eql(u8, text, "false")) {
-                    self.current.kind = TokenKind.LiteralBoolFalse;
-                } else {
-                    self.current.kind = TokenKind.Identifier;
-                }
+
+                self.current.kind = keywords.get(text) orelse TokenKind.Identifier;
+
                 self.current.start = tokenStart;
                 self.current.end = self.offset;
             },
@@ -111,18 +112,18 @@ pub const Lexer = struct {
 test "identifier" {
     var lexer = Lexer.init("foo");
 
-    try expectEqual(lexer.current.kind, Lexer.TokenKind.Identifier);
+    try expectEqual(lexer.current.kind, TokenKind.Identifier);
     try expectEqual(lexer.lexeme(lexer.current), "foo");
     lexer.next();
-    try expectEqual(lexer.current.kind, Lexer.TokenKind.EOS);
+    try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
 test "literal bool" {
     var lexer = Lexer.init("true  false");
 
-    try expectEqual(lexer.current.kind, Lexer.TokenKind.LiteralBoolTrue);
+    try expectEqual(lexer.current.kind, TokenKind.LiteralBoolTrue);
     lexer.next();
-    try expectEqual(lexer.current.kind, Lexer.TokenKind.LiteralBoolFalse);
+    try expectEqual(lexer.current.kind, TokenKind.LiteralBoolFalse);
     lexer.next();
-    try expectEqual(lexer.current.kind, Lexer.TokenKind.EOS);
+    try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
