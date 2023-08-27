@@ -70,7 +70,7 @@ pub const Lexer = struct {
             return;
         }
 
-        while (self.currentCharacter() <= ' ') {
+        while (!self.atEnd() and self.currentCharacter() <= ' ') {
             self.skipCharacter();
         }
 
