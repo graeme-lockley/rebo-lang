@@ -42,11 +42,11 @@ pub fn main() !void {
 fn errorHandler(err: anyerror, machine: *Machine.Machine) !*Machine.Value {
     const e = machine.grabErr();
     if (e == null) {
-        std.debug.print("ErrorX: {}\n", .{err});
+        std.debug.print("Error: {}\n", .{err});
     } else {
-        e.?.*.print();
+        e.?.print();
         std.log.err("\n", .{});
-        e.?.*.deinit();
+        e.?.deinit();
     }
 
     // std.os.exit(1);

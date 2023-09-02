@@ -27,7 +27,7 @@ pub const Lexer = struct {
     offset: u8,
 
     current: Token,
-    err: ?*Errors.Error,
+    err: ?Errors.Error,
 
     pub fn init(allocator: std.mem.Allocator) Lexer {
         return Lexer{
@@ -118,14 +118,14 @@ pub const Lexer = struct {
                 self.current.end = self.offset + 1;
                 self.skipCharacter();
 
-                self.err = try Errors.LexicalError.init(self.allocator, try Errors.Position.init(self.allocator, self.name, self.current.start, self.current.end), self.lexeme(self.current));
+                self.err = try Errors.LexicalError.init(self.allocator, Errors.Position{ .start = self.current.start, .end = self.current.end }, self.lexeme(self.current));
 
                 return error.InterpreterError;
             },
         }
     }
 
-    pub fn grabErr(self: *Lexer) ?*Errors.Error {
+    pub fn grabErr(self: *Lexer) ?Errors.Error {
         const err = self.err;
         self.err = null;
 

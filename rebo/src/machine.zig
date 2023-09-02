@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const AST = @import("./ast.zig");
 const Errors = @import("./errors.zig");
 const Lexer = @import("./lexer.zig");
 const Parser = @import("./parser.zig");
@@ -9,12 +10,7 @@ pub const Value = union(enum) {
     bool: bool,
 };
 
-pub const Expr = union(enum) {
-    literalBool: bool,
-    literalVoid: void,
-};
-
-fn evalExpr(machine: *Machine, e: *Expr) !*Value {
+fn evalExpr(machine: *Machine, e: *AST.Expr) !*Value {
     switch (e.*) {
         .literalBool => {
             return try machine.createBoolValue(e.literalBool);
@@ -27,7 +23,7 @@ fn evalExpr(machine: *Machine, e: *Expr) !*Value {
 
 pub const Machine = struct {
     allocator: std.mem.Allocator,
-    err: ?*Errors.Error,
+    err: ?Errors.Error,
 
     pub fn init(allocator: std.mem.Allocator) Machine {
         return Machine{
@@ -48,7 +44,7 @@ pub const Machine = struct {
         return r;
     }
 
-    pub fn eval(self: *Machine, e: *Expr) !*Value {
+    pub fn eval(self: *Machine, e: *AST.Expr) !*Value {
         return evalExpr(self, e);
     }
 
@@ -70,7 +66,7 @@ pub const Machine = struct {
         return self.eval(ast);
     }
 
-    pub fn grabErr(self: *Machine) ?*Errors.Error {
+    pub fn grabErr(self: *Machine) ?Errors.Error {
         const err = self.err;
         self.err = null;
 

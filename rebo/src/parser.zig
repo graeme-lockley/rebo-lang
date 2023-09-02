@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const AST = @import("./ast.zig");
 const Errors = @import("./errors.zig");
 const Machine = @import("./machine.zig");
 const Lexer = @import("./lexer.zig");
@@ -7,7 +8,7 @@ const Lexer = @import("./lexer.zig");
 pub const Parser = struct {
     allocator: std.mem.Allocator,
     lexer: Lexer.Lexer,
-    err: ?*Errors.Error,
+    err: ?Errors.Error,
 
     pub fn init(allocator: std.mem.Allocator, lexer: Lexer.Lexer) Parser {
         return Parser{
@@ -17,17 +18,17 @@ pub const Parser = struct {
         };
     }
 
-    pub fn expr(self: *Parser) Errors.err!*Machine.Expr {
+    pub fn expr(self: *Parser) Errors.err!*AST.Expr {
         switch (self.currentTokenKind()) {
             Lexer.TokenKind.LiteralBoolFalse => {
-                const v = try self.allocator.create(Machine.Expr);
-                v.* = Machine.Expr{ .literalBool = false };
+                const v = try self.allocator.create(AST.Expr);
+                v.* = AST.Expr{ .literalBool = false };
                 try self.nextToken();
                 return v;
             },
             Lexer.TokenKind.LiteralBoolTrue => {
-                const v = try self.allocator.create(Machine.Expr);
-                v.* = Machine.Expr{ .literalBool = true };
+                const v = try self.allocator.create(AST.Expr);
+                v.* = AST.Expr{ .literalBool = true };
                 try self.nextToken();
                 return v;
             },
@@ -57,7 +58,7 @@ pub const Parser = struct {
         self.lexer.eraseErr();
     }
 
-    pub fn grabErr(self: *Parser) ?*Errors.Error {
+    pub fn grabErr(self: *Parser) ?Errors.Error {
         const err = self.err;
         self.err = null;
 
