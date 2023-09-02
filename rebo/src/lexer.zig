@@ -133,20 +133,22 @@ pub const Lexer = struct {
 };
 
 test "identifier" {
-    var lexer = Lexer.init("console", "foo");
+    var lexer = Lexer.init(std.heap.page_allocator);
+    try lexer.initBuffer("console", "foo");
 
     try expectEqual(lexer.current.kind, TokenKind.Identifier);
     try expectEqual(lexer.lexeme(lexer.current), "foo");
-    lexer.next();
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
 test "literal bool" {
-    var lexer = Lexer.init("console", "true  false");
+    var lexer = Lexer.init(std.heap.page_allocator);
+    try lexer.initBuffer("console", "true   false");
 
     try expectEqual(lexer.current.kind, TokenKind.LiteralBoolTrue);
-    lexer.next();
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LiteralBoolFalse);
-    lexer.next();
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
