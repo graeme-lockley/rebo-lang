@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const Errors = @import("./errors.zig");
-const Eval = @import("./eval.zig");
+const Machine = @import("./machine.zig");
 const Lexer = @import("./lexer.zig");
 
 pub const Parser = struct {
@@ -17,17 +17,17 @@ pub const Parser = struct {
         };
     }
 
-    pub fn expr(self: *Parser) Errors.err!*Eval.Expr {
+    pub fn expr(self: *Parser) Errors.err!*Machine.Expr {
         switch (self.currentTokenKind()) {
             Lexer.TokenKind.LiteralBoolFalse => {
-                const v = try self.allocator.create(Eval.Expr);
-                v.* = Eval.Expr{ .literalBool = false };
+                const v = try self.allocator.create(Machine.Expr);
+                v.* = Machine.Expr{ .literalBool = false };
                 try self.nextToken();
                 return v;
             },
             Lexer.TokenKind.LiteralBoolTrue => {
-                const v = try self.allocator.create(Eval.Expr);
-                v.* = Eval.Expr{ .literalBool = true };
+                const v = try self.allocator.create(Machine.Expr);
+                v.* = Machine.Expr{ .literalBool = true };
                 try self.nextToken();
                 return v;
             },
