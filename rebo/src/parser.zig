@@ -65,8 +65,13 @@ pub const Parser = struct {
     }
 
     pub fn grabErr(self: *Parser) ?Errors.Error {
-        const err = self.err;
+        var err = self.err;
+
+        if (err == null) {
+            err = self.lexer.grabErr();
+        }
         self.err = null;
+        self.lexer.eraseErr();
 
         return err;
     }

@@ -118,10 +118,24 @@ pub const Lexer = struct {
                 self.current.end = self.offset + 1;
                 self.skipCharacter();
 
-                self.err = try Errors.LexicalError.init(self.allocator, Errors.Position{ .start = self.current.start, .end = self.current.end }, self.lexeme(self.current));
+                self.replaceErr(try Errors.LexicalError.init(self.allocator, Errors.Position{ .start = self.current.start, .end = self.current.end }, self.lexeme(self.current)));
 
                 return error.InterpreterError;
             },
+        }
+    }
+
+    fn replaceErr(self: *Lexer, err: Errors.Error) void {
+        if (self.err != null) {
+            self.err.?.deinit();
+        }
+        self.err = err;
+    }
+
+    pub fn eraseErr(self: *Lexer) void {
+        if (self.err != null) {
+            self.err.?.deinit();
+            self.err = null;
         }
     }
 
