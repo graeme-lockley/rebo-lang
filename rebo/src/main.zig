@@ -4,16 +4,16 @@ const parser = @import("parser.zig");
 const eval = @import("eval.zig");
 
 pub fn main() !void {
-    var allocator = &std.heap.page_allocator;
+    var allocator = std.heap.page_allocator;
 
-    var args = try std.process.argsAlloc(allocator.*);
-    defer std.process.argsFree(allocator.*, args);
+    var args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
 
     if (args.len == 3 and std.mem.eql(u8, args[1], "run")) {
         const buffer: []u8 = try loadBinary(allocator, args[2]);
         defer allocator.free(buffer);
 
-        const v = try execute(allocator, buffer);
+        const v = try execute(allocator, args[2], buffer);
 
         std.debug.print("Result: {}\n", .{v});
     } else if (args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
@@ -29,7 +29,7 @@ pub fn main() !void {
                 if (line.len == 0) {
                     break;
                 }
-                const v = try execute(allocator, line);
+                const v = try execute(allocator, "console", line);
 
                 std.debug.print("Result: {}\n", .{v});
             } else {
@@ -41,18 +41,27 @@ pub fn main() !void {
     }
 }
 
-fn execute(allocator: *const std.mem.Allocator, buffer: []u8) !*eval.Value {
-    var l = lexer.Lexer.init(buffer);
-    var p = parser.Parser.init(allocator, l);
+fn errorHandler(err: anyerror, machine: *eval.Machine) !*eval.Value {
+    const e = machine.grabErr();
+    if (e == null) {
+        std.debug.print("ErrorX: {}\n", .{err});
+    } else {
+        e.?.*.print();
+        std.log.err("\n", .{});
+        e.?.*.deinit();
+    }
 
-    const ast = try p.expr();
-
-    const machine = eval.Machine.init(allocator);
-
-    return try machine.eval(ast);
+    // std.os.exit(1);
+    return try machine.createVoidValue();
 }
 
-fn loadBinary(allocator: *const std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
+fn execute(allocator: std.mem.Allocator, name: []const u8, buffer: []u8) !*eval.Value {
+    var machine = eval.Machine.init(allocator);
+
+    return machine.execute(name, buffer) catch |err| errorHandler(err, &machine);
+}
+
+fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
     var file = std.fs.cwd().openFile(fileName, .{}) catch {
         std.debug.print("Unable to open file: {s}\n", .{fileName});
         std.os.exit(1);
@@ -60,7 +69,7 @@ fn loadBinary(allocator: *const std.mem.Allocator, fileName: [:0]const u8) ![]u8
     defer file.close();
 
     const fileSize = try file.getEndPos();
-    const buffer: []u8 = try file.readToEndAlloc(allocator.*, fileSize);
+    const buffer: []u8 = try file.readToEndAlloc(allocator, fileSize);
 
     return buffer;
 }
