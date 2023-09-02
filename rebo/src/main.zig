@@ -1,7 +1,5 @@
 const std = @import("std");
-const lexer = @import("lexer.zig");
-const parser = @import("parser.zig");
-const eval = @import("eval.zig");
+const Eval = @import("./eval.zig");
 
 pub fn main() !void {
     var allocator = std.heap.page_allocator;
@@ -41,7 +39,7 @@ pub fn main() !void {
     }
 }
 
-fn errorHandler(err: anyerror, machine: *eval.Machine) !*eval.Value {
+fn errorHandler(err: anyerror, machine: *Eval.Machine) !*Eval.Value {
     const e = machine.grabErr();
     if (e == null) {
         std.debug.print("ErrorX: {}\n", .{err});
@@ -55,8 +53,8 @@ fn errorHandler(err: anyerror, machine: *eval.Machine) !*eval.Value {
     return try machine.createVoidValue();
 }
 
-fn execute(allocator: std.mem.Allocator, name: []const u8, buffer: []u8) !*eval.Value {
-    var machine = eval.Machine.init(allocator);
+fn execute(allocator: std.mem.Allocator, name: []const u8, buffer: []u8) !*Eval.Value {
+    var machine = Eval.Machine.init(allocator);
 
     return machine.execute(name, buffer) catch |err| errorHandler(err, &machine);
 }
@@ -75,7 +73,5 @@ fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
 }
 
 test "pull in all dependencies" {
-    _ = lexer;
-    _ = parser;
-    _ = eval;
+    _ = Eval;
 }

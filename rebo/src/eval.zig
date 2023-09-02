@@ -1,8 +1,8 @@
 const std = @import("std");
 
 const Errors = @import("./errors.zig");
-const lexer = @import("lexer.zig");
-const parser = @import("parser.zig");
+const Lexer = @import("./lexer.zig");
+const Parser = @import("./parser.zig");
 
 pub const Value = union(enum) {
     void: void,
@@ -53,14 +53,14 @@ pub const Machine = struct {
     }
 
     pub fn execute(self: *Machine, name: []const u8, buffer: []u8) !*Value {
-        var l = lexer.Lexer.init(self.allocator);
+        var l = Lexer.Lexer.init(self.allocator);
 
         l.initBuffer(name, buffer) catch |err| {
             self.err = l.grabErr();
             return err;
         };
 
-        var p = parser.Parser.init(self.allocator, l);
+        var p = Parser.Parser.init(self.allocator, l);
 
         const ast = p.expr() catch |err| {
             self.err = p.grabErr();
@@ -77,3 +77,8 @@ pub const Machine = struct {
         return err;
     }
 };
+
+test "pull in all dependencies" {
+    _ = Parser;
+    _ = Lexer;
+}
