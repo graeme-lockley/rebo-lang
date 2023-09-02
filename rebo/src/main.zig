@@ -18,12 +18,21 @@ pub fn main() !void {
         const buffer: []u8 = try loadBinary(allocator, args[2]);
         defer allocator.free(buffer);
 
-        const v = try execute(allocator, args[2], buffer);
+        var machine = Machine.Machine.init(allocator);
+        defer machine.deinit();
 
-        std.debug.print("Result: {}\n", .{v});
+        execute(&machine, args[2], buffer);
+        const v = machine.topOfStack();
+
+        if (v != null) {
+            std.debug.print("Result: {}\n", .{v.?});
+        }
     } else if (args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
         var buffer = try allocator.alloc(u8, 1024);
         defer allocator.free(buffer);
+
+        var machine = Machine.Machine.init(allocator);
+        defer machine.deinit();
 
         const stdin = std.io.getStdIn().reader();
 
@@ -34,9 +43,13 @@ pub fn main() !void {
                 if (line.len == 0) {
                     break;
                 }
-                const v = try execute(allocator, "console", line);
+                execute(&machine, "console", line);
+                const v = machine.topOfStack();
 
-                std.debug.print("Result: {}\n", .{v});
+                if (v != null) {
+                    std.debug.print("Result: {}\n", .{v.?});
+                }
+                machine.reset();
             } else {
                 break;
             }
@@ -46,7 +59,7 @@ pub fn main() !void {
     }
 }
 
-fn errorHandler(err: anyerror, machine: *Machine.Machine) !*Machine.Value {
+fn errorHandler(err: anyerror, machine: *Machine.Machine) void {
     const e = machine.grabErr();
     if (e == null) {
         std.debug.print("Error: {}\n", .{err});
@@ -55,15 +68,11 @@ fn errorHandler(err: anyerror, machine: *Machine.Machine) !*Machine.Value {
         std.log.err("\n", .{});
         e.?.deinit();
     }
-
     // std.os.exit(1);
-    return try machine.createVoidValue();
 }
 
-fn execute(allocator: std.mem.Allocator, name: []const u8, buffer: []u8) !*Machine.Value {
-    var machine = Machine.Machine.init(allocator);
-
-    return machine.execute(name, buffer) catch |err| errorHandler(err, &machine);
+fn execute(machine: *Machine.Machine, name: []const u8, buffer: []u8) void {
+    machine.execute(name, buffer) catch |err| errorHandler(err, machine);
 }
 
 fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
