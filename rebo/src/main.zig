@@ -71,7 +71,7 @@ fn errorHandler(err: anyerror, machine: *Machine.Machine) void {
     // std.os.exit(1);
 }
 
-fn execute(machine: *Machine.Machine, name: []const u8, buffer: []u8) void {
+fn execute(machine: *Machine.Machine, name: []const u8, buffer: []const u8) void {
     machine.execute(name, buffer) catch |err| errorHandler(err, machine);
 }
 
@@ -90,4 +90,44 @@ fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
 
 test "pull in all dependencies" {
     _ = Machine;
+}
+
+fn expectExecEqual(input: []const u8, expected: []const u8) !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+
+    var machine = Machine.Machine.init(allocator);
+    defer machine.deinit();
+
+    execute(&machine, "console", input);
+    const v = machine.topOfStack();
+
+    if (v == null) {
+        std.log.err("Expected a value on the stack\n", .{});
+        return error.TestingError;
+    }
+
+    const result = Machine.valueToString(v.?);
+
+    if (!std.mem.eql(u8, result, expected)) {
+        std.log.err("Expected: '{s}', got: '{s}'\n", .{ expected, result });
+        return error.TestingError;
+    }
+
+    machine.deinit();
+
+    if (gpa.deinit()) {
+        std.log.err("Failed to deinit allocator\n", .{});
+        return error.TestingError;
+    }
+}
+
+const expectEqual = std.testing.expectEqual;
+
+test "bool - true" {
+    try expectExecEqual("true", "true");
+}
+
+test "bool - false" {
+    try expectExecEqual("false", "false");
 }

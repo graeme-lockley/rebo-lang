@@ -76,5 +76,3 @@ pub const Parser = struct {
         return err;
     }
 };
-
-test "Invalid token throws an error" {}

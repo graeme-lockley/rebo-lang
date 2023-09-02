@@ -2,8 +2,6 @@ const std = @import("std");
 
 const Errors = @import("./errors.zig");
 
-const expectEqual = std.testing.expectEqual;
-
 pub const TokenKind = enum {
     EOS,
     Invalid,
@@ -146,6 +144,8 @@ pub const Lexer = struct {
         return err;
     }
 };
+
+const expectEqual = std.testing.expectEqual;
 
 test "identifier" {
     var lexer = Lexer.init(std.heap.page_allocator);

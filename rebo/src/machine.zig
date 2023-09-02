@@ -29,6 +29,13 @@ pub const ValueValue = union(enum) {
     bool: bool,
 };
 
+pub fn valueToString(v: *Value) []const u8 {
+    switch (v.v) {
+        .void => return "void",
+        .bool => return if (v.v.bool) "true" else "false",
+    }
+}
+
 pub const MemoryState = struct {
     allocator: std.mem.Allocator,
     stack: std.ArrayList(*Value),
@@ -233,7 +240,7 @@ pub const Machine = struct {
         try evalExpr(self, e);
     }
 
-    pub fn execute(self: *Machine, name: []const u8, buffer: []u8) !void {
+    pub fn execute(self: *Machine, name: []const u8, buffer: []const u8) !void {
         const allocator = self.memoryState.allocator;
 
         var l = Lexer.Lexer.init(allocator);
@@ -270,8 +277,3 @@ pub const Machine = struct {
         self.memoryState = try initMemoryState(self.memoryState.allocator);
     }
 };
-
-test "pull in all dependencies" {
-    _ = Parser;
-    _ = Lexer;
-}
