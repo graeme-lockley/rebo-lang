@@ -62,6 +62,7 @@ pub const Machine = struct {
             self.err = p.grabErr();
             return err;
         };
+        defer AST.destroy(self.allocator, ast);
 
         return self.eval(ast);
     }

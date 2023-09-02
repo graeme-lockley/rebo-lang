@@ -22,14 +22,20 @@ pub const Parser = struct {
         switch (self.currentTokenKind()) {
             Lexer.TokenKind.LiteralBoolFalse => {
                 const v = try self.allocator.create(AST.Expr);
+                errdefer AST.destroy(self.allocator, v);
+
                 v.* = AST.Expr{ .literalBool = false };
                 try self.nextToken();
+
                 return v;
             },
             Lexer.TokenKind.LiteralBoolTrue => {
                 const v = try self.allocator.create(AST.Expr);
+                errdefer AST.destroy(self.allocator, v);
+
                 v.* = AST.Expr{ .literalBool = true };
                 try self.nextToken();
+
                 return v;
             },
             else => {

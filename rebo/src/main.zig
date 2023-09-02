@@ -2,7 +2,14 @@ const std = @import("std");
 const Machine = @import("./machine.zig");
 
 pub fn main() !void {
-    var allocator = std.heap.page_allocator;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer {
+        if (gpa.deinit()) {
+            std.log.err("Failed to deinit allocator\n", .{});
+            std.process.exit(1);
+        }
+    }
 
     var args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
