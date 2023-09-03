@@ -1,5 +1,6 @@
 tokens
     Identifier = id {digit | id} ['?' | '!'] {chr(39)};
+    LiteralInt = ['-'] digit {digit}'
 
 comments
    "//" {!cr};
