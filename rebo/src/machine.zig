@@ -27,12 +27,14 @@ pub const Value = struct {
 pub const ValueValue = union(enum) {
     void: void,
     bool: bool,
+    // int: i32,
 };
 
 pub fn valueToString(v: *Value) []const u8 {
     switch (v.v) {
         .void => return "void",
         .bool => return if (v.v.bool) "true" else "false",
+        // .int => return v.v.int.toString(),
     }
 }
 
@@ -198,6 +200,9 @@ fn evalExpr(machine: *Machine, e: *AST.Expr) !void {
         .literalVoid => {
             _ = try machine.createVoidValue();
         },
+        // .literalInt => {
+        //     _ = try machine.createIntValue(e.literalString);
+        // },
     }
 }
 
@@ -234,6 +239,10 @@ pub const Machine = struct {
 
     pub fn createBoolValue(self: *Machine, v: bool) !*Value {
         return self.memoryState.push_bool_value(v);
+    }
+
+    pub fn createStringValue(self: *Machine, v: []const u8) !*Value {
+        return self.memoryState.push_string_value(v);
     }
 
     pub fn eval(self: *Machine, e: *AST.Expr) !void {

@@ -6,5 +6,9 @@ pub const Expr = union(enum) {
 };
 
 pub fn destroy(allocator: std.mem.Allocator, expr: *Expr) void {
+    switch (expr.*) {
+        .literalBool, .literalVoid => {},
+    }
+
     allocator.destroy(expr);
 }

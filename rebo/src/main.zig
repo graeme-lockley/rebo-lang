@@ -124,10 +124,11 @@ fn expectExecEqual(input: []const u8, expected: []const u8) !void {
 
 const expectEqual = std.testing.expectEqual;
 
-test "bool - true" {
+test "literal bool" {
     try expectExecEqual("true", "true");
-}
-
-test "bool - false" {
     try expectExecEqual("false", "false");
 }
+
+// test "literal int" {
+//    try expectExecEqual("123", "123");
+// }
