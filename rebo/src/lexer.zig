@@ -10,7 +10,7 @@ pub const TokenKind = enum {
     LiteralBoolTrue,
     LiteralInt,
 
-    Comma,
+    Minus,
 };
 
 pub const Token = struct { kind: TokenKind, start: usize, end: usize };
@@ -119,7 +119,7 @@ pub const Lexer = struct {
                     self.skipCharacter();
                 }
 
-                self.current.kind = if (tokenStart + 1 == self.offset) TokenKind.Comma else TokenKind.LiteralInt;
+                self.current.kind = if (tokenStart + 1 == self.offset) TokenKind.Minus else TokenKind.LiteralInt;
                 self.current.start = tokenStart;
                 self.current.end = self.offset;
             },
@@ -216,5 +216,14 @@ test "literal int" {
     try expectLiteralInt(lexer, "-123");
     try lexer.next();
 
+    try expectEqual(lexer.current.kind, TokenKind.EOS);
+}
+
+test "," {
+    var lexer = Lexer.init(std.heap.page_allocator);
+    try lexer.initBuffer("console", "-");
+
+    try expectEqual(lexer.current.kind, TokenKind.Minus);
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
