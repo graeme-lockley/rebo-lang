@@ -78,9 +78,7 @@ pub const Lexer = struct {
 
     pub fn next(self: *Lexer) Errors.err!void {
         if (self.atEnd()) {
-            self.current.kind = TokenKind.EOS;
-            self.current.start = self.sourceLength;
-            self.current.end = self.sourceLength;
+            self.current = Token{ .kind = TokenKind.EOS, .start = self.sourceLength, .end = self.sourceLength };
             return;
         }
 
@@ -108,10 +106,7 @@ pub const Lexer = struct {
 
                 var text = self.source[tokenStart..self.offset];
 
-                self.current.kind = keywords.get(text) orelse TokenKind.Identifier;
-
-                self.current.start = tokenStart;
-                self.current.end = self.offset;
+                self.current = Token{ .kind = keywords.get(text) orelse TokenKind.Identifier, .start = tokenStart, .end = self.offset };
             },
             '-' => {
                 self.skipCharacter();
@@ -119,9 +114,7 @@ pub const Lexer = struct {
                     self.skipCharacter();
                 }
 
-                self.current.kind = if (tokenStart + 1 == self.offset) TokenKind.Minus else TokenKind.LiteralInt;
-                self.current.start = tokenStart;
-                self.current.end = self.offset;
+                self.current = Token{ .kind = if (tokenStart + 1 == self.offset) TokenKind.Minus else TokenKind.LiteralInt, .start = tokenStart, .end = self.offset };
             },
             '0'...'9' => {
                 self.skipCharacter();
@@ -129,14 +122,10 @@ pub const Lexer = struct {
                     self.skipCharacter();
                 }
 
-                self.current.kind = TokenKind.LiteralInt;
-                self.current.start = tokenStart;
-                self.current.end = self.offset;
+                self.current = Token{ .kind = TokenKind.LiteralInt, .start = tokenStart, .end = self.offset };
             },
             else => {
-                self.current.kind = TokenKind.Invalid;
-                self.current.start = self.offset;
-                self.current.end = self.offset + 1;
+                self.current = Token{ .kind = TokenKind.Invalid, .start = self.offset, .end = self.offset + 1 };
                 self.skipCharacter();
 
                 self.replaceErr(try Errors.lexicalError(self.allocator, Errors.Position{ .start = self.current.start, .end = self.current.end }, self.lexeme(self.current)));
