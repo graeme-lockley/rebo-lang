@@ -9,6 +9,8 @@ Expression
     ;
 
 Factor
-    : "true"
+    : "(" [Expression {"," Expression}] ")"
     | "false"
+    | "true"
+    | LiteralInt
     ;
