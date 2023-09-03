@@ -10,7 +10,9 @@ pub const TokenKind = enum {
     LiteralBoolTrue,
     LiteralInt,
 
+    LParen,
     Minus,
+    RParen,
 };
 
 pub const Token = struct { kind: TokenKind, start: usize, end: usize };
@@ -77,13 +79,13 @@ pub const Lexer = struct {
     }
 
     pub fn next(self: *Lexer) Errors.err!void {
+        while (!self.atEnd() and self.currentCharacter() <= ' ') {
+            self.skipCharacter();
+        }
+
         if (self.atEnd()) {
             self.current = Token{ .kind = TokenKind.EOS, .start = self.sourceLength, .end = self.sourceLength };
             return;
-        }
-
-        while (!self.atEnd() and self.currentCharacter() <= ' ') {
-            self.skipCharacter();
         }
 
         const tokenStart = self.offset;
@@ -107,6 +109,14 @@ pub const Lexer = struct {
                 var text = self.source[tokenStart..self.offset];
 
                 self.current = Token{ .kind = keywords.get(text) orelse TokenKind.Identifier, .start = tokenStart, .end = self.offset };
+            },
+            '(' => {
+                self.skipCharacter();
+                self.current = Token{ .kind = TokenKind.LParen, .start = tokenStart, .end = self.offset };
+            },
+            ')' => {
+                self.skipCharacter();
+                self.current = Token{ .kind = TokenKind.RParen, .start = tokenStart, .end = self.offset };
             },
             '-' => {
                 self.skipCharacter();
@@ -208,11 +218,15 @@ test "literal int" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "," {
+test "- ( )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", "-");
+    try lexer.initBuffer("console", " - ( ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Minus);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.LParen);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.RParen);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }

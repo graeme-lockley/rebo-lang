@@ -132,3 +132,7 @@ test "literal int" {
     try expectExecEqual("123", "123");
     try expectExecEqual("-123", "-123");
 }
+
+test "literal unit" {
+    try expectExecEqual("()", "()");
+}

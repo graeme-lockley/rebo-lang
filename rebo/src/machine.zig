@@ -27,7 +27,7 @@ pub const Value = struct {
         switch (self.v) {
             .bool => try buffer.appendSlice(if (self.v.bool) "true" else "false"),
             .int => try std.fmt.format(buffer.writer(), "{d}", .{self.v.int}),
-            .void => try buffer.appendSlice("void"),
+            .void => try buffer.appendSlice("()"),
         }
     }
 

@@ -24,21 +24,27 @@ pub const Parser = struct {
 
     pub fn factor(self: *Parser) Errors.err!*AST.Expression {
         switch (self.currentTokenKind()) {
-            Lexer.TokenKind.LiteralBoolFalse => {
+            Lexer.TokenKind.LParen => {
+                try self.skipToken();
+                try self.matchSkipToken(Lexer.TokenKind.RParen);
+
                 const v = try self.allocator.create(AST.Expression);
-                errdefer AST.destroy(self.allocator, v);
+                v.* = AST.Expression{ .literalVoid = void{} };
+                return v;
+            },
+            Lexer.TokenKind.LiteralBoolFalse => {
+                try self.skipToken();
 
+                const v = try self.allocator.create(AST.Expression);
                 v.* = AST.Expression{ .literalBool = false };
-                try self.nextToken();
-
                 return v;
             },
             Lexer.TokenKind.LiteralBoolTrue => {
+                try self.skipToken();
+
                 const v = try self.allocator.create(AST.Expression);
-                errdefer AST.destroy(self.allocator, v);
 
                 v.* = AST.Expression{ .literalBool = true };
-                try self.nextToken();
 
                 return v;
             },
@@ -55,7 +61,7 @@ pub const Parser = struct {
                 errdefer AST.destroy(self.allocator, v);
 
                 v.* = AST.Expression{ .literalInt = literalInt };
-                try self.nextToken();
+                try self.skipToken();
 
                 return v;
             },
@@ -73,8 +79,30 @@ pub const Parser = struct {
         return self.lexer.current.kind;
     }
 
-    fn nextToken(self: *Parser) Errors.err!void {
+    fn nextToken(self: *Parser) Errors.err!Lexer.Token {
+        const token = self.lexer.current;
+
         try self.lexer.next();
+
+        return token;
+    }
+
+    fn skipToken(self: *Parser) Errors.err!void {
+        try self.lexer.next();
+    }
+
+    fn matchToken(self: *Parser, kind: Lexer.TokenKind) Errors.err!Lexer.Token {
+        const token = try self.nextToken();
+
+        if (token.kind != kind) {
+            return error.InterpreterError;
+        }
+
+        return token;
+    }
+
+    fn matchSkipToken(self: *Parser, kind: Lexer.TokenKind) Errors.err!void {
+        _ = try self.matchToken(kind);
     }
 
     pub fn eraseErr(self: *Parser) void {
