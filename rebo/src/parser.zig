@@ -18,22 +18,26 @@ pub const Parser = struct {
         };
     }
 
-    pub fn expr(self: *Parser) Errors.err!*AST.Expr {
+    pub fn expression(self: *Parser) Errors.err!*AST.Expression {
+        return try self.factor();
+    }
+
+    pub fn factor(self: *Parser) Errors.err!*AST.Expression {
         switch (self.currentTokenKind()) {
             Lexer.TokenKind.LiteralBoolFalse => {
-                const v = try self.allocator.create(AST.Expr);
+                const v = try self.allocator.create(AST.Expression);
                 errdefer AST.destroy(self.allocator, v);
 
-                v.* = AST.Expr{ .literalBool = false };
+                v.* = AST.Expression{ .literalBool = false };
                 try self.nextToken();
 
                 return v;
             },
             Lexer.TokenKind.LiteralBoolTrue => {
-                const v = try self.allocator.create(AST.Expr);
+                const v = try self.allocator.create(AST.Expression);
                 errdefer AST.destroy(self.allocator, v);
 
-                v.* = AST.Expr{ .literalBool = true };
+                v.* = AST.Expression{ .literalBool = true };
                 try self.nextToken();
 
                 return v;
@@ -47,10 +51,10 @@ pub const Parser = struct {
                     return error.InterpreterError;
                 };
 
-                const v = try self.allocator.create(AST.Expr);
+                const v = try self.allocator.create(AST.Expression);
                 errdefer AST.destroy(self.allocator, v);
 
-                v.* = AST.Expr{ .literalInt = literalInt };
+                v.* = AST.Expression{ .literalInt = literalInt };
                 try self.nextToken();
 
                 return v;

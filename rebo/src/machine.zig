@@ -205,7 +205,7 @@ fn gc(state: *MemoryState) void {
     }
 }
 
-fn evalExpr(machine: *Machine, e: *AST.Expr) !void {
+fn evalExpr(machine: *Machine, e: *AST.Expression) !void {
     switch (e.*) {
         .literalBool => {
             _ = try machine.createBoolValue(e.literalBool);
@@ -262,7 +262,7 @@ pub const Machine = struct {
         return self.memoryState.push_string_value(v);
     }
 
-    pub fn eval(self: *Machine, e: *AST.Expr) !void {
+    pub fn eval(self: *Machine, e: *AST.Expression) !void {
         try evalExpr(self, e);
     }
 
@@ -278,7 +278,7 @@ pub const Machine = struct {
 
         var p = Parser.Parser.init(allocator, l);
 
-        const ast = p.expr() catch |err| {
+        const ast = p.expression() catch |err| {
             self.err = p.grabErr();
             return err;
         };
