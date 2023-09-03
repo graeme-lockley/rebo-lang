@@ -53,7 +53,7 @@ pub fn main() !void {
 
 fn printResult(allocator: std.mem.Allocator, v: ?*Machine.Value) !void {
     if (v != null) {
-        const result = try Machine.valueToString(allocator, v.?);
+        const result = try v.?.toString(allocator);
         std.debug.print("Result: {s}\n", .{result});
         allocator.free(result);
     }
@@ -104,7 +104,7 @@ fn expectExecEqual(input: []const u8, expected: []const u8) !void {
             return error.TestingError;
         }
 
-        const result = try Machine.valueToString(allocator, v.?);
+        const result = try v.?.toString(allocator);
         defer allocator.free(result);
 
         if (!std.mem.eql(u8, result, expected)) {

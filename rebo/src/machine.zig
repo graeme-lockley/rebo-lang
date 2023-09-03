@@ -22,6 +22,23 @@ pub const Value = struct {
             .bool, .int, .void => {},
         }
     }
+
+    fn appendValue(self: *Value, buffer: *std.ArrayList(u8)) !void {
+        switch (self.v) {
+            .bool => try buffer.appendSlice(if (self.v.bool) "true" else "false"),
+            .int => try std.fmt.format(buffer.writer(), "{d}", .{self.v.int}),
+            .void => try buffer.appendSlice("void"),
+        }
+    }
+
+    pub fn toString(self: *Value, allocator: std.mem.Allocator) ![]u8 {
+        var buffer = std.ArrayList(u8).init(allocator);
+        defer buffer.deinit();
+
+        try self.appendValue(&buffer);
+
+        return buffer.toOwnedSlice();
+    }
 };
 
 pub const ValueValue = union(enum) {
@@ -29,23 +46,6 @@ pub const ValueValue = union(enum) {
     bool: bool,
     int: i32,
 };
-
-fn appendValue(buffer: *std.ArrayList(u8), v: *Value) !void {
-    switch (v.v) {
-        .bool => try buffer.appendSlice(if (v.v.bool) "true" else "false"),
-        .int => try std.fmt.format(buffer.writer(), "{d}", .{v.v.int}),
-        .void => try buffer.appendSlice("void"),
-    }
-}
-
-pub fn valueToString(allocator: std.mem.Allocator, v: *Value) ![]u8 {
-    var buffer = std.ArrayList(u8).init(allocator);
-    defer buffer.deinit();
-
-    try appendValue(&buffer, v);
-
-    return buffer.toOwnedSlice();
-}
 
 pub const MemoryState = struct {
     allocator: std.mem.Allocator,
