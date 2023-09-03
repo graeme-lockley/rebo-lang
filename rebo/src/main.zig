@@ -92,25 +92,26 @@ fn expectExecEqual(input: []const u8, expected: []const u8) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    var machine = Machine.Machine.init(allocator);
+    {
+        var machine = Machine.Machine.init(allocator);
+        defer machine.deinit();
 
-    execute(&machine, "console", input);
-    const v = machine.topOfStack();
+        execute(&machine, "console", input);
+        const v = machine.topOfStack();
 
-    if (v == null) {
-        std.log.err("Expected a value on the stack\n", .{});
-        return error.TestingError;
+        if (v == null) {
+            std.log.err("Expected a value on the stack\n", .{});
+            return error.TestingError;
+        }
+
+        const result = try Machine.valueToString(allocator, v.?);
+        defer allocator.free(result);
+
+        if (!std.mem.eql(u8, result, expected)) {
+            std.log.err("Expected: '{s}', got: '{s}'\n", .{ expected, result });
+            return error.TestingError;
+        }
     }
-
-    const result = try Machine.valueToString(allocator, v.?);
-
-    if (!std.mem.eql(u8, result, expected)) {
-        std.log.err("Expected: '{s}', got: '{s}'\n", .{ expected, result });
-        return error.TestingError;
-    }
-
-    allocator.free(result);
-    machine.deinit();
 
     if (gpa.deinit()) {
         std.log.err("Failed to deinit allocator\n", .{});
