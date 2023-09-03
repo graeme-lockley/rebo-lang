@@ -55,7 +55,7 @@ pub const MemoryState = struct {
     memory_size: u32,
     memory_capacity: u32,
 
-    fn push_value(self: *MemoryState, vv: ValueValue) error{OutOfMemory}!*Value {
+    fn pushValue(self: *MemoryState, vv: ValueValue) error{OutOfMemory}!*Value {
         const v = try self.allocator.create(Value);
         self.memory_size += 1;
 
@@ -72,16 +72,16 @@ pub const MemoryState = struct {
         return v;
     }
 
-    pub fn push_bool_value(self: *MemoryState, b: bool) error{OutOfMemory}!*Value {
-        return try self.push_value(ValueValue{ .bool = b });
+    pub fn pushBoolValue(self: *MemoryState, b: bool) error{OutOfMemory}!*Value {
+        return try self.pushValue(ValueValue{ .bool = b });
     }
 
-    pub fn push_int_value(self: *MemoryState, v: i32) error{OutOfMemory}!*Value {
-        return try self.push_value(ValueValue{ .int = v });
+    pub fn pushIntValue(self: *MemoryState, v: i32) error{OutOfMemory}!*Value {
+        return try self.pushValue(ValueValue{ .int = v });
     }
 
-    pub fn push_unit_value(self: *MemoryState) error{OutOfMemory}!*Value {
-        return try self.push_value(ValueValue{ .void = void{} });
+    pub fn pushUnitValue(self: *MemoryState) error{OutOfMemory}!*Value {
+        return try self.pushValue(ValueValue{ .void = void{} });
     }
 
     pub fn pop(self: *MemoryState) *Value {
@@ -247,19 +247,19 @@ pub const Machine = struct {
     }
 
     pub fn createVoidValue(self: *Machine) !*Value {
-        return self.memoryState.push_unit_value();
+        return self.memoryState.pushUnitValue();
     }
 
     pub fn createBoolValue(self: *Machine, v: bool) !*Value {
-        return self.memoryState.push_bool_value(v);
+        return self.memoryState.pushBoolValue(v);
     }
 
     pub fn createIntValue(self: *Machine, v: i32) !*Value {
-        return self.memoryState.push_int_value(v);
+        return self.memoryState.pushIntValue(v);
     }
 
     pub fn createStringValue(self: *Machine, v: []const u8) !*Value {
-        return self.memoryState.push_string_value(v);
+        return self.memoryState.pushStringValue(v);
     }
 
     pub fn eval(self: *Machine, e: *AST.Expression) !void {
