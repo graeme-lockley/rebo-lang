@@ -19,7 +19,7 @@ pub const Value = struct {
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         _ = allocator;
         switch (self.v) {
-            .void, .bool => {},
+            .bool, .int, .void => {},
         }
     }
 };
@@ -27,15 +27,24 @@ pub const Value = struct {
 pub const ValueValue = union(enum) {
     void: void,
     bool: bool,
-    // int: i32,
+    int: i32,
 };
 
-pub fn valueToString(v: *Value) []const u8 {
+fn appendValue(buffer: *std.ArrayList(u8), v: *Value) !void {
     switch (v.v) {
-        .void => return "void",
-        .bool => return if (v.v.bool) "true" else "false",
-        // .int => return v.v.int.toString(),
+        .bool => try buffer.appendSlice(if (v.v.bool) "true" else "false"),
+        .int => try std.fmt.format(buffer.writer(), "{d}", .{v.v.int}),
+        .void => try buffer.appendSlice("void"),
     }
+}
+
+pub fn valueToString(allocator: std.mem.Allocator, v: *Value) ![]u8 {
+    var buffer = std.ArrayList(u8).init(allocator);
+    defer buffer.deinit();
+
+    try appendValue(&buffer, v);
+
+    return buffer.toOwnedSlice();
 }
 
 pub const MemoryState = struct {
@@ -65,6 +74,10 @@ pub const MemoryState = struct {
 
     pub fn push_bool_value(self: *MemoryState, b: bool) error{OutOfMemory}!*Value {
         return try self.push_value(ValueValue{ .bool = b });
+    }
+
+    pub fn push_int_value(self: *MemoryState, v: i32) error{OutOfMemory}!*Value {
+        return try self.push_value(ValueValue{ .int = v });
     }
 
     pub fn push_unit_value(self: *MemoryState) error{OutOfMemory}!*Value {
@@ -144,7 +157,7 @@ fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
     v.colour = colour;
 
     switch (v.v) {
-        .bool, .void => {},
+        .bool, .int, .void => {},
     }
 }
 
@@ -197,12 +210,12 @@ fn evalExpr(machine: *Machine, e: *AST.Expr) !void {
         .literalBool => {
             _ = try machine.createBoolValue(e.literalBool);
         },
+        .literalInt => {
+            _ = try machine.createIntValue(e.literalInt);
+        },
         .literalVoid => {
             _ = try machine.createVoidValue();
         },
-        // .literalInt => {
-        //     _ = try machine.createIntValue(e.literalString);
-        // },
     }
 }
 
@@ -239,6 +252,10 @@ pub const Machine = struct {
 
     pub fn createBoolValue(self: *Machine, v: bool) !*Value {
         return self.memoryState.push_bool_value(v);
+    }
+
+    pub fn createIntValue(self: *Machine, v: i32) !*Value {
+        return self.memoryState.push_int_value(v);
     }
 
     pub fn createStringValue(self: *Machine, v: []const u8) !*Value {

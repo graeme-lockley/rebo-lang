@@ -12,20 +12,12 @@ pub const LexicalError = struct {
     position: Position,
     lexeme: []u8,
 
-    pub fn init(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {
-        return Error{ .lexicalError = .{
-            .allocator = allocator,
-            .position = position,
-            .lexeme = try allocator.dupe(u8, lexeme),
-        } };
-    }
-
     pub fn deinit(self: LexicalError) void {
         self.allocator.free(self.lexeme);
     }
 
-    pub fn print(self: LexicalError) void {
-        std.log.err("Lexical error: {d}-{d} \"{s}\"", .{ self.position.start, self.position.end, self.lexeme });
+    pub fn print(self: LexicalError, nature: []const u8) void {
+        std.log.err("{s}: {d}-{d} \"{s}\"", .{ nature, self.position.start, self.position.end, self.lexeme });
     }
 };
 
@@ -33,11 +25,12 @@ pub const ParserError = struct { position: Position, lexeme: []const u8 };
 
 pub const Error = union(enum) {
     lexicalError: LexicalError,
+    literalIntOverflowError: LexicalError,
     parserError: ParserError,
 
     pub fn deinit(self: Error) void {
         switch (self) {
-            .lexicalError => {
+            .lexicalError, .literalIntOverflowError => {
                 self.lexicalError.deinit();
             },
             .parserError => {
@@ -49,7 +42,10 @@ pub const Error = union(enum) {
     pub fn print(self: Error) void {
         switch (self) {
             .lexicalError => {
-                self.lexicalError.print();
+                self.lexicalError.print("Lexical Error");
+            },
+            .literalIntOverflowError => {
+                self.lexicalError.print("Literal Int Overflow Error");
             },
             else => {
                 // std.log.err("Unknown error: {}", self.*);
@@ -57,3 +53,19 @@ pub const Error = union(enum) {
         }
     }
 };
+
+pub fn lexicalError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {
+    return Error{ .lexicalError = .{
+        .allocator = allocator,
+        .position = position,
+        .lexeme = try allocator.dupe(u8, lexeme),
+    } };
+}
+
+pub fn literalIntOverflowError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {
+    return Error{ .literalIntOverflowError = .{
+        .allocator = allocator,
+        .position = position,
+        .lexeme = try allocator.dupe(u8, lexeme),
+    } };
+}

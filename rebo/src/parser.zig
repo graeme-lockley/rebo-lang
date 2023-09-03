@@ -38,6 +38,23 @@ pub const Parser = struct {
 
                 return v;
             },
+            Lexer.TokenKind.LiteralInt => {
+                const lexeme = self.lexer.currentLexeme();
+
+                const literalInt = std.fmt.parseInt(i32, lexeme, 10) catch {
+                    const token = self.currentToken();
+                    self.err = try Errors.literalIntOverflowError(self.allocator, Errors.Position{ .start = token.start, .end = token.end }, lexeme);
+                    return error.InterpreterError;
+                };
+
+                const v = try self.allocator.create(AST.Expr);
+                errdefer AST.destroy(self.allocator, v);
+
+                v.* = AST.Expr{ .literalInt = literalInt };
+                try self.nextToken();
+
+                return v;
+            },
             else => {
                 return error.InterpreterError;
             },

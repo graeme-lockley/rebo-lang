@@ -22,11 +22,7 @@ pub fn main() !void {
         defer machine.deinit();
 
         execute(&machine, args[2], buffer);
-        const v = machine.topOfStack();
-
-        if (v != null) {
-            std.debug.print("Result: {}\n", .{v.?});
-        }
+        try printResult(allocator, machine.topOfStack());
     } else if (args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
         var buffer = try allocator.alloc(u8, 1024);
         defer allocator.free(buffer);
@@ -44,11 +40,7 @@ pub fn main() !void {
                     break;
                 }
                 execute(&machine, "console", line);
-                const v = machine.topOfStack();
-
-                if (v != null) {
-                    std.debug.print("Result: {}\n", .{v.?});
-                }
+                try printResult(allocator, machine.topOfStack());
                 machine.reset();
             } else {
                 break;
@@ -56,6 +48,14 @@ pub fn main() !void {
         }
     } else {
         std.debug.print("Usage: {s} [repl|run <filename>]\n", .{args[0]});
+    }
+}
+
+fn printResult(allocator: std.mem.Allocator, v: ?*Machine.Value) !void {
+    if (v != null) {
+        const result = try Machine.valueToString(allocator, v.?);
+        std.debug.print("Result: {s}\n", .{result});
+        allocator.free(result);
     }
 }
 
@@ -88,16 +88,11 @@ fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
     return buffer;
 }
 
-test "pull in all dependencies" {
-    _ = Machine;
-}
-
 fn expectExecEqual(input: []const u8, expected: []const u8) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
     var machine = Machine.Machine.init(allocator);
-    defer machine.deinit();
 
     execute(&machine, "console", input);
     const v = machine.topOfStack();
@@ -107,13 +102,14 @@ fn expectExecEqual(input: []const u8, expected: []const u8) !void {
         return error.TestingError;
     }
 
-    const result = Machine.valueToString(v.?);
+    const result = try Machine.valueToString(allocator, v.?);
 
     if (!std.mem.eql(u8, result, expected)) {
         std.log.err("Expected: '{s}', got: '{s}'\n", .{ expected, result });
         return error.TestingError;
     }
 
+    allocator.free(result);
     machine.deinit();
 
     if (gpa.deinit()) {
@@ -129,6 +125,9 @@ test "literal bool" {
     try expectExecEqual("false", "false");
 }
 
-// test "literal int" {
-//    try expectExecEqual("123", "123");
-// }
+test "literal int" {
+    try expectExecEqual("0", "0");
+    try expectExecEqual("-0", "0");
+    try expectExecEqual("123", "123");
+    try expectExecEqual("-123", "-123");
+}

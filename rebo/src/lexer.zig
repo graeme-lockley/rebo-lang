@@ -9,6 +9,8 @@ pub const TokenKind = enum {
     LiteralBoolFalse,
     LiteralBoolTrue,
     LiteralInt,
+
+    Comma,
 };
 
 pub const Token = struct { kind: TokenKind, start: usize, end: usize };
@@ -111,6 +113,16 @@ pub const Lexer = struct {
                 self.current.start = tokenStart;
                 self.current.end = self.offset;
             },
+            '-' => {
+                self.skipCharacter();
+                while (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
+                    self.skipCharacter();
+                }
+
+                self.current.kind = if (tokenStart + 1 == self.offset) TokenKind.Comma else TokenKind.LiteralInt;
+                self.current.start = tokenStart;
+                self.current.end = self.offset;
+            },
             '0'...'9' => {
                 self.skipCharacter();
                 while (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
@@ -127,7 +139,7 @@ pub const Lexer = struct {
                 self.current.end = self.offset + 1;
                 self.skipCharacter();
 
-                self.replaceErr(try Errors.LexicalError.init(self.allocator, Errors.Position{ .start = self.current.start, .end = self.current.end }, self.lexeme(self.current)));
+                self.replaceErr(try Errors.lexicalError(self.allocator, Errors.Position{ .start = self.current.start, .end = self.current.end }, self.lexeme(self.current)));
 
                 return error.InterpreterError;
             },
@@ -153,6 +165,10 @@ pub const Lexer = struct {
         self.err = null;
 
         return err;
+    }
+
+    pub fn currentLexeme(self: *Lexer) []const u8 {
+        return self.lexeme(self.current);
     }
 };
 
@@ -180,15 +196,25 @@ test "literal bool" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
+fn expectLiteralInt(lexer: Lexer, expected: []const u8) !void {
+    try expectEqual(lexer.current.kind, TokenKind.LiteralInt);
+    try expectEqualStrings(lexer.lexeme(lexer.current), expected);
+}
+
 test "literal int" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", "0 123");
+    try lexer.initBuffer("console", "0 123 -1 -0 -123");
 
-    try expectEqual(lexer.current.kind, TokenKind.LiteralInt);
-    try expectEqualStrings(lexer.lexeme(lexer.current), "0");
+    try expectLiteralInt(lexer, "0");
     try lexer.next();
-    try expectEqual(lexer.current.kind, TokenKind.LiteralInt);
-    try expectEqualStrings(lexer.lexeme(lexer.current), "123");
+    try expectLiteralInt(lexer, "123");
     try lexer.next();
+    try expectLiteralInt(lexer, "-1");
+    try lexer.next();
+    try expectLiteralInt(lexer, "-0");
+    try lexer.next();
+    try expectLiteralInt(lexer, "-123");
+    try lexer.next();
+
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
