@@ -17,9 +17,11 @@ pub const Value = struct {
     v: ValueValue,
 
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
-        _ = allocator;
         switch (self.v) {
             .bool, .int, .void => {},
+            .list => {
+                allocator.free(self.v.list);
+            },
         }
     }
 
@@ -27,6 +29,17 @@ pub const Value = struct {
         switch (self.v) {
             .bool => try buffer.appendSlice(if (self.v.bool) "true" else "false"),
             .int => try std.fmt.format(buffer.writer(), "{d}", .{self.v.int}),
+            .list => {
+                try buffer.append('[');
+                for (self.v.list) |v, i| {
+                    if (i != 0) {
+                        try buffer.appendSlice(", ");
+                    }
+
+                    try v.appendValue(buffer);
+                }
+                try buffer.append(']');
+            },
             .void => try buffer.appendSlice("()"),
         }
     }
@@ -42,9 +55,10 @@ pub const Value = struct {
 };
 
 pub const ValueValue = union(enum) {
-    void: void,
     bool: bool,
     int: i32,
+    list: []*Value,
+    void: void,
 };
 
 pub const MemoryState = struct {
@@ -55,7 +69,7 @@ pub const MemoryState = struct {
     memory_size: u32,
     memory_capacity: u32,
 
-    fn pushValue(self: *MemoryState, vv: ValueValue) error{OutOfMemory}!*Value {
+    fn pushValue(self: *MemoryState, vv: ValueValue) !*Value {
         const v = try self.allocator.create(Value);
         self.memory_size += 1;
 
@@ -72,23 +86,40 @@ pub const MemoryState = struct {
         return v;
     }
 
-    pub fn pushBoolValue(self: *MemoryState, b: bool) error{OutOfMemory}!*Value {
-        return try self.pushValue(ValueValue{ .bool = b });
+    pub fn pushBoolValue(self: *MemoryState, b: bool) !void {
+        _ = try self.pushValue(ValueValue{ .bool = b });
     }
 
-    pub fn pushIntValue(self: *MemoryState, v: i32) error{OutOfMemory}!*Value {
-        return try self.pushValue(ValueValue{ .int = v });
+    pub fn pushIntValue(self: *MemoryState, v: i32) !void {
+        _ = try self.pushValue(ValueValue{ .int = v });
     }
 
-    pub fn pushUnitValue(self: *MemoryState) error{OutOfMemory}!*Value {
-        return try self.pushValue(ValueValue{ .void = void{} });
+    pub fn pushListValue(self: *MemoryState, size: usize) !void {
+        var items = try self.allocator.alloc(*Value, size);
+
+        if (size > 0) {
+            var tos: usize = size - 1;
+            while (true) {
+                items[tos] = self.stack.pop();
+                if (tos == 0) {
+                    break;
+                }
+                tos -= 1;
+            }
+        }
+
+        _ = try self.pushValue(ValueValue{ .list = items });
+    }
+
+    pub fn pushUnitValue(self: *MemoryState) !void {
+        _ = try self.pushValue(ValueValue{ .void = void{} });
     }
 
     pub fn pop(self: *MemoryState) *Value {
         return self.stack.pop();
     }
 
-    pub fn push(self: *MemoryState, v: *Value) error{OutOfMemory}!void {
+    pub fn push(self: *MemoryState, v: *Value) !void {
         try self.stack.append(v);
     }
 
@@ -143,7 +174,6 @@ pub const MemoryState = struct {
 };
 
 fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
-    _ = state;
     if (possible_value == null) {
         return;
     }
@@ -158,6 +188,11 @@ fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
 
     switch (v.v) {
         .bool, .int, .void => {},
+        .list => {
+            for (v.v.list) |item| {
+                mark(state, item, colour);
+            }
+        },
     }
 }
 
@@ -208,13 +243,20 @@ fn gc(state: *MemoryState) void {
 fn evalExpr(machine: *Machine, e: *AST.Expression) !void {
     switch (e.*) {
         .literalBool => {
-            _ = try machine.createBoolValue(e.literalBool);
+            try machine.createBoolValue(e.literalBool);
         },
         .literalInt => {
-            _ = try machine.createIntValue(e.literalInt);
+            try machine.createIntValue(e.literalInt);
+        },
+        .literalList => {
+            for (e.*.literalList) |v| {
+                try evalExpr(machine, v);
+            }
+
+            try machine.createListValue(e.*.literalList.len);
         },
         .literalVoid => {
-            _ = try machine.createVoidValue();
+            try machine.createVoidValue();
         },
     }
 }
@@ -246,20 +288,24 @@ pub const Machine = struct {
         self.memoryState.deinit();
     }
 
-    pub fn createVoidValue(self: *Machine) !*Value {
-        return self.memoryState.pushUnitValue();
+    pub fn createVoidValue(self: *Machine) !void {
+        try self.memoryState.pushUnitValue();
     }
 
-    pub fn createBoolValue(self: *Machine, v: bool) !*Value {
-        return self.memoryState.pushBoolValue(v);
+    pub fn createBoolValue(self: *Machine, v: bool) !void {
+        try self.memoryState.pushBoolValue(v);
     }
 
-    pub fn createIntValue(self: *Machine, v: i32) !*Value {
-        return self.memoryState.pushIntValue(v);
+    pub fn createIntValue(self: *Machine, v: i32) !void {
+        try self.memoryState.pushIntValue(v);
     }
 
-    pub fn createStringValue(self: *Machine, v: []const u8) !*Value {
-        return self.memoryState.pushStringValue(v);
+    pub fn createStringValue(self: *Machine, v: []const u8) !void {
+        try self.memoryState.pushStringValue(v);
+    }
+
+    pub fn createListValue(self: *Machine, size: usize) !void {
+        return self.memoryState.pushListValue(size);
     }
 
     pub fn eval(self: *Machine, e: *AST.Expression) !void {
@@ -285,6 +331,7 @@ pub const Machine = struct {
         defer AST.destroy(allocator, ast);
 
         try self.eval(ast);
+        // _ = try self.createVoidValue();
     }
 
     pub fn grabErr(self: *Machine) ?Errors.Error {

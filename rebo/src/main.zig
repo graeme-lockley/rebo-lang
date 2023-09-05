@@ -68,7 +68,6 @@ fn errorHandler(err: anyerror, machine: *Machine.Machine) void {
         std.log.err("\n", .{});
         e.?.deinit();
     }
-    // std.os.exit(1);
 }
 
 fn execute(machine: *Machine.Machine, name: []const u8, buffer: []const u8) void {
@@ -119,6 +118,33 @@ fn expectExecEqual(input: []const u8, expected: []const u8) !void {
     }
 }
 
+fn expectError(input: []const u8) !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+
+    {
+        var machine = Machine.Machine.init(allocator);
+        defer machine.deinit();
+
+        const result = machine.execute("console", input);
+
+        if (result != error.InterpreterError) {
+            const v = machine.topOfStack();
+
+            const str = try v.?.toString(allocator);
+            defer allocator.free(str);
+
+            std.log.err("Expected error: got: '{s}'\n", .{str});
+            return error.TestingError;
+        }
+    }
+
+    if (gpa.deinit()) {
+        std.log.err("Failed to deinit allocator\n", .{});
+        return error.TestingError;
+    }
+}
+
 const expectEqual = std.testing.expectEqual;
 
 test "literal bool" {
@@ -131,6 +157,24 @@ test "literal int" {
     try expectExecEqual("-0", "0");
     try expectExecEqual("123", "123");
     try expectExecEqual("-123", "-123");
+}
+
+test "literal list" {
+    try expectExecEqual("[]", "[]");
+    try expectExecEqual("[1]", "[1]");
+    try expectExecEqual("[1, 2, 3]", "[1, 2, 3]");
+    try expectExecEqual("[1, [true, false], 3]", "[1, [true, false], 3]");
+
+    try expectError("[1, 2,");
+    try expectError("[1, 2, 3");
+}
+
+test "parenthesis" {
+    try expectExecEqual("(1)", "1");
+    try expectExecEqual("(((1)))", "1");
+
+    try expectError("(");
+    try expectError("(1");
 }
 
 test "literal unit" {

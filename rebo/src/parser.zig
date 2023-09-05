@@ -24,13 +24,48 @@ pub const Parser = struct {
 
     pub fn factor(self: *Parser) Errors.err!*AST.Expression {
         switch (self.currentTokenKind()) {
-            Lexer.TokenKind.LParen => {
+            Lexer.TokenKind.LBracket => {
                 try self.skipToken();
-                try self.matchSkipToken(Lexer.TokenKind.RParen);
+
+                var es = std.ArrayList(*AST.Expression).init(self.allocator);
+                defer {
+                    for (es.items) |item| {
+                        AST.destroy(self.allocator, item);
+                    }
+                    es.deinit();
+                }
+
+                if (self.currentTokenKind() != Lexer.TokenKind.RBracket) {
+                    try es.append(try self.expression());
+                    while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
+                        try self.skipToken();
+                        try es.append(try self.expression());
+                    }
+                }
+
+                try self.matchSkipToken(Lexer.TokenKind.RBracket);
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .literalVoid = void{} };
+                v.* = AST.Expression{ .literalList = es.toOwnedSlice() };
                 return v;
+            },
+            Lexer.TokenKind.LParen => {
+                try self.skipToken();
+
+                if (self.currentTokenKind() == Lexer.TokenKind.RParen) {
+                    try self.skipToken();
+
+                    const v = try self.allocator.create(AST.Expression);
+                    v.* = AST.Expression{ .literalVoid = void{} };
+                    return v;
+                }
+
+                const e = try self.expression();
+                errdefer AST.destroy(self.allocator, e);
+
+                try self.matchSkipToken(Lexer.TokenKind.RParen);
+
+                return e;
             },
             Lexer.TokenKind.LiteralBoolFalse => {
                 try self.skipToken();
@@ -43,9 +78,7 @@ pub const Parser = struct {
                 try self.skipToken();
 
                 const v = try self.allocator.create(AST.Expression);
-
                 v.* = AST.Expression{ .literalBool = true };
-
                 return v;
             },
             Lexer.TokenKind.LiteralInt => {

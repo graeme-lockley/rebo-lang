@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub const err = error{ InterpreterError, OutOfMemory };
+pub const err = error{ InterpreterError, OutOfMemory, NotYetImplemented };
 
 pub const Position = struct {
     start: usize,

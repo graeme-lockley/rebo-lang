@@ -10,8 +10,11 @@ pub const TokenKind = enum {
     LiteralBoolTrue,
     LiteralInt,
 
+    Comma,
+    LBracket,
     LParen,
     Minus,
+    RBracket,
     RParen,
 };
 
@@ -110,13 +113,25 @@ pub const Lexer = struct {
 
                 self.current = Token{ .kind = keywords.get(text) orelse TokenKind.Identifier, .start = tokenStart, .end = self.offset };
             },
+            '[' => {
+                self.skipCharacter();
+                self.current = Token{ .kind = TokenKind.LBracket, .start = tokenStart, .end = self.offset };
+            },
             '(' => {
                 self.skipCharacter();
                 self.current = Token{ .kind = TokenKind.LParen, .start = tokenStart, .end = self.offset };
             },
+            ']' => {
+                self.skipCharacter();
+                self.current = Token{ .kind = TokenKind.RBracket, .start = tokenStart, .end = self.offset };
+            },
             ')' => {
                 self.skipCharacter();
                 self.current = Token{ .kind = TokenKind.RParen, .start = tokenStart, .end = self.offset };
+            },
+            ',' => {
+                self.skipCharacter();
+                self.current = Token{ .kind = TokenKind.Comma, .start = tokenStart, .end = self.offset };
             },
             '-' => {
                 self.skipCharacter();
@@ -218,13 +233,19 @@ test "literal int" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "- ( )" {
+test "- [ ( , ] )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " - ( ) ");
+    try lexer.initBuffer("console", " - [ ( , ] ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Minus);
     try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.LBracket);
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LParen);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.Comma);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.RBracket);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.RParen);
     try lexer.next();
