@@ -24,31 +24,6 @@ pub const Parser = struct {
 
     pub fn factor(self: *Parser) Errors.err!*AST.Expression {
         switch (self.currentTokenKind()) {
-            Lexer.TokenKind.LBracket => {
-                try self.skipToken();
-
-                var es = std.ArrayList(*AST.Expression).init(self.allocator);
-                defer {
-                    for (es.items) |item| {
-                        AST.destroy(self.allocator, item);
-                    }
-                    es.deinit();
-                }
-
-                if (self.currentTokenKind() != Lexer.TokenKind.RBracket) {
-                    try es.append(try self.expression());
-                    while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
-                        try self.skipToken();
-                        try es.append(try self.expression());
-                    }
-                }
-
-                try self.matchSkipToken(Lexer.TokenKind.RBracket);
-
-                const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .literalList = es.toOwnedSlice() };
-                return v;
-            },
             Lexer.TokenKind.LParen => {
                 try self.skipToken();
 
@@ -96,6 +71,31 @@ pub const Parser = struct {
                 v.* = AST.Expression{ .literalInt = literalInt };
                 try self.skipToken();
 
+                return v;
+            },
+            Lexer.TokenKind.LBracket => {
+                try self.skipToken();
+
+                var es = std.ArrayList(*AST.Expression).init(self.allocator);
+                defer {
+                    for (es.items) |item| {
+                        AST.destroy(self.allocator, item);
+                    }
+                    es.deinit();
+                }
+
+                if (self.currentTokenKind() != Lexer.TokenKind.RBracket) {
+                    try es.append(try self.expression());
+                    while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
+                        try self.skipToken();
+                        try es.append(try self.expression());
+                    }
+                }
+
+                try self.matchSkipToken(Lexer.TokenKind.RBracket);
+
+                const v = try self.allocator.create(AST.Expression);
+                v.* = AST.Expression{ .literalList = es.toOwnedSlice() };
                 return v;
             },
             else => {
