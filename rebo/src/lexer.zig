@@ -146,9 +146,7 @@ pub const Lexer = struct {
     }
 
     fn replaceErr(self: *Lexer, err: Errors.Error) void {
-        if (self.err != null) {
-            self.err.?.deinit();
-        }
+        self.eraseErr();
         self.err = err;
     }
 

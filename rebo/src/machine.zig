@@ -285,6 +285,7 @@ pub const Machine = struct {
     }
 
     pub fn deinit(self: *Machine) void {
+        self.eraseErr();
         self.memoryState.deinit();
     }
 
@@ -334,6 +335,13 @@ pub const Machine = struct {
         // _ = try self.createVoidValue();
     }
 
+    pub fn eraseErr(self: *Machine) void {
+        if (self.err != null) {
+            self.err.?.deinit();
+            self.err = null;
+        }
+    }
+
     pub fn grabErr(self: *Machine) ?Errors.Error {
         const err = self.err;
         self.err = null;
@@ -346,6 +354,7 @@ pub const Machine = struct {
     }
 
     pub fn reset(self: *Machine) void {
+        self.eraseErr();
         self.memoryState.deinit();
         self.memoryState = try initMemoryState(self.memoryState.allocator);
     }

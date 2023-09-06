@@ -61,7 +61,7 @@ pub const Parser = struct {
 
                 const literalInt = std.fmt.parseInt(i32, lexeme, 10) catch {
                     const token = self.currentToken();
-                    self.err = try Errors.literalIntOverflowError(self.allocator, Errors.Position{ .start = token.start, .end = token.end }, lexeme);
+                    self.replaceErr(try Errors.literalIntOverflowError(self.allocator, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
                     return error.InterpreterError;
                 };
 
@@ -109,7 +109,7 @@ pub const Parser = struct {
                     expected[3] = Lexer.TokenKind.LiteralInt;
                     expected[4] = Lexer.TokenKind.LBracket;
 
-                    self.err = try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected);
+                    self.replaceErr(try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
                 }
 
                 return error.InterpreterError;
@@ -150,7 +150,7 @@ pub const Parser = struct {
                 errdefer self.allocator.free(expected);
 
                 expected[0] = kind;
-                self.err = try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected);
+                self.replaceErr(try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
             }
 
             return error.InterpreterError;
@@ -163,9 +163,14 @@ pub const Parser = struct {
         _ = try self.matchToken(kind);
     }
 
+    fn replaceErr(self: *Parser, err: Errors.Error) void {
+        self.eraseErr();
+        self.err = err;
+    }
+
     pub fn eraseErr(self: *Parser) void {
         if (self.err != null) {
-            self.err.deinit(self.allocator);
+            self.err.?.deinit();
             self.err = null;
         }
         self.lexer.eraseErr();
