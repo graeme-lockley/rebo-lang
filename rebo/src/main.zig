@@ -168,14 +168,22 @@ test "literal list" {
     try expectError("[1, 2, 3");
 }
 
+test "literal unit" {
+    try expectExecEqual("()", "()");
+}
+
+test "additive op" {
+    try expectExecEqual("1 + 1", "2");
+    try expectExecEqual("1 + 2 + 3 + 4 + 5", "15");
+
+    try expectExecEqual("1 - 1", "0");
+    try expectExecEqual("1 - 2 + 3 - 4 + 5", "3");
+}
+
 test "parenthesis" {
     try expectExecEqual("(1)", "1");
     try expectExecEqual("(((1)))", "1");
 
     try expectError("(");
     try expectError("(1");
-}
-
-test "literal unit" {
-    try expectExecEqual("()", "()");
 }

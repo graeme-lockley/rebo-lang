@@ -19,7 +19,40 @@ pub const Parser = struct {
     }
 
     pub fn expression(self: *Parser) Errors.err!*AST.Expression {
-        return try self.factor();
+        return try self.additive();
+    }
+
+    pub fn additive(self: *Parser) Errors.err!*AST.Expression {
+        var lhs = try self.factor();
+        errdefer AST.destroy(self.allocator, lhs);
+
+        while (true) {
+            switch (self.currentTokenKind()) {
+                Lexer.TokenKind.Plus => {
+                    try self.skipToken();
+
+                    const rhs = try self.factor();
+                    errdefer AST.destroy(self.allocator, rhs);
+
+                    const v = try self.allocator.create(AST.Expression);
+                    v.* = AST.Expression{ .plus = AST.PlusExpression{ .left = lhs, .right = rhs } };
+                    lhs = v;
+                },
+                Lexer.TokenKind.Minus => {
+                    try self.skipToken();
+
+                    const rhs = try self.factor();
+                    errdefer AST.destroy(self.allocator, rhs);
+
+                    const v = try self.allocator.create(AST.Expression);
+                    v.* = AST.Expression{ .minus = AST.MinusExpression{ .left = lhs, .right = rhs } };
+                    lhs = v;
+                },
+                else => break,
+            }
+        }
+
+        return lhs;
     }
 
     pub fn factor(self: *Parser) Errors.err!*AST.Expression {

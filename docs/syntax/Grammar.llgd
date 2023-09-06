@@ -5,7 +5,11 @@ Module
     ;
 
 Expression
-    : Factor
+    : Additive
+    ;
+
+Additive
+    : Factor {["+" | "-"] Factor}
     ;
 
 Factor

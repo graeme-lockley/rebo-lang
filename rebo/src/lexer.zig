@@ -118,6 +118,10 @@ pub const Lexer = struct {
                 self.skipCharacter();
                 self.current = Token{ .kind = TokenKind.Comma, .start = tokenStart, .end = self.offset };
             },
+            '+' => {
+                self.skipCharacter();
+                self.current = Token{ .kind = TokenKind.Plus, .start = tokenStart, .end = self.offset };
+            },
             '-' => {
                 self.skipCharacter();
                 while (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
@@ -216,10 +220,12 @@ test "literal int" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "- [ ( , ] )" {
+test "+ - [ ( , ] )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " - [ ( , ] ) ");
+    try lexer.initBuffer("console", " + - [ ( , ] ) ");
 
+    try expectEqual(lexer.current.kind, TokenKind.Plus);
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Minus);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LBracket);

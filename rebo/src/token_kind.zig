@@ -10,6 +10,7 @@ pub const TokenKind = enum {
     LBracket,
     LParen,
     Minus,
+    Plus,
     RBracket,
     RParen,
 
@@ -25,6 +26,7 @@ pub const TokenKind = enum {
             TokenKind.LBracket => return "'['",
             TokenKind.LParen => return "'('",
             TokenKind.Minus => return "'-'",
+            TokenKind.Plus => return "'+'",
             TokenKind.RBracket => return "']'",
             TokenKind.RParen => return "')'",
         }

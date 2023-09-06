@@ -5,6 +5,18 @@ pub const Expression = union(enum) {
     literalInt: i32,
     literalList: []*Expression,
     literalVoid: void,
+    minus: MinusExpression,
+    plus: PlusExpression,
+};
+
+pub const MinusExpression = struct {
+    left: *Expression,
+    right: *Expression,
+};
+
+pub const PlusExpression = struct {
+    left: *Expression,
+    right: *Expression,
 };
 
 pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
@@ -15,6 +27,14 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
                 destroy(allocator, v);
             }
             allocator.free(expr.*.literalList);
+        },
+        .minus => {
+            destroy(allocator, expr.*.minus.left);
+            destroy(allocator, expr.*.minus.right);
+        },
+        .plus => {
+            destroy(allocator, expr.*.plus.left);
+            destroy(allocator, expr.*.plus.right);
         },
     }
 
