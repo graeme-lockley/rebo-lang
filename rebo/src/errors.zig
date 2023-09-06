@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const TokenKind = @import("./token_kind.zig").TokenKind;
+
 pub const err = error{ InterpreterError, OutOfMemory, NotYetImplemented };
 
 pub const Position = struct {
@@ -21,7 +23,33 @@ pub const LexicalError = struct {
     }
 };
 
-pub const ParserError = struct { position: Position, lexeme: []const u8 };
+pub const ParserError = struct {
+    allocator: std.mem.Allocator,
+    position: Position,
+    lexeme: []const u8,
+    expected: []const TokenKind,
+    pub fn deinit(self: ParserError) void {
+        self.allocator.free(self.lexeme);
+        self.allocator.free(self.expected);
+    }
+
+    pub fn print(self: ParserError) !void {
+        var buffer = std.ArrayList(u8).init(self.allocator);
+        defer buffer.deinit();
+
+        try std.fmt.format(buffer.writer(), "Parser Error: {d}-{d}: Found \"{s}\" but expected: ", .{ self.position.start, self.position.end, self.lexeme });
+        for (self.expected) |expected, i| {
+            if (i > 0) {
+                try buffer.appendSlice(", ");
+            }
+            try buffer.appendSlice(expected.toString());
+        }
+
+        const msg = buffer.toOwnedSlice();
+        std.log.err("{s}", .{msg});
+        self.allocator.free(msg);
+    }
+};
 
 pub const Error = union(enum) {
     lexicalError: LexicalError,
@@ -34,12 +62,12 @@ pub const Error = union(enum) {
                 self.lexicalError.deinit();
             },
             .parserError => {
-                // self.parserError.deinit();
+                self.parserError.deinit();
             },
         }
     }
 
-    pub fn print(self: Error) void {
+    pub fn print(self: Error) !void {
         switch (self) {
             .lexicalError => {
                 self.lexicalError.print("Lexical Error");
@@ -47,9 +75,12 @@ pub const Error = union(enum) {
             .literalIntOverflowError => {
                 self.lexicalError.print("Literal Int Overflow Error");
             },
-            else => {
-                // std.log.err("Unknown error: {}", self.*);
+            .parserError => {
+                try self.parserError.print();
             },
+            // else => {
+            //     // std.log.err("Unknown error: {}", self.*);
+            // },
         }
     }
 };
@@ -67,5 +98,14 @@ pub fn literalIntOverflowError(allocator: std.mem.Allocator, position: Position,
         .allocator = allocator,
         .position = position,
         .lexeme = try allocator.dupe(u8, lexeme),
+    } };
+}
+
+pub fn parserError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8, expected: []const TokenKind) !Error {
+    return Error{ .parserError = .{
+        .allocator = allocator,
+        .position = position,
+        .lexeme = try allocator.dupe(u8, lexeme),
+        .expected = expected,
     } };
 }

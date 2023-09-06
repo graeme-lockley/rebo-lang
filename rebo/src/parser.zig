@@ -99,6 +99,19 @@ pub const Parser = struct {
                 return v;
             },
             else => {
+                {
+                    var expected = try self.allocator.alloc(Lexer.TokenKind, 5);
+                    errdefer self.allocator.free(expected);
+
+                    expected[0] = Lexer.TokenKind.RParen;
+                    expected[1] = Lexer.TokenKind.LiteralBoolFalse;
+                    expected[2] = Lexer.TokenKind.LiteralBoolTrue;
+                    expected[3] = Lexer.TokenKind.LiteralInt;
+                    expected[4] = Lexer.TokenKind.LBracket;
+
+                    self.err = try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected);
+                }
+
                 return error.InterpreterError;
             },
         }
@@ -110,6 +123,10 @@ pub const Parser = struct {
 
     fn currentTokenKind(self: *Parser) Lexer.TokenKind {
         return self.lexer.current.kind;
+    }
+
+    fn currentTokenLexeme(self: *Parser) []const u8 {
+        return self.lexer.lexeme(self.lexer.current);
     }
 
     fn nextToken(self: *Parser) Errors.err!Lexer.Token {
@@ -128,6 +145,14 @@ pub const Parser = struct {
         const token = try self.nextToken();
 
         if (token.kind != kind) {
+            {
+                var expected = try self.allocator.alloc(Lexer.TokenKind, 1);
+                errdefer self.allocator.free(expected);
+
+                expected[0] = kind;
+                self.err = try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected);
+            }
+
             return error.InterpreterError;
         }
 

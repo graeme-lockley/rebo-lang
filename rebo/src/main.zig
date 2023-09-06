@@ -64,8 +64,7 @@ fn errorHandler(err: anyerror, machine: *Machine.Machine) void {
     if (e == null) {
         std.debug.print("Error: {}\n", .{err});
     } else {
-        e.?.print();
-        std.log.err("\n", .{});
+        e.?.print() catch {};
         e.?.deinit();
     }
 }

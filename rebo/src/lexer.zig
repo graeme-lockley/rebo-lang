@@ -1,22 +1,7 @@
 const std = @import("std");
 
 const Errors = @import("./errors.zig");
-
-pub const TokenKind = enum {
-    EOS,
-    Invalid,
-    Identifier,
-    LiteralBoolFalse,
-    LiteralBoolTrue,
-    LiteralInt,
-
-    Comma,
-    LBracket,
-    LParen,
-    Minus,
-    RBracket,
-    RParen,
-};
+pub const TokenKind = @import("./token_kind.zig").TokenKind;
 
 pub const Token = struct { kind: TokenKind, start: usize, end: usize };
 
