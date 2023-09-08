@@ -242,6 +242,26 @@ fn gc(state: *MemoryState) void {
 
 fn evalExpr(machine: *Machine, e: *AST.Expression) !void {
     switch (e.*) {
+        .binaryOp => {
+            try evalExpr(machine, e.*.binaryOp.left);
+            try evalExpr(machine, e.*.binaryOp.right);
+
+            const right = machine.pop();
+            const left = machine.pop();
+
+            if (left.v != ValueValue.int or right.v != ValueValue.int) {
+                return error.InterpreterError;
+            }
+
+            const result = switch (e.*.binaryOp.op) {
+                AST.Operator.Plus => left.v.int + right.v.int,
+                AST.Operator.Minus => left.v.int - right.v.int,
+                AST.Operator.Times => left.v.int * right.v.int,
+                AST.Operator.Divide => left.v.int * right.v.int,
+            };
+
+            try machine.createIntValue(result);
+        },
         .literalBool => {
             try machine.createBoolValue(e.literalBool);
         },
@@ -257,36 +277,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) !void {
         },
         .literalVoid => {
             try machine.createVoidValue();
-        },
-        .minus => {
-            try evalExpr(machine, e.*.minus.left);
-            try evalExpr(machine, e.*.minus.right);
-
-            const right = machine.pop();
-            const left = machine.pop();
-
-            if (left.v != ValueValue.int or right.v != ValueValue.int) {
-                return error.InterpreterError;
-            }
-
-            const result = left.v.int - right.v.int;
-
-            try machine.createIntValue(result);
-        },
-        .plus => {
-            try evalExpr(machine, e.*.plus.left);
-            try evalExpr(machine, e.*.plus.right);
-
-            const right = machine.pop();
-            const left = machine.pop();
-
-            if (left.v != ValueValue.int or right.v != ValueValue.int) {
-                return error.InterpreterError;
-            }
-
-            const result = left.v.int + right.v.int;
-
-            try machine.createIntValue(result);
         },
     }
 }

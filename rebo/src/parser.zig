@@ -35,7 +35,7 @@ pub const Parser = struct {
                     errdefer AST.destroy(self.allocator, rhs);
 
                     const v = try self.allocator.create(AST.Expression);
-                    v.* = AST.Expression{ .plus = AST.PlusExpression{ .left = lhs, .right = rhs } };
+                    v.* = AST.Expression{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Plus } };
                     lhs = v;
                 },
                 Lexer.TokenKind.Minus => {
@@ -45,7 +45,7 @@ pub const Parser = struct {
                     errdefer AST.destroy(self.allocator, rhs);
 
                     const v = try self.allocator.create(AST.Expression);
-                    v.* = AST.Expression{ .minus = AST.MinusExpression{ .left = lhs, .right = rhs } };
+                    v.* = AST.Expression{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Minus } };
                     lhs = v;
                 },
                 else => break,
