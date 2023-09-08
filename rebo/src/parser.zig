@@ -35,7 +35,10 @@ pub const Parser = struct {
                     errdefer AST.destroy(self.allocator, rhs);
 
                     const v = try self.allocator.create(AST.Expression);
-                    v.* = AST.Expression{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Plus } };
+                    v.* = AST.Expression{
+                        .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Plus } },
+                        .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
+                    };
                     lhs = v;
                 },
                 Lexer.TokenKind.Minus => {
@@ -45,7 +48,10 @@ pub const Parser = struct {
                     errdefer AST.destroy(self.allocator, rhs);
 
                     const v = try self.allocator.create(AST.Expression);
-                    v.* = AST.Expression{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Minus } };
+                    v.* = AST.Expression{
+                        .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Minus } },
+                        .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
+                    };
                     lhs = v;
                 },
                 else => break,
@@ -58,13 +64,13 @@ pub const Parser = struct {
     pub fn factor(self: *Parser) Errors.err!*AST.Expression {
         switch (self.currentTokenKind()) {
             Lexer.TokenKind.LParen => {
-                try self.skipToken();
+                const lparen = try self.nextToken();
 
                 if (self.currentTokenKind() == Lexer.TokenKind.RParen) {
-                    try self.skipToken();
+                    const rparen = try self.nextToken();
 
                     const v = try self.allocator.create(AST.Expression);
-                    v.* = AST.Expression{ .literalVoid = void{} };
+                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalVoid = void{} }, .position = Errors.Position{ .start = lparen.start, .end = rparen.end } };
                     return v;
                 }
 
@@ -76,17 +82,17 @@ pub const Parser = struct {
                 return e;
             },
             Lexer.TokenKind.LiteralBoolFalse => {
-                try self.skipToken();
+                const token = try self.nextToken();
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .literalBool = false };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalBool = false }, .position = Errors.Position{ .start = token.start, .end = token.end } };
                 return v;
             },
             Lexer.TokenKind.LiteralBoolTrue => {
-                try self.skipToken();
+                const token = try self.nextToken();
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .literalBool = true };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalBool = true }, .position = Errors.Position{ .start = token.start, .end = token.end } };
                 return v;
             },
             Lexer.TokenKind.LiteralInt => {
@@ -101,13 +107,13 @@ pub const Parser = struct {
                 const v = try self.allocator.create(AST.Expression);
                 errdefer AST.destroy(self.allocator, v);
 
-                v.* = AST.Expression{ .literalInt = literalInt };
-                try self.skipToken();
+                const token = try self.nextToken();
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalInt = literalInt }, .position = Errors.Position{ .start = token.start, .end = token.end } };
 
                 return v;
             },
             Lexer.TokenKind.LBracket => {
-                try self.skipToken();
+                const lbracket = try self.nextToken();
 
                 var es = std.ArrayList(*AST.Expression).init(self.allocator);
                 defer {
@@ -125,10 +131,10 @@ pub const Parser = struct {
                     }
                 }
 
-                try self.matchSkipToken(Lexer.TokenKind.RBracket);
+                const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .literalList = es.toOwnedSlice() };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalList = es.toOwnedSlice() }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
                 return v;
             },
             else => {

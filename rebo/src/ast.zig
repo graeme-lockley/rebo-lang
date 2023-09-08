@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const Errors = @import("./errors.zig");
+
 pub const Operator = enum {
     Plus,
     Minus,
@@ -7,7 +9,12 @@ pub const Operator = enum {
     Divide,
 };
 
-pub const Expression = union(enum) {
+pub const Expression = struct {
+    kind: ExpressionKind,
+    position: Errors.Position,
+};
+
+pub const ExpressionKind = union(enum) {
     binaryOp: BinaryOpExpression,
     literalBool: bool,
     literalInt: i32,
@@ -22,17 +29,17 @@ pub const BinaryOpExpression = struct {
 };
 
 pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
-    switch (expr.*) {
+    switch (expr.*.kind) {
         .binaryOp => {
-            destroy(allocator, expr.*.binaryOp.left);
-            destroy(allocator, expr.*.binaryOp.right);
+            destroy(allocator, expr.*.kind.binaryOp.left);
+            destroy(allocator, expr.*.kind.binaryOp.right);
         },
         .literalBool, .literalInt, .literalVoid => {},
         .literalList => {
-            for (expr.literalList) |v| {
+            for (expr.*.kind.literalList) |v| {
                 destroy(allocator, v);
             }
-            allocator.free(expr.*.literalList);
+            allocator.free(expr.*.kind.literalList);
         },
     }
 

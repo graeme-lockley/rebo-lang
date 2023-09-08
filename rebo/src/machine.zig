@@ -241,10 +241,10 @@ fn gc(state: *MemoryState) void {
 }
 
 fn evalExpr(machine: *Machine, e: *AST.Expression) !void {
-    switch (e.*) {
+    switch (e.*.kind) {
         .binaryOp => {
-            try evalExpr(machine, e.*.binaryOp.left);
-            try evalExpr(machine, e.*.binaryOp.right);
+            try evalExpr(machine, e.*.kind.binaryOp.left);
+            try evalExpr(machine, e.*.kind.binaryOp.right);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -253,7 +253,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) !void {
                 return error.InterpreterError;
             }
 
-            const result = switch (e.*.binaryOp.op) {
+            const result = switch (e.*.kind.binaryOp.op) {
                 AST.Operator.Plus => left.v.int + right.v.int,
                 AST.Operator.Minus => left.v.int - right.v.int,
                 AST.Operator.Times => left.v.int * right.v.int,
@@ -263,17 +263,17 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) !void {
             try machine.createIntValue(result);
         },
         .literalBool => {
-            try machine.createBoolValue(e.literalBool);
+            try machine.createBoolValue(e.kind.literalBool);
         },
         .literalInt => {
-            try machine.createIntValue(e.literalInt);
+            try machine.createIntValue(e.kind.literalInt);
         },
         .literalList => {
-            for (e.*.literalList) |v| {
+            for (e.*.kind.literalList) |v| {
                 try evalExpr(machine, v);
             }
 
-            try machine.createListValue(e.*.literalList.len);
+            try machine.createListValue(e.*.kind.literalList.len);
         },
         .literalVoid => {
             try machine.createVoidValue();
