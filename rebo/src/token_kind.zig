@@ -13,6 +13,8 @@ pub const TokenKind = enum {
     Plus,
     RBracket,
     RParen,
+    Slash,
+    Star,
 
     pub fn toString(self: TokenKind) []const u8 {
         switch (self) {
@@ -29,6 +31,8 @@ pub const TokenKind = enum {
             TokenKind.Plus => return "'+'",
             TokenKind.RBracket => return "']'",
             TokenKind.RParen => return "')'",
+            TokenKind.Slash => return "'/'",
+            TokenKind.Star => return "'*'",
         }
     }
 };

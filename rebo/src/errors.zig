@@ -10,6 +10,19 @@ pub const Position = struct {
     end: usize,
 };
 
+pub const DivideByZeroError = struct {
+    allocator: std.mem.Allocator,
+    position: Position,
+
+    pub fn deinit(self: DivideByZeroError) void {
+        _ = self;
+    }
+
+    pub fn print(self: DivideByZeroError) void {
+        std.log.err("Divide By Zero: {d}-{d}", .{ self.position.start, self.position.end });
+    }
+};
+
 pub const LexicalError = struct {
     allocator: std.mem.Allocator,
     position: Position,
@@ -70,6 +83,7 @@ pub const IncompatibleOperandTypesError = struct {
 };
 
 pub const Error = union(enum) {
+    divideByZero: DivideByZeroError,
     incompatibleOperandTypesError: IncompatibleOperandTypesError,
     lexicalError: LexicalError,
     literalIntOverflowError: LexicalError,
@@ -77,6 +91,9 @@ pub const Error = union(enum) {
 
     pub fn deinit(self: Error) void {
         switch (self) {
+            .divideByZero => {
+                self.divideByZero.deinit();
+            },
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.deinit();
             },
@@ -91,6 +108,9 @@ pub const Error = union(enum) {
 
     pub fn print(self: Error) !void {
         switch (self) {
+            .divideByZero => {
+                self.divideByZero.print();
+            },
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.print();
             },
@@ -110,6 +130,10 @@ pub const Error = union(enum) {
     }
 };
 
+pub fn divideByZeroError(allocator: std.mem.Allocator, position: Position) Error {
+    return Error{ .divideByZero = .{ .allocator = allocator, .position = position } };
+}
+
 pub fn incompatibleOperandTypesError(
     allocator: std.mem.Allocator,
     position: Position,
@@ -125,6 +149,7 @@ pub fn incompatibleOperandTypesError(
         .right = right,
     } };
 }
+
 pub fn lexicalError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {
     return Error{ .lexicalError = .{
         .allocator = allocator,

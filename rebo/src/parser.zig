@@ -23,7 +23,7 @@ pub const Parser = struct {
     }
 
     pub fn additive(self: *Parser) Errors.err!*AST.Expression {
-        var lhs = try self.factor();
+        var lhs = try self.multiplicative();
         errdefer AST.destroy(self.allocator, lhs);
 
         while (true) {
@@ -32,11 +32,40 @@ pub const Parser = struct {
             if (kind == Lexer.TokenKind.Plus or kind == Lexer.TokenKind.Minus) {
                 try self.skipToken();
 
-                const rhs = try self.factor();
+                const rhs = try self.multiplicative();
                 errdefer AST.destroy(self.allocator, rhs);
 
                 const v = try self.allocator.create(AST.Expression);
                 const op = if (kind == Lexer.TokenKind.Plus) AST.Operator.Plus else AST.Operator.Minus;
+
+                v.* = AST.Expression{
+                    .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } },
+                    .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
+                };
+                lhs = v;
+            } else {
+                break;
+            }
+        }
+
+        return lhs;
+    }
+
+    pub fn multiplicative(self: *Parser) Errors.err!*AST.Expression {
+        var lhs = try self.factor();
+        errdefer AST.destroy(self.allocator, lhs);
+
+        while (true) {
+            const kind = self.currentTokenKind();
+
+            if (kind == Lexer.TokenKind.Star or kind == Lexer.TokenKind.Slash) {
+                try self.skipToken();
+
+                const rhs = try self.factor();
+                errdefer AST.destroy(self.allocator, rhs);
+
+                const v = try self.allocator.create(AST.Expression);
+                const op = if (kind == Lexer.TokenKind.Star) AST.Operator.Times else AST.Operator.Divide;
 
                 v.* = AST.Expression{
                     .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } },

@@ -178,6 +178,22 @@ test "additive op" {
 
     try expectExecEqual("1 - 1", "0");
     try expectExecEqual("1 - 2 + 3 - 4 + 5", "3");
+
+    try expectError("1 + true");
+    try expectError("1 - true");
+}
+
+test "multiplicative op" {
+    try expectExecEqual("1 * 1", "1");
+    try expectExecEqual("1 * 2 * 3 * 4 * 5", "120");
+
+    try expectExecEqual("100 / 2", "50");
+    try expectExecEqual("100 / 10 / 2", "5");
+    try expectExecEqual("100 / (10 / 2)", "20");
+
+    try expectError("1 * true");
+    try expectError("1 / true");
+    try expectError("100 / (10 / 0)");
 }
 
 test "parenthesis" {

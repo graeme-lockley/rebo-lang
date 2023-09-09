@@ -9,13 +9,36 @@ Expression
     ;
 
 Additive
-    : Factor {["+" | "-"] Factor}
+    : Multiplicative {["+" | "-"] Multiplicative}
+    ;
+
+Multiplicative
+    : Qualifier {["*" | "/"] Qualifier}
+    ;
+
+Qualifier
+    : Factor { FactorSuffix }
+    ;
+
+FactorSuffix
+    : "(" [Expression {"," Expression}] ")"
+    | "." Identifier
     ;
 
 Factor
     : "(" [Expression] ")"
+    | Identifier
     | "false"
     | "true"
     | LiteralInt
     | "[" [Expression {"," Expression}] "]"
+    | "fn" "(" Arguments ")" "=" Expression
+    ;
+
+Arguments
+    : Argument {"," Argument}
+    ;
+
+Argument
+    : Identifier ["=" Expression]
     ;

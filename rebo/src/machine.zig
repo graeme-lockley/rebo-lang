@@ -188,46 +188,57 @@ fn gc(state: *MemoryState) void {
     }
 }
 
-fn evalExpr(machine: *Machine, e: *AST.Expression) !void {
+fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
     switch (e.*.kind) {
         .binaryOp => {
-            try evalExpr(machine, e.*.kind.binaryOp.left);
-            try evalExpr(machine, e.*.kind.binaryOp.right);
+            if (evalExpr(machine, e.kind.binaryOp.left)) return true;
+            if (evalExpr(machine, e.*.kind.binaryOp.right)) return true;
 
             const right = machine.pop();
             const left = machine.pop();
 
             if (left.v != ValueValue.IntKind or right.v != ValueValue.IntKind) {
                 machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.*.position, e.*.kind.binaryOp.op, left.v, right.v));
-                return error.InterpreterError;
+
+                return true;
             }
 
             const result = switch (e.*.kind.binaryOp.op) {
                 AST.Operator.Plus => left.v.IntKind + right.v.IntKind,
                 AST.Operator.Minus => left.v.IntKind - right.v.IntKind,
                 AST.Operator.Times => left.v.IntKind * right.v.IntKind,
-                AST.Operator.Divide => left.v.IntKind * right.v.IntKind,
+                AST.Operator.Divide => div: {
+                    if (right.v.IntKind == 0) {
+                        machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, e.*.position));
+
+                        return true;
+                    }
+
+                    break :div @divTrunc(left.v.IntKind, right.v.IntKind);
+                },
             };
 
-            try machine.createIntValue(result);
+            machine.createIntValue(result) catch return true;
         },
         .literalBool => {
-            try machine.createBoolValue(e.kind.literalBool);
+            machine.createBoolValue(e.kind.literalBool) catch return true;
         },
         .literalInt => {
-            try machine.createIntValue(e.kind.literalInt);
+            machine.createIntValue(e.kind.literalInt) catch return true;
         },
         .literalList => {
             for (e.*.kind.literalList) |v| {
-                try evalExpr(machine, v);
+                if (evalExpr(machine, v)) return true;
             }
 
-            try machine.createListValue(e.*.kind.literalList.len);
+            machine.createListValue(e.*.kind.literalList.len) catch return true;
         },
         .literalVoid => {
-            try machine.createVoidValue();
+            machine.createVoidValue() catch return true;
         },
     }
+
+    return false;
 }
 
 fn initMemoryState(allocator: std.mem.Allocator) !MemoryState {
@@ -279,7 +290,9 @@ pub const Machine = struct {
     }
 
     pub fn eval(self: *Machine, e: *AST.Expression) !void {
-        try evalExpr(self, e);
+        if (evalExpr(self, e)) {
+            return error.InterpreterError;
+        }
     }
 
     pub fn execute(self: *Machine, name: []const u8, buffer: []const u8) !void {
