@@ -5,61 +5,9 @@ const Errors = @import("./errors.zig");
 const Lexer = @import("./lexer.zig");
 const Parser = @import("./parser.zig");
 
-const Colour = enum(u2) {
-    Black = 0,
-    White = 1,
-};
-
-pub const Value = struct {
-    colour: Colour,
-    next: ?*Value,
-
-    v: ValueValue,
-
-    pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
-        switch (self.v) {
-            .bool, .int, .void => {},
-            .list => {
-                allocator.free(self.v.list);
-            },
-        }
-    }
-
-    fn appendValue(self: *Value, buffer: *std.ArrayList(u8)) !void {
-        switch (self.v) {
-            .bool => try buffer.appendSlice(if (self.v.bool) "true" else "false"),
-            .int => try std.fmt.format(buffer.writer(), "{d}", .{self.v.int}),
-            .list => {
-                try buffer.append('[');
-                for (self.v.list) |v, i| {
-                    if (i != 0) {
-                        try buffer.appendSlice(", ");
-                    }
-
-                    try v.appendValue(buffer);
-                }
-                try buffer.append(']');
-            },
-            .void => try buffer.appendSlice("()"),
-        }
-    }
-
-    pub fn toString(self: *Value, allocator: std.mem.Allocator) ![]u8 {
-        var buffer = std.ArrayList(u8).init(allocator);
-        defer buffer.deinit();
-
-        try self.appendValue(&buffer);
-
-        return buffer.toOwnedSlice();
-    }
-};
-
-pub const ValueValue = union(enum) {
-    bool: bool,
-    int: i32,
-    list: []*Value,
-    void: void,
-};
+pub const Value = @import("./value.zig").Value;
+const ValueValue = @import("./value.zig").ValueValue;
+const Colour = @import("./value.zig").Colour;
 
 pub const MemoryState = struct {
     allocator: std.mem.Allocator,
@@ -87,11 +35,11 @@ pub const MemoryState = struct {
     }
 
     pub fn pushBoolValue(self: *MemoryState, b: bool) !void {
-        _ = try self.pushValue(ValueValue{ .bool = b });
+        _ = try self.pushValue(ValueValue{ .BoolKind = b });
     }
 
     pub fn pushIntValue(self: *MemoryState, v: i32) !void {
-        _ = try self.pushValue(ValueValue{ .int = v });
+        _ = try self.pushValue(ValueValue{ .IntKind = v });
     }
 
     pub fn pushListValue(self: *MemoryState, size: usize) !void {
@@ -108,11 +56,11 @@ pub const MemoryState = struct {
             }
         }
 
-        _ = try self.pushValue(ValueValue{ .list = items });
+        _ = try self.pushValue(ValueValue{ .ListKind = items });
     }
 
     pub fn pushUnitValue(self: *MemoryState) !void {
-        _ = try self.pushValue(ValueValue{ .void = void{} });
+        _ = try self.pushValue(ValueValue{ .VoidKind = void{} });
     }
 
     pub fn pop(self: *MemoryState) *Value {
@@ -187,9 +135,9 @@ fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
     v.colour = colour;
 
     switch (v.v) {
-        .bool, .int, .void => {},
-        .list => {
-            for (v.v.list) |item| {
+        .BoolKind, .IntKind, .VoidKind => {},
+        .ListKind => {
+            for (v.v.ListKind) |item| {
                 mark(state, item, colour);
             }
         },
@@ -249,15 +197,16 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) !void {
             const right = machine.pop();
             const left = machine.pop();
 
-            if (left.v != ValueValue.int or right.v != ValueValue.int) {
+            if (left.v != ValueValue.IntKind or right.v != ValueValue.IntKind) {
+                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.*.position, e.*.kind.binaryOp.op, left.v, right.v));
                 return error.InterpreterError;
             }
 
             const result = switch (e.*.kind.binaryOp.op) {
-                AST.Operator.Plus => left.v.int + right.v.int,
-                AST.Operator.Minus => left.v.int - right.v.int,
-                AST.Operator.Times => left.v.int * right.v.int,
-                AST.Operator.Divide => left.v.int * right.v.int,
+                AST.Operator.Plus => left.v.IntKind + right.v.IntKind,
+                AST.Operator.Minus => left.v.IntKind - right.v.IntKind,
+                AST.Operator.Times => left.v.IntKind * right.v.IntKind,
+                AST.Operator.Divide => left.v.IntKind * right.v.IntKind,
             };
 
             try machine.createIntValue(result);
@@ -353,6 +302,11 @@ pub const Machine = struct {
 
         try self.eval(ast);
         // _ = try self.createVoidValue();
+    }
+
+    fn replaceErr(self: *Machine, err: Errors.Error) void {
+        self.eraseErr();
+        self.err = err;
     }
 
     pub fn eraseErr(self: *Machine) void {

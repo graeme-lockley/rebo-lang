@@ -1,7 +1,8 @@
 const std = @import("std");
 
+const AST = @import("./ast.zig");
 const TokenKind = @import("./token_kind.zig").TokenKind;
-
+const ValueKind = @import("./value.zig").ValueKind;
 pub const err = error{ InterpreterError, OutOfMemory, NotYetImplemented };
 
 pub const Position = struct {
@@ -28,6 +29,7 @@ pub const ParserError = struct {
     position: Position,
     lexeme: []const u8,
     expected: []const TokenKind,
+
     pub fn deinit(self: ParserError) void {
         self.allocator.free(self.lexeme);
         self.allocator.free(self.expected);
@@ -51,13 +53,33 @@ pub const ParserError = struct {
     }
 };
 
+pub const IncompatibleOperandTypesError = struct {
+    allocator: std.mem.Allocator,
+    position: Position,
+    op: AST.Operator,
+    left: ValueKind,
+    right: ValueKind,
+
+    pub fn deinit(self: IncompatibleOperandTypesError) void {
+        _ = self;
+    }
+
+    pub fn print(self: IncompatibleOperandTypesError) void {
+        std.log.err("Incompatible Operands: {d}-{d}: '{s}' is incompatible with {s} and {s} operands", .{ self.position.start, self.position.end, self.op.toString(), self.left.toString(), self.right.toString() });
+    }
+};
+
 pub const Error = union(enum) {
+    incompatibleOperandTypesError: IncompatibleOperandTypesError,
     lexicalError: LexicalError,
     literalIntOverflowError: LexicalError,
     parserError: ParserError,
 
     pub fn deinit(self: Error) void {
         switch (self) {
+            .incompatibleOperandTypesError => {
+                self.incompatibleOperandTypesError.deinit();
+            },
             .lexicalError, .literalIntOverflowError => {
                 self.lexicalError.deinit();
             },
@@ -69,6 +91,9 @@ pub const Error = union(enum) {
 
     pub fn print(self: Error) !void {
         switch (self) {
+            .incompatibleOperandTypesError => {
+                self.incompatibleOperandTypesError.print();
+            },
             .lexicalError => {
                 self.lexicalError.print("Lexical Error");
             },
@@ -85,6 +110,21 @@ pub const Error = union(enum) {
     }
 };
 
+pub fn incompatibleOperandTypesError(
+    allocator: std.mem.Allocator,
+    position: Position,
+    op: AST.Operator,
+    left: ValueKind,
+    right: ValueKind,
+) Error {
+    return Error{ .incompatibleOperandTypesError = .{
+        .allocator = allocator,
+        .position = position,
+        .op = op,
+        .left = left,
+        .right = right,
+    } };
+}
 pub fn lexicalError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {
     return Error{ .lexicalError = .{
         .allocator = allocator,

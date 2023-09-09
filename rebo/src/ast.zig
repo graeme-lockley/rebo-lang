@@ -7,6 +7,15 @@ pub const Operator = enum {
     Minus,
     Times,
     Divide,
+
+    pub fn toString(self: Operator) []const u8 {
+        return switch (self) {
+            Operator.Plus => "+",
+            Operator.Minus => "-",
+            Operator.Times => "-",
+            Operator.Divide => "/",
+        };
+    }
 };
 
 pub const Expression = struct {
