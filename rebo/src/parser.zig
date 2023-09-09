@@ -27,34 +27,24 @@ pub const Parser = struct {
         errdefer AST.destroy(self.allocator, lhs);
 
         while (true) {
-            switch (self.currentTokenKind()) {
-                Lexer.TokenKind.Plus => {
-                    try self.skipToken();
+            const kind = self.currentTokenKind();
 
-                    const rhs = try self.factor();
-                    errdefer AST.destroy(self.allocator, rhs);
+            if (kind == Lexer.TokenKind.Plus or kind == Lexer.TokenKind.Minus) {
+                try self.skipToken();
 
-                    const v = try self.allocator.create(AST.Expression);
-                    v.* = AST.Expression{
-                        .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Plus } },
-                        .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
-                    };
-                    lhs = v;
-                },
-                Lexer.TokenKind.Minus => {
-                    try self.skipToken();
+                const rhs = try self.factor();
+                errdefer AST.destroy(self.allocator, rhs);
 
-                    const rhs = try self.factor();
-                    errdefer AST.destroy(self.allocator, rhs);
+                const v = try self.allocator.create(AST.Expression);
+                const op = if (kind == Lexer.TokenKind.Plus) AST.Operator.Plus else AST.Operator.Minus;
 
-                    const v = try self.allocator.create(AST.Expression);
-                    v.* = AST.Expression{
-                        .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Minus } },
-                        .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
-                    };
-                    lhs = v;
-                },
-                else => break,
+                v.* = AST.Expression{
+                    .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } },
+                    .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
+                };
+                lhs = v;
+            } else {
+                break;
             }
         }
 
