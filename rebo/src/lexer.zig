@@ -102,6 +102,10 @@ pub const Lexer = struct {
                 self.skipCharacter();
                 self.current = Token{ .kind = TokenKind.LBracket, .start = tokenStart, .end = self.offset };
             },
+            '{' => {
+                self.skipCharacter();
+                self.current = Token{ .kind = TokenKind.LCurly, .start = tokenStart, .end = self.offset };
+            },
             '(' => {
                 self.skipCharacter();
                 self.current = Token{ .kind = TokenKind.LParen, .start = tokenStart, .end = self.offset };
@@ -110,6 +114,10 @@ pub const Lexer = struct {
                 self.skipCharacter();
                 self.current = Token{ .kind = TokenKind.RBracket, .start = tokenStart, .end = self.offset };
             },
+            '}' => {
+                self.skipCharacter();
+                self.current = Token{ .kind = TokenKind.RCurly, .start = tokenStart, .end = self.offset };
+            },
             ')' => {
                 self.skipCharacter();
                 self.current = Token{ .kind = TokenKind.RParen, .start = tokenStart, .end = self.offset };
@@ -117,6 +125,10 @@ pub const Lexer = struct {
             ',' => {
                 self.skipCharacter();
                 self.current = Token{ .kind = TokenKind.Comma, .start = tokenStart, .end = self.offset };
+            },
+            ':' => {
+                self.skipCharacter();
+                self.current = Token{ .kind = TokenKind.Colon, .start = tokenStart, .end = self.offset };
             },
             '+' => {
                 self.skipCharacter();
@@ -228,9 +240,9 @@ test "literal int" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / [ ( , ] )" {
+test "+ - * / [ { ( , : ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / [ ( , ] ) ");
+    try lexer.initBuffer("console", " + - * / [ { ( , : ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -242,11 +254,17 @@ test "+ - * / [ ( , ] )" {
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LBracket);
     try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.LCurly);
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LParen);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Comma);
     try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.Colon);
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.RBracket);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.RCurly);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.RParen);
     try lexer.next();

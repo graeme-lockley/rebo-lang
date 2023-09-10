@@ -14,8 +14,15 @@ pub const Value = struct {
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         switch (self.v) {
             .BoolKind, .IntKind, .VoidKind => {},
-            .ListKind => {
-                allocator.free(self.v.ListKind);
+            .SequenceKind => {
+                allocator.free(self.v.SequenceKind);
+            },
+            .RecordKind => {
+                var iterator = self.v.RecordKind.keyIterator();
+                while (iterator.next()) |keyPtr| {
+                    allocator.free(keyPtr.*);
+                }
+                self.v.RecordKind.deinit();
             },
         }
     }
@@ -24,9 +31,9 @@ pub const Value = struct {
         switch (self.v) {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
             .IntKind => try std.fmt.format(buffer.writer(), "{d}", .{self.v.IntKind}),
-            .ListKind => {
+            .SequenceKind => {
                 try buffer.append('[');
-                for (self.v.ListKind) |v, i| {
+                for (self.v.SequenceKind) |v, i| {
                     if (i != 0) {
                         try buffer.appendSlice(", ");
                     }
@@ -34,6 +41,24 @@ pub const Value = struct {
                     try v.appendValue(buffer);
                 }
                 try buffer.append(']');
+            },
+            .RecordKind => {
+                var first = true;
+
+                try buffer.append('{');
+                var iterator = self.v.RecordKind.iterator();
+                while (iterator.next()) |entry| {
+                    if (first) {
+                        first = false;
+                    } else {
+                        try buffer.appendSlice(", ");
+                    }
+
+                    try buffer.appendSlice(entry.key_ptr.*);
+                    try buffer.appendSlice(": ");
+                    try entry.value_ptr.*.appendValue(buffer);
+                }
+                try buffer.append('}');
             },
             .VoidKind => try buffer.appendSlice("()"),
         }
@@ -52,14 +77,16 @@ pub const Value = struct {
 pub const ValueKind = enum {
     BoolKind,
     IntKind,
-    ListKind,
+    SequenceKind,
+    RecordKind,
     VoidKind,
 
     pub fn toString(self: ValueKind) []const u8 {
         return switch (self) {
             ValueKind.BoolKind => "Bool",
             ValueKind.IntKind => "Int",
-            ValueKind.ListKind => "List",
+            ValueKind.SequenceKind => "Sequence",
+            ValueKind.RecordKind => "Record",
             ValueKind.VoidKind => "()",
         };
     }
@@ -68,6 +95,7 @@ pub const ValueKind = enum {
 pub const ValueValue = union(ValueKind) {
     BoolKind: bool,
     IntKind: i32,
-    ListKind: []*Value,
+    SequenceKind: []*Value,
+    RecordKind: std.StringHashMap(*Value),
     VoidKind: void,
 };

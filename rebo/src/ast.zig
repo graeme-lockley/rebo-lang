@@ -27,8 +27,14 @@ pub const ExpressionKind = union(enum) {
     binaryOp: BinaryOpExpression,
     literalBool: bool,
     literalInt: i32,
-    literalList: []*Expression,
+    literalSequence: []*Expression,
+    literalRecord: []RecordEntry,
     literalVoid: void,
+};
+
+pub const RecordEntry = struct {
+    key: []u8,
+    value: *Expression,
 };
 
 pub const BinaryOpExpression = struct {
@@ -44,11 +50,18 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
             destroy(allocator, expr.*.kind.binaryOp.right);
         },
         .literalBool, .literalInt, .literalVoid => {},
-        .literalList => {
-            for (expr.*.kind.literalList) |v| {
+        .literalSequence => {
+            for (expr.*.kind.literalSequence) |v| {
                 destroy(allocator, v);
             }
-            allocator.free(expr.*.kind.literalList);
+            allocator.free(expr.*.kind.literalSequence);
+        },
+        .literalRecord => {
+            for (expr.*.kind.literalRecord) |v| {
+                allocator.free(v.key);
+                destroy(allocator, v.value);
+            }
+            allocator.free(expr.*.kind.literalRecord);
         },
     }
 

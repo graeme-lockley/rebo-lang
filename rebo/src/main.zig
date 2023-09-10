@@ -168,6 +168,15 @@ test "literal list" {
     try expectError("[1, 2, 3");
 }
 
+test "literal map" {
+    try expectExecEqual("{}", "{}");
+    try expectExecEqual("{name: 10}", "{name: 10}");
+    try expectExecEqual("{a: 1, b: 2, c: 3}", "{a: 1, b: 2, c: 3}");
+    try expectExecEqual("{a: 1, a: 2, a: 3}", "{a: 3}");
+
+    try expectError("{a:1,");
+}
+
 test "literal unit" {
     try expectExecEqual("()", "()");
 }

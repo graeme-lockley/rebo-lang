@@ -38,6 +38,10 @@ pub const MemoryState = struct {
         _ = try self.pushValue(ValueValue{ .BoolKind = b });
     }
 
+    pub fn pushEmptyMapValue(self: *MemoryState) !void {
+        _ = try self.pushValue(ValueValue{ .RecordKind = std.StringHashMap(*Value).init(self.allocator) });
+    }
+
     pub fn pushIntValue(self: *MemoryState, v: i32) !void {
         _ = try self.pushValue(ValueValue{ .IntKind = v });
     }
@@ -56,7 +60,7 @@ pub const MemoryState = struct {
             }
         }
 
-        _ = try self.pushValue(ValueValue{ .ListKind = items });
+        _ = try self.pushValue(ValueValue{ .SequenceKind = items });
     }
 
     pub fn pushUnitValue(self: *MemoryState) !void {
@@ -136,9 +140,15 @@ fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
 
     switch (v.v) {
         .BoolKind, .IntKind, .VoidKind => {},
-        .ListKind => {
-            for (v.v.ListKind) |item| {
+        .SequenceKind => {
+            for (v.v.SequenceKind) |item| {
                 mark(state, item, colour);
+            }
+        },
+        .RecordKind => {
+            var iterator = v.v.RecordKind.iterator();
+            while (iterator.next()) |entry| {
+                mark(state, entry.value_ptr.*, colour);
             }
         },
     }
@@ -226,12 +236,29 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         .literalInt => {
             machine.createIntValue(e.kind.literalInt) catch return true;
         },
-        .literalList => {
-            for (e.*.kind.literalList) |v| {
+        .literalSequence => {
+            for (e.*.kind.literalSequence) |v| {
                 if (evalExpr(machine, v)) return true;
             }
 
-            machine.createListValue(e.*.kind.literalList.len) catch return true;
+            machine.createListValue(e.*.kind.literalSequence.len) catch return true;
+        },
+        .literalRecord => {
+            machine.memoryState.pushEmptyMapValue() catch return true;
+            var map = machine.topOfStack().?;
+
+            for (e.*.kind.literalRecord) |entry| {
+                if (evalExpr(machine, entry.value)) return true;
+
+                const value = machine.pop();
+                const oldKey = map.v.RecordKind.getKey(entry.key);
+
+                if (oldKey == null) {
+                    map.v.RecordKind.put(machine.memoryState.allocator.dupe(u8, entry.key) catch return true, value) catch return true;
+                } else {
+                    map.v.RecordKind.put(oldKey.?, value) catch return true;
+                }
+            }
         },
         .literalVoid => {
             machine.createVoidValue() catch return true;

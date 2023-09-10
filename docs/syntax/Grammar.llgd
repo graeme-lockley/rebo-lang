@@ -27,12 +27,17 @@ FactorSuffix
 
 Factor
     : "(" [Expression] ")"
+    | "{" [RecordItem {"," RecordItem}]"}"
     | Identifier
     | "false"
     | "true"
     | LiteralInt
     | "[" [Expression {"," Expression}] "]"
     | "fn" "(" Arguments ")" "=" Expression
+    ;
+
+RecordItem
+    : [LiteralString | Identifier] ":" Expression
     ;
 
 Arguments
