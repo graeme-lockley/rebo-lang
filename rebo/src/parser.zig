@@ -161,7 +161,7 @@ pub const Parser = struct {
                     var expected = try self.allocator.alloc(Lexer.TokenKind, 5);
                     errdefer self.allocator.free(expected);
 
-                    expected[0] = Lexer.TokenKind.RParen;
+                    expected[0] = Lexer.TokenKind.LParen;
                     expected[1] = Lexer.TokenKind.LiteralBoolFalse;
                     expected[2] = Lexer.TokenKind.LiteralBoolTrue;
                     expected[3] = Lexer.TokenKind.LiteralInt;
