@@ -15,10 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Zig
-        # You may pin to the exact commit or the version.
-        # uses: goto-bus-stop/setup-zig@6fede2f0550d71291c0accf2834b216e69a2d67a
-        uses: goto-bus-stop/setup-zig@v2.1.1
+      - name: Install zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.10.1 # released versions or master
 
       - name: Test
         run: |
