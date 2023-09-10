@@ -199,27 +199,27 @@ fn gc(state: *MemoryState) void {
 }
 
 fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
-    switch (e.*.kind) {
+    switch (e.kind) {
         .binaryOp => {
             if (evalExpr(machine, e.kind.binaryOp.left)) return true;
-            if (evalExpr(machine, e.*.kind.binaryOp.right)) return true;
+            if (evalExpr(machine, e.kind.binaryOp.right)) return true;
 
             const right = machine.pop();
             const left = machine.pop();
 
             if (left.v != ValueValue.IntKind or right.v != ValueValue.IntKind) {
-                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.*.position, e.*.kind.binaryOp.op, left.v, right.v));
+                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
 
                 return true;
             }
 
-            const result = switch (e.*.kind.binaryOp.op) {
+            const result = switch (e.kind.binaryOp.op) {
                 AST.Operator.Plus => left.v.IntKind + right.v.IntKind,
                 AST.Operator.Minus => left.v.IntKind - right.v.IntKind,
                 AST.Operator.Times => left.v.IntKind * right.v.IntKind,
                 AST.Operator.Divide => div: {
                     if (right.v.IntKind == 0) {
-                        machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, e.*.position));
+                        machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, e.position));
 
                         return true;
                     }
@@ -237,17 +237,17 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             machine.createIntValue(e.kind.literalInt) catch return true;
         },
         .literalSequence => {
-            for (e.*.kind.literalSequence) |v| {
+            for (e.kind.literalSequence) |v| {
                 if (evalExpr(machine, v)) return true;
             }
 
-            machine.createListValue(e.*.kind.literalSequence.len) catch return true;
+            machine.createListValue(e.kind.literalSequence.len) catch return true;
         },
         .literalRecord => {
             machine.memoryState.pushEmptyMapValue() catch return true;
             var map = machine.topOfStack().?;
 
-            for (e.*.kind.literalRecord) |entry| {
+            for (e.kind.literalRecord) |entry| {
                 if (evalExpr(machine, entry.value)) return true;
 
                 const value = machine.pop();

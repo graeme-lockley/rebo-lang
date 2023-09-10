@@ -44,24 +44,24 @@ pub const BinaryOpExpression = struct {
 };
 
 pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
-    switch (expr.*.kind) {
+    switch (expr.kind) {
         .binaryOp => {
-            destroy(allocator, expr.*.kind.binaryOp.left);
-            destroy(allocator, expr.*.kind.binaryOp.right);
+            destroy(allocator, expr.kind.binaryOp.left);
+            destroy(allocator, expr.kind.binaryOp.right);
         },
         .literalBool, .literalInt, .literalVoid => {},
         .literalSequence => {
-            for (expr.*.kind.literalSequence) |v| {
+            for (expr.kind.literalSequence) |v| {
                 destroy(allocator, v);
             }
-            allocator.free(expr.*.kind.literalSequence);
+            allocator.free(expr.kind.literalSequence);
         },
         .literalRecord => {
-            for (expr.*.kind.literalRecord) |v| {
+            for (expr.kind.literalRecord) |v| {
                 allocator.free(v.key);
                 destroy(allocator, v.value);
             }
-            allocator.free(expr.*.kind.literalRecord);
+            allocator.free(expr.kind.literalRecord);
         },
     }
 

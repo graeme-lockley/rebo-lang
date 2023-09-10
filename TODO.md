@@ -7,11 +7,21 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Unit literal
 - [X] Boolean literal
 - [X] Integer literal
-- [ ] Function literal
 - [ ] Char literal
 - [ ] String literal
 - [ ] Symbol literal
 - [ ] Float literal
+
+## Values
+
+- [ ] Let declaration
+- [ ] Assignment without destructing
+
+## Functions
+
+- [ ] Add function literal
+- [ ] Add function call
+- [ ] Add function value
 
 ## Sequences
 

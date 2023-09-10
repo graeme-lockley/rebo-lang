@@ -123,9 +123,6 @@ pub const Error = union(enum) {
             .parserError => {
                 try self.parserError.print();
             },
-            // else => {
-            //     // std.log.err("Unknown error: {}", self.*);
-            // },
         }
     }
 };
