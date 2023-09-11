@@ -151,6 +151,14 @@ test "literal bool" {
     try expectExecEqual("false", "false");
 }
 
+test "literal function" {
+    try expectExecEqual("fn() = 1", "fn()");
+    try expectExecEqual("fn(a) = 1", "fn(a)");
+    try expectExecEqual("fn(a = 1, b = 2, c = 3) = 1", "fn(a = 1, b = 2, c = 3)");
+
+    try expectError("fn(a = 1, b = 2, c = 3) = ");
+}
+
 test "literal int" {
     try expectExecEqual("0", "0");
     try expectExecEqual("-0", "0");
@@ -158,7 +166,16 @@ test "literal int" {
     try expectExecEqual("-123", "-123");
 }
 
-test "literal list" {
+test "literal record" {
+    try expectExecEqual("{}", "{}");
+    try expectExecEqual("{name: 10}", "{name: 10}");
+    try expectExecEqual("{a: 1, b: 2, c: 3}", "{a: 1, b: 2, c: 3}");
+    try expectExecEqual("{a: 1, a: 2, a: 3}", "{a: 3}");
+
+    try expectError("{a:1,");
+}
+
+test "literal sequence" {
     try expectExecEqual("[]", "[]");
     try expectExecEqual("[1]", "[1]");
     try expectExecEqual("[1, 2, 3]", "[1, 2, 3]");
@@ -166,15 +183,6 @@ test "literal list" {
 
     try expectError("[1, 2,");
     try expectError("[1, 2, 3");
-}
-
-test "literal map" {
-    try expectExecEqual("{}", "{}");
-    try expectExecEqual("{name: 10}", "{name: 10}");
-    try expectExecEqual("{a: 1, b: 2, c: 3}", "{a: 1, b: 2, c: 3}");
-    try expectExecEqual("{a: 1, a: 2, a: 3}", "{a: 3}");
-
-    try expectError("{a:1,");
 }
 
 test "literal unit" {

@@ -8,7 +8,6 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Boolean literal
 - [X] Integer literal
 - [ ] Char literal
-- [ ] String literal
 - [ ] Symbol literal
 - [ ] Float literal
 
@@ -16,10 +15,11 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [ ] Let declaration
 - [ ] Assignment without destructing
+- [ ] Reference identifiers
 
 ## Functions
 
-- [ ] Add function literal
+- [X] Add function literal
 - [ ] Add function call
 - [ ] Add function value
 
@@ -31,6 +31,13 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Add support for `[start:end]` to access a slice of sequence
 - [ ] Add support for `[] = value` to update a sequence
 - [ ] Add support for `[start:end] = value` to update a slice of sequence
+
+## Strings
+
+- [ ] Literal string without interpolation
+- [ ] Literal string interpolation
+- [ ] `[]` to access a char in a string
+- [ ] `[start:end]` to access a slice of a string
 
 ## Records
 
@@ -45,3 +52,4 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [X] Add a github pipeline to continuously test the project
 - [ ] Expand the pipeline to test against Linux and Mac OS
+- [ ] Place the AST under garbage collection.  At the moment it is not which makes AST memory management impossible.

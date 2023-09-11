@@ -184,9 +184,39 @@ pub const Parser = struct {
                 v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalRecord = es.toOwnedSlice() }, .position = Errors.Position{ .start = lcurly.start, .end = rcurly.end } };
                 return v;
             },
+            Lexer.TokenKind.Fn => {
+                const fnToken = try self.nextToken();
+
+                try self.matchSkipToken(Lexer.TokenKind.LParen);
+
+                var params = std.ArrayList(AST.FunctionParam).init(self.allocator);
+                defer params.deinit();
+                errdefer for (params.items) |*param| {
+                    param.deinit(self.allocator);
+                };
+
+                if (self.currentTokenKind() != Lexer.TokenKind.RParen) {
+                    try params.append(try self.FunctionParam());
+                    while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
+                        try self.skipToken();
+                        try params.append(try self.FunctionParam());
+                    }
+                }
+
+                try self.matchSkipToken(Lexer.TokenKind.RParen);
+
+                try self.matchSkipToken(Lexer.TokenKind.Equal);
+
+                const body = try self.expression();
+                errdefer AST.destroy(self.allocator, body);
+
+                const v = try self.allocator.create(AST.Expression);
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalFunction = AST.Function{ .params = params.toOwnedSlice(), .body = body } }, .position = Errors.Position{ .start = fnToken.start, .end = body.position.end } };
+                return v;
+            },
             else => {
                 {
-                    var expected = try self.allocator.alloc(Lexer.TokenKind, 6);
+                    var expected = try self.allocator.alloc(Lexer.TokenKind, 7);
                     errdefer self.allocator.free(expected);
 
                     expected[0] = Lexer.TokenKind.LBracket;
@@ -195,6 +225,7 @@ pub const Parser = struct {
                     expected[3] = Lexer.TokenKind.LiteralBoolFalse;
                     expected[4] = Lexer.TokenKind.LiteralBoolTrue;
                     expected[5] = Lexer.TokenKind.LiteralInt;
+                    expected[6] = Lexer.TokenKind.Fn;
 
                     self.replaceErr(try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
                 }
@@ -204,7 +235,22 @@ pub const Parser = struct {
         }
     }
 
-    fn RecordEntry(self: *Parser) Errors.err!AST.RecordEntry {
+    fn FunctionParam(self: *Parser) !AST.FunctionParam {
+        const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
+        const name = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
+        errdefer self.allocator.free(name);
+
+        if (self.currentTokenKind() == Lexer.TokenKind.Equal) {
+            try self.skipToken();
+
+            const default = try self.expression();
+            return AST.FunctionParam{ .name = name, .default = default };
+        } else {
+            return AST.FunctionParam{ .name = name, .default = null };
+        }
+    }
+
+    fn RecordEntry(self: *Parser) !AST.RecordEntry {
         const key = try self.matchToken(Lexer.TokenKind.Identifier);
         try self.matchSkipToken(Lexer.TokenKind.Colon);
         const value = try self.expression();

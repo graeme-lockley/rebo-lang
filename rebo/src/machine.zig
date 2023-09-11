@@ -6,6 +6,8 @@ const Lexer = @import("./lexer.zig");
 const Parser = @import("./parser.zig");
 
 pub const Value = @import("./value.zig").Value;
+const FunctionArgument = @import("./value.zig").FunctionArgument;
+const FunctionValue = @import("./value.zig").FunctionValue;
 const ValueValue = @import("./value.zig").ValueValue;
 const Colour = @import("./value.zig").Colour;
 
@@ -140,6 +142,13 @@ fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
 
     switch (v.v) {
         .BoolKind, .IntKind, .VoidKind => {},
+        .FunctionKind => {
+            for (v.v.FunctionKind.arguments) |argument| {
+                if (argument.default != null) {
+                    mark(state, argument.default.?, colour);
+                }
+            }
+        },
         .SequenceKind => {
             for (v.v.SequenceKind) |item| {
                 mark(state, item, colour);
@@ -232,6 +241,26 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         },
         .literalBool => {
             machine.createBoolValue(e.kind.literalBool) catch return true;
+        },
+        .literalFunction => {
+            var arguments = machine.memoryState.allocator.alloc(FunctionArgument, e.kind.literalFunction.params.len) catch return true;
+
+            for (e.kind.literalFunction.params) |param, index| {
+                arguments[index] = FunctionArgument{ .name = machine.memoryState.allocator.dupe(u8, param.name) catch return true, .default = null };
+            }
+
+            _ = machine.memoryState.pushValue(ValueValue{ .FunctionKind = FunctionValue{
+                .arguments = arguments,
+                .body = e.kind.literalFunction.body,
+            } }) catch return true;
+
+            for (e.kind.literalFunction.params) |param, index| {
+                if (param.default != null) {
+                    if (evalExpr(machine, param.default.?)) return true;
+                    const default: ?*Value = machine.pop();
+                    arguments[index].default = default;
+                }
+            }
         },
         .literalInt => {
             machine.createIntValue(e.kind.literalInt) catch return true;

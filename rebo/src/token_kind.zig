@@ -1,13 +1,18 @@
 pub const TokenKind = enum {
     EOS,
     Invalid,
-    Identifier,
+
     LiteralBoolFalse,
     LiteralBoolTrue,
     LiteralInt,
 
+    Identifier,
+
+    Fn,
+
     Colon,
     Comma,
+    Equal,
     LBracket,
     LCurly,
     LParen,
@@ -23,13 +28,17 @@ pub const TokenKind = enum {
         switch (self) {
             TokenKind.EOS => return "end-of-stream",
             TokenKind.Invalid => return "invalid-token",
-            TokenKind.Identifier => return "identifier",
             TokenKind.LiteralBoolFalse => return "false",
             TokenKind.LiteralBoolTrue => return "true",
             TokenKind.LiteralInt => return "literal int",
 
+            TokenKind.Identifier => return "identifier",
+
+            TokenKind.Fn => return "fn",
+
             TokenKind.Colon => return "':'",
             TokenKind.Comma => return "','",
+            TokenKind.Equal => return "'='",
             TokenKind.LBracket => return "'['",
             TokenKind.LCurly => return "'{'",
             TokenKind.LParen => return "'('",

@@ -26,10 +26,37 @@ pub const Expression = struct {
 pub const ExpressionKind = union(enum) {
     binaryOp: BinaryOpExpression,
     literalBool: bool,
+    literalFunction: Function,
     literalInt: i32,
     literalSequence: []*Expression,
     literalRecord: []RecordEntry,
     literalVoid: void,
+};
+
+pub const Function = struct {
+    params: []FunctionParam,
+    body: *Expression,
+
+    pub fn deinit(self: *Function, allocator: std.mem.Allocator) void {
+        for (self.params) |*param| {
+            param.deinit(allocator);
+        }
+        allocator.free(self.params);
+        destroy(allocator, self.body);
+    }
+};
+
+pub const FunctionParam = struct {
+    name: []u8,
+    default: ?*Expression,
+
+    pub fn deinit(self: *FunctionParam, allocator: std.mem.Allocator) void {
+        allocator.free(self.name);
+
+        if (self.default != null) {
+            destroy(allocator, self.default.?);
+        }
+    }
 };
 
 pub const RecordEntry = struct {
@@ -50,6 +77,7 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
             destroy(allocator, expr.kind.binaryOp.right);
         },
         .literalBool, .literalInt, .literalVoid => {},
+        .literalFunction => expr.kind.literalFunction.deinit(allocator),
         .literalSequence => {
             for (expr.kind.literalSequence) |v| {
                 destroy(allocator, v);
