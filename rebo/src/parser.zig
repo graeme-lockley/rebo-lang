@@ -153,7 +153,7 @@ pub const Parser = struct {
                 const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalSequence = es.toOwnedSlice() }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalSequence = try es.toOwnedSlice() }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
                 return v;
             },
             Lexer.TokenKind.LCurly => {
@@ -181,7 +181,7 @@ pub const Parser = struct {
                 const rcurly = try self.matchToken(Lexer.TokenKind.RCurly);
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalRecord = es.toOwnedSlice() }, .position = Errors.Position{ .start = lcurly.start, .end = rcurly.end } };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalRecord = try es.toOwnedSlice() }, .position = Errors.Position{ .start = lcurly.start, .end = rcurly.end } };
                 return v;
             },
             Lexer.TokenKind.Fn => {
@@ -211,7 +211,7 @@ pub const Parser = struct {
                 errdefer AST.destroy(self.allocator, body);
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalFunction = AST.Function{ .params = params.toOwnedSlice(), .body = body } }, .position = Errors.Position{ .start = fnToken.start, .end = body.position.end } };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalFunction = AST.Function{ .params = try params.toOwnedSlice(), .body = body } }, .position = Errors.Position{ .start = fnToken.start, .end = body.position.end } };
                 return v;
             },
             else => {

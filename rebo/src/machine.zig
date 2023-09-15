@@ -8,6 +8,7 @@ const Parser = @import("./parser.zig");
 pub const Value = @import("./value.zig").Value;
 const FunctionArgument = @import("./value.zig").FunctionArgument;
 const FunctionValue = @import("./value.zig").FunctionValue;
+const ScopeValue = @import("./value.zig").ScopeValue;
 const ValueValue = @import("./value.zig").ValueValue;
 const Colour = @import("./value.zig").Colour;
 
@@ -18,6 +19,7 @@ pub const MemoryState = struct {
     root: ?*Value,
     memory_size: u32,
     memory_capacity: u32,
+    scope: ?*ScopeValue,
 
     fn pushValue(self: *MemoryState, vv: ValueValue) !*Value {
         const v = try self.allocator.create(Value);
@@ -149,6 +151,9 @@ fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
                 }
             }
         },
+        .ScopeKind => {
+            markScope(state, &v.v.ScopeKind, colour);
+        },
         .SequenceKind => {
             for (v.v.SequenceKind) |item| {
                 mark(state, item, colour);
@@ -161,6 +166,19 @@ fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
             }
         },
     }
+}
+
+fn markScope(state: *MemoryState, scope: ?*ScopeValue, colour: Colour) void {
+    if (scope == null) {
+        return;
+    }
+
+    var iterator = scope.?.values.valueIterator();
+    while (iterator.next()) |entry| {
+        mark(state, entry.*, colour);
+    }
+
+    markScope(state, scope.?.parent, colour);
 }
 
 fn sweep(state: *MemoryState, colour: Colour) void {
@@ -181,6 +199,7 @@ fn sweep(state: *MemoryState, colour: Colour) void {
 fn force_gc(state: *MemoryState) void {
     const new_colour = if (state.colour == Colour.Black) Colour.White else Colour.Black;
 
+    markScope(state, state.scope, new_colour);
     for (state.stack.items) |value| {
         mark(state, value, new_colour);
     }
@@ -200,7 +219,7 @@ fn gc(state: *MemoryState) void {
         const end_time = std.time.milliTimestamp();
         std.log.info("gc: time={d}ms, nodes freed={d}, heap size: {d}", .{ end_time - start_time, old_size - state.memory_size, state.memory_size });
 
-        if (@intToFloat(f32, state.memory_size) / @intToFloat(f32, state.memory_capacity) > threshold_rate) {
+        if (@as(f32, @floatFromInt(state.memory_size)) / @as(f32, @floatFromInt(state.memory_capacity)) > threshold_rate) {
             state.memory_capacity *= 2;
             std.log.info("gc: double heap capacity to {}", .{state.memory_capacity});
         }
@@ -239,13 +258,32 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
             machine.createIntValue(result) catch return true;
         },
+        .identifier => {
+            var runner: ?*ScopeValue = machine.memoryState.scope;
+
+            while (true) {
+                const value = runner.?.values.get(e.kind.identifier);
+
+                if (value != null) {
+                    machine.memoryState.push(value.?) catch return true;
+                    break;
+                }
+
+                if (runner.?.parent == null) {
+                    machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, e.position, e.kind.identifier) catch return true);
+                    return true;
+                }
+
+                runner = runner.?.parent;
+            }
+        },
         .literalBool => {
             machine.createBoolValue(e.kind.literalBool) catch return true;
         },
         .literalFunction => {
             var arguments = machine.memoryState.allocator.alloc(FunctionArgument, e.kind.literalFunction.params.len) catch return true;
 
-            for (e.kind.literalFunction.params) |param, index| {
+            for (e.kind.literalFunction.params, 0..) |param, index| {
                 arguments[index] = FunctionArgument{ .name = machine.memoryState.allocator.dupe(u8, param.name) catch return true, .default = null };
             }
 
@@ -254,7 +292,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 .body = e.kind.literalFunction.body,
             } }) catch return true;
 
-            for (e.kind.literalFunction.params) |param, index| {
+            for (e.kind.literalFunction.params, 0..) |param, index| {
                 if (param.default != null) {
                     if (evalExpr(machine, param.default.?)) return true;
                     const default: ?*Value = machine.pop();
@@ -307,6 +345,7 @@ fn initMemoryState(allocator: std.mem.Allocator) !MemoryState {
         .root = null,
         .memory_size = 0,
         .memory_capacity = 2,
+        .scope = null,
     };
 }
 pub const Machine = struct {

@@ -40,7 +40,7 @@ pub const Lexer = struct {
     pub fn initBuffer(self: *Lexer, name: []const u8, source: []const u8) Errors.err!void {
         self.name = name;
         self.source = source;
-        self.sourceLength = @intCast(u8, source.len);
+        self.sourceLength = @intCast(source.len);
         self.offset = 0;
 
         try self.next();

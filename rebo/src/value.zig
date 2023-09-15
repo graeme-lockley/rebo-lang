@@ -36,6 +36,13 @@ pub const Value = struct {
                 }
                 self.v.RecordKind.deinit();
             },
+            .ScopeKind => {
+                var iterator = self.v.ScopeKind.values.keyIterator();
+                while (iterator.next()) |keyPtr| {
+                    allocator.free(keyPtr.*);
+                }
+                self.v.ScopeKind.values.deinit();
+            },
         }
     }
 
@@ -44,7 +51,8 @@ pub const Value = struct {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
             .FunctionKind => {
                 try buffer.appendSlice("fn(");
-                for (self.v.FunctionKind.arguments) |argument, i| {
+                var i: usize = 0;
+                for (self.v.FunctionKind.arguments) |argument| {
                     if (i != 0) {
                         try buffer.appendSlice(", ");
                     }
@@ -54,18 +62,23 @@ pub const Value = struct {
                         try buffer.appendSlice(" = ");
                         try argument.default.?.appendValue(buffer);
                     }
+
+                    i += 1;
                 }
                 try buffer.append(')');
             },
             .IntKind => try std.fmt.format(buffer.writer(), "{d}", .{self.v.IntKind}),
             .SequenceKind => {
                 try buffer.append('[');
-                for (self.v.SequenceKind) |v, i| {
+                var i: usize = 0;
+                for (self.v.SequenceKind) |v| {
                     if (i != 0) {
                         try buffer.appendSlice(", ");
                     }
 
                     try v.appendValue(buffer);
+
+                    i += 1;
                 }
                 try buffer.append(']');
             },
@@ -87,6 +100,41 @@ pub const Value = struct {
                 }
                 try buffer.append('}');
             },
+            .ScopeKind => {
+                var first = true;
+                var runner: ?*ScopeValue = &self.v.ScopeKind;
+
+                try buffer.append('<');
+                while (true) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        try buffer.append(' ');
+                    }
+
+                    try buffer.append('{');
+                    var innerFirst = false;
+                    var iterator = runner.?.values.iterator();
+                    while (iterator.next()) |entry| {
+                        if (innerFirst) {
+                            innerFirst = false;
+                        } else {
+                            try buffer.appendSlice(", ");
+                        }
+                        try buffer.appendSlice(entry.key_ptr.*);
+                        try buffer.appendSlice(": ");
+                        try entry.value_ptr.*.appendValue(buffer);
+                    }
+                    try buffer.append('}');
+
+                    if (runner.?.parent == null) {
+                        break;
+                    }
+
+                    runner = runner.?.parent;
+                }
+                try buffer.append('>');
+            },
             .VoidKind => try buffer.appendSlice("()"),
         }
     }
@@ -107,6 +155,7 @@ pub const ValueKind = enum {
     IntKind,
     SequenceKind,
     RecordKind,
+    ScopeKind,
     VoidKind,
 
     pub fn toString(self: ValueKind) []const u8 {
@@ -116,6 +165,7 @@ pub const ValueKind = enum {
             ValueKind.IntKind => "Int",
             ValueKind.SequenceKind => "Sequence",
             ValueKind.RecordKind => "Record",
+            ValueKind.ScopeKind => "Scope",
             ValueKind.VoidKind => "()",
         };
     }
@@ -127,6 +177,7 @@ pub const ValueValue = union(ValueKind) {
     IntKind: i32,
     SequenceKind: []*Value,
     RecordKind: std.StringHashMap(*Value),
+    ScopeKind: ScopeValue,
     VoidKind: void,
 };
 
@@ -138,4 +189,9 @@ pub const FunctionValue = struct {
 pub const FunctionArgument = struct {
     name: []u8,
     default: ?*Value,
+};
+
+pub const ScopeValue = struct {
+    parent: ?*ScopeValue,
+    values: std.StringHashMap(*Value),
 };

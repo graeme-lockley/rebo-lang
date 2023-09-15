@@ -25,6 +25,7 @@ pub const Expression = struct {
 
 pub const ExpressionKind = union(enum) {
     binaryOp: BinaryOpExpression,
+    identifier: []u8,
     literalBool: bool,
     literalFunction: Function,
     literalInt: i32,
@@ -76,6 +77,7 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
             destroy(allocator, expr.kind.binaryOp.left);
             destroy(allocator, expr.kind.binaryOp.right);
         },
+        .identifier => allocator.free(expr.kind.identifier),
         .literalBool, .literalInt, .literalVoid => {},
         .literalFunction => expr.kind.literalFunction.deinit(allocator),
         .literalSequence => {

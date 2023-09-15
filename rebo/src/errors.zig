@@ -53,14 +53,14 @@ pub const ParserError = struct {
         defer buffer.deinit();
 
         try std.fmt.format(buffer.writer(), "Parser Error: {d}-{d}: Found \"{s}\" but expected: ", .{ self.position.start, self.position.end, self.lexeme });
-        for (self.expected) |expected, i| {
+        for (self.expected, 0..) |expected, i| {
             if (i > 0) {
                 try buffer.appendSlice(", ");
             }
             try buffer.appendSlice(expected.toString());
         }
 
-        const msg = buffer.toOwnedSlice();
+        const msg = try buffer.toOwnedSlice();
         std.log.err("{s}", .{msg});
         self.allocator.free(msg);
     }
@@ -82,12 +82,27 @@ pub const IncompatibleOperandTypesError = struct {
     }
 };
 
+pub const UnknownIdentifierError = struct {
+    allocator: std.mem.Allocator,
+    position: Position,
+    identifier: []u8,
+
+    pub fn deinit(self: UnknownIdentifierError) void {
+        self.allocator.free(self.identifier);
+    }
+
+    pub fn print(self: UnknownIdentifierError) void {
+        std.log.err("Unknown Identifier: {d}-{d}: {s}", .{ self.position.start, self.position.end, self.identifier });
+    }
+};
+
 pub const Error = union(enum) {
     divideByZero: DivideByZeroError,
     incompatibleOperandTypesError: IncompatibleOperandTypesError,
     lexicalError: LexicalError,
     literalIntOverflowError: LexicalError,
     parserError: ParserError,
+    unknownIdentifierError: UnknownIdentifierError,
 
     pub fn deinit(self: Error) void {
         switch (self) {
@@ -102,6 +117,9 @@ pub const Error = union(enum) {
             },
             .parserError => {
                 self.parserError.deinit();
+            },
+            .unknownIdentifierError => {
+                self.unknownIdentifierError.deinit();
             },
         }
     }
@@ -122,6 +140,9 @@ pub const Error = union(enum) {
             },
             .parserError => {
                 try self.parserError.print();
+            },
+            .unknownIdentifierError => {
+                self.unknownIdentifierError.print();
             },
         }
     }
@@ -169,5 +190,13 @@ pub fn parserError(allocator: std.mem.Allocator, position: Position, lexeme: []c
         .position = position,
         .lexeme = try allocator.dupe(u8, lexeme),
         .expected = expected,
+    } };
+}
+
+pub fn unknownIdentifierError(allocator: std.mem.Allocator, position: Position, identifier: []const u8) !Error {
+    return Error{ .unknownIdentifierError = .{
+        .allocator = allocator,
+        .position = position,
+        .identifier = try allocator.dupe(u8, identifier),
     } };
 }
