@@ -20,8 +20,8 @@ There is so much to do.  The following is my work list on this project.  I will 
 ## Functions
 
 - [X] Add function literal
-- [ ] Add function call
-- [ ] Add function value
+- [X] Add function call
+- [X] Add function value
 
 ## Sequences
 
@@ -31,6 +31,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Add support for `[start:end]` to access a slice of sequence
 - [ ] Add support for `[] = value` to update a sequence
 - [ ] Add support for `[start:end] = value` to update a slice of sequence
+- [ ] Add support destructuring a sequence into variables
 
 ## Strings
 
@@ -41,15 +42,17 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 ## Records
 
-- [ ] Add support for a literal record
+- [X] Add support for a literal record
 - [ ] Add support for a literal string as a literal record field name
 - [ ] Add support for `...` when incorporating a literal record
-- [ ] Add support for `.field` to destruct a record
+- [X] Add support for `.field` to access a record's field
 - [ ] Add support for `[]` to access a field in a record based on value
 - [ ] Add support for `.field = value` to update a record
+- [ ] Add support for destructing a record into variables
 
 # Chore Features
 
 - [X] Add a github pipeline to continuously test the project
 - [ ] Expand the pipeline to test against Linux and Mac OS
 - [ ] Place the AST under garbage collection.  At the moment it is not which makes AST memory management impossible.
+- [ ] Add a string heap to store identifier names and field names.  This will reduce memory footprint and allow for faster comparisons.
