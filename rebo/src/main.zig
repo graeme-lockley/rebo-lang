@@ -160,8 +160,11 @@ test "call expression" {
     try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10, 20, 40)", "30");
 
     try expectExecEqual("(fn(f, g) = (fn(n) = f(g(n))))(fn(n) = n * n, fn(n) = n + n)(3)", "36");
+    try expectExecEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()", "4");
+    try expectExecEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)(3)", "36");
 
     try expectError("20(10)");
+    try expectError("(fn(f) = (fn (g) = (fn(n) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()");
 }
 
 test "dot expression" {
