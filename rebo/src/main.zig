@@ -156,8 +156,8 @@ test "literal bool" {
 
 test "literal function" {
     try expectExecEqual("fn() = 1", "fn()");
-    try expectExecEqual("fn(a) = 1", "fn(a)");
-    try expectExecEqual("fn(a = 1, b = 2, c = 3) = 1", "fn(a = 1, b = 2, c = 3)");
+    try expectExecEqual("fn(a) = a + 1", "fn(a)");
+    try expectExecEqual("fn(a = 1, b = 2, c = 3) = a + b + c", "fn(a = 1, b = 2, c = 3)");
 
     try expectError("fn(a = 1, b = 2, c = 3) = ");
 }
