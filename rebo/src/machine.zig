@@ -323,6 +323,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 index += 1;
             }
             const scope = machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope) catch return true;
+            defer machine.memoryState.restoreScope(scope);
 
             var lp: u8 = 0;
             while (lp < callee.v.FunctionKind.arguments.len) {
@@ -336,8 +337,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             const result = machine.memoryState.pop();
             _ = machine.memoryState.pop();
             machine.memoryState.push(result) catch return true;
-
-            machine.memoryState.restoreScope(scope);
         },
         .dot => {
             if (evalExpr(machine, e.kind.dot.record)) return true;
