@@ -281,26 +281,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
             machine.createIntValue(result) catch return true;
         },
-        .identifier => {
-            var runner: ?*Value = machine.memoryState.scope;
-
-            while (true) {
-                const value = runner.?.v.ScopeKind.values.get(e.kind.identifier);
-
-                if (value != null) {
-                    machine.memoryState.push(value.?) catch return true;
-                    break;
-                }
-
-                const parent = runner.?.v.ScopeKind.parent;
-                if (parent == null) {
-                    machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, e.position, e.kind.identifier) catch return true);
-                    return true;
-                }
-
-                runner = parent;
-            }
-        },
         .call => {
             const sp = machine.memoryState.stack.items.len;
 
@@ -343,6 +323,44 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             machine.memoryState.push(result) catch return true;
 
             machine.memoryState.closeScope();
+        },
+        .dot => {
+            if (evalExpr(machine, e.kind.dot.record)) return true;
+
+            const record = machine.memoryState.pop();
+
+            if (record.v != ValueValue.RecordKind) {
+                machine.replaceErr(Errors.recordValueExpectedError(machine.memoryState.allocator, e.kind.dot.record.position));
+                return true;
+            }
+
+            const value = record.v.RecordKind.get(e.kind.dot.field);
+
+            if (value == null) {
+                machine.memoryState.pushUnitValue() catch return true;
+            } else {
+                machine.memoryState.push(value.?) catch return true;
+            }
+        },
+        .identifier => {
+            var runner: ?*Value = machine.memoryState.scope;
+
+            while (true) {
+                const value = runner.?.v.ScopeKind.values.get(e.kind.identifier);
+
+                if (value != null) {
+                    machine.memoryState.push(value.?) catch return true;
+                    break;
+                }
+
+                const parent = runner.?.v.ScopeKind.parent;
+                if (parent == null) {
+                    machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, e.position, e.kind.identifier) catch return true);
+                    return true;
+                }
+
+                runner = parent;
+            }
         },
         .literalBool => {
             machine.createBoolValue(e.kind.literalBool) catch return true;

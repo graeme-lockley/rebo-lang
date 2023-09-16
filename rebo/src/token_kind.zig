@@ -12,6 +12,7 @@ pub const TokenKind = enum {
 
     Colon,
     Comma,
+    Dot,
     Equal,
     LBracket,
     LCurly,
@@ -38,6 +39,7 @@ pub const TokenKind = enum {
 
             TokenKind.Colon => return "':'",
             TokenKind.Comma => return "','",
+            TokenKind.Dot => return "'.'",
             TokenKind.Equal => return "'='",
             TokenKind.LBracket => return "'['",
             TokenKind.LCurly => return "'{'",

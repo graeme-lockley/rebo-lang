@@ -158,6 +158,16 @@ test "call expression" {
     try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10)", "11");
     try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10, 20)", "30");
     try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10, 20, 40)", "30");
+
+    try expectError("20(10)");
+}
+
+test "dot expression" {
+    try expectExecEqual("{}.a", "()");
+    try expectExecEqual("{a: 10}.a", "10");
+    try expectExecEqual("{a: 10, b: 20, c: 30, a: 40}.a", "40");
+
+    try expectError("{a: 10}.20");
 }
 
 test "literal bool" {

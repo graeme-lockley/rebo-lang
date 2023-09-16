@@ -95,6 +95,19 @@ pub const IncompatibleOperandTypesError = struct {
     }
 };
 
+pub const RecordValueExpectedError = struct {
+    allocator: std.mem.Allocator,
+    position: Position,
+
+    pub fn deinit(self: RecordValueExpectedError) void {
+        _ = self;
+    }
+
+    pub fn print(self: RecordValueExpectedError) void {
+        std.log.err("Record Value Expected: {d}-{d}: expression value is not a record", .{ self.position.start, self.position.end });
+    }
+};
+
 pub const UnknownIdentifierError = struct {
     allocator: std.mem.Allocator,
     position: Position,
@@ -116,6 +129,7 @@ pub const Error = union(enum) {
     lexicalError: LexicalError,
     literalIntOverflowError: LexicalError,
     parserError: ParserError,
+    recordValueExpectedError: RecordValueExpectedError,
     unknownIdentifierError: UnknownIdentifierError,
 
     pub fn deinit(self: Error) void {
@@ -134,6 +148,9 @@ pub const Error = union(enum) {
             },
             .parserError => {
                 self.parserError.deinit();
+            },
+            .recordValueExpectedError => {
+                self.recordValueExpectedError.deinit();
             },
             .unknownIdentifierError => {
                 self.unknownIdentifierError.deinit();
@@ -160,6 +177,9 @@ pub const Error = union(enum) {
             },
             .parserError => {
                 try self.parserError.print();
+            },
+            .recordValueExpectedError => {
+                self.recordValueExpectedError.print();
             },
             .unknownIdentifierError => {
                 self.unknownIdentifierError.print();
@@ -215,6 +235,10 @@ pub fn parserError(allocator: std.mem.Allocator, position: Position, lexeme: []c
         .lexeme = try allocator.dupe(u8, lexeme),
         .expected = expected,
     } };
+}
+
+pub fn recordValueExpectedError(allocator: std.mem.Allocator, position: Position) Error {
+    return Error{ .recordValueExpectedError = .{ .allocator = allocator, .position = position } };
 }
 
 pub fn unknownIdentifierError(allocator: std.mem.Allocator, position: Position, identifier: []const u8) !Error {

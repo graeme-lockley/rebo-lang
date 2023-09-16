@@ -111,15 +111,14 @@ pub const Parser = struct {
                 const v = try self.allocator.create(AST.Expression);
                 v.* = AST.Expression{ .kind = AST.ExpressionKind{ .call = AST.CallExpression{ .callee = result, .args = try args.toOwnedSlice() } }, .position = Errors.Position{ .start = lparen.start, .end = rparen.end } };
                 result = v;
+            } else if (kind == Lexer.TokenKind.Dot) {
+                try self.skipToken();
 
-                // } else if (kind == Lexer.TokenKind.Dot) {
-                //     try self.skipToken();
+                const field = try self.matchToken(Lexer.TokenKind.Identifier);
 
-                //     const field = try self.matchToken(Lexer.TokenKind.Identifier);
-
-                //     const v = try self.allocator.create(AST.Expression);
-                //     v.* = AST.Expression{ .kind = AST.ExpressionKind{ .field = AST.FieldExpression{ .record = result, .field = try self.allocator.dupe(u8, self.lexer.lexeme(field)) } }, .position = Errors.Position{ .start = result.position.start, .end = field.end } };
-                //     result = v;
+                const v = try self.allocator.create(AST.Expression);
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .dot = AST.DotExpression{ .record = result, .field = try self.allocator.dupe(u8, self.lexer.lexeme(field)) } }, .position = Errors.Position{ .start = result.position.start, .end = field.end } };
+                result = v;
                 // } else if (kind == Lexer.TokenKind.LBracket) {
                 //     const lbracket = try self.nextToken();
 

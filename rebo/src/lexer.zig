@@ -106,6 +106,7 @@ pub const Lexer = struct {
             '}' => self.setSymbolToken(TokenKind.RCurly, tokenStart),
             ')' => self.setSymbolToken(TokenKind.RParen, tokenStart),
             ',' => self.setSymbolToken(TokenKind.Comma, tokenStart),
+            '.' => self.setSymbolToken(TokenKind.Dot, tokenStart),
             ':' => self.setSymbolToken(TokenKind.Colon, tokenStart),
             '+' => self.setSymbolToken(TokenKind.Plus, tokenStart),
             '/' => self.setSymbolToken(TokenKind.Slash, tokenStart),
@@ -216,9 +217,9 @@ test "literal int" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / = [ { ( , : ] } )" {
+test "+ - * / = [ { ( , . : ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / = [ { ( , : ] } ) ");
+    try lexer.initBuffer("console", " + - * / = [ { ( , . : ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -237,6 +238,8 @@ test "+ - * / = [ { ( , : ] } )" {
     try expectEqual(lexer.current.kind, TokenKind.LParen);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Comma);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.Dot);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Colon);
     try lexer.next();
