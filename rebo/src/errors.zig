@@ -23,6 +23,19 @@ pub const DivideByZeroError = struct {
     }
 };
 
+pub const FunctionValueExpectedError = struct {
+    allocator: std.mem.Allocator,
+    position: Position,
+
+    pub fn deinit(self: FunctionValueExpectedError) void {
+        _ = self;
+    }
+
+    pub fn print(self: FunctionValueExpectedError) void {
+        std.log.err("Function Value Expected: {d}-{d}: expression value is not a function", .{ self.position.start, self.position.end });
+    }
+};
+
 pub const LexicalError = struct {
     allocator: std.mem.Allocator,
     position: Position,
@@ -98,6 +111,7 @@ pub const UnknownIdentifierError = struct {
 
 pub const Error = union(enum) {
     divideByZero: DivideByZeroError,
+    functionValueExpectedError: FunctionValueExpectedError,
     incompatibleOperandTypesError: IncompatibleOperandTypesError,
     lexicalError: LexicalError,
     literalIntOverflowError: LexicalError,
@@ -108,6 +122,9 @@ pub const Error = union(enum) {
         switch (self) {
             .divideByZero => {
                 self.divideByZero.deinit();
+            },
+            .functionValueExpectedError => {
+                self.functionValueExpectedError.deinit();
             },
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.deinit();
@@ -128,6 +145,9 @@ pub const Error = union(enum) {
         switch (self) {
             .divideByZero => {
                 self.divideByZero.print();
+            },
+            .functionValueExpectedError => {
+                self.functionValueExpectedError.print();
             },
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.print();
@@ -150,6 +170,10 @@ pub const Error = union(enum) {
 
 pub fn divideByZeroError(allocator: std.mem.Allocator, position: Position) Error {
     return Error{ .divideByZero = .{ .allocator = allocator, .position = position } };
+}
+
+pub fn functionValueExpectedError(allocator: std.mem.Allocator, position: Position) Error {
+    return Error{ .functionValueExpectedError = .{ .allocator = allocator, .position = position } };
 }
 
 pub fn incompatibleOperandTypesError(

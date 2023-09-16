@@ -102,7 +102,7 @@ pub const Value = struct {
             },
             .ScopeKind => {
                 var first = true;
-                var runner: ?*ScopeValue = &self.v.ScopeKind;
+                var runner: ?*Value = self;
 
                 try buffer.append('<');
                 while (true) {
@@ -114,7 +114,7 @@ pub const Value = struct {
 
                     try buffer.append('{');
                     var innerFirst = false;
-                    var iterator = runner.?.values.iterator();
+                    var iterator = runner.?.v.ScopeKind.values.iterator();
                     while (iterator.next()) |entry| {
                         if (innerFirst) {
                             innerFirst = false;
@@ -127,11 +127,11 @@ pub const Value = struct {
                     }
                     try buffer.append('}');
 
-                    if (runner.?.parent == null) {
+                    if (runner.?.v.ScopeKind.parent == null) {
                         break;
                     }
 
-                    runner = runner.?.parent;
+                    runner = runner.?.v.ScopeKind.parent;
                 }
                 try buffer.append('>');
             },
@@ -192,6 +192,6 @@ pub const FunctionArgument = struct {
 };
 
 pub const ScopeValue = struct {
-    parent: ?*ScopeValue,
+    parent: ?*Value,
     values: std.StringHashMap(*Value),
 };

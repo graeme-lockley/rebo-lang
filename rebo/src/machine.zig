@@ -19,9 +19,9 @@ pub const MemoryState = struct {
     root: ?*Value,
     memory_size: u32,
     memory_capacity: u32,
-    scope: ?*ScopeValue,
+    scope: ?*Value,
 
-    fn pushValue(self: *MemoryState, vv: ValueValue) !*Value {
+    fn newValue(self: *MemoryState, vv: ValueValue) !*Value {
         const v = try self.allocator.create(Value);
         self.memory_size += 1;
 
@@ -30,6 +30,12 @@ pub const MemoryState = struct {
         v.next = self.root;
 
         self.root = v;
+
+        return v;
+    }
+
+    fn pushValue(self: *MemoryState, vv: ValueValue) !*Value {
+        const v = try self.newValue(vv);
 
         try self.stack.append(v);
 
@@ -75,6 +81,10 @@ pub const MemoryState = struct {
         return self.stack.pop();
     }
 
+    pub fn popn(self: *MemoryState, n: u32) void {
+        self.stack.items.len -= n;
+    }
+
     pub fn push(self: *MemoryState, v: *Value) !void {
         try self.stack.append(v);
     }
@@ -89,6 +99,19 @@ pub const MemoryState = struct {
         } else {
             return self.peek(0);
         }
+    }
+
+    pub fn openScope(self: *MemoryState) !*Value {
+        var scope = try self.newValue(ValueValue{ .ScopeKind = ScopeValue{ .parent = self.scope, .values = std.StringHashMap(*Value).init(self.allocator) } });
+
+        self.scope = scope;
+
+        return scope;
+    }
+
+    pub fn closeScope(self: *MemoryState) void {
+        var currentScope = self.scope;
+        self.scope = currentScope.?.v.ScopeKind.parent;
     }
 
     pub fn deinit(self: *MemoryState) void {
@@ -178,7 +201,7 @@ fn markScope(state: *MemoryState, scope: ?*ScopeValue, colour: Colour) void {
         mark(state, entry.*, colour);
     }
 
-    markScope(state, scope.?.parent, colour);
+    mark(state, scope.?.parent, colour);
 }
 
 fn sweep(state: *MemoryState, colour: Colour) void {
@@ -199,7 +222,7 @@ fn sweep(state: *MemoryState, colour: Colour) void {
 fn force_gc(state: *MemoryState) void {
     const new_colour = if (state.colour == Colour.Black) Colour.White else Colour.Black;
 
-    markScope(state, state.scope, new_colour);
+    mark(state, state.scope, new_colour);
     for (state.stack.items) |value| {
         mark(state, value, new_colour);
     }
@@ -259,23 +282,67 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             machine.createIntValue(result) catch return true;
         },
         .identifier => {
-            var runner: ?*ScopeValue = machine.memoryState.scope;
+            var runner: ?*Value = machine.memoryState.scope;
 
             while (true) {
-                const value = runner.?.values.get(e.kind.identifier);
+                const value = runner.?.v.ScopeKind.values.get(e.kind.identifier);
 
                 if (value != null) {
                     machine.memoryState.push(value.?) catch return true;
                     break;
                 }
 
-                if (runner.?.parent == null) {
+                const parent = runner.?.v.ScopeKind.parent;
+                if (parent == null) {
                     machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, e.position, e.kind.identifier) catch return true);
                     return true;
                 }
 
-                runner = runner.?.parent;
+                runner = parent;
             }
+        },
+        .call => {
+            const sp = machine.memoryState.stack.items.len;
+
+            if (evalExpr(machine, e.kind.call.callee)) return true;
+
+            const factor = machine.memoryState.peek(0);
+
+            if (factor.v != ValueValue.FunctionKind) {
+                machine.replaceErr(Errors.functionValueExpectedError(machine.memoryState.allocator, e.kind.call.callee.position));
+                return true;
+            }
+
+            var index: u8 = 0;
+            while (index < e.kind.call.args.len) {
+                if (evalExpr(machine, e.kind.call.args[index])) return true;
+                index += 1;
+            }
+
+            while (index < factor.v.FunctionKind.arguments.len) {
+                if (factor.v.FunctionKind.arguments[index].default == null) {
+                    machine.memoryState.pushUnitValue() catch return true;
+                } else {
+                    machine.memoryState.push(factor.v.FunctionKind.arguments[index].default.?) catch return true;
+                }
+                index += 1;
+            }
+            var scope = machine.memoryState.openScope() catch return true;
+
+            var lp: u8 = 0;
+            while (lp < factor.v.FunctionKind.arguments.len) {
+                scope.v.ScopeKind.values.put(machine.memoryState.allocator.dupe(u8, factor.v.FunctionKind.arguments[lp].name) catch return true, machine.memoryState.stack.items[sp + lp + 1]) catch return true;
+                lp += 1;
+            }
+
+            machine.memoryState.popn(index);
+            if (evalExpr(machine, factor.v.FunctionKind.body)) return true;
+
+            const result = machine.memoryState.pop();
+            _ = machine.memoryState.pop();
+            machine.memoryState.push(result) catch return true;
+
+            machine.memoryState.closeScope();
         },
         .literalBool => {
             machine.createBoolValue(e.kind.literalBool) catch return true;

@@ -52,7 +52,7 @@ pub const Parser = struct {
     }
 
     pub fn multiplicative(self: *Parser) Errors.err!*AST.Expression {
-        var lhs = try self.factor();
+        var lhs = try self.qualifier();
         errdefer AST.destroy(self.allocator, lhs);
 
         while (true) {
@@ -61,7 +61,7 @@ pub const Parser = struct {
             if (kind == Lexer.TokenKind.Star or kind == Lexer.TokenKind.Slash) {
                 try self.skipToken();
 
-                const rhs = try self.factor();
+                const rhs = try self.qualifier();
                 errdefer AST.destroy(self.allocator, rhs);
 
                 const v = try self.allocator.create(AST.Expression);
@@ -78,6 +78,65 @@ pub const Parser = struct {
         }
 
         return lhs;
+    }
+
+    pub fn qualifier(self: *Parser) Errors.err!*AST.Expression {
+        var result = try self.factor();
+        errdefer AST.destroy(self.allocator, result);
+
+        while (true) {
+            const kind = self.currentTokenKind();
+
+            if (kind == Lexer.TokenKind.LParen) {
+                const lparen = try self.nextToken();
+
+                var args = std.ArrayList(*AST.Expression).init(self.allocator);
+                defer args.deinit();
+                errdefer {
+                    for (args.items) |item| {
+                        AST.destroy(self.allocator, item);
+                    }
+                }
+
+                if (self.currentTokenKind() != Lexer.TokenKind.RParen) {
+                    try args.append(try self.expression());
+                    while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
+                        try self.skipToken();
+                        try args.append(try self.expression());
+                    }
+                }
+
+                const rparen = try self.matchToken(Lexer.TokenKind.RParen);
+
+                const v = try self.allocator.create(AST.Expression);
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .call = AST.CallExpression{ .callee = result, .args = try args.toOwnedSlice() } }, .position = Errors.Position{ .start = lparen.start, .end = rparen.end } };
+                result = v;
+
+                // } else if (kind == Lexer.TokenKind.Dot) {
+                //     try self.skipToken();
+
+                //     const field = try self.matchToken(Lexer.TokenKind.Identifier);
+
+                //     const v = try self.allocator.create(AST.Expression);
+                //     v.* = AST.Expression{ .kind = AST.ExpressionKind{ .field = AST.FieldExpression{ .record = result, .field = try self.allocator.dupe(u8, self.lexer.lexeme(field)) } }, .position = Errors.Position{ .start = result.position.start, .end = field.end } };
+                //     result = v;
+                // } else if (kind == Lexer.TokenKind.LBracket) {
+                //     const lbracket = try self.nextToken();
+
+                //     const index = try self.expression();
+                //     errdefer AST.destroy(self.allocator, index);
+
+                //     const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
+
+                //     const v = try self.allocator.create(AST.Expression);
+                //     v.* = AST.Expression{ .kind = AST.ExpressionKind{ .index = AST.IndexExpression{ .sequence = result, .index = index } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
+                //     result = v;
+            } else {
+                break;
+            }
+        }
+
+        return result;
     }
 
     pub fn factor(self: *Parser) Errors.err!*AST.Expression {

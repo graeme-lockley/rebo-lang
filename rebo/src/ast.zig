@@ -32,6 +32,8 @@ pub const ExpressionKind = union(enum) {
     literalSequence: []*Expression,
     literalRecord: []RecordEntry,
     literalVoid: void,
+    call: CallExpression,
+    // qualifierProjection: QualifierProjection,
 };
 
 pub const Function = struct {
@@ -60,6 +62,16 @@ pub const FunctionParam = struct {
     }
 };
 
+pub const CallExpression = struct {
+    callee: *Expression,
+    args: []*Expression,
+};
+
+pub const QualifierProjection = struct {
+    factor: *Expression,
+    field: []u8,
+};
+
 pub const RecordEntry = struct {
     key: []u8,
     value: *Expression,
@@ -77,7 +89,18 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
             destroy(allocator, expr.kind.binaryOp.left);
             destroy(allocator, expr.kind.binaryOp.right);
         },
+        .call => {
+            destroy(allocator, expr.kind.call.callee);
+            for (expr.kind.call.args) |arg| {
+                destroy(allocator, arg);
+            }
+            allocator.free(expr.kind.call.args);
+        },
         .identifier => allocator.free(expr.kind.identifier),
+        // .qualifierProjection => {
+        //     destroy(allocator, expr.kind.qualifierProjection.factor);
+        //     allocator.free(expr.kind.qualifierProjection.field);
+        // },
         .literalBool, .literalInt, .literalVoid => {},
         .literalFunction => expr.kind.literalFunction.deinit(allocator),
         .literalSequence => {

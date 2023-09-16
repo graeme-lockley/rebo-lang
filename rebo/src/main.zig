@@ -149,6 +149,17 @@ fn expectError(input: []const u8) !void {
 
 const expectEqual = std.testing.expectEqual;
 
+test "call expression" {
+    try expectExecEqual("(fn() = 1)()", "1");
+    try expectExecEqual("(fn() = 1)(1, 2, 3)", "1");
+    try expectExecEqual("(fn(n) = n + 1)(10, 20, 30)", "11");
+
+    try expectExecEqual("(fn(n = 0, m = 1) = n + m)()", "1");
+    try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10)", "11");
+    try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10, 20)", "30");
+    try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10, 20, 40)", "30");
+}
+
 test "literal bool" {
     try expectExecEqual("true", "true");
     try expectExecEqual("false", "false");
