@@ -50,7 +50,11 @@ pub const Value = struct {
         switch (self.v) {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
             .FunctionKind => {
-                try buffer.appendSlice("fn(");
+                try buffer.appendSlice("fn");
+                if (self.v.FunctionKind.scope != null) {
+                    try self.v.FunctionKind.scope.?.appendValue(buffer);
+                }
+                try buffer.appendSlice("(");
                 var i: usize = 0;
                 for (self.v.FunctionKind.arguments) |argument| {
                     if (i != 0) {
@@ -113,7 +117,7 @@ pub const Value = struct {
                     }
 
                     try buffer.append('{');
-                    var innerFirst = false;
+                    var innerFirst = true;
                     var iterator = runner.?.v.ScopeKind.values.iterator();
                     while (iterator.next()) |entry| {
                         if (innerFirst) {
@@ -182,6 +186,7 @@ pub const ValueValue = union(ValueKind) {
 };
 
 pub const FunctionValue = struct {
+    scope: ?*Value,
     arguments: []FunctionArgument,
     body: *AST.Expression,
 };

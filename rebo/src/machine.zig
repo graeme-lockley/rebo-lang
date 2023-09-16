@@ -109,9 +109,23 @@ pub const MemoryState = struct {
         return scope;
     }
 
+    pub fn openScopeFrom(self: *MemoryState, outerScope: ?*Value) !?*Value {
+        const oldScope = self.scope;
+
+        var scope = try self.newValue(ValueValue{ .ScopeKind = ScopeValue{ .parent = outerScope, .values = std.StringHashMap(*Value).init(self.allocator) } });
+
+        self.scope = scope;
+
+        return oldScope;
+    }
+
     pub fn closeScope(self: *MemoryState) void {
         var currentScope = self.scope;
         self.scope = currentScope.?.v.ScopeKind.parent;
+    }
+
+    pub fn restoreScope(self: *MemoryState, scope: ?*Value) void {
+        self.scope = scope;
     }
 
     pub fn deinit(self: *MemoryState) void {
@@ -168,6 +182,7 @@ fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
     switch (v.v) {
         .BoolKind, .IntKind, .VoidKind => {},
         .FunctionKind => {
+            mark(state, v.v.FunctionKind.scope, colour);
             for (v.v.FunctionKind.arguments) |argument| {
                 if (argument.default != null) {
                     mark(state, argument.default.?, colour);
@@ -286,9 +301,9 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
             if (evalExpr(machine, e.kind.call.callee)) return true;
 
-            const factor = machine.memoryState.peek(0);
+            const callee = machine.memoryState.peek(0);
 
-            if (factor.v != ValueValue.FunctionKind) {
+            if (callee.v != ValueValue.FunctionKind) {
                 machine.replaceErr(Errors.functionValueExpectedError(machine.memoryState.allocator, e.kind.call.callee.position));
                 return true;
             }
@@ -299,30 +314,30 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 index += 1;
             }
 
-            while (index < factor.v.FunctionKind.arguments.len) {
-                if (factor.v.FunctionKind.arguments[index].default == null) {
+            while (index < callee.v.FunctionKind.arguments.len) {
+                if (callee.v.FunctionKind.arguments[index].default == null) {
                     machine.memoryState.pushUnitValue() catch return true;
                 } else {
-                    machine.memoryState.push(factor.v.FunctionKind.arguments[index].default.?) catch return true;
+                    machine.memoryState.push(callee.v.FunctionKind.arguments[index].default.?) catch return true;
                 }
                 index += 1;
             }
-            var scope = machine.memoryState.openScope() catch return true;
+            const scope = machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope) catch return true;
 
             var lp: u8 = 0;
-            while (lp < factor.v.FunctionKind.arguments.len) {
-                scope.v.ScopeKind.values.put(machine.memoryState.allocator.dupe(u8, factor.v.FunctionKind.arguments[lp].name) catch return true, machine.memoryState.stack.items[sp + lp + 1]) catch return true;
+            while (lp < callee.v.FunctionKind.arguments.len) {
+                machine.memoryState.scope.?.v.ScopeKind.values.put(machine.memoryState.allocator.dupe(u8, callee.v.FunctionKind.arguments[lp].name) catch return true, machine.memoryState.stack.items[sp + lp + 1]) catch return true;
                 lp += 1;
             }
 
             machine.memoryState.popn(index);
-            if (evalExpr(machine, factor.v.FunctionKind.body)) return true;
+            if (evalExpr(machine, callee.v.FunctionKind.body)) return true;
 
             const result = machine.memoryState.pop();
             _ = machine.memoryState.pop();
             machine.memoryState.push(result) catch return true;
 
-            machine.memoryState.closeScope();
+            machine.memoryState.restoreScope(scope);
         },
         .dot => {
             if (evalExpr(machine, e.kind.dot.record)) return true;
@@ -355,6 +370,12 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
                 const parent = runner.?.v.ScopeKind.parent;
                 if (parent == null) {
+                    if (machine.memoryState.scope != null) {
+                        const scope = machine.memoryState.scope.?.toString(machine.memoryState.allocator) catch return true;
+                        std.debug.print("scope: {s}\n", .{scope});
+                        machine.memoryState.allocator.free(scope);
+                    }
+
                     machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, e.position, e.kind.identifier) catch return true);
                     return true;
                 }
@@ -373,6 +394,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             }
 
             _ = machine.memoryState.pushValue(ValueValue{ .FunctionKind = FunctionValue{
+                .scope = machine.memoryState.scope,
                 .arguments = arguments,
                 .body = e.kind.literalFunction.body,
             } }) catch return true;

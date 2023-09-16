@@ -159,7 +159,7 @@ test "call expression" {
     try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10, 20)", "30");
     try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10, 20, 40)", "30");
 
-    try expectExecEqual("(fn(f, g) = (fn(n) = f(g(n))))(fn(n) = n * n, fn(n) = n + n)", "");
+    try expectExecEqual("(fn(f, g) = (fn(n) = f(g(n))))(fn(n) = n * n, fn(n) = n + n)(3)", "36");
 
     try expectError("20(10)");
 }
@@ -182,6 +182,8 @@ test "literal function" {
     try expectExecEqual("fn() = 1", "fn()");
     try expectExecEqual("fn(a) = a + 1", "fn(a)");
     try expectExecEqual("fn(a = 1, b = 2, c = 3) = a + b + c", "fn(a = 1, b = 2, c = 3)");
+
+    try expectExecEqual("(fn(n) = (fn (m) = n + m))(1)(2)", "3");
 
     try expectError("fn(a = 1, b = 2, c = 3) = ");
 }
