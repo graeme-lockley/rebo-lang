@@ -7,6 +7,7 @@ Module
 Expression
     : "let" Identifier "=" Expression
     | "let" Identifier FunctionTail
+    | "if" ["|"] Expression "->" Expression {"|" Expression "->" Expression}
     | Additive
     ;
 

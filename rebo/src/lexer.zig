@@ -9,6 +9,7 @@ const keywords = std.ComptimeStringMap(TokenKind, .{
     .{ "true", TokenKind.LiteralBoolTrue },
     .{ "false", TokenKind.LiteralBoolFalse },
     .{ "fn", TokenKind.Fn },
+    .{ "if", TokenKind.If },
     .{ "let", TokenKind.Let },
 });
 
@@ -110,17 +111,23 @@ pub const Lexer = struct {
             '.' => self.setSymbolToken(TokenKind.Dot, tokenStart),
             ':' => self.setSymbolToken(TokenKind.Colon, tokenStart),
             ';' => self.setSymbolToken(TokenKind.Semicolon, tokenStart),
+            '|' => self.setSymbolToken(TokenKind.Bar, tokenStart),
             '+' => self.setSymbolToken(TokenKind.Plus, tokenStart),
             '/' => self.setSymbolToken(TokenKind.Slash, tokenStart),
             '*' => self.setSymbolToken(TokenKind.Star, tokenStart),
             '=' => self.setSymbolToken(TokenKind.Equal, tokenStart),
             '-' => {
                 self.skipCharacter();
-                while (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
+                if (self.currentCharacter() == '>') {
                     self.skipCharacter();
-                }
+                    self.current = Token{ .kind = TokenKind.MinusGreater, .start = tokenStart, .end = self.offset };
+                } else {
+                    while (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
+                        self.skipCharacter();
+                    }
 
-                self.current = Token{ .kind = if (tokenStart + 1 == self.offset) TokenKind.Minus else TokenKind.LiteralInt, .start = tokenStart, .end = self.offset };
+                    self.current = Token{ .kind = if (tokenStart + 1 == self.offset) TokenKind.Minus else TokenKind.LiteralInt, .start = tokenStart, .end = self.offset };
+                }
             },
             '0'...'9' => {
                 self.skipCharacter();
@@ -175,12 +182,14 @@ const expectEqualStrings = std.testing.expectEqualStrings;
 
 test "identifier and keywords" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " foo fn let ");
+    try lexer.initBuffer("console", " foo fn if let ");
 
     try expectEqual(lexer.current.kind, TokenKind.Identifier);
     try expectEqualStrings(lexer.lexeme(lexer.current), "foo");
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Fn);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.If);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Let);
     try lexer.next();
@@ -221,9 +230,9 @@ test "literal int" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / = [ { ( , . : ; ] } )" {
+test "+ - * / = [ { ( , . : ; -> | ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / = [ { ( , . : ; ] } ) ");
+    try lexer.initBuffer("console", " + - * / = [ { ( , . : ; -> | ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -248,6 +257,10 @@ test "+ - * / = [ { ( , . : ; ] } )" {
     try expectEqual(lexer.current.kind, TokenKind.Colon);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Semicolon);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.MinusGreater);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.Bar);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.RBracket);
     try lexer.next();

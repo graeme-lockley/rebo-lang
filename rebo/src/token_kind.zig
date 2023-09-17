@@ -9,8 +9,10 @@ pub const TokenKind = enum {
     Identifier,
 
     Fn,
+    If,
     Let,
 
+    Bar,
     Colon,
     Comma,
     Dot,
@@ -19,6 +21,7 @@ pub const TokenKind = enum {
     LCurly,
     LParen,
     Minus,
+    MinusGreater,
     Plus,
     RBracket,
     RCurly,
@@ -38,8 +41,10 @@ pub const TokenKind = enum {
             TokenKind.Identifier => return "identifier",
 
             TokenKind.Fn => return "fn",
+            TokenKind.If => return "if",
             TokenKind.Let => return "let",
 
+            TokenKind.Bar => return "'|'",
             TokenKind.Colon => return "':'",
             TokenKind.Comma => return "','",
             TokenKind.Dot => return "'.'",
@@ -48,6 +53,7 @@ pub const TokenKind = enum {
             TokenKind.LCurly => return "'{'",
             TokenKind.LParen => return "'('",
             TokenKind.Minus => return "'-'",
+            TokenKind.MinusGreater => return "'->'",
             TokenKind.Plus => return "'+'",
             TokenKind.RBracket => return "']'",
             TokenKind.RCurly => return "'}'",
