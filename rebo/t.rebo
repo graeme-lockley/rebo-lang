@@ -1,0 +1,4 @@
+let add1 = fn(a = 0, b = 0) = a + b ;
+let add2(a = 0, b = 0) = a + b ;
+
+add2(2, 9) ;

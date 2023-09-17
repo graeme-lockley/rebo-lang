@@ -13,7 +13,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 ## Values
 
-- [ ] Let declaration
+- [X] Let declaration
 - [ ] Assignment without destructing
 - [ ] Reference identifiers
 
@@ -22,6 +22,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add function literal
 - [X] Add function call
 - [X] Add function value
+- [ ] Add support for ...argument to get the remainder of the arguments as a sequence
 
 ## Sequences
 
@@ -49,6 +50,17 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Add support for `[]` to access a field in a record based on value
 - [ ] Add support for `.field = value` to update a record
 - [ ] Add support for destructing a record into variables
+
+# Control Statements
+
+## Sequences
+
+- [ ] Add top-level support for expression sequences terminated with a semicolon
+- [ ] Include this into the REPL
+- [ ] Add support for (... ; ... ; ...) to create a sequence of statements 
+
+## if
+
 
 # Chore Features
 

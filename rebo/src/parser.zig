@@ -18,8 +18,93 @@ pub const Parser = struct {
         };
     }
 
+    pub fn module(self: *Parser) Errors.err!*AST.Expression {
+        const start = self.currentToken().start;
+
+        var exprs = std.ArrayList(*AST.Expression).init(self.allocator);
+        defer exprs.deinit();
+        errdefer {
+            for (exprs.items) |expr| {
+                AST.destroy(self.allocator, expr);
+            }
+        }
+
+        while (self.currentTokenKind() != Lexer.TokenKind.EOS) {
+            try exprs.append(try self.expression());
+            try self.matchSkipToken(Lexer.TokenKind.Semicolon);
+        }
+
+        const v = try self.allocator.create(AST.Expression);
+        v.* = AST.Expression{
+            .kind = AST.ExpressionKind{ .exprs = try exprs.toOwnedSlice() },
+            .position = Errors.Position{ .start = start, .end = self.currentToken().end },
+        };
+        return v;
+    }
+
     pub fn expression(self: *Parser) Errors.err!*AST.Expression {
-        return try self.additive();
+        if (self.currentTokenKind() == Lexer.TokenKind.Let) {
+            const letToken = try self.nextToken();
+
+            const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
+            const name = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
+            errdefer self.allocator.free(name);
+
+            if (self.currentTokenKind() == Lexer.TokenKind.LParen) {
+                var literalFn = try self.functionTail(letToken.start);
+                errdefer AST.destroy(self.allocator, literalFn);
+
+                const v = try self.allocator.create(AST.Expression);
+
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .declaration = AST.DeclarationExpression{ .name = name, .value = literalFn } }, .position = Errors.Position{ .start = nameToken.start, .end = literalFn.position.end } };
+
+                return v;
+            } else {
+                try self.matchSkipToken(Lexer.TokenKind.Equal);
+
+                const value = try self.expression();
+                errdefer AST.destroy(self.allocator, value);
+
+                const v = try self.allocator.create(AST.Expression);
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .declaration = AST.DeclarationExpression{ .name = name, .value = value } }, .position = Errors.Position{ .start = letToken.start, .end = value.position.end } };
+                return v;
+            }
+
+            // } else if (self.currentTokenKind() == Lexer.TokenKind.If) {
+            //     const ifToken = try self.nextToken();
+
+            //     const condition = try self.expression();
+            //     errdefer AST.destroy(self.allocator, condition);
+
+            //     try self.matchSkipToken(Lexer.TokenKind.Then);
+
+            //     const then = try self.expression();
+            //     errdefer AST.destroy(self.allocator, then);
+
+            //     try self.matchSkipToken(Lexer.TokenKind.Else);
+
+            //     const else_ = try self.expression();
+            //     errdefer AST.destroy(self.allocator, else_);
+
+            //     const v = try self.allocator.create(AST.Expression);
+            //     v.* = AST.Expression{ .kind = AST.ExpressionKind{ .if = AST.IfExpression{ .condition = condition, .then = then, .else = else_ } }, .position = Errors.Position{ .start = ifToken.start, .end = else_.position.end } };
+            //     return v;
+            // } else if (self.currentTokenKind() == Lexer.TokenKind.While) {
+            //     const whileToken = try self.nextToken();
+
+            //     const condition = try self.expression();
+            //     errdefer AST.destroy(self.allocator, condition);
+
+            //     try self.matchSkipToken(Lexer.TokenKind.Do);
+
+            //     const body = try self.expression();
+            //     errdefer AST.destroy(self.allocator, body);
+
+            //     const v = try self.allocator.create(AST.Expression);
+            //     v.* = AST.Expression{ .kind = AST.ExpressionKind{ .while = AST.WhileExpression{ .condition = condition, .body = body } }, .position = Errors.Position{ .start = whileToken.start, .end = body.position
+        } else {
+            return try self.additive();
+        }
     }
 
     pub fn additive(self: *Parser) Errors.err!*AST.Expression {
@@ -255,32 +340,7 @@ pub const Parser = struct {
             Lexer.TokenKind.Fn => {
                 const fnToken = try self.nextToken();
 
-                try self.matchSkipToken(Lexer.TokenKind.LParen);
-
-                var params = std.ArrayList(AST.FunctionParam).init(self.allocator);
-                defer params.deinit();
-                errdefer for (params.items) |*param| {
-                    param.deinit(self.allocator);
-                };
-
-                if (self.currentTokenKind() != Lexer.TokenKind.RParen) {
-                    try params.append(try self.FunctionParam());
-                    while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
-                        try self.skipToken();
-                        try params.append(try self.FunctionParam());
-                    }
-                }
-
-                try self.matchSkipToken(Lexer.TokenKind.RParen);
-
-                try self.matchSkipToken(Lexer.TokenKind.Equal);
-
-                const body = try self.expression();
-                errdefer AST.destroy(self.allocator, body);
-
-                const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalFunction = AST.Function{ .params = try params.toOwnedSlice(), .body = body } }, .position = Errors.Position{ .start = fnToken.start, .end = body.position.end } };
-                return v;
+                return self.functionTail(fnToken.start);
             },
             else => {
                 {
@@ -304,7 +364,48 @@ pub const Parser = struct {
         }
     }
 
-    fn FunctionParam(self: *Parser) !AST.FunctionParam {
+    fn functionTail(self: *Parser, start: usize) !*AST.Expression {
+        var params = try self.parameters();
+        errdefer {
+            for (params) |*param| {
+                param.deinit(self.allocator);
+            }
+            self.allocator.free(params);
+        }
+
+        try self.matchSkipToken(Lexer.TokenKind.Equal);
+
+        const body = try self.expression();
+        errdefer AST.destroy(self.allocator, body);
+
+        const v = try self.allocator.create(AST.Expression);
+        v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalFunction = AST.Function{ .params = params, .body = body } }, .position = Errors.Position{ .start = start, .end = body.position.end } };
+        return v;
+    }
+
+    fn parameters(self: *Parser) ![]AST.FunctionParam {
+        var params = std.ArrayList(AST.FunctionParam).init(self.allocator);
+        defer params.deinit();
+        errdefer for (params.items) |*param| {
+            param.deinit(self.allocator);
+        };
+
+        try self.matchSkipToken(Lexer.TokenKind.LParen);
+
+        if (self.currentTokenKind() != Lexer.TokenKind.RParen) {
+            try params.append(try self.parameter());
+            while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
+                try self.skipToken();
+                try params.append(try self.parameter());
+            }
+        }
+
+        try self.matchSkipToken(Lexer.TokenKind.RParen);
+
+        return try params.toOwnedSlice();
+    }
+
+    fn parameter(self: *Parser) !AST.FunctionParam {
         const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
         const name = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
         errdefer self.allocator.free(name);

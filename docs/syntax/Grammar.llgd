@@ -1,11 +1,13 @@
 uses "./Scanner.llld";
 
 Module
-    : {Expression}
+    : {Expression ";"}
     ;
 
 Expression
-    : Additive
+    : "let" Identifier "=" Expression
+    | "let" Identifier FunctionTail
+    | Additive
     ;
 
 Additive
@@ -33,17 +35,21 @@ Factor
     | "true"
     | LiteralInt
     | "[" [Expression {"," Expression}] "]"
-    | "fn" "(" Arguments ")" "=" Expression
+    | "fn" FunctionTail
+    ;
+
+FunctionTail
+    : Parameters "=" Expression
     ;
 
 RecordItem
     : [LiteralString | Identifier] ":" Expression
     ;
 
-Arguments
-    : Argument {"," Argument}
+Parameters
+    : "(" [Parameter {"," Parameter}] ")"
     ;
 
-Argument
+Parameter
     : Identifier ["=" Expression]
     ;

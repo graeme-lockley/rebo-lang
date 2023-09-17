@@ -47,14 +47,12 @@ pub const Value = struct {
     }
 
     fn appendValue(self: *Value, buffer: *std.ArrayList(u8)) !void {
+        // std.debug.print("appending {}\n", .{self});
+
         switch (self.v) {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
             .FunctionKind => {
-                try buffer.appendSlice("fn");
-                if (self.v.FunctionKind.scope != null) {
-                    try self.v.FunctionKind.scope.?.appendValue(buffer);
-                }
-                try buffer.appendSlice("(");
+                try buffer.appendSlice("fn(");
                 var i: usize = 0;
                 for (self.v.FunctionKind.arguments) |argument| {
                     if (i != 0) {

@@ -101,12 +101,8 @@ pub const MemoryState = struct {
         }
     }
 
-    pub fn openScope(self: *MemoryState) !*Value {
-        var scope = try self.newValue(ValueValue{ .ScopeKind = ScopeValue{ .parent = self.scope, .values = std.StringHashMap(*Value).init(self.allocator) } });
-
-        self.scope = scope;
-
-        return scope;
+    pub fn openScope(self: *MemoryState) !void {
+        self.scope = try self.newValue(ValueValue{ .ScopeKind = ScopeValue{ .parent = self.scope, .values = std.StringHashMap(*Value).init(self.allocator) } });
     }
 
     pub fn openScopeFrom(self: *MemoryState, outerScope: ?*Value) !?*Value {
@@ -150,6 +146,7 @@ pub const MemoryState = struct {
             }
         }
         std.log.info("gc: memory state stack length: {d} vs {d}: values: {d} vs {d}", .{ self.stack.items.len, count, self.memory_size, number_of_values });
+        self.scope = null;
         self.stack.deinit();
         self.stack = std.ArrayList(*Value).init(self.allocator);
         force_gc(self);
@@ -223,6 +220,7 @@ fn sweep(state: *MemoryState, colour: Colour) void {
     var runner: *?*Value = &state.root;
     while (runner.* != null) {
         if (runner.*.?.colour != colour) {
+            // std.debug.print("sweep: freeing {}\n", .{runner.*.?.v});
             const next = runner.*.?.next;
             runner.*.?.deinit(state.allocator);
             state.allocator.destroy(runner.*.?);
@@ -338,6 +336,14 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             _ = machine.memoryState.pop();
             machine.memoryState.push(result) catch return true;
         },
+        .declaration => {
+            if (evalExpr(machine, e.kind.declaration.value)) return true;
+
+            const allocator = machine.memoryState.allocator;
+            const value: *Value = machine.memoryState.peek(0);
+
+            machine.memoryState.scope.?.v.ScopeKind.values.putNoClobber(allocator.dupe(u8, e.kind.declaration.name) catch return true, value) catch return true;
+        },
         .dot => {
             if (evalExpr(machine, e.kind.dot.record)) return true;
 
@@ -354,6 +360,23 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 machine.memoryState.pushUnitValue() catch return true;
             } else {
                 machine.memoryState.push(value.?) catch return true;
+            }
+        },
+        .exprs => {
+            if (e.kind.exprs.len == 0) {
+                machine.createVoidValue() catch return true;
+            } else {
+                var isFirst = true;
+
+                for (e.kind.exprs) |expr| {
+                    if (isFirst) {
+                        isFirst = false;
+                    } else {
+                        _ = machine.memoryState.pop();
+                    }
+
+                    if (evalExpr(machine, expr)) return true;
+                }
             }
         },
         .identifier => {
@@ -401,8 +424,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             for (e.kind.literalFunction.params, 0..) |param, index| {
                 if (param.default != null) {
                     if (evalExpr(machine, param.default.?)) return true;
-                    const default: ?*Value = machine.pop();
-                    arguments[index].default = default;
+                    arguments[index].default = machine.pop();
                 }
             }
         },
@@ -444,7 +466,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 fn initMemoryState(allocator: std.mem.Allocator) !MemoryState {
     const default_colour = Colour.White;
 
-    return MemoryState{
+    var state = MemoryState{
         .allocator = allocator,
         .stack = std.ArrayList(*Value).init(allocator),
         .colour = default_colour,
@@ -453,12 +475,17 @@ fn initMemoryState(allocator: std.mem.Allocator) !MemoryState {
         .memory_capacity = 2,
         .scope = null,
     };
+
+    try state.openScope();
+
+    return state;
 }
+
 pub const Machine = struct {
     memoryState: MemoryState,
     err: ?Errors.Error,
 
-    pub fn init(allocator: std.mem.Allocator) Machine {
+    pub fn init(allocator: std.mem.Allocator) !Machine {
         return Machine{
             .memoryState = try initMemoryState(allocator),
             .err = null,
@@ -515,7 +542,27 @@ pub const Machine = struct {
         defer AST.destroy(allocator, ast);
 
         try self.eval(ast);
-        // _ = try self.createVoidValue();
+    }
+
+    pub fn executeModule(self: *Machine, name: []const u8, buffer: []const u8) !void {
+        const allocator = self.memoryState.allocator;
+
+        var l = Lexer.Lexer.init(allocator);
+
+        l.initBuffer(name, buffer) catch |err| {
+            self.err = l.grabErr();
+            return err;
+        };
+
+        var p = Parser.Parser.init(allocator, l);
+
+        const ast = p.module() catch |err| {
+            self.err = p.grabErr();
+            return err;
+        };
+        defer AST.destroy(allocator, ast);
+
+        try self.eval(ast);
     }
 
     fn replaceErr(self: *Machine, err: Errors.Error) void {
@@ -545,7 +592,7 @@ pub const Machine = struct {
         return self.memoryState.topOfStack();
     }
 
-    pub fn reset(self: *Machine) void {
+    pub fn reset(self: *Machine) !void {
         self.eraseErr();
         self.memoryState.deinit();
         self.memoryState = try initMemoryState(self.memoryState.allocator);

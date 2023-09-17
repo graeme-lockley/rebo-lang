@@ -9,6 +9,7 @@ const keywords = std.ComptimeStringMap(TokenKind, .{
     .{ "true", TokenKind.LiteralBoolTrue },
     .{ "false", TokenKind.LiteralBoolFalse },
     .{ "fn", TokenKind.Fn },
+    .{ "let", TokenKind.Let },
 });
 
 pub const Lexer = struct {
@@ -108,6 +109,7 @@ pub const Lexer = struct {
             ',' => self.setSymbolToken(TokenKind.Comma, tokenStart),
             '.' => self.setSymbolToken(TokenKind.Dot, tokenStart),
             ':' => self.setSymbolToken(TokenKind.Colon, tokenStart),
+            ';' => self.setSymbolToken(TokenKind.Semicolon, tokenStart),
             '+' => self.setSymbolToken(TokenKind.Plus, tokenStart),
             '/' => self.setSymbolToken(TokenKind.Slash, tokenStart),
             '*' => self.setSymbolToken(TokenKind.Star, tokenStart),
@@ -173,12 +175,14 @@ const expectEqualStrings = std.testing.expectEqualStrings;
 
 test "identifier and keywords" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", "foo fn");
+    try lexer.initBuffer("console", " foo fn let ");
 
     try expectEqual(lexer.current.kind, TokenKind.Identifier);
     try expectEqualStrings(lexer.lexeme(lexer.current), "foo");
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Fn);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.Let);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
@@ -217,9 +221,9 @@ test "literal int" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / = [ { ( , . : ] } )" {
+test "+ - * / = [ { ( , . : ; ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / = [ { ( , . : ] } ) ");
+    try lexer.initBuffer("console", " + - * / = [ { ( , . : ; ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -242,6 +246,8 @@ test "+ - * / = [ { ( , . : ] } )" {
     try expectEqual(lexer.current.kind, TokenKind.Dot);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Colon);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.Semicolon);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.RBracket);
     try lexer.next();

@@ -19,16 +19,16 @@ pub fn main() !void {
         const buffer: []u8 = try loadBinary(allocator, args[2]);
         defer allocator.free(buffer);
 
-        var machine = Machine.Machine.init(allocator);
+        var machine = try Machine.Machine.init(allocator);
         defer machine.deinit();
 
-        execute(&machine, args[2], buffer);
+        executeModule(&machine, args[2], buffer);
         try printResult(allocator, machine.topOfStack());
     } else if (args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
         var buffer = try allocator.alloc(u8, 1024);
         defer allocator.free(buffer);
 
-        var machine = Machine.Machine.init(allocator);
+        var machine = try Machine.Machine.init(allocator);
         defer machine.deinit();
 
         const stdin = std.io.getStdIn().reader();
@@ -42,7 +42,7 @@ pub fn main() !void {
                 }
                 execute(&machine, "console", line);
                 try printResult(allocator, machine.topOfStack());
-                machine.reset();
+                try machine.reset();
             } else {
                 break;
             }
@@ -74,6 +74,10 @@ fn execute(machine: *Machine.Machine, name: []const u8, buffer: []const u8) void
     machine.execute(name, buffer) catch |err| errorHandler(err, machine);
 }
 
+fn executeModule(machine: *Machine.Machine, name: []const u8, buffer: []const u8) void {
+    machine.executeModule(name, buffer) catch |err| errorHandler(err, machine);
+}
+
 fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
     var file = std.fs.cwd().openFile(fileName, .{}) catch {
         std.debug.print("Unable to open file: {s}\n", .{fileName});
@@ -87,15 +91,47 @@ fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
     return buffer;
 }
 
-fn expectExecEqual(input: []const u8, expected: []const u8) !void {
+fn expectExprEqual(input: []const u8, expected: []const u8) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
     {
-        var machine = Machine.Machine.init(allocator);
+        var machine = try Machine.Machine.init(allocator);
         defer machine.deinit();
 
         execute(&machine, "console", input);
+        const v = machine.topOfStack();
+
+        if (v == null) {
+            std.log.err("Expected a value on the stack\n", .{});
+            return error.TestingError;
+        }
+
+        const result = try v.?.toString(allocator);
+        defer allocator.free(result);
+
+        if (!std.mem.eql(u8, result, expected)) {
+            std.log.err("Expected: '{s}', got: '{s}'\n", .{ expected, result });
+            return error.TestingError;
+        }
+    }
+
+    const err = gpa.deinit();
+    if (err == std.heap.Check.leak) {
+        std.log.err("Failed to deinit allocator\n", .{});
+        return error.TestingError;
+    }
+}
+
+fn expectModuleEqual(input: []const u8, expected: []const u8) !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+
+    {
+        var machine = try Machine.Machine.init(allocator);
+        defer machine.deinit();
+
+        executeModule(&machine, "console", input);
         const v = machine.topOfStack();
 
         if (v == null) {
@@ -124,7 +160,7 @@ fn expectError(input: []const u8) !void {
     const allocator = gpa.allocator();
 
     {
-        var machine = Machine.Machine.init(allocator);
+        var machine = try Machine.Machine.init(allocator);
         defer machine.deinit();
 
         const result = machine.execute("console", input);
@@ -150,97 +186,97 @@ fn expectError(input: []const u8) !void {
 const expectEqual = std.testing.expectEqual;
 
 test "call expression" {
-    try expectExecEqual("(fn() = 1)()", "1");
-    try expectExecEqual("(fn() = 1)(1, 2, 3)", "1");
-    try expectExecEqual("(fn(n) = n + 1)(10, 20, 30)", "11");
+    try expectExprEqual("(fn() = 1)()", "1");
+    try expectExprEqual("(fn() = 1)(1, 2, 3)", "1");
+    try expectExprEqual("(fn(n) = n + 1)(10, 20, 30)", "11");
 
-    try expectExecEqual("(fn(n = 0, m = 1) = n + m)()", "1");
-    try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10)", "11");
-    try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10, 20)", "30");
-    try expectExecEqual("(fn(n = 0, m = 1) = n + m)(10, 20, 40)", "30");
+    try expectExprEqual("(fn(n = 0, m = 1) = n + m)()", "1");
+    try expectExprEqual("(fn(n = 0, m = 1) = n + m)(10)", "11");
+    try expectExprEqual("(fn(n = 0, m = 1) = n + m)(10, 20)", "30");
+    try expectExprEqual("(fn(n = 0, m = 1) = n + m)(10, 20, 40)", "30");
 
-    try expectExecEqual("(fn(f, g) = (fn(n) = f(g(n))))(fn(n) = n * n, fn(n) = n + n)(3)", "36");
-    try expectExecEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()", "4");
-    try expectExecEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)(3)", "36");
+    try expectExprEqual("(fn(f, g) = (fn(n) = f(g(n))))(fn(n) = n * n, fn(n) = n + n)(3)", "36");
+    try expectExprEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()", "4");
+    try expectExprEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)(3)", "36");
 
     try expectError("20(10)");
     try expectError("(fn(f) = (fn (g) = (fn(n) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()");
 }
 
 test "dot expression" {
-    try expectExecEqual("{}.a", "()");
-    try expectExecEqual("{a: 10}.a", "10");
-    try expectExecEqual("{a: 10, b: 20, c: 30, a: 40}.a", "40");
-    try expectExecEqual("{a: {x: 1, y: 2}}.a.x", "1");
+    try expectExprEqual("{}.a", "()");
+    try expectExprEqual("{a: 10}.a", "10");
+    try expectExprEqual("{a: 10, b: 20, c: 30, a: 40}.a", "40");
+    try expectExprEqual("{a: {x: 1, y: 2}}.a.x", "1");
 
     try expectError("{a: 10}.20");
 }
 
 test "literal bool" {
-    try expectExecEqual("true", "true");
-    try expectExecEqual("false", "false");
+    try expectExprEqual("true", "true");
+    try expectExprEqual("false", "false");
 }
 
 test "literal function" {
-    try expectExecEqual("fn() = 1", "fn()");
-    try expectExecEqual("fn(a) = a + 1", "fn(a)");
-    try expectExecEqual("fn(a = 1, b = 2, c = 3) = a + b + c", "fn(a = 1, b = 2, c = 3)");
+    try expectExprEqual("fn() = 1", "fn()");
+    try expectExprEqual("fn(a) = a + 1", "fn(a)");
+    try expectExprEqual("fn(a = 1, b = 2, c = 3) = a + b + c", "fn(a = 1, b = 2, c = 3)");
 
-    try expectExecEqual("(fn(n) = (fn (m) = n + m))(1)(2)", "3");
+    try expectExprEqual("(fn(n) = (fn (m) = n + m))(1)(2)", "3");
 
     try expectError("fn(a = 1, b = 2, c = 3) = ");
 }
 
 test "literal int" {
-    try expectExecEqual("0", "0");
-    try expectExecEqual("-0", "0");
-    try expectExecEqual("123", "123");
-    try expectExecEqual("-123", "-123");
+    try expectExprEqual("0", "0");
+    try expectExprEqual("-0", "0");
+    try expectExprEqual("123", "123");
+    try expectExprEqual("-123", "-123");
 }
 
 test "literal record" {
-    try expectExecEqual("{}", "{}");
-    try expectExecEqual("{name: 10}", "{name: 10}");
+    try expectExprEqual("{}", "{}");
+    try expectExprEqual("{name: 10}", "{name: 10}");
 
     // the following is a brittle test but it is good enough for now
-    try expectExecEqual("{a: 1, b: 2, c: 3}", "{b: 2, a: 1, c: 3}");
-    try expectExecEqual("{a: 1, a: 2, a: 3}", "{a: 3}");
+    try expectExprEqual("{a: 1, b: 2, c: 3}", "{b: 2, a: 1, c: 3}");
+    try expectExprEqual("{a: 1, a: 2, a: 3}", "{a: 3}");
 
     try expectError("{a:1,");
 }
 
 test "literal sequence" {
-    try expectExecEqual("[]", "[]");
-    try expectExecEqual("[1]", "[1]");
-    try expectExecEqual("[1, 2, 3]", "[1, 2, 3]");
-    try expectExecEqual("[1, [true, false], 3]", "[1, [true, false], 3]");
+    try expectExprEqual("[]", "[]");
+    try expectExprEqual("[1]", "[1]");
+    try expectExprEqual("[1, 2, 3]", "[1, 2, 3]");
+    try expectExprEqual("[1, [true, false], 3]", "[1, [true, false], 3]");
 
     try expectError("[1, 2,");
     try expectError("[1, 2, 3");
 }
 
 test "literal unit" {
-    try expectExecEqual("()", "()");
+    try expectExprEqual("()", "()");
 }
 
 test "additive op" {
-    try expectExecEqual("1 + 1", "2");
-    try expectExecEqual("1 + 2 + 3 + 4 + 5", "15");
+    try expectExprEqual("1 + 1", "2");
+    try expectExprEqual("1 + 2 + 3 + 4 + 5", "15");
 
-    try expectExecEqual("1 - 1", "0");
-    try expectExecEqual("1 - 2 + 3 - 4 + 5", "3");
+    try expectExprEqual("1 - 1", "0");
+    try expectExprEqual("1 - 2 + 3 - 4 + 5", "3");
 
     try expectError("1 + true");
     try expectError("1 - true");
 }
 
 test "multiplicative op" {
-    try expectExecEqual("1 * 1", "1");
-    try expectExecEqual("1 * 2 * 3 * 4 * 5", "120");
+    try expectExprEqual("1 * 1", "1");
+    try expectExprEqual("1 * 2 * 3 * 4 * 5", "120");
 
-    try expectExecEqual("100 / 2", "50");
-    try expectExecEqual("100 / 10 / 2", "5");
-    try expectExecEqual("100 / (10 / 2)", "20");
+    try expectExprEqual("100 / 2", "50");
+    try expectExprEqual("100 / 10 / 2", "5");
+    try expectExprEqual("100 / (10 / 2)", "20");
 
     try expectError("1 * true");
     try expectError("1 / true");
@@ -248,9 +284,22 @@ test "multiplicative op" {
 }
 
 test "parenthesis" {
-    try expectExecEqual("(1)", "1");
-    try expectExecEqual("(((1)))", "1");
+    try expectExprEqual("(1)", "1");
+    try expectExprEqual("(((1)))", "1");
 
     try expectError("(");
     try expectError("(1");
+}
+
+test "let declaration" {
+    try expectModuleEqual("1; 2; 3; 1;", "1");
+    try expectModuleEqual("let a = 1; a;", "1");
+
+    try expectModuleEqual("let add(a = 0, b = 0) = a + b; add();", "0");
+    try expectModuleEqual("let add(a = 0, b = 0) = a + b; add(1);", "1");
+    try expectModuleEqual("let add(a = 0, b = 0) = a + b; add(1, 2);", "3");
+    try expectModuleEqual("let add(a = 0, b = 0) = a + b; add(1, 2, 3);", "3");
+    try expectModuleEqual("let add(a = 0, b = 0) = a + b; add;", "fn(a = 0, b = 0)");
+
+    try expectModuleEqual("let add(a = 0, b = 0) = a + b; let fun(x = add(1, 2)) = x * x; fun();", "9");
 }

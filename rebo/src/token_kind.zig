@@ -9,6 +9,7 @@ pub const TokenKind = enum {
     Identifier,
 
     Fn,
+    Let,
 
     Colon,
     Comma,
@@ -22,6 +23,7 @@ pub const TokenKind = enum {
     RBracket,
     RCurly,
     RParen,
+    Semicolon,
     Slash,
     Star,
 
@@ -36,6 +38,7 @@ pub const TokenKind = enum {
             TokenKind.Identifier => return "identifier",
 
             TokenKind.Fn => return "fn",
+            TokenKind.Let => return "let",
 
             TokenKind.Colon => return "':'",
             TokenKind.Comma => return "','",
@@ -49,6 +52,7 @@ pub const TokenKind = enum {
             TokenKind.RBracket => return "']'",
             TokenKind.RCurly => return "'}'",
             TokenKind.RParen => return "')'",
+            TokenKind.Semicolon => return "';'",
             TokenKind.Slash => return "'/'",
             TokenKind.Star => return "'*'",
         }
