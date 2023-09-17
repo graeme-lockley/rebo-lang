@@ -458,7 +458,7 @@ pub const Parser = struct {
     }
 
     fn matchToken(self: *Parser, kind: Lexer.TokenKind) Errors.err!Lexer.Token {
-        const token = try self.nextToken();
+        const token = self.currentToken();
 
         if (token.kind != kind) {
             {
@@ -466,13 +466,13 @@ pub const Parser = struct {
                 errdefer self.allocator.free(expected);
 
                 expected[0] = kind;
-                self.replaceErr(try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
+                self.replaceErr(try Errors.parserError(self.allocator, Errors.Position{ .start = token.start, .end = token.end }, self.currentTokenLexeme(), expected));
             }
 
             return error.InterpreterError;
         }
 
-        return token;
+        return self.nextToken();
     }
 
     fn matchSkipToken(self: *Parser, kind: Lexer.TokenKind) Errors.err!void {
