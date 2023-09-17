@@ -535,27 +535,6 @@ pub const Machine = struct {
 
         var p = Parser.Parser.init(allocator, l);
 
-        const ast = p.expression() catch |err| {
-            self.err = p.grabErr();
-            return err;
-        };
-        defer AST.destroy(allocator, ast);
-
-        try self.eval(ast);
-    }
-
-    pub fn executeModule(self: *Machine, name: []const u8, buffer: []const u8) !void {
-        const allocator = self.memoryState.allocator;
-
-        var l = Lexer.Lexer.init(allocator);
-
-        l.initBuffer(name, buffer) catch |err| {
-            self.err = l.grabErr();
-            return err;
-        };
-
-        var p = Parser.Parser.init(allocator, l);
-
         const ast = p.module() catch |err| {
             self.err = p.grabErr();
             return err;

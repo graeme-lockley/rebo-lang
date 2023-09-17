@@ -31,7 +31,10 @@ pub const Parser = struct {
 
         while (self.currentTokenKind() != Lexer.TokenKind.EOS) {
             try exprs.append(try self.expression());
-            try self.matchSkipToken(Lexer.TokenKind.Semicolon);
+
+            while (self.currentTokenKind() == Lexer.TokenKind.Semicolon) {
+                try self.skipToken();
+            }
         }
 
         const v = try self.allocator.create(AST.Expression);

@@ -22,7 +22,7 @@ pub fn main() !void {
         var machine = try Machine.Machine.init(allocator);
         defer machine.deinit();
 
-        executeModule(&machine, args[2], buffer);
+        execute(&machine, args[2], buffer);
         try printResult(allocator, machine.topOfStack());
     } else if (args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
         var buffer = try allocator.alloc(u8, 1024);
@@ -74,10 +74,6 @@ fn execute(machine: *Machine.Machine, name: []const u8, buffer: []const u8) void
     machine.execute(name, buffer) catch |err| errorHandler(err, machine);
 }
 
-fn executeModule(machine: *Machine.Machine, name: []const u8, buffer: []const u8) void {
-    machine.executeModule(name, buffer) catch |err| errorHandler(err, machine);
-}
-
 fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
     var file = std.fs.cwd().openFile(fileName, .{}) catch {
         std.debug.print("Unable to open file: {s}\n", .{fileName});
@@ -100,38 +96,6 @@ fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         defer machine.deinit();
 
         execute(&machine, "console", input);
-        const v = machine.topOfStack();
-
-        if (v == null) {
-            std.log.err("Expected a value on the stack\n", .{});
-            return error.TestingError;
-        }
-
-        const result = try v.?.toString(allocator);
-        defer allocator.free(result);
-
-        if (!std.mem.eql(u8, result, expected)) {
-            std.log.err("Expected: '{s}', got: '{s}'\n", .{ expected, result });
-            return error.TestingError;
-        }
-    }
-
-    const err = gpa.deinit();
-    if (err == std.heap.Check.leak) {
-        std.log.err("Failed to deinit allocator\n", .{});
-        return error.TestingError;
-    }
-}
-
-fn expectModuleEqual(input: []const u8, expected: []const u8) !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-
-    {
-        var machine = try Machine.Machine.init(allocator);
-        defer machine.deinit();
-
-        executeModule(&machine, "console", input);
         const v = machine.topOfStack();
 
         if (v == null) {
@@ -292,14 +256,14 @@ test "parenthesis" {
 }
 
 test "let declaration" {
-    try expectModuleEqual("1; 2; 3; 1;", "1");
-    try expectModuleEqual("let a = 1; a;", "1");
+    try expectExprEqual("1; 2; 3; 1;", "1");
+    try expectExprEqual("let a = 1; a;", "1");
 
-    try expectModuleEqual("let add(a = 0, b = 0) = a + b; add();", "0");
-    try expectModuleEqual("let add(a = 0, b = 0) = a + b; add(1);", "1");
-    try expectModuleEqual("let add(a = 0, b = 0) = a + b; add(1, 2);", "3");
-    try expectModuleEqual("let add(a = 0, b = 0) = a + b; add(1, 2, 3);", "3");
-    try expectModuleEqual("let add(a = 0, b = 0) = a + b; add;", "fn(a = 0, b = 0)");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; add();", "0");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; add(1);", "1");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; add(1, 2);", "3");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; add(1, 2, 3);", "3");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; add;", "fn(a = 0, b = 0)");
 
-    try expectModuleEqual("let add(a = 0, b = 0) = a + b; let fun(x = add(1, 2)) = x * x; fun();", "9");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; let fun(x = add(1, 2)) = x * x; fun();", "9");
 }
