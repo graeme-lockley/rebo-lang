@@ -30,12 +30,24 @@ pub const ExpressionKind = union(enum) {
     dot: DotExpression,
     exprs: []*Expression,
     identifier: []u8,
+    ifte: []IfCouple,
     literalBool: bool,
     literalFunction: Function,
     literalInt: i32,
     literalSequence: []*Expression,
     literalRecord: []RecordEntry,
     literalVoid: void,
+};
+
+pub const BinaryOpExpression = struct {
+    left: *Expression,
+    op: Operator,
+    right: *Expression,
+};
+
+pub const CallExpression = struct {
+    callee: *Expression,
+    args: []*Expression,
 };
 
 pub const DeclarationExpression = struct {
@@ -46,6 +58,11 @@ pub const DeclarationExpression = struct {
         allocator.free(self.name);
         destroy(allocator, self.value);
     }
+};
+
+pub const DotExpression = struct {
+    record: *Expression,
+    field: []u8,
 };
 
 pub const Function = struct {
@@ -74,25 +91,14 @@ pub const FunctionParam = struct {
     }
 };
 
-pub const CallExpression = struct {
-    callee: *Expression,
-    args: []*Expression,
-};
-
-pub const DotExpression = struct {
-    record: *Expression,
-    field: []u8,
+pub const IfCouple = struct {
+    condition: ?*Expression,
+    then: *Expression,
 };
 
 pub const RecordEntry = struct {
     key: []u8,
     value: *Expression,
-};
-
-pub const BinaryOpExpression = struct {
-    left: *Expression,
-    op: Operator,
-    right: *Expression,
 };
 
 pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
@@ -120,6 +126,15 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
             allocator.free(expr.kind.exprs);
         },
         .identifier => allocator.free(expr.kind.identifier),
+        .ifte => {
+            for (expr.kind.ifte) |v| {
+                if (v.condition != null) {
+                    destroy(allocator, v.condition.?);
+                }
+                destroy(allocator, v.then);
+            }
+            allocator.free(expr.kind.ifte);
+        },
         .literalBool, .literalInt, .literalVoid => {},
         .literalFunction => expr.kind.literalFunction.deinit(allocator),
         .literalSequence => {

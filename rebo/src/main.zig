@@ -267,3 +267,10 @@ test "let declaration" {
 
     try expectExprEqual("let add(a = 0, b = 0) = a + b; let fun(x = add(1, 2)) = x * x; fun();", "9");
 }
+
+test "if" {
+    try expectExprEqual("if true -> 1 | 0", "1");
+    try expectExprEqual("if false -> 1 | 0", "0");
+    try expectExprEqual("if false -> 1", "()");
+    try expectExprEqual("if false -> 1 | false -> 2 | 3", "3");
+}

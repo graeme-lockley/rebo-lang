@@ -405,6 +405,30 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 runner = parent;
             }
         },
+        .ifte => {
+            for (e.kind.ifte) |case| {
+                if (case.condition == null) {
+                    if (evalExpr(machine, case.then)) return true;
+                    return false;
+                }
+
+                if (evalExpr(machine, case.condition.?)) return true;
+
+                const condition = machine.memoryState.pop();
+
+                if (condition.v != ValueValue.BoolKind) {
+                    machine.replaceErr(Errors.boolValueExpectedError(machine.memoryState.allocator, case.condition.?.position, condition.v));
+                    return true;
+                }
+
+                if (condition.v.BoolKind) {
+                    if (evalExpr(machine, case.then)) return true;
+                    return false;
+                }
+            }
+
+            machine.createVoidValue() catch return true;
+        },
         .literalBool => {
             machine.createBoolValue(e.kind.literalBool) catch return true;
         },

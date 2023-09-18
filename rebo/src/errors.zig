@@ -10,6 +10,20 @@ pub const Position = struct {
     end: usize,
 };
 
+pub const BoolValueExpectedError = struct {
+    allocator: std.mem.Allocator,
+    position: Position,
+    found: ValueKind,
+
+    pub fn deinit(self: BoolValueExpectedError) void {
+        _ = self;
+    }
+
+    pub fn print(self: BoolValueExpectedError) void {
+        std.log.err("Type Error: {d}-{d}: if guard needs to be boolean rather than {s}", .{ self.position.start, self.position.end, self.found.toString() });
+    }
+};
+
 pub const DivideByZeroError = struct {
     allocator: std.mem.Allocator,
     position: Position,
@@ -123,6 +137,7 @@ pub const UnknownIdentifierError = struct {
 };
 
 pub const Error = union(enum) {
+    boolValueExpected: BoolValueExpectedError,
     divideByZero: DivideByZeroError,
     functionValueExpectedError: FunctionValueExpectedError,
     incompatibleOperandTypesError: IncompatibleOperandTypesError,
@@ -134,6 +149,9 @@ pub const Error = union(enum) {
 
     pub fn deinit(self: Error) void {
         switch (self) {
+            .boolValueExpected => {
+                self.boolValueExpected.deinit();
+            },
             .divideByZero => {
                 self.divideByZero.deinit();
             },
@@ -160,6 +178,9 @@ pub const Error = union(enum) {
 
     pub fn print(self: Error) !void {
         switch (self) {
+            .boolValueExpected => {
+                self.boolValueExpected.print();
+            },
             .divideByZero => {
                 self.divideByZero.print();
             },
@@ -187,6 +208,10 @@ pub const Error = union(enum) {
         }
     }
 };
+
+pub fn boolValueExpectedError(allocator: std.mem.Allocator, position: Position, found: ValueKind) Error {
+    return Error{ .boolValueExpected = .{ .allocator = allocator, .position = position, .found = found } };
+}
 
 pub fn divideByZeroError(allocator: std.mem.Allocator, position: Position) Error {
     return Error{ .divideByZero = .{ .allocator = allocator, .position = position } };

@@ -51,6 +51,31 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Add support for `.field = value` to update a record
 - [ ] Add support for destructing a record into variables
 
+# Operators
+
+- [X] Integer '+'
+- [X] Integer '-'
+- [X] Integer '*'
+- [X] Integer '/'
+- [ ] Integer '%'
+- [ ] Real '+'
+- [ ] Real '-'
+- [ ] Real '*'
+- [ ] Real '/'
+- [ ] All '=='
+- [ ] All '!='
+- [ ] Integer '<'
+- [ ] Integer '<='
+- [ ] Integer '>'
+- [ ] Integer '>='
+- [ ] Real '<'
+- [ ] Real '<='
+- [ ] Real '>'
+- [ ] Real '>='
+- [ ] Boolean '&&'
+- [ ] Boolean '||'
+- [ ] Boolean '!'
+
 # Control Statements
 
 ## Sequences
@@ -61,6 +86,8 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 ## if
 
+- [X] Add support for if expressions
+- [ ] Include pattern machine into if expressions
 
 # Chore Features
 

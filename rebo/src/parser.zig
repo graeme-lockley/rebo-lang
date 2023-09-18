@@ -105,6 +105,57 @@ pub const Parser = struct {
 
             //     const v = try self.allocator.create(AST.Expression);
             //     v.* = AST.Expression{ .kind = AST.ExpressionKind{ .while = AST.WhileExpression{ .condition = condition, .body = body } }, .position = Errors.Position{ .start = whileToken.start, .end = body.position
+        } else if (self.currentTokenKind() == Lexer.TokenKind.If) {
+            const ifToken = try self.nextToken();
+
+            var couples = std.ArrayList(AST.IfCouple).init(self.allocator);
+            defer couples.deinit();
+            errdefer {
+                for (couples.items) |couple| {
+                    if (couple.condition != null) {
+                        AST.destroy(self.allocator, couple.condition.?);
+                    }
+                    AST.destroy(self.allocator, couple.then);
+                }
+            }
+
+            if (self.currentTokenKind() == Lexer.TokenKind.Bar) {
+                try self.skipToken();
+            }
+
+            const firstGuard = try self.expression();
+            errdefer AST.destroy(self.allocator, firstGuard);
+
+            if (self.currentTokenKind() == Lexer.TokenKind.MinusGreater) {
+                try self.skipToken();
+                const then = try self.expression();
+
+                try couples.append(AST.IfCouple{ .condition = firstGuard, .then = then });
+                while (self.currentTokenKind() == Lexer.TokenKind.Bar) {
+                    try self.skipToken();
+
+                    const guard = try self.expression();
+                    errdefer AST.destroy(self.allocator, guard);
+
+                    if (self.currentTokenKind() == Lexer.TokenKind.MinusGreater) {
+                        try self.skipToken();
+
+                        const then2 = try self.expression();
+                        errdefer AST.destroy(self.allocator, then2);
+
+                        try couples.append(AST.IfCouple{ .condition = guard, .then = then2 });
+                    } else {
+                        try couples.append(AST.IfCouple{ .condition = null, .then = guard });
+                        break;
+                    }
+                }
+            } else {
+                try couples.append(AST.IfCouple{ .condition = null, .then = firstGuard });
+            }
+
+            const v = try self.allocator.create(AST.Expression);
+            v.* = AST.Expression{ .kind = AST.ExpressionKind{ .ifte = try couples.toOwnedSlice() }, .position = Errors.Position{ .start = ifToken.start, .end = self.lexer.current.end } };
+            return v;
         } else {
             return try self.additive();
         }
