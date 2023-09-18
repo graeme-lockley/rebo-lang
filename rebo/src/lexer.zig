@@ -115,7 +115,15 @@ pub const Lexer = struct {
             '+' => self.setSymbolToken(TokenKind.Plus, tokenStart),
             '/' => self.setSymbolToken(TokenKind.Slash, tokenStart),
             '*' => self.setSymbolToken(TokenKind.Star, tokenStart),
-            '=' => self.setSymbolToken(TokenKind.Equal, tokenStart),
+            '=' => {
+                self.skipCharacter();
+                if (self.currentCharacter() == '=') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.EqualEqual, .start = tokenStart, .end = self.offset };
+                } else {
+                    self.current = Token{ .kind = TokenKind.Equal, .start = tokenStart, .end = self.offset };
+                }
+            },
             '-' => {
                 self.skipCharacter();
                 if (self.currentCharacter() == '>') {
@@ -230,9 +238,9 @@ test "literal int" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / = [ { ( , . : ; -> | ] } )" {
+test "+ - * / = == [ { ( , . : ; -> | ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / = [ { ( , . : ; -> | ] } ) ");
+    try lexer.initBuffer("console", " + - * / = == [ { ( , . : ; -> | ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -243,6 +251,8 @@ test "+ - * / = [ { ( , . : ; -> | ] } )" {
     try expectEqual(lexer.current.kind, TokenKind.Slash);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Equal);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.EqualEqual);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LBracket);
     try lexer.next();
