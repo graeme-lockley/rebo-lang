@@ -325,30 +325,53 @@ pub const Parser = struct {
             Lexer.TokenKind.LCurly => {
                 const lcurly = try self.nextToken();
 
-                var es = std.ArrayList(AST.RecordEntry).init(self.allocator);
-                defer {
-                    for (es.items) |item| {
-                        self.allocator.free(item.key);
-                        AST.destroy(self.allocator, item.value);
+                if (self.currentTokenKind() == Lexer.TokenKind.RCurly or self.currentTokenKind() == Lexer.TokenKind.Identifier and try self.peekNextToken() == Lexer.TokenKind.Colon) {
+                    var es = std.ArrayList(AST.RecordEntry).init(self.allocator);
+                    defer {
+                        for (es.items) |item| {
+                            self.allocator.free(item.key);
+                            AST.destroy(self.allocator, item.value);
+                        }
+                        es.deinit();
                     }
-                    es.deinit();
-                }
 
-                if (self.currentTokenKind() != Lexer.TokenKind.RCurly) {
-                    const me = try self.RecordEntry();
-                    try es.append(me);
+                    if (self.currentTokenKind() != Lexer.TokenKind.RCurly) {
+                        const me = try self.RecordEntry();
+                        try es.append(me);
 
-                    while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
-                        try self.skipToken();
-                        try es.append(try self.RecordEntry());
+                        while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
+                            try self.skipToken();
+                            try es.append(try self.RecordEntry());
+                        }
                     }
+
+                    const rcurly = try self.matchToken(Lexer.TokenKind.RCurly);
+
+                    const v = try self.allocator.create(AST.Expression);
+                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalRecord = try es.toOwnedSlice() }, .position = Errors.Position{ .start = lcurly.start, .end = rcurly.end } };
+                    return v;
+                } else {
+                    var es = std.ArrayList(*AST.Expression).init(self.allocator);
+                    defer {
+                        for (es.items) |item| {
+                            AST.destroy(self.allocator, item);
+                        }
+                        es.deinit();
+                    }
+
+                    while (self.currentTokenKind() != Lexer.TokenKind.RCurly) {
+                        try es.append(try self.expression());
+                        while (self.currentTokenKind() == Lexer.TokenKind.Semicolon) {
+                            try self.skipToken();
+                        }
+                    }
+
+                    const rcurly = try self.matchToken(Lexer.TokenKind.RCurly);
+
+                    const v = try self.allocator.create(AST.Expression);
+                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .exprs = try es.toOwnedSlice() }, .position = Errors.Position{ .start = lcurly.start, .end = rcurly.end } };
+                    return v;
                 }
-
-                const rcurly = try self.matchToken(Lexer.TokenKind.RCurly);
-
-                const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalRecord = try es.toOwnedSlice() }, .position = Errors.Position{ .start = lcurly.start, .end = rcurly.end } };
-                return v;
             },
             Lexer.TokenKind.Identifier => {
                 const lexeme = self.lexer.currentLexeme();
@@ -527,6 +550,10 @@ pub const Parser = struct {
         try self.lexer.next();
 
         return token;
+    }
+
+    fn peekNextToken(self: *Parser) !Lexer.TokenKind {
+        return try self.lexer.peekNext();
     }
 
     fn skipToken(self: *Parser) Errors.err!void {

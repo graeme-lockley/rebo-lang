@@ -84,7 +84,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [X] Add top-level support for expression sequences terminated with a semicolon
 - [ ] Include this into the REPL
-- [ ] Add support for (... ; ... ; ...) to create a sequence of statements 
+- [X] Add support for {... ; ... ; ...} to create a sequence of expressions 
 
 ## if
 

@@ -31,6 +31,7 @@ FactorSuffix
 Factor
     : "(" [Expression] ")"
     | "{" [RecordItem {"," RecordItem}]"}"
+    | "{" Expression {";" Expression} "}"
     | Identifier
     | "false"
     | "true"

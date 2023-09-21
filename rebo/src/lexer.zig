@@ -69,6 +69,18 @@ pub const Lexer = struct {
         }
     }
 
+    pub fn peekNext(self: *Lexer) Errors.err!TokenKind {
+        const offset = self.offset;
+        const token = self.current;
+
+        try self.next();
+        const kind = self.current.kind;
+        self.offset = offset;
+        self.current = token;
+
+        return kind;
+    }
+
     pub fn next(self: *Lexer) Errors.err!void {
         while (!self.atEnd() and self.currentCharacter() <= ' ') {
             self.skipCharacter();
