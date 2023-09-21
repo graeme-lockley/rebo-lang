@@ -157,8 +157,33 @@ pub const Parser = struct {
             v.* = AST.Expression{ .kind = AST.ExpressionKind{ .ifte = try couples.toOwnedSlice() }, .position = Errors.Position{ .start = ifToken.start, .end = self.lexer.current.end } };
             return v;
         } else {
-            return try self.additive();
+            return try self.equality();
         }
+    }
+
+    fn equality(self: *Parser) Errors.err!*AST.Expression {
+        var lhs = try self.additive();
+        errdefer AST.destroy(self.allocator, lhs);
+
+        const kind = self.currentTokenKind();
+
+        if (kind == Lexer.TokenKind.EqualEqual or kind == Lexer.TokenKind.BangEqual) {
+            try self.skipToken();
+
+            const rhs = try self.additive();
+            errdefer AST.destroy(self.allocator, rhs);
+
+            const v = try self.allocator.create(AST.Expression);
+            const op = if (kind == Lexer.TokenKind.EqualEqual) AST.Operator.Equals else AST.Operator.NotEquals;
+
+            v.* = AST.Expression{
+                .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } },
+                .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
+            };
+            lhs = v;
+        }
+
+        return lhs;
     }
 
     pub fn additive(self: *Parser) Errors.err!*AST.Expression {

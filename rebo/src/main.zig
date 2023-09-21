@@ -223,6 +223,14 @@ test "literal unit" {
     try expectExprEqual("()", "()");
 }
 
+test "equality op" {
+    try expectExprEqual("1 == 1", "true");
+    try expectExprEqual("0 == 1", "false");
+
+    try expectExprEqual("1 != 1", "false");
+    try expectExprEqual("0 != 1", "true");
+}
+
 test "additive op" {
     try expectExprEqual("1 + 1", "2");
     try expectExprEqual("1 + 2 + 3 + 4 + 5", "15");
@@ -238,6 +246,7 @@ test "multiplicative op" {
     try expectExprEqual("1 * 1", "1");
     try expectExprEqual("1 * 2 * 3 * 4 * 5", "120");
 
+    try expectExprEqual("3 / 2", "1");
     try expectExprEqual("100 / 2", "50");
     try expectExprEqual("100 / 10 / 2", "5");
     try expectExprEqual("100 / (10 / 2)", "20");

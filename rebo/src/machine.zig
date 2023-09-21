@@ -19,7 +19,7 @@ pub const MemoryState = struct {
     root: ?*Value,
     memory_size: u32,
     memory_capacity: u32,
-    scope: ?*Value,
+    scopes: std.ArrayList(*Value),
 
     fn newValue(self: *MemoryState, vv: ValueValue) !*Value {
         const v = try self.allocator.create(Value);
@@ -101,27 +101,36 @@ pub const MemoryState = struct {
         }
     }
 
+    fn scope(self: *MemoryState) ?*Value {
+        if (self.scopes.items.len == 0) {
+            return null;
+        } else {
+            return self.scopes.items[self.scopes.items.len - 1];
+        }
+    }
+
     pub fn openScope(self: *MemoryState) !void {
-        self.scope = try self.newValue(ValueValue{ .ScopeKind = ScopeValue{ .parent = self.scope, .values = std.StringHashMap(*Value).init(self.allocator) } });
+        try self.scopes.append(try self.newValue(ValueValue{ .ScopeKind = ScopeValue{ .parent = self.scope(), .values = std.StringHashMap(*Value).init(self.allocator) } }));
     }
 
-    pub fn openScopeFrom(self: *MemoryState, outerScope: ?*Value) !?*Value {
-        const oldScope = self.scope;
-
-        var scope = try self.newValue(ValueValue{ .ScopeKind = ScopeValue{ .parent = outerScope, .values = std.StringHashMap(*Value).init(self.allocator) } });
-
-        self.scope = scope;
-
-        return oldScope;
+    pub fn openScopeFrom(self: *MemoryState, outerScope: ?*Value) !void {
+        try self.scopes.append(try self.newValue(ValueValue{ .ScopeKind = ScopeValue{ .parent = outerScope, .values = std.StringHashMap(*Value).init(self.allocator) } }));
     }
 
-    pub fn closeScope(self: *MemoryState) void {
-        var currentScope = self.scope;
-        self.scope = currentScope.?.v.ScopeKind.parent;
+    pub fn restoreScope(self: *MemoryState) void {
+        _ = self.scopes.pop();
     }
 
-    pub fn restoreScope(self: *MemoryState, scope: ?*Value) void {
-        self.scope = scope;
+    pub fn addToScope(self: *MemoryState, name: []const u8, value: *Value) !void {
+        const s = self.scope().?;
+
+        const oldKey = s.v.ScopeKind.values.getKey(name);
+
+        if (oldKey == null) {
+            try s.v.ScopeKind.values.put(try self.allocator.dupe(u8, name), value);
+        } else {
+            try s.v.ScopeKind.values.put(oldKey.?, value);
+        }
     }
 
     pub fn deinit(self: *MemoryState) void {
@@ -146,7 +155,8 @@ pub const MemoryState = struct {
             }
         }
         std.log.info("gc: memory state stack length: {d} vs {d}: values: {d} vs {d}", .{ self.stack.items.len, count, self.memory_size, number_of_values });
-        self.scope = null;
+        self.scopes.deinit();
+        self.scopes = std.ArrayList(*Value).init(self.allocator);
         self.stack.deinit();
         self.stack = std.ArrayList(*Value).init(self.allocator);
         force_gc(self);
@@ -235,7 +245,9 @@ fn sweep(state: *MemoryState, colour: Colour) void {
 fn force_gc(state: *MemoryState) void {
     const new_colour = if (state.colour == Colour.Black) Colour.White else Colour.Black;
 
-    mark(state, state.scope, new_colour);
+    for (state.scopes.items) |value| {
+        mark(state, value, new_colour);
+    }
     for (state.stack.items) |value| {
         mark(state, value, new_colour);
     }
@@ -277,22 +289,24 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 return true;
             }
 
-            const result = switch (e.kind.binaryOp.op) {
-                AST.Operator.Plus => left.v.IntKind + right.v.IntKind,
-                AST.Operator.Minus => left.v.IntKind - right.v.IntKind,
-                AST.Operator.Times => left.v.IntKind * right.v.IntKind,
-                AST.Operator.Divide => div: {
+            switch (e.kind.binaryOp.op) {
+                AST.Operator.Plus => machine.createIntValue(left.v.IntKind + right.v.IntKind) catch return true,
+                AST.Operator.Minus => machine.createIntValue(left.v.IntKind - right.v.IntKind) catch return true,
+                AST.Operator.Times => machine.createIntValue(left.v.IntKind * right.v.IntKind) catch return true,
+                AST.Operator.Divide => {
+                    // std.debug.print("div: {} / {}\n", .{ left.v.IntKind, right.v.IntKind });
+
                     if (right.v.IntKind == 0) {
                         machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, e.position));
 
                         return true;
                     }
 
-                    break :div @divTrunc(left.v.IntKind, right.v.IntKind);
+                    machine.createIntValue(@divTrunc(left.v.IntKind, right.v.IntKind)) catch return true;
                 },
-            };
-
-            machine.createIntValue(result) catch return true;
+                AST.Operator.Equals => machine.createBoolValue(left.v.IntKind == right.v.IntKind) catch return true,
+                AST.Operator.NotEquals => machine.createBoolValue(left.v.IntKind != right.v.IntKind) catch return true,
+            }
         },
         .call => {
             const sp = machine.memoryState.stack.items.len;
@@ -320,12 +334,12 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 }
                 index += 1;
             }
-            const scope = machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope) catch return true;
-            defer machine.memoryState.restoreScope(scope);
+            machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope) catch return true;
+            defer machine.memoryState.restoreScope();
 
             var lp: u8 = 0;
             while (lp < callee.v.FunctionKind.arguments.len) {
-                machine.memoryState.scope.?.v.ScopeKind.values.put(machine.memoryState.allocator.dupe(u8, callee.v.FunctionKind.arguments[lp].name) catch return true, machine.memoryState.stack.items[sp + lp + 1]) catch return true;
+                machine.memoryState.addToScope(callee.v.FunctionKind.arguments[lp].name, machine.memoryState.stack.items[sp + lp + 1]) catch return true;
                 lp += 1;
             }
 
@@ -339,10 +353,9 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         .declaration => {
             if (evalExpr(machine, e.kind.declaration.value)) return true;
 
-            const allocator = machine.memoryState.allocator;
             const value: *Value = machine.memoryState.peek(0);
 
-            machine.memoryState.scope.?.v.ScopeKind.values.putNoClobber(allocator.dupe(u8, e.kind.declaration.name) catch return true, value) catch return true;
+            machine.memoryState.addToScope(e.kind.declaration.name, value) catch return true;
         },
         .dot => {
             if (evalExpr(machine, e.kind.dot.record)) return true;
@@ -380,7 +393,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             }
         },
         .identifier => {
-            var runner: ?*Value = machine.memoryState.scope;
+            var runner: ?*Value = machine.memoryState.scope();
 
             while (true) {
                 const value = runner.?.v.ScopeKind.values.get(e.kind.identifier);
@@ -392,12 +405,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
                 const parent = runner.?.v.ScopeKind.parent;
                 if (parent == null) {
-                    if (machine.memoryState.scope != null) {
-                        const scope = machine.memoryState.scope.?.toString(machine.memoryState.allocator) catch return true;
-                        std.debug.print("scope: {s}\n", .{scope});
-                        machine.memoryState.allocator.free(scope);
-                    }
-
                     machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, e.position, e.kind.identifier) catch return true);
                     return true;
                 }
@@ -440,7 +447,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             }
 
             _ = machine.memoryState.pushValue(ValueValue{ .FunctionKind = FunctionValue{
-                .scope = machine.memoryState.scope,
+                .scope = machine.memoryState.scope(),
                 .arguments = arguments,
                 .body = e.kind.literalFunction.body,
             } }) catch return true;
@@ -497,7 +504,7 @@ fn initMemoryState(allocator: std.mem.Allocator) !MemoryState {
         .root = null,
         .memory_size = 0,
         .memory_capacity = 2,
-        .scope = null,
+        .scopes = std.ArrayList(*Value).init(allocator),
     };
 
     try state.openScope();

@@ -12,6 +12,7 @@ pub const TokenKind = enum {
     If,
     Let,
 
+    BangEqual,
     Bar,
     Colon,
     Comma,
@@ -45,6 +46,7 @@ pub const TokenKind = enum {
             TokenKind.If => return "if",
             TokenKind.Let => return "let",
 
+            TokenKind.BangEqual => return "'!='",
             TokenKind.Bar => return "'|'",
             TokenKind.Colon => return "':'",
             TokenKind.Comma => return "','",

@@ -7,6 +7,8 @@ pub const Operator = enum {
     Minus,
     Times,
     Divide,
+    Equals,
+    NotEquals,
 
     pub fn toString(self: Operator) []const u8 {
         return switch (self) {
@@ -14,6 +16,8 @@ pub const Operator = enum {
             Operator.Minus => "-",
             Operator.Times => "-",
             Operator.Divide => "/",
+            Operator.Equals => "==",
+            Operator.NotEquals => "!=",
         };
     }
 };

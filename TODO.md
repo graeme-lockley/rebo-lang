@@ -62,6 +62,8 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Real '-'
 - [ ] Real '*'
 - [ ] Real '/'
+- [X] Integer '=='
+- [X] Integer '!='
 - [ ] All '=='
 - [ ] All '!='
 - [ ] Integer '<'

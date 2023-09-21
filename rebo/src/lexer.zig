@@ -17,8 +17,8 @@ pub const Lexer = struct {
     allocator: std.mem.Allocator,
     name: []const u8,
     source: []const u8,
-    sourceLength: u8,
-    offset: u8,
+    sourceLength: u32,
+    offset: u32,
 
     current: Token,
     err: ?Errors.Error,
@@ -100,6 +100,19 @@ pub const Lexer = struct {
                 var text = self.source[tokenStart..self.offset];
 
                 self.current = Token{ .kind = keywords.get(text) orelse TokenKind.Identifier, .start = tokenStart, .end = self.offset };
+            },
+            '!' => {
+                self.skipCharacter();
+                if (self.currentCharacter() == '=') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.BangEqual, .start = tokenStart, .end = self.offset };
+                } else {
+                    self.current = Token{ .kind = TokenKind.Invalid, .start = tokenStart, .end = self.offset };
+
+                    self.replaceErr(try Errors.lexicalError(self.allocator, Errors.Position{ .start = tokenStart, .end = self.offset }, self.lexeme(self.current)));
+
+                    return error.InterpreterError;
+                }
             },
             '[' => self.setSymbolToken(TokenKind.LBracket, tokenStart),
             '{' => self.setSymbolToken(TokenKind.LCurly, tokenStart),
