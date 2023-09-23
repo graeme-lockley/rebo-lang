@@ -288,6 +288,9 @@ test "multiplicative op" {
     try expectExprEqual("100 / 10 / 2", "5");
     try expectExprEqual("100 / (10 / 2)", "20");
 
+    try expectExprEqual("3 % 2", "1");
+    try expectExprEqual("5 % 3", "2");
+
     try expectError("1 * true");
     try expectError("1 / true");
     try expectError("100 / (10 / 0)");

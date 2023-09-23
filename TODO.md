@@ -56,7 +56,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Integer '-'
 - [X] Integer '*'
 - [X] Integer '/'
-- [ ] Integer '%'
+- [X] Integer '%'
 - [X] Float '+'
 - [X] Float '-'
 - [X] Float '*'

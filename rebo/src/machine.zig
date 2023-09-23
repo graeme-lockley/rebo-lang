@@ -476,6 +476,15 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             }
 
             switch (e.kind.binaryOp.op) {
+                AST.Operator.Modulo => {
+                    if (right.v.IntKind == 0) {
+                        machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, e.position));
+
+                        return true;
+                    }
+
+                    machine.memoryState.pushIntValue(@rem(left.v.IntKind, right.v.IntKind)) catch return true;
+                },
                 AST.Operator.Equals => machine.createBoolValue(left.v.IntKind == right.v.IntKind) catch return true,
                 AST.Operator.NotEquals => machine.createBoolValue(left.v.IntKind != right.v.IntKind) catch return true,
                 else => unreachable,

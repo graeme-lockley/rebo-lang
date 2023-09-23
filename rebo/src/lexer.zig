@@ -150,8 +150,9 @@ pub const Lexer = struct {
             ';' => self.setSymbolToken(TokenKind.Semicolon, tokenStart),
             '|' => self.setSymbolToken(TokenKind.Bar, tokenStart),
             '+' => self.setSymbolToken(TokenKind.Plus, tokenStart),
-            '/' => self.setSymbolToken(TokenKind.Slash, tokenStart),
             '*' => self.setSymbolToken(TokenKind.Star, tokenStart),
+            '/' => self.setSymbolToken(TokenKind.Slash, tokenStart),
+            '%' => self.setSymbolToken(TokenKind.Percentage, tokenStart),
             '=' => {
                 self.skipCharacter();
                 if (self.currentCharacter() == '=') {
@@ -423,9 +424,9 @@ test "literal string" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / = == [ { ( , . : ; -> | ] } )" {
+test "+ - * / % = == [ { ( , . : ; -> | ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / = == [ { ( , . : ; -> | ] } ) ");
+    try lexer.initBuffer("console", " + - * / % = == [ { ( , . : ; -> | ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -434,6 +435,8 @@ test "+ - * / = == [ { ( , . : ; -> | ] } )" {
     try expectEqual(lexer.current.kind, TokenKind.Star);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Slash);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.Percentage);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Equal);
     try lexer.next();

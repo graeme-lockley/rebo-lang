@@ -8,6 +8,7 @@ pub const Operator = enum {
     Minus,
     Times,
     Divide,
+    Modulo,
     Equals,
     NotEquals,
 
@@ -17,6 +18,7 @@ pub const Operator = enum {
             Operator.Minus => "-",
             Operator.Times => "-",
             Operator.Divide => "/",
+            Operator.Modulo => "%",
             Operator.Equals => "==",
             Operator.NotEquals => "!=",
         };

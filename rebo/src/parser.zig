@@ -222,14 +222,14 @@ pub const Parser = struct {
         while (true) {
             const kind = self.currentTokenKind();
 
-            if (kind == Lexer.TokenKind.Star or kind == Lexer.TokenKind.Slash) {
+            if (kind == Lexer.TokenKind.Star or kind == Lexer.TokenKind.Slash or kind == Lexer.TokenKind.Percentage) {
                 try self.skipToken();
 
                 const rhs = try self.qualifier();
                 errdefer AST.destroy(self.allocator, rhs);
 
                 const v = try self.allocator.create(AST.Expression);
-                const op = if (kind == Lexer.TokenKind.Star) AST.Operator.Times else AST.Operator.Divide;
+                const op = if (kind == Lexer.TokenKind.Star) AST.Operator.Times else if (kind == Lexer.TokenKind.Slash) AST.Operator.Divide else AST.Operator.Modulo;
 
                 v.* = AST.Expression{
                     .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } },
