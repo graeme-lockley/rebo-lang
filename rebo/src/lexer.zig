@@ -81,6 +81,14 @@ pub const Lexer = struct {
         }
     }
 
+    fn reportLexicalError(self: *Lexer, tokenStart: usize) Errors.err!void {
+        self.current = Token{ .kind = TokenKind.Invalid, .start = tokenStart, .end = self.offset };
+
+        self.replaceErr(try Errors.lexicalError(self.allocator, Errors.Position{ .start = tokenStart, .end = self.offset }, self.lexeme(self.current)));
+
+        return error.InterpreterError;
+    }
+
     pub fn peekNext(self: *Lexer) Errors.err!TokenKind {
         const offset = self.offset;
         const token = self.current;
@@ -107,11 +115,7 @@ pub const Lexer = struct {
         switch (self.currentCharacter()) {
             'a'...'z', 'A'...'Z', '_' => {
                 self.skipCharacter();
-                while (self.currentCharacter() == '_' or
-                    (self.currentCharacter() >= 'a' and self.currentCharacter() <= 'z') or
-                    (self.currentCharacter() >= 'A' and self.currentCharacter() <= 'Z') or
-                    (self.currentCharacter() >= '0' and self.currentCharacter() <= '9'))
-                {
+                while (isAlphaDigit(self.currentCharacter())) {
                     self.skipCharacter();
                 }
                 if (self.currentCharacter() == '?' or self.currentCharacter() == '!') {
@@ -131,11 +135,7 @@ pub const Lexer = struct {
                     self.skipCharacter();
                     self.current = Token{ .kind = TokenKind.BangEqual, .start = tokenStart, .end = self.offset };
                 } else {
-                    self.current = Token{ .kind = TokenKind.Invalid, .start = tokenStart, .end = self.offset };
-
-                    self.replaceErr(try Errors.lexicalError(self.allocator, Errors.Position{ .start = tokenStart, .end = self.offset }, self.lexeme(self.current)));
-
-                    return error.InterpreterError;
+                    try self.reportLexicalError(tokenStart);
                 }
             },
             '[' => self.setSymbolToken(TokenKind.LBracket, tokenStart),
@@ -146,18 +146,7 @@ pub const Lexer = struct {
             ')' => self.setSymbolToken(TokenKind.RParen, tokenStart),
             ',' => self.setSymbolToken(TokenKind.Comma, tokenStart),
             '.' => self.setSymbolToken(TokenKind.Dot, tokenStart),
-            ':' => {
-                self.skipCharacter();
-                if (isAlpha(self.currentCharacter())) {
-                    self.skipCharacter();
-                    while (isAlphaDigit(self.currentCharacter())) {
-                        self.skipCharacter();
-                    }
-                    self.current = Token{ .kind = TokenKind.LiteralSymbol, .start = tokenStart, .end = self.offset };
-                } else {
-                    self.current = Token{ .kind = TokenKind.Colon, .start = tokenStart, .end = self.offset };
-                }
-            },
+            ':' => self.setSymbolToken(TokenKind.Colon, tokenStart),
             ';' => self.setSymbolToken(TokenKind.Semicolon, tokenStart),
             '|' => self.setSymbolToken(TokenKind.Bar, tokenStart),
             '+' => self.setSymbolToken(TokenKind.Plus, tokenStart),
@@ -178,7 +167,7 @@ pub const Lexer = struct {
                     self.skipCharacter();
                     self.current = Token{ .kind = TokenKind.MinusGreater, .start = tokenStart, .end = self.offset };
                 } else {
-                    while (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
+                    while (isDigit(self.currentCharacter())) {
                         self.skipCharacter();
                     }
 
@@ -187,7 +176,7 @@ pub const Lexer = struct {
             },
             '0'...'9' => {
                 self.skipCharacter();
-                while (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
+                while (isDigit(self.currentCharacter())) {
                     self.skipCharacter();
                 }
 
@@ -207,9 +196,9 @@ pub const Lexer = struct {
                         }
                     } else if (self.currentCharacter() == 'x') {
                         self.skipCharacter();
-                        if (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
+                        if (isDigit(self.currentCharacter())) {
                             self.skipCharacter();
-                            while (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
+                            while (isDigit(self.currentCharacter())) {
                                 self.skipCharacter();
                             }
                             if (self.currentCharacter() == '\'') {
@@ -230,20 +219,10 @@ pub const Lexer = struct {
                     }
                 }
 
-                self.current = Token{ .kind = TokenKind.Invalid, .start = self.offset, .end = self.offset + 1 };
-                self.skipCharacter();
-
-                self.replaceErr(try Errors.lexicalError(self.allocator, Errors.Position{ .start = self.current.start, .end = self.current.end }, self.lexeme(self.current)));
-
-                return error.InterpreterError;
+                try self.reportLexicalError(tokenStart);
             },
             else => {
-                self.current = Token{ .kind = TokenKind.Invalid, .start = self.offset, .end = self.offset + 1 };
-                self.skipCharacter();
-
-                self.replaceErr(try Errors.lexicalError(self.allocator, Errors.Position{ .start = self.current.start, .end = self.current.end }, self.lexeme(self.current)));
-
-                return error.InterpreterError;
+                try self.reportLexicalError(tokenStart);
             },
         }
     }
@@ -307,66 +286,38 @@ test "literal bool" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-fn expectTokenEqual(lexer: Lexer, kind: TokenKind, lexeme: []const u8) !void {
+fn expectTokenEqual(lexer: *Lexer, kind: TokenKind, lexeme: []const u8) !void {
     try expectEqual(
         kind,
         lexer.current.kind,
     );
     try expectEqualStrings(lexeme, lexer.lexeme(lexer.current));
+
+    try lexer.next();
 }
 
 test "literal char" {
     var lexer = Lexer.init(std.heap.page_allocator);
     try lexer.initBuffer("console", "'x' '\\n' '\\\\' '\\'' '\\x31'");
 
-    try expectTokenEqual(lexer, TokenKind.LiteralChar, "'x'");
-    try lexer.next();
-    try expectTokenEqual(lexer, TokenKind.LiteralChar, "'\\n'");
-    try lexer.next();
-    try expectTokenEqual(lexer, TokenKind.LiteralChar, "'\\\\'");
-    try lexer.next();
-    try expectTokenEqual(lexer, TokenKind.LiteralChar, "'\\''");
-    try lexer.next();
-    try expectTokenEqual(lexer, TokenKind.LiteralChar, "'\\x31'");
-    try lexer.next();
+    try expectTokenEqual(&lexer, TokenKind.LiteralChar, "'x'");
+    try expectTokenEqual(&lexer, TokenKind.LiteralChar, "'\\n'");
+    try expectTokenEqual(&lexer, TokenKind.LiteralChar, "'\\\\'");
+    try expectTokenEqual(&lexer, TokenKind.LiteralChar, "'\\''");
+    try expectTokenEqual(&lexer, TokenKind.LiteralChar, "'\\x31'");
     try expectEqual(lexer.current.kind, TokenKind.EOS);
-}
-
-fn expectLiteralInt(lexer: Lexer, expected: []const u8) !void {
-    try expectEqual(lexer.current.kind, TokenKind.LiteralInt);
-    try expectEqualStrings(lexer.lexeme(lexer.current), expected);
 }
 
 test "literal int" {
     var lexer = Lexer.init(std.heap.page_allocator);
     try lexer.initBuffer("console", "0 123 -1 -0 -123");
 
-    try expectLiteralInt(lexer, "0");
-    try lexer.next();
-    try expectLiteralInt(lexer, "123");
-    try lexer.next();
-    try expectLiteralInt(lexer, "-1");
-    try lexer.next();
-    try expectLiteralInt(lexer, "-0");
-    try lexer.next();
-    try expectLiteralInt(lexer, "-123");
-    try lexer.next();
+    try expectTokenEqual(&lexer, TokenKind.LiteralInt, "0");
+    try expectTokenEqual(&lexer, TokenKind.LiteralInt, "123");
+    try expectTokenEqual(&lexer, TokenKind.LiteralInt, "-1");
+    try expectTokenEqual(&lexer, TokenKind.LiteralInt, "-0");
+    try expectTokenEqual(&lexer, TokenKind.LiteralInt, "-123");
 
-    try expectEqual(lexer.current.kind, TokenKind.EOS);
-}
-
-test "literal symbol" {
-    var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", ":x :hello :Hello :H3_w");
-
-    try expectTokenEqual(lexer, TokenKind.LiteralSymbol, ":x");
-    try lexer.next();
-    try expectTokenEqual(lexer, TokenKind.LiteralSymbol, ":hello");
-    try lexer.next();
-    try expectTokenEqual(lexer, TokenKind.LiteralSymbol, ":Hello");
-    try lexer.next();
-    try expectTokenEqual(lexer, TokenKind.LiteralSymbol, ":H3_w");
-    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
