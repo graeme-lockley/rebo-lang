@@ -181,6 +181,16 @@ test "literal bool" {
     try expectExprEqual("false", "false");
 }
 
+test "literal char" {
+    try expectExprEqual("'x'", "'x'");
+    try expectExprEqual("'\\n'", "'\\n'");
+    try expectExprEqual("'\\''", "'\\''");
+    try expectExprEqual("'\\\\'", "'\\\\'");
+    try expectExprEqual("'\\x32'", "' '");
+    try expectExprEqual("'\\x10'", "'\\n'");
+    try expectExprEqual("'\\x5'", "'\\x5'");
+}
+
 test "literal function" {
     try expectExprEqual("fn() = 1", "fn()");
     try expectExprEqual("fn(a) = a + 1", "fn(a)");

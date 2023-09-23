@@ -35,6 +35,7 @@ Factor
     | Identifier
     | "false"
     | "true"
+    | LiteralChar
     | LiteralInt
     | "[" [Expression {"," Expression}] "]"
     | "fn" FunctionTail

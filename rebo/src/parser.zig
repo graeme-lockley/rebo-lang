@@ -397,6 +397,29 @@ pub const Parser = struct {
                 v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalBool = true }, .position = Errors.Position{ .start = token.start, .end = token.end } };
                 return v;
             },
+            Lexer.TokenKind.LiteralChar => {
+                const lexeme = self.lexer.currentLexeme();
+                var r: u8 = 0;
+
+                if (lexeme.len == 3) {
+                    r = lexeme[1];
+                } else if (lexeme.len == 4) {
+                    if (lexeme[2] == 'n') {
+                        r = 10;
+                    } else {
+                        r = lexeme[2];
+                    }
+                } else {
+                    r = std.fmt.parseInt(u8, lexeme[3 .. lexeme.len - 1], 10) catch 0;
+                }
+
+                const v = try self.allocator.create(AST.Expression);
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalChar = r }, .position = Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end } };
+
+                try self.skipToken();
+
+                return v;
+            },
             Lexer.TokenKind.LiteralInt => {
                 const lexeme = self.lexer.currentLexeme();
 
@@ -446,7 +469,7 @@ pub const Parser = struct {
             },
             else => {
                 {
-                    var expected = try self.allocator.alloc(Lexer.TokenKind, 8);
+                    var expected = try self.allocator.alloc(Lexer.TokenKind, 9);
                     errdefer self.allocator.free(expected);
 
                     expected[0] = Lexer.TokenKind.LBracket;
@@ -455,8 +478,9 @@ pub const Parser = struct {
                     expected[3] = Lexer.TokenKind.LParen;
                     expected[4] = Lexer.TokenKind.LiteralBoolFalse;
                     expected[5] = Lexer.TokenKind.LiteralBoolTrue;
-                    expected[6] = Lexer.TokenKind.LiteralInt;
-                    expected[7] = Lexer.TokenKind.Fn;
+                    expected[6] = Lexer.TokenKind.LiteralChar;
+                    expected[7] = Lexer.TokenKind.LiteralInt;
+                    expected[8] = Lexer.TokenKind.Fn;
 
                     self.replaceErr(try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
                 }

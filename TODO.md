@@ -7,7 +7,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Unit literal
 - [X] Boolean literal
 - [X] Integer literal
-- [ ] Char literal
+- [X] Char literal
 - [ ] Symbol literal
 - [ ] Float literal
 

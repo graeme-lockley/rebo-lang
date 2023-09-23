@@ -36,6 +36,7 @@ pub const ExpressionKind = union(enum) {
     identifier: []u8,
     ifte: []IfCouple,
     literalBool: bool,
+    literalChar: u8,
     literalFunction: Function,
     literalInt: i32,
     literalSequence: []*Expression,
@@ -139,7 +140,7 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
             }
             allocator.free(expr.kind.ifte);
         },
-        .literalBool, .literalInt, .literalVoid => {},
+        .literalBool, .literalChar, .literalInt, .literalVoid => {},
         .literalFunction => expr.kind.literalFunction.deinit(allocator),
         .literalSequence => {
             for (expr.kind.literalSequence) |v| {

@@ -52,6 +52,10 @@ pub const MemoryState = struct {
         _ = try self.pushValue(ValueValue{ .RecordKind = std.StringHashMap(*Value).init(self.allocator) });
     }
 
+    pub fn pushCharValue(self: *MemoryState, v: u8) !void {
+        _ = try self.pushValue(ValueValue{ .CharKind = v });
+    }
+
     pub fn pushIntValue(self: *MemoryState, v: i32) !void {
         _ = try self.pushValue(ValueValue{ .IntKind = v });
     }
@@ -187,7 +191,7 @@ fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
     v.colour = colour;
 
     switch (v.v) {
-        .BoolKind, .IntKind, .VoidKind => {},
+        .BoolKind, .CharKind, .IntKind, .VoidKind => {},
         .FunctionKind => {
             mark(state, v.v.FunctionKind.scope, colour);
             for (v.v.FunctionKind.arguments) |argument| {
@@ -438,6 +442,9 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         },
         .literalBool => {
             machine.createBoolValue(e.kind.literalBool) catch return true;
+        },
+        .literalChar => {
+            machine.memoryState.pushCharValue(e.kind.literalChar) catch return true;
         },
         .literalFunction => {
             var arguments = machine.memoryState.allocator.alloc(FunctionArgument, e.kind.literalFunction.params.len) catch return true;

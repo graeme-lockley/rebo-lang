@@ -15,7 +15,7 @@ pub const Value = struct {
 
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         switch (self.v) {
-            .BoolKind, .IntKind, .VoidKind => {},
+            .BoolKind, .CharKind, .IntKind, .VoidKind => {},
             .FunctionKind => {
                 for (self.v.FunctionKind.arguments) |argument| {
                     allocator.free(argument.name);
@@ -51,6 +51,19 @@ pub const Value = struct {
 
         switch (self.v) {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
+            .CharKind => {
+                if (self.v.CharKind == 10) {
+                    try buffer.appendSlice("'\\n'");
+                } else if (self.v.CharKind == 39) {
+                    try buffer.appendSlice("'\\''");
+                } else if (self.v.CharKind == 92) {
+                    try buffer.appendSlice("'\\\\'");
+                } else if (self.v.CharKind < 32) {
+                    try std.fmt.format(buffer.writer(), "'\\x{d}'", .{self.v.CharKind});
+                } else {
+                    try std.fmt.format(buffer.writer(), "'{c}'", .{self.v.CharKind});
+                }
+            },
             .FunctionKind => {
                 try buffer.appendSlice("fn(");
                 var i: usize = 0;
@@ -153,6 +166,7 @@ pub const Value = struct {
 
 pub const ValueKind = enum {
     BoolKind,
+    CharKind,
     FunctionKind,
     IntKind,
     SequenceKind,
@@ -163,6 +177,7 @@ pub const ValueKind = enum {
     pub fn toString(self: ValueKind) []const u8 {
         return switch (self) {
             ValueKind.BoolKind => "Bool",
+            ValueKind.CharKind => "Chal",
             ValueKind.FunctionKind => "Function",
             ValueKind.IntKind => "Int",
             ValueKind.SequenceKind => "Sequence",
@@ -175,6 +190,7 @@ pub const ValueKind = enum {
 
 pub const ValueValue = union(ValueKind) {
     BoolKind: bool,
+    CharKind: u8,
     FunctionKind: FunctionValue,
     IntKind: i32,
     SequenceKind: []*Value,

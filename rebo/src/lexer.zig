@@ -170,6 +170,50 @@ pub const Lexer = struct {
 
                 self.current = Token{ .kind = TokenKind.LiteralInt, .start = tokenStart, .end = self.offset };
             },
+            '\'' => {
+                self.skipCharacter();
+                if (self.currentCharacter() == '\\') {
+                    self.skipCharacter();
+                    if (self.currentCharacter() == '\'' or self.currentCharacter() == '\\' or self.currentCharacter() == 'n') {
+                        self.skipCharacter();
+                        if (self.currentCharacter() == '\'') {
+                            self.skipCharacter();
+                            self.current = Token{ .kind = TokenKind.LiteralChar, .start = tokenStart, .end = self.offset };
+
+                            return;
+                        }
+                    } else if (self.currentCharacter() == 'x') {
+                        self.skipCharacter();
+                        if (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
+                            self.skipCharacter();
+                            while (self.currentCharacter() >= '0' and self.currentCharacter() <= '9') {
+                                self.skipCharacter();
+                            }
+                            if (self.currentCharacter() == '\'') {
+                                self.skipCharacter();
+                                self.current = Token{ .kind = TokenKind.LiteralChar, .start = tokenStart, .end = self.offset };
+
+                                return;
+                            }
+                        }
+                    }
+                } else if (self.currentCharacter() != '\'') {
+                    self.skipCharacter();
+                    if (self.currentCharacter() == '\'') {
+                        self.skipCharacter();
+                        self.current = Token{ .kind = TokenKind.LiteralChar, .start = tokenStart, .end = self.offset };
+
+                        return;
+                    }
+                }
+
+                self.current = Token{ .kind = TokenKind.Invalid, .start = self.offset, .end = self.offset + 1 };
+                self.skipCharacter();
+
+                self.replaceErr(try Errors.lexicalError(self.allocator, Errors.Position{ .start = self.current.start, .end = self.current.end }, self.lexeme(self.current)));
+
+                return error.InterpreterError;
+            },
             else => {
                 self.current = Token{ .kind = TokenKind.Invalid, .start = self.offset, .end = self.offset + 1 };
                 self.skipCharacter();
@@ -236,6 +280,28 @@ test "literal bool" {
     try expectEqual(lexer.current.kind, TokenKind.LiteralBoolTrue);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LiteralBoolFalse);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.EOS);
+}
+
+fn expectTokenEqual(lexer: Lexer, kind: TokenKind, lexeme: []const u8) !void {
+    try expectEqual(lexer.current.kind, kind);
+    try expectEqualStrings(lexer.lexeme(lexer.current), lexeme);
+}
+
+test "literal char" {
+    var lexer = Lexer.init(std.heap.page_allocator);
+    try lexer.initBuffer("console", "'x' '\\n' '\\\\' '\\'' '\\x31'");
+
+    try expectTokenEqual(lexer, TokenKind.LiteralChar, "'x'");
+    try lexer.next();
+    try expectTokenEqual(lexer, TokenKind.LiteralChar, "'\\n'");
+    try lexer.next();
+    try expectTokenEqual(lexer, TokenKind.LiteralChar, "'\\\\'");
+    try lexer.next();
+    try expectTokenEqual(lexer, TokenKind.LiteralChar, "'\\''");
+    try lexer.next();
+    try expectTokenEqual(lexer, TokenKind.LiteralChar, "'\\x31'");
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
