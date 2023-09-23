@@ -2,6 +2,7 @@ tokens
     Identifier = id {digit | id} ['?' | '!'] {chr(39)};
     LiteralInt = ['-'] digit {digit}';
     LiteralChar = chr(39) (char | '\\' ('\\' | 'n' | char(39))) chr(39);
+    LiteralSymbol = ':' id {digit | id};
 
 comments
    "//" {!cr};

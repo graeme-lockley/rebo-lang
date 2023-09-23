@@ -6,6 +6,7 @@ pub const TokenKind = enum {
     LiteralBoolTrue,
     LiteralChar,
     LiteralInt,
+    LiteralSymbol,
 
     Identifier,
 
@@ -41,6 +42,7 @@ pub const TokenKind = enum {
             TokenKind.LiteralBoolTrue => return "true",
             TokenKind.LiteralChar => return "literal char",
             TokenKind.LiteralInt => return "literal int",
+            TokenKind.LiteralSymbol => return "literal symbol",
 
             TokenKind.Identifier => return "identifier",
 
