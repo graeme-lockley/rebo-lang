@@ -1,15 +1,15 @@
 let mod(n, m) = n - (n / m) * m
 
 let prime?(n = 0) = {
-  let testPrime(i, n) =
+  let testPrime(i) =
     if i == n -> true
-    | mod(n, i) == 0 -> false
-    | testPrime(i + 1, n)
+     | mod(n, i) == 0 -> false
+     | testPrime(i + 1)
 
   if n == 0 -> false
-  | n == 1 -> false
-  | n == 2 -> true
-  | testPrime(2, n)
+   | n == 1 -> false
+   | n == 2 -> true
+   | testPrime(2)
 }
 
 let nextLargestPrime(n) =
