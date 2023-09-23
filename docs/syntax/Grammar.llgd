@@ -36,8 +36,9 @@ Factor
     | "false"
     | "true"
     | LiteralChar
+    | LiteralFloat
     | LiteralInt
-    | LiteralSymbol
+    | LiteralString
     | "[" [Expression {"," Expression}] "]"
     | "fn" FunctionTail
     ;

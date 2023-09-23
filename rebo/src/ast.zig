@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const Errors = @import("./errors.zig");
+const Value = @import("./value.zig");
 
 pub const Operator = enum {
     Plus,
@@ -38,9 +39,11 @@ pub const ExpressionKind = union(enum) {
     literalBool: bool,
     literalChar: u8,
     literalFunction: Function,
-    literalInt: i32,
-    literalSequence: []*Expression,
+    literalInt: Value.IntType,
+    literalFloat: Value.FloatType,
     literalRecord: []RecordEntry,
+    literalSequence: []*Expression,
+    literalString: []u8,
     literalVoid: void,
 };
 
@@ -140,14 +143,8 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
             }
             allocator.free(expr.kind.ifte);
         },
-        .literalBool, .literalChar, .literalInt, .literalVoid => {},
+        .literalBool, .literalChar, .literalFloat, .literalInt, .literalVoid => {},
         .literalFunction => expr.kind.literalFunction.deinit(allocator),
-        .literalSequence => {
-            for (expr.kind.literalSequence) |v| {
-                destroy(allocator, v);
-            }
-            allocator.free(expr.kind.literalSequence);
-        },
         .literalRecord => {
             for (expr.kind.literalRecord) |v| {
                 allocator.free(v.key);
@@ -155,6 +152,13 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
             }
             allocator.free(expr.kind.literalRecord);
         },
+        .literalSequence => {
+            for (expr.kind.literalSequence) |v| {
+                destroy(allocator, v);
+            }
+            allocator.free(expr.kind.literalSequence);
+        },
+        .literalString => allocator.free(expr.kind.literalString),
     }
 
     allocator.destroy(expr);

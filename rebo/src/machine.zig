@@ -58,6 +58,10 @@ pub const MemoryState = struct {
         _ = try self.pushValue(ValueValue{ .CharKind = v });
     }
 
+    pub fn pushFloatValue(self: *MemoryState, v: FloatType) !void {
+        _ = try self.pushValue(ValueValue{ .FloatKind = v });
+    }
+
     pub fn pushIntValue(self: *MemoryState, v: IntType) !void {
         _ = try self.pushValue(ValueValue{ .IntKind = v });
     }
@@ -77,6 +81,10 @@ pub const MemoryState = struct {
         }
 
         _ = try self.pushValue(ValueValue{ .SequenceKind = items });
+    }
+
+    pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
+        _ = try self.pushValue(ValueValue{ .StringKind = try self.allocator.dupe(u8, v) });
     }
 
     pub fn pushUnitValue(self: *MemoryState) !void {
@@ -448,6 +456,9 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         .literalChar => {
             machine.memoryState.pushCharValue(e.kind.literalChar) catch return true;
         },
+        .literalFloat => {
+            machine.memoryState.pushFloatValue(e.kind.literalFloat) catch return true;
+        },
         .literalFunction => {
             var arguments = machine.memoryState.allocator.alloc(FunctionArgument, e.kind.literalFunction.params.len) catch return true;
 
@@ -471,13 +482,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         .literalInt => {
             machine.createIntValue(e.kind.literalInt) catch return true;
         },
-        .literalSequence => {
-            for (e.kind.literalSequence) |v| {
-                if (evalExpr(machine, v)) return true;
-            }
-
-            machine.createListValue(e.kind.literalSequence.len) catch return true;
-        },
         .literalRecord => {
             machine.memoryState.pushEmptyMapValue() catch return true;
             var map = machine.topOfStack().?;
@@ -495,9 +499,15 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 }
             }
         },
-        .literalVoid => {
-            machine.createVoidValue() catch return true;
+        .literalSequence => {
+            for (e.kind.literalSequence) |v| {
+                if (evalExpr(machine, v)) return true;
+            }
+
+            machine.createListValue(e.kind.literalSequence.len) catch return true;
         },
+        .literalString => machine.createStringValue(e.kind.literalString) catch return true,
+        .literalVoid => machine.createVoidValue() catch return true,
     }
 
     return false;

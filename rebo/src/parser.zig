@@ -437,6 +437,71 @@ pub const Parser = struct {
 
                 return v;
             },
+            Lexer.TokenKind.LiteralFloat => {
+                const lexeme = self.lexer.currentLexeme();
+
+                const literalFloat = std.fmt.parseFloat(f64, lexeme) catch {
+                    const token = self.currentToken();
+                    self.replaceErr(try Errors.literalFloatOverflowError(self.allocator, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
+                    return error.InterpreterError;
+                };
+
+                const v = try self.allocator.create(AST.Expression);
+                errdefer AST.destroy(self.allocator, v);
+
+                const token = try self.nextToken();
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalFloat = literalFloat }, .position = Errors.Position{ .start = token.start, .end = token.end } };
+
+                return v;
+            },
+            Lexer.TokenKind.LiteralString => {
+                const lexeme = self.lexer.currentLexeme();
+                var buffer = std.ArrayList(u8).init(self.allocator);
+                defer buffer.deinit();
+
+                var i: usize = 1;
+
+                while (i < lexeme.len - 1) {
+                    const c = lexeme[i];
+
+                    if (c == '\\') {
+                        i += 1;
+
+                        switch (lexeme[i]) {
+                            'n' => try buffer.append('\n'),
+                            '\\' => try buffer.append('\\'),
+                            '"' => try buffer.append('"'),
+                            'x' => {
+                                i += 1;
+                                const start = i;
+
+                                while (lexeme[i] != ';') {
+                                    i += 1;
+                                }
+
+                                const c2 = std.fmt.parseInt(u8, lexeme[start..i], 10) catch 0;
+                                try std.fmt.format(buffer.writer(), "{c}", .{c2});
+
+                                i += 1;
+                            },
+                            else => {},
+                        }
+                    } else {
+                        try buffer.append(c);
+                    }
+
+                    i += 1;
+                }
+
+                const token = try self.nextToken();
+
+                const v = try self.allocator.create(AST.Expression);
+                errdefer AST.destroy(self.allocator, v);
+
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalString = try buffer.toOwnedSlice() }, .position = Errors.Position{ .start = token.start, .end = token.end } };
+
+                return v;
+            },
             Lexer.TokenKind.LBracket => {
                 const lbracket = try self.nextToken();
 
@@ -469,7 +534,7 @@ pub const Parser = struct {
             },
             else => {
                 {
-                    var expected = try self.allocator.alloc(Lexer.TokenKind, 9);
+                    var expected = try self.allocator.alloc(Lexer.TokenKind, 11);
                     errdefer self.allocator.free(expected);
 
                     expected[0] = Lexer.TokenKind.LBracket;
@@ -479,8 +544,10 @@ pub const Parser = struct {
                     expected[4] = Lexer.TokenKind.LiteralBoolFalse;
                     expected[5] = Lexer.TokenKind.LiteralBoolTrue;
                     expected[6] = Lexer.TokenKind.LiteralChar;
-                    expected[7] = Lexer.TokenKind.LiteralInt;
-                    expected[8] = Lexer.TokenKind.Fn;
+                    expected[7] = Lexer.TokenKind.LiteralFloat;
+                    expected[8] = Lexer.TokenKind.LiteralInt;
+                    expected[9] = Lexer.TokenKind.LiteralString;
+                    expected[10] = Lexer.TokenKind.Fn;
 
                     self.replaceErr(try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
                 }

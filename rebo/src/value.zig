@@ -29,12 +29,8 @@ pub const Value = struct {
                 // At the moment, this is not possible as the AST is managed as general memory.
                 // AST.destroy(allocator, self.v.FunctionKind.body);
             },
-            .SequenceKind => {
-                allocator.free(self.v.SequenceKind);
-            },
-            .StringKind => {
-                allocator.free(self.v.StringKind.*);
-            },
+            .SequenceKind => allocator.free(self.v.SequenceKind),
+            .StringKind => allocator.free(self.v.StringKind),
             .RecordKind => {
                 var iterator = self.v.RecordKind.keyIterator();
                 while (iterator.next()) |keyPtr| {
@@ -70,7 +66,7 @@ pub const Value = struct {
                     try std.fmt.format(buffer.writer(), "'{c}'", .{self.v.CharKind});
                 }
             },
-            .FloatKind => try std.fmt.format(buffer.writer(), "{e}", .{self.v.FloatKind}),
+            .FloatKind => try std.fmt.format(buffer.writer(), "{d}", .{self.v.FloatKind}),
             .FunctionKind => {
                 try buffer.appendSlice("fn(");
                 var i: usize = 0;
@@ -90,37 +86,6 @@ pub const Value = struct {
                 try buffer.append(')');
             },
             .IntKind => try std.fmt.format(buffer.writer(), "{d}", .{self.v.IntKind}),
-            .SequenceKind => {
-                try buffer.append('[');
-                var i: usize = 0;
-                for (self.v.SequenceKind) |v| {
-                    if (i != 0) {
-                        try buffer.appendSlice(", ");
-                    }
-
-                    try v.appendValue(buffer);
-
-                    i += 1;
-                }
-                try buffer.append(']');
-            },
-            .StringKind => {
-                try buffer.append('"');
-                for (self.v.StringKind.*) |c| {
-                    if (c == 10) {
-                        try buffer.appendSlice("\\n");
-                    } else if (c == 34) {
-                        try buffer.appendSlice("\\\"");
-                    } else if (c == 92) {
-                        try buffer.appendSlice("\\\\");
-                    } else if (c < 32) {
-                        try std.fmt.format(buffer.writer(), "\\x{d};", .{c});
-                    } else {
-                        try buffer.append(c);
-                    }
-                }
-                try buffer.append('"');
-            },
             .RecordKind => {
                 var first = true;
 
@@ -174,6 +139,37 @@ pub const Value = struct {
                 }
                 try buffer.append('>');
             },
+            .SequenceKind => {
+                try buffer.append('[');
+                var i: usize = 0;
+                for (self.v.SequenceKind) |v| {
+                    if (i != 0) {
+                        try buffer.appendSlice(", ");
+                    }
+
+                    try v.appendValue(buffer);
+
+                    i += 1;
+                }
+                try buffer.append(']');
+            },
+            .StringKind => {
+                try buffer.append('"');
+                for (self.v.StringKind) |c| {
+                    if (c == 10) {
+                        try buffer.appendSlice("\\n");
+                    } else if (c == 34) {
+                        try buffer.appendSlice("\\\"");
+                    } else if (c == 92) {
+                        try buffer.appendSlice("\\\\");
+                    } else if (c < 32) {
+                        try std.fmt.format(buffer.writer(), "\\x{d};", .{c});
+                    } else {
+                        try buffer.append(c);
+                    }
+                }
+                try buffer.append('"');
+            },
             .VoidKind => try buffer.appendSlice("()"),
         }
     }
@@ -223,7 +219,7 @@ pub const ValueValue = union(ValueKind) {
     IntKind: IntType,
     FloatKind: FloatType,
     SequenceKind: []*Value,
-    StringKind: *[]u8,
+    StringKind: []u8,
     RecordKind: std.StringHashMap(*Value),
     ScopeKind: ScopeValue,
     VoidKind: void,

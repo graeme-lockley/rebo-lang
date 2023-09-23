@@ -8,7 +8,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Boolean literal
 - [X] Integer literal
 - [X] Char literal
-- [ ] Float literal
+- [X] Float literal
 
 ## Values
 
@@ -35,7 +35,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 ## Strings
 
-- [ ] Literal string without interpolation
+- [X] Literal string without interpolation
 - [ ] Literal string interpolation
 - [ ] `[]` to access a char in a string
 - [ ] `[start:end]` to access a slice of a string

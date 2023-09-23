@@ -50,6 +50,22 @@ pub const FunctionValueExpectedError = struct {
     }
 };
 
+pub const IncompatibleOperandTypesError = struct {
+    allocator: std.mem.Allocator,
+    position: Position,
+    op: AST.Operator,
+    left: ValueKind,
+    right: ValueKind,
+
+    pub fn deinit(self: IncompatibleOperandTypesError) void {
+        _ = self;
+    }
+
+    pub fn print(self: IncompatibleOperandTypesError) void {
+        std.log.err("Incompatible Operands: {d}-{d}: '{s}' is incompatible with {s} and {s} operands", .{ self.position.start, self.position.end, self.op.toString(), self.left.toString(), self.right.toString() });
+    }
+};
+
 pub const LexicalError = struct {
     allocator: std.mem.Allocator,
     position: Position,
@@ -93,22 +109,6 @@ pub const ParserError = struct {
     }
 };
 
-pub const IncompatibleOperandTypesError = struct {
-    allocator: std.mem.Allocator,
-    position: Position,
-    op: AST.Operator,
-    left: ValueKind,
-    right: ValueKind,
-
-    pub fn deinit(self: IncompatibleOperandTypesError) void {
-        _ = self;
-    }
-
-    pub fn print(self: IncompatibleOperandTypesError) void {
-        std.log.err("Incompatible Operands: {d}-{d}: '{s}' is incompatible with {s} and {s} operands", .{ self.position.start, self.position.end, self.op.toString(), self.left.toString(), self.right.toString() });
-    }
-};
-
 pub const RecordValueExpectedError = struct {
     allocator: std.mem.Allocator,
     position: Position,
@@ -142,6 +142,7 @@ pub const Error = union(enum) {
     functionValueExpectedError: FunctionValueExpectedError,
     incompatibleOperandTypesError: IncompatibleOperandTypesError,
     lexicalError: LexicalError,
+    literalFloatOverflowError: LexicalError,
     literalIntOverflowError: LexicalError,
     parserError: ParserError,
     recordValueExpectedError: RecordValueExpectedError,
@@ -161,7 +162,7 @@ pub const Error = union(enum) {
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.deinit();
             },
-            .lexicalError, .literalIntOverflowError => {
+            .lexicalError, .literalFloatOverflowError, .literalIntOverflowError => {
                 self.lexicalError.deinit();
             },
             .parserError => {
@@ -192,6 +193,9 @@ pub const Error = union(enum) {
             },
             .lexicalError => {
                 self.lexicalError.print("Lexical Error");
+            },
+            .literalFloatOverflowError => {
+                self.lexicalError.print("Literal Float Overflow Error");
             },
             .literalIntOverflowError => {
                 self.lexicalError.print("Literal Int Overflow Error");
@@ -239,6 +243,14 @@ pub fn incompatibleOperandTypesError(
 
 pub fn lexicalError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {
     return Error{ .lexicalError = .{
+        .allocator = allocator,
+        .position = position,
+        .lexeme = try allocator.dupe(u8, lexeme),
+    } };
+}
+
+pub fn literalFloatOverflowError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {
+    return Error{ .literalFloatOverflowError = .{
         .allocator = allocator,
         .position = position,
         .lexeme = try allocator.dupe(u8, lexeme),

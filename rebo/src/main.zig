@@ -191,6 +191,14 @@ test "literal char" {
     try expectExprEqual("'\\x5'", "'\\x5'");
 }
 
+test "literal float" {
+    try expectExprEqual("1.0", "1");
+    try expectExprEqual("1.23", "1.23");
+
+    try expectExprEqual("1.0e5", "100000");
+    try expectExprEqual("1.0e-5", "0.00001");
+}
+
 test "literal function" {
     try expectExprEqual("fn() = 1", "fn()");
     try expectExprEqual("fn(a) = a + 1", "fn(a)");
@@ -227,6 +235,13 @@ test "literal sequence" {
 
     try expectError("[1, 2,");
     try expectError("[1, 2, 3");
+}
+
+test "literal string" {
+    try expectExprEqual("\"\"", "\"\"");
+    try expectExprEqual("\"hello world\"", "\"hello world\"");
+    try expectExprEqual("\"\\n \\\\ \\\"\"", "\"\\n \\\\ \\\"\"");
+    try expectExprEqual("\"\\x32;\"", "\" \"");
 }
 
 test "literal unit" {
