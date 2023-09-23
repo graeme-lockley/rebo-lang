@@ -2,6 +2,9 @@ const std = @import("std");
 
 const AST = @import("./ast.zig");
 
+pub const IntType = i64;
+pub const FloatType = f64;
+
 pub const Colour = enum(u2) {
     Black = 0,
     White = 1,
@@ -15,7 +18,7 @@ pub const Value = struct {
 
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         switch (self.v) {
-            .BoolKind, .CharKind, .IntKind, .VoidKind => {},
+            .BoolKind, .CharKind, .IntKind, .FloatKind, .VoidKind => {},
             .FunctionKind => {
                 for (self.v.FunctionKind.arguments) |argument| {
                     allocator.free(argument.name);
@@ -28,6 +31,9 @@ pub const Value = struct {
             },
             .SequenceKind => {
                 allocator.free(self.v.SequenceKind);
+            },
+            .StringKind => {
+                allocator.free(self.v.StringKind.*);
             },
             .RecordKind => {
                 var iterator = self.v.RecordKind.keyIterator();
@@ -64,6 +70,7 @@ pub const Value = struct {
                     try std.fmt.format(buffer.writer(), "'{c}'", .{self.v.CharKind});
                 }
             },
+            .FloatKind => try std.fmt.format(buffer.writer(), "{e}", .{self.v.FloatKind}),
             .FunctionKind => {
                 try buffer.appendSlice("fn(");
                 var i: usize = 0;
@@ -96,6 +103,23 @@ pub const Value = struct {
                     i += 1;
                 }
                 try buffer.append(']');
+            },
+            .StringKind => {
+                try buffer.append('"');
+                for (self.v.StringKind.*) |c| {
+                    if (c == 10) {
+                        try buffer.appendSlice("\\n");
+                    } else if (c == 34) {
+                        try buffer.appendSlice("\\\"");
+                    } else if (c == 92) {
+                        try buffer.appendSlice("\\\\");
+                    } else if (c < 32) {
+                        try std.fmt.format(buffer.writer(), "\\x{d};", .{c});
+                    } else {
+                        try buffer.append(c);
+                    }
+                }
+                try buffer.append('"');
             },
             .RecordKind => {
                 var first = true;
@@ -169,7 +193,9 @@ pub const ValueKind = enum {
     CharKind,
     FunctionKind,
     IntKind,
+    FloatKind,
     SequenceKind,
+    StringKind,
     RecordKind,
     ScopeKind,
     VoidKind,
@@ -179,8 +205,10 @@ pub const ValueKind = enum {
             ValueKind.BoolKind => "Bool",
             ValueKind.CharKind => "Chal",
             ValueKind.FunctionKind => "Function",
+            ValueKind.FloatKind => "Float",
             ValueKind.IntKind => "Int",
             ValueKind.SequenceKind => "Sequence",
+            ValueKind.StringKind => "String",
             ValueKind.RecordKind => "Record",
             ValueKind.ScopeKind => "Scope",
             ValueKind.VoidKind => "()",
@@ -192,8 +220,10 @@ pub const ValueValue = union(ValueKind) {
     BoolKind: bool,
     CharKind: u8,
     FunctionKind: FunctionValue,
-    IntKind: i32,
+    IntKind: IntType,
+    FloatKind: FloatType,
     SequenceKind: []*Value,
+    StringKind: *[]u8,
     RecordKind: std.StringHashMap(*Value),
     ScopeKind: ScopeValue,
     VoidKind: void,

@@ -8,6 +8,8 @@ const Parser = @import("./parser.zig");
 pub const Value = @import("./value.zig").Value;
 const FunctionArgument = @import("./value.zig").FunctionArgument;
 const FunctionValue = @import("./value.zig").FunctionValue;
+const IntType = @import("./value.zig").IntType;
+const FloatType = @import("./value.zig").FloatType;
 const ScopeValue = @import("./value.zig").ScopeValue;
 const ValueValue = @import("./value.zig").ValueValue;
 const Colour = @import("./value.zig").Colour;
@@ -56,7 +58,7 @@ pub const MemoryState = struct {
         _ = try self.pushValue(ValueValue{ .CharKind = v });
     }
 
-    pub fn pushIntValue(self: *MemoryState, v: i32) !void {
+    pub fn pushIntValue(self: *MemoryState, v: IntType) !void {
         _ = try self.pushValue(ValueValue{ .IntKind = v });
     }
 
@@ -191,7 +193,7 @@ fn mark(state: *MemoryState, possible_value: ?*Value, colour: Colour) void {
     v.colour = colour;
 
     switch (v.v) {
-        .BoolKind, .CharKind, .IntKind, .VoidKind => {},
+        .BoolKind, .CharKind, .IntKind, .FloatKind, .StringKind, .VoidKind => {},
         .FunctionKind => {
             mark(state, v.v.FunctionKind.scope, colour);
             for (v.v.FunctionKind.arguments) |argument| {
@@ -543,7 +545,7 @@ pub const Machine = struct {
         try self.memoryState.pushBoolValue(v);
     }
 
-    pub fn createIntValue(self: *Machine, v: i32) !void {
+    pub fn createIntValue(self: *Machine, v: IntType) !void {
         try self.memoryState.pushIntValue(v);
     }
 
