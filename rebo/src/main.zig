@@ -258,9 +258,15 @@ test "equality op" {
 
 test "additive op" {
     try expectExprEqual("1 + 1", "2");
+    try expectExprEqual("1 + 1.1", "2.1");
+    try expectExprEqual("1.1 + 1", "2.1");
+    try expectExprEqual("1.1 + 1.1", "2.2");
     try expectExprEqual("1 + 2 + 3 + 4 + 5", "15");
 
     try expectExprEqual("1 - 1", "0");
+    try expectExprEqual("1 - 1.0", "0");
+    try expectExprEqual("1.0 - 1", "0");
+    try expectExprEqual("1 - 1.0", "0");
     try expectExprEqual("1 - 2 + 3 - 4 + 5", "3");
 
     try expectError("1 + true");
@@ -269,9 +275,15 @@ test "additive op" {
 
 test "multiplicative op" {
     try expectExprEqual("1 * 1", "1");
+    try expectExprEqual("1 * 1.1", "1.1");
+    try expectExprEqual("1 * 1.1", "1.1");
+    try expectExprEqual("1.1 * 1.1", "1.2100000000000002");
     try expectExprEqual("1 * 2 * 3 * 4 * 5", "120");
 
     try expectExprEqual("3 / 2", "1");
+    try expectExprEqual("3.0 / 2", "1.5");
+    try expectExprEqual("3 / 2.0", "1.5");
+    try expectExprEqual("3.0 / 2.0", "1.5");
     try expectExprEqual("100 / 2", "50");
     try expectExprEqual("100 / 10 / 2", "5");
     try expectExprEqual("100 / (10 / 2)", "20");
@@ -279,6 +291,9 @@ test "multiplicative op" {
     try expectError("1 * true");
     try expectError("1 / true");
     try expectError("100 / (10 / 0)");
+    try expectError("100 / (10 / 0.0)");
+    try expectError("100 / (10.0 / 0)");
+    try expectError("100 / (10.0 / 0.0)");
 }
 
 test "parenthesis" {
