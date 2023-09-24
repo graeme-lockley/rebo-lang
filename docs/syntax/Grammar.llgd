@@ -5,10 +5,22 @@ Module
     ;
 
 Expression
-    : "let" Identifier "=" Expression
+    : "let" Pattern "=" Expression
     | "let" Identifier FunctionTail
     | "if" ["|"] Expression "->" Expression {"|" Expression "->" Expression}
-    | Additive
+    | Or [":=" Expression]
+    ;
+
+Or
+    : And {"||" And}
+    ;
+
+And
+    : Equality {"&&" Equality}
+    ;
+
+Equality
+    : Relational [("==" | "!=" | "<" | "<=" | ">" | ">=") Relational]
     ;
 
 Additive
@@ -16,7 +28,7 @@ Additive
     ;
 
 Multiplicative
-    : Qualifier {["*" | "/"] Qualifier}
+    : Qualifier {["*" | "/" | "%"] Qualifier}
     ;
 
 Qualifier
@@ -41,6 +53,27 @@ Factor
     | LiteralString
     | "[" [Expression {"," Expression}] "]"
     | "fn" FunctionTail
+    | "match" Expression MatchCase {"|" MatchCase}
+    ;
+
+MatchCase
+    : "|" Pattern "->" Expression
+    ;
+
+Pattern
+    : Identifier
+    | LiteralChar
+    | LiteralFloat
+    | LiteralInt
+    | LiteralString
+    | "[" [Pattern {"," Pattern}] "]"
+    | "{" [MapPattern {"," MapPattern}] "}"
+    | "true" 
+    | "false"
+    ;
+
+MapPattern
+    : Identifier [":" Pattern]
     ;
 
 FunctionTail
