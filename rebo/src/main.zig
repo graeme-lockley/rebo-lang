@@ -152,6 +152,12 @@ const expectEqual = std.testing.expectEqual;
 test "assignment expression" {
     try expectExprEqual("let x = 10; x := x + 1", "11");
     try expectExprEqual("let x = 10; x := x + 1; x", "11");
+    try expectExprEqual("(fn (x = 0) = { x := x + 1 })(10)", "11");
+    try expectExprEqual("let count = 0; let inc() = count := count + 1; inc(); inc(); inc()", "3");
+
+    try expectExprEqual("let x = {a: 10, b: 20}; x.a := x.a + 1", "11");
+    try expectExprEqual("let x = {a: 10, b: 20}; x.a := x.a + 1; [x.a, x.b]", "[11, 20]");
+    try expectExprEqual("let x = {a: 10, b: 20}; let getX() = x; getX().a := getX().a + 1; [getX().a, x.a, x.b]", "[11, 11, 20]");
 }
 
 test "call expression" {

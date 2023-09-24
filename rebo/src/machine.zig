@@ -5,6 +5,7 @@ const Errors = @import("./errors.zig");
 const Lexer = @import("./lexer.zig");
 const Parser = @import("./parser.zig");
 
+pub const V = @import("./value.zig");
 pub const Value = @import("./value.zig").Value;
 pub const eq = @import("./value.zig").eq;
 const FunctionArgument = @import("./value.zig").FunctionArgument;
@@ -312,8 +313,25 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             if (evalExpr(machine, value)) return true;
 
             if (!(machine.memoryState.updateInScope(lhs.kind.identifier, machine.memoryState.peek(0)) catch return true)) {
-                unreachable;
+                machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, lhs.position, lhs.kind.identifier) catch return true);
+                return true;
             }
+        },
+        .dot => {
+            if (evalExpr(machine, lhs.kind.dot.record)) return true;
+            const record = machine.memoryState.peek(0);
+
+            if (record.v != ValueValue.RecordKind) {
+                machine.replaceErr(Errors.recordValueExpectedError(machine.memoryState.allocator, lhs.kind.dot.record.position));
+                return true;
+            }
+            if (evalExpr(machine, value)) return true;
+
+            V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, lhs.kind.dot.field, machine.memoryState.peek(0)) catch return true;
+
+            const v = machine.memoryState.pop();
+            _ = machine.memoryState.pop();
+            machine.memoryState.push(v) catch return true;
         },
         else => unreachable,
     }

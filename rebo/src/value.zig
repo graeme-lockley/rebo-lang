@@ -225,6 +225,16 @@ pub const ValueValue = union(ValueKind) {
     VoidKind: void,
 };
 
+pub fn recordSet(allocator: std.mem.Allocator, record: *std.StringHashMap(*Value), key: []const u8, value: *Value) !void {
+    const oldKey = record.getKey(key);
+
+    if (oldKey == null) {
+        try record.put(try allocator.dupe(u8, key), value);
+    } else {
+        try record.put(oldKey.?, value);
+    }
+}
+
 pub const FunctionValue = struct {
     scope: ?*Value,
     arguments: []FunctionArgument,
