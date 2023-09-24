@@ -1,11 +1,10 @@
 let prime?(n = 0) = {
   let testPrime(i = 2) =
-    if i == n -> true
+    if i * i > n -> true
      | n % i == 0 -> false
      | testPrime(i + 1)
 
-  if n == 0 -> false
-   | n == 1 -> false
+  if n < 2 -> false
    | testPrime()
 }
 
@@ -13,4 +12,4 @@ let nextLargestPrime(n) =
   if prime?(n) -> n
    | nextLargestPrime(n + 1)
 
-nextLargestPrime(500)
+nextLargestPrime(100000)

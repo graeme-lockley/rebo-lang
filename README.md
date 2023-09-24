@@ -35,12 +35,12 @@ let { println } = import("io")
 
 let prime?(n) = 
   let loop(i = 2) =
-    if
-    | i >= n / 2 -> true        
-    | n % i == 0 -> false
-    | true -> loop(i + 1)
+    if i * i > n -> true
+     | n % i == 0 -> false
+     | testPrime(i + 1)
 
-  loop()
+  if n < 2 -> false
+   | loop()
 
 let primes(n) =
   range(2, n)
