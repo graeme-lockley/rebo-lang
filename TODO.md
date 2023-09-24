@@ -13,7 +13,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 ## Values
 
 - [X] Let declaration
-- [ ] Assignment without destructing
+- [X] Assignment without destructing
 - [ ] Assignment with destructing
 
 ## Functions
