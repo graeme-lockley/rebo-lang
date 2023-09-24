@@ -146,7 +146,15 @@ pub const Lexer = struct {
             ')' => self.setSymbolToken(TokenKind.RParen, tokenStart),
             ',' => self.setSymbolToken(TokenKind.Comma, tokenStart),
             '.' => self.setSymbolToken(TokenKind.Dot, tokenStart),
-            ':' => self.setSymbolToken(TokenKind.Colon, tokenStart),
+            ':' => {
+                self.skipCharacter();
+                if (self.currentCharacter() == '=') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.ColonEqual, .start = tokenStart, .end = self.offset };
+                } else {
+                    self.current = Token{ .kind = TokenKind.Colon, .start = tokenStart, .end = self.offset };
+                }
+            },
             ';' => self.setSymbolToken(TokenKind.Semicolon, tokenStart),
             '|' => {
                 self.skipCharacter();
@@ -459,9 +467,9 @@ test "literal string" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / % = == != < <= > >= && || [ { ( , . : ; -> | ] } )" {
+test "+ - * / % = == != < <= > >= && || [ { ( , . : := ; -> | ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / % = == != < <= > >= && || [ { ( , . : ; -> | ] } ) ");
+    try lexer.initBuffer("console", " + - * / % = == != < <= > >= && || [ { ( , . : := ; -> | ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -502,6 +510,8 @@ test "+ - * / % = == != < <= > >= && || [ { ( , . : ; -> | ] } )" {
     try expectEqual(lexer.current.kind, TokenKind.Dot);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Colon);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.ColonEqual);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Semicolon);
     try lexer.next();
