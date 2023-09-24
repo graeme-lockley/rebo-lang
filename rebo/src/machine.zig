@@ -148,6 +148,23 @@ pub const MemoryState = struct {
         }
     }
 
+    pub fn updateInScope(self: *MemoryState, name: []const u8, value: *Value) !bool {
+        var runner = self.scope();
+
+        while (runner != null) {
+            const oldKey = runner.?.v.ScopeKind.values.getKey(name);
+
+            if (oldKey == null) {
+                runner = runner.?.v.ScopeKind.parent;
+            } else {
+                try runner.?.v.ScopeKind.values.put(oldKey.?, value);
+
+                return true;
+            }
+        }
+        return false;
+    }
+
     pub fn deinit(self: *MemoryState) void {
         // Leave this code in - helpful to use when debugging memory leaks.
         // The code following this comment block just nukes the allocated
@@ -289,9 +306,24 @@ fn gc(state: *MemoryState) void {
     }
 }
 
+fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) bool {
+    switch (lhs.kind) {
+        .identifier => {
+            if (evalExpr(machine, value)) return true;
+
+            if (!(machine.memoryState.updateInScope(lhs.kind.identifier, machine.memoryState.peek(0)) catch return true)) {
+                unreachable;
+            }
+        },
+        else => unreachable,
+    }
+
+    return false;
+}
+
 fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
     switch (e.kind) {
-        .assignment => unreachable,
+        .assignment => return assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
         .binaryOp => {
             switch (e.kind.binaryOp.op) {
                 AST.Operator.Plus => {

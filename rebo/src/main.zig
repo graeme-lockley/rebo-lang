@@ -149,6 +149,11 @@ fn expectError(input: []const u8) !void {
 
 const expectEqual = std.testing.expectEqual;
 
+test "assignment expression" {
+    try expectExprEqual("let x = 10; x := x + 1", "11");
+    try expectExprEqual("let x = 10; x := x + 1; x", "11");
+}
+
 test "call expression" {
     try expectExprEqual("(fn() = 1)()", "1");
     try expectExprEqual("(fn() = 1)(1, 2, 3)", "1");
