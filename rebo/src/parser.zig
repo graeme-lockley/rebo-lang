@@ -157,8 +157,56 @@ pub const Parser = struct {
             v.* = AST.Expression{ .kind = AST.ExpressionKind{ .ifte = try couples.toOwnedSlice() }, .position = Errors.Position{ .start = ifToken.start, .end = self.lexer.current.end } };
             return v;
         } else {
-            return try self.equality();
+            return try self.orExpr();
         }
+    }
+
+    fn orExpr(self: *Parser) Errors.err!*AST.Expression {
+        var lhs = try self.andExpr();
+        errdefer AST.destroy(self.allocator, lhs);
+
+        const kind = self.currentTokenKind();
+
+        if (kind == Lexer.TokenKind.BarBar) {
+            try self.skipToken();
+
+            const rhs = try self.andExpr();
+            errdefer AST.destroy(self.allocator, rhs);
+
+            const v = try self.allocator.create(AST.Expression);
+
+            v.* = AST.Expression{
+                .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Or } },
+                .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
+            };
+            lhs = v;
+        }
+
+        return lhs;
+    }
+
+    fn andExpr(self: *Parser) Errors.err!*AST.Expression {
+        var lhs = try self.equality();
+        errdefer AST.destroy(self.allocator, lhs);
+
+        const kind = self.currentTokenKind();
+
+        if (kind == Lexer.TokenKind.AmpersandAmpersand) {
+            try self.skipToken();
+
+            const rhs = try self.equality();
+            errdefer AST.destroy(self.allocator, rhs);
+
+            const v = try self.allocator.create(AST.Expression);
+
+            v.* = AST.Expression{
+                .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.And } },
+                .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
+            };
+            lhs = v;
+        }
+
+        return lhs;
     }
 
     fn equality(self: *Parser) Errors.err!*AST.Expression {

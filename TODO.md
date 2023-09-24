@@ -69,8 +69,8 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] All '<='
 - [X] All '>'
 - [X] All '>='
-- [ ] Boolean '&&'
-- [ ] Boolean '||'
+- [X] Boolean '&&'
+- [X] Boolean '||'
 - [ ] Boolean '!'
 
 # Control Statements
