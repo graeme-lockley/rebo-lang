@@ -291,6 +291,7 @@ fn gc(state: *MemoryState) void {
 
 fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
     switch (e.kind) {
+        .assignment => unreachable,
         .binaryOp => {
             switch (e.kind.binaryOp.op) {
                 AST.Operator.Plus => {

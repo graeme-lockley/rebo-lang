@@ -157,7 +157,22 @@ pub const Parser = struct {
             v.* = AST.Expression{ .kind = AST.ExpressionKind{ .ifte = try couples.toOwnedSlice() }, .position = Errors.Position{ .start = ifToken.start, .end = self.lexer.current.end } };
             return v;
         } else {
-            return try self.orExpr();
+            var lhs = try self.orExpr();
+
+            if (self.currentTokenKind() == Lexer.TokenKind.ColonEqual) {
+                try self.skipToken();
+                const value = try self.expression();
+
+                const v = try self.allocator.create(AST.Expression);
+
+                v.* = AST.Expression{
+                    .kind = AST.ExpressionKind{ .assignment = AST.AssignmentExpression{ .lhs = lhs, .value = value } },
+                    .position = Errors.Position{ .start = lhs.position.start, .end = value.position.end },
+                };
+                lhs = v;
+            }
+
+            return lhs;
         }
     }
 

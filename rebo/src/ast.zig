@@ -43,6 +43,7 @@ pub const Expression = struct {
 };
 
 pub const ExpressionKind = union(enum) {
+    assignment: AssignmentExpression,
     binaryOp: BinaryOpExpression,
     call: CallExpression,
     declaration: DeclarationExpression,
@@ -59,6 +60,11 @@ pub const ExpressionKind = union(enum) {
     literalSequence: []*Expression,
     literalString: []u8,
     literalVoid: void,
+};
+
+pub const AssignmentExpression = struct {
+    lhs: *Expression,
+    value: *Expression,
 };
 
 pub const BinaryOpExpression = struct {
@@ -125,6 +131,10 @@ pub const RecordEntry = struct {
 
 pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
     switch (expr.kind) {
+        .assignment => {
+            destroy(allocator, expr.kind.assignment.lhs);
+            destroy(allocator, expr.kind.assignment.value);
+        },
         .binaryOp => {
             destroy(allocator, expr.kind.binaryOp.left);
             destroy(allocator, expr.kind.binaryOp.right);
