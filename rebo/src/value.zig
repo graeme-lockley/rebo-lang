@@ -199,7 +199,7 @@ pub const ValueKind = enum {
     pub fn toString(self: ValueKind) []const u8 {
         return switch (self) {
             ValueKind.BoolKind => "Bool",
-            ValueKind.CharKind => "Chal",
+            ValueKind.CharKind => "Char",
             ValueKind.FunctionKind => "Function",
             ValueKind.FloatKind => "Float",
             ValueKind.IntKind => "Int",
@@ -240,3 +240,61 @@ pub const ScopeValue = struct {
     parent: ?*Value,
     values: std.StringHashMap(*Value),
 };
+
+pub fn eq(a: *Value, b: *Value) bool {
+    if (@intFromPtr(a) == @intFromPtr(b)) return true;
+    if (@intFromEnum(a.v) != @intFromEnum(b.v)) return false;
+
+    switch (a.v) {
+        .BoolKind => return a.v.BoolKind == b.v.BoolKind,
+        .CharKind => return a.v.CharKind == b.v.CharKind,
+        .FunctionKind => return @intFromPtr(a) == @intFromPtr(b),
+        .IntKind => return a.v.IntKind == b.v.IntKind,
+        .FloatKind => return a.v.FloatKind == b.v.FloatKind,
+        .SequenceKind => {
+            if (a.v.SequenceKind.len != b.v.SequenceKind.len) return false;
+
+            for (a.v.SequenceKind, 0..) |v, i| {
+                if (!eq(v, b.v.SequenceKind[i])) return false;
+            }
+
+            return true;
+        },
+        .StringKind => {
+            if (a.v.StringKind.len != b.v.StringKind.len) return false;
+
+            for (a.v.StringKind, 0..) |c, i| {
+                if (c != b.v.StringKind[i]) return false;
+            }
+
+            return true;
+        },
+        .RecordKind => {
+            if (a.v.RecordKind.count() != b.v.RecordKind.count()) return false;
+
+            var iterator = a.v.RecordKind.iterator();
+            while (iterator.next()) |entry| {
+                var value = b.v.RecordKind.get(entry.key_ptr.*);
+                if (value == null) return false;
+
+                if (!eq(entry.value_ptr.*, value.?)) return false;
+            }
+
+            return true;
+        },
+        .ScopeKind => {
+            if (a.v.ScopeKind.values.count() != b.v.ScopeKind.values.count()) return false;
+
+            var iterator = a.v.ScopeKind.values.iterator();
+            while (iterator.next()) |entry| {
+                var value = b.v.ScopeKind.values.get(entry.key_ptr.*);
+                if (value == null) return false;
+
+                if (!eq(entry.value_ptr.*, value.?)) return false;
+            }
+
+            return true;
+        },
+        .VoidKind => return true,
+    }
+}

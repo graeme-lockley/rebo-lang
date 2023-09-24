@@ -6,6 +6,7 @@ const Lexer = @import("./lexer.zig");
 const Parser = @import("./parser.zig");
 
 pub const Value = @import("./value.zig").Value;
+pub const eq = @import("./value.zig").eq;
 const FunctionArgument = @import("./value.zig").FunctionArgument;
 const FunctionValue = @import("./value.zig").FunctionValue;
 const IntType = @import("./value.zig").IntType;
@@ -333,7 +334,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                             return true;
                         },
                     }
-                    return false;
                 },
                 AST.Operator.Minus => {
                     if (evalExpr(machine, e.kind.binaryOp.left)) return true;
@@ -376,7 +376,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                             return true;
                         },
                     }
-                    return false;
                 },
                 AST.Operator.Times => {
                     if (evalExpr(machine, e.kind.binaryOp.left)) return true;
@@ -419,7 +418,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                             return true;
                         },
                     }
-                    return false;
                 },
                 AST.Operator.Divide => {
                     if (evalExpr(machine, e.kind.binaryOp.left)) return true;
@@ -482,7 +480,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                             return true;
                         },
                     }
-                    return false;
                 },
                 AST.Operator.LessThan => {
                     if (evalExpr(machine, e.kind.binaryOp.left)) return true;
@@ -525,7 +522,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                             return true;
                         },
                     }
-                    return false;
                 },
                 AST.Operator.LessEqual => {
                     if (evalExpr(machine, e.kind.binaryOp.left)) return true;
@@ -568,7 +564,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                             return true;
                         },
                     }
-                    return false;
                 },
                 AST.Operator.GreaterThan => {
                     if (evalExpr(machine, e.kind.binaryOp.left)) return true;
@@ -611,7 +606,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                             return true;
                         },
                     }
-                    return false;
                 },
                 AST.Operator.GreaterEqual => {
                     if (evalExpr(machine, e.kind.binaryOp.left)) return true;
@@ -654,7 +648,36 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                             return true;
                         },
                     }
-                    return false;
+                },
+                AST.Operator.Equal => {
+                    if (evalExpr(machine, e.kind.binaryOp.left)) return true;
+                    if (evalExpr(machine, e.kind.binaryOp.right)) return true;
+
+                    const right = machine.pop();
+                    const left = machine.pop();
+
+                    if (@intFromEnum(left.v) != @intFromEnum(right.v)) {
+                        machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+
+                        return true;
+                    }
+
+                    machine.memoryState.pushBoolValue(eq(left, right)) catch return true;
+                },
+                AST.Operator.NotEqual => {
+                    if (evalExpr(machine, e.kind.binaryOp.left)) return true;
+                    if (evalExpr(machine, e.kind.binaryOp.right)) return true;
+
+                    const right = machine.pop();
+                    const left = machine.pop();
+
+                    if (@intFromEnum(left.v) != @intFromEnum(right.v)) {
+                        machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+
+                        return true;
+                    }
+
+                    machine.memoryState.pushBoolValue(!eq(left, right)) catch return true;
                 },
                 AST.Operator.And => {
                     if (evalExpr(machine, e.kind.binaryOp.left)) return true;
@@ -673,8 +696,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                             return true;
                         }
                     }
-
-                    return false;
                 },
                 AST.Operator.Or => {
                     if (evalExpr(machine, e.kind.binaryOp.left)) return true;
@@ -693,40 +714,9 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                             return true;
                         }
                     }
-
-                    return false;
                 },
 
                 else => {},
-            }
-
-            {
-                if (evalExpr(machine, e.kind.binaryOp.left)) return true;
-                if (evalExpr(machine, e.kind.binaryOp.right)) return true;
-
-                const right = machine.pop();
-                const left = machine.pop();
-
-                if (left.v != ValueValue.IntKind or right.v != ValueValue.IntKind) {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
-
-                    return true;
-                }
-
-                switch (e.kind.binaryOp.op) {
-                    AST.Operator.Modulo => {
-                        if (right.v.IntKind == 0) {
-                            machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, e.position));
-
-                            return true;
-                        }
-
-                        machine.memoryState.pushIntValue(@rem(left.v.IntKind, right.v.IntKind)) catch return true;
-                    },
-                    AST.Operator.Equal => machine.createBoolValue(left.v.IntKind == right.v.IntKind) catch return true,
-                    AST.Operator.NotEqual => machine.createBoolValue(left.v.IntKind != right.v.IntKind) catch return true,
-                    else => unreachable,
-                }
             }
         },
         .call => {
