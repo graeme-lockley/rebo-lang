@@ -670,12 +670,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                     const right = machine.pop();
                     const left = machine.pop();
 
-                    if (@intFromEnum(left.v) != @intFromEnum(right.v)) {
-                        machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
-
-                        return true;
-                    }
-
                     machine.memoryState.pushBoolValue(eq(left, right)) catch return true;
                 },
                 AST.Operator.NotEqual => {
@@ -684,12 +678,6 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
                     const right = machine.pop();
                     const left = machine.pop();
-
-                    if (@intFromEnum(left.v) != @intFromEnum(right.v)) {
-                        machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
-
-                        return true;
-                    }
 
                     machine.memoryState.pushBoolValue(!eq(left, right)) catch return true;
                 },

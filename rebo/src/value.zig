@@ -243,7 +243,31 @@ pub const ScopeValue = struct {
 
 pub fn eq(a: *Value, b: *Value) bool {
     if (@intFromPtr(a) == @intFromPtr(b)) return true;
-    if (@intFromEnum(a.v) != @intFromEnum(b.v)) return false;
+    if (@intFromEnum(a.v) != @intFromEnum(b.v)) {
+        switch (a.v) {
+            .IntKind => {
+                switch (b.v) {
+                    .IntKind => return a.v.IntKind == b.v.IntKind,
+                    .FloatKind => return @as(FloatType, @floatFromInt(a.v.IntKind)) == b.v.FloatKind,
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            .FloatKind => {
+                switch (b.v) {
+                    .IntKind => return a.v.FloatKind == @as(FloatType, @floatFromInt(b.v.IntKind)),
+                    .FloatKind => return a.v.FloatKind == b.v.FloatKind,
+                    else => {
+                        return false;
+                    },
+                }
+            },
+            else => {
+                return false;
+            },
+        }
+    }
 
     switch (a.v) {
         .BoolKind => return a.v.BoolKind == b.v.BoolKind,
