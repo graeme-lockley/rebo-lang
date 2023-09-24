@@ -66,6 +66,19 @@ pub const IncompatibleOperandTypesError = struct {
     }
 };
 
+pub const InvaludLHSError = struct {
+    allocator: std.mem.Allocator,
+    position: Position,
+
+    pub fn deinit(self: InvaludLHSError) void {
+        _ = self;
+    }
+
+    pub fn print(self: InvaludLHSError) void {
+        std.log.err("Invalid Left on Assignment: {d}-{d}", .{ self.position.start, self.position.end });
+    }
+};
+
 pub const LexicalError = struct {
     allocator: std.mem.Allocator,
     position: Position,
@@ -141,6 +154,7 @@ pub const Error = union(enum) {
     divideByZero: DivideByZeroError,
     functionValueExpectedError: FunctionValueExpectedError,
     incompatibleOperandTypesError: IncompatibleOperandTypesError,
+    invalidLHSError: InvaludLHSError,
     lexicalError: LexicalError,
     literalFloatOverflowError: LexicalError,
     literalIntOverflowError: LexicalError,
@@ -161,6 +175,9 @@ pub const Error = union(enum) {
             },
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.deinit();
+            },
+            .invalidLHSError => {
+                self.invalidLHSError.deinit();
             },
             .lexicalError, .literalFloatOverflowError, .literalIntOverflowError => {
                 self.lexicalError.deinit();
@@ -190,6 +207,9 @@ pub const Error = union(enum) {
             },
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.print();
+            },
+            .invalidLHSError => {
+                self.invalidLHSError.print();
             },
             .lexicalError => {
                 self.lexicalError.print("Lexical Error");
@@ -239,6 +259,10 @@ pub fn incompatibleOperandTypesError(
         .left = left,
         .right = right,
     } };
+}
+
+pub fn invaludLHSError(allocator: std.mem.Allocator, position: Position) Error {
+    return Error{ .invalidLHSError = .{ .allocator = allocator, .position = position } };
 }
 
 pub fn lexicalError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {

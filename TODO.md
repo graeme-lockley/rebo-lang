@@ -14,7 +14,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [X] Let declaration
 - [ ] Assignment without destructing
-- [ ] Reference identifiers
+- [ ] Assignment with destructing
 
 ## Functions
 
@@ -78,13 +78,20 @@ There is so much to do.  The following is my work list on this project.  I will 
 ## Sequences
 
 - [X] Add top-level support for expression sequences terminated with a semicolon
-- [ ] Include this into the REPL
 - [X] Add support for {... ; ... ; ...} to create a sequence of expressions 
 
 ## if
 
 - [X] Add support for if expressions
-- [ ] Include pattern machine into if expressions
+
+## match
+
+- [ ] Add support for match expressions
+
+# REPL Features
+
+- [ ] Add support for state in the REPL
+- [ ] Add a `readline` like capability into the REPL
 
 # Chore Features
 

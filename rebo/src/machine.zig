@@ -333,7 +333,10 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             _ = machine.memoryState.pop();
             machine.memoryState.push(v) catch return true;
         },
-        else => unreachable,
+        else => {
+            machine.replaceErr(Errors.invaludLHSError(machine.memoryState.allocator, lhs.position));
+            return true;
+        },
     }
 
     return false;
