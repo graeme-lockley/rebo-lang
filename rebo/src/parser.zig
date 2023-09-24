@@ -165,9 +165,7 @@ pub const Parser = struct {
         var lhs = try self.andExpr();
         errdefer AST.destroy(self.allocator, lhs);
 
-        const kind = self.currentTokenKind();
-
-        if (kind == Lexer.TokenKind.BarBar) {
+        while (self.currentTokenKind() == Lexer.TokenKind.BarBar) {
             try self.skipToken();
 
             const rhs = try self.andExpr();
@@ -189,9 +187,7 @@ pub const Parser = struct {
         var lhs = try self.equality();
         errdefer AST.destroy(self.allocator, lhs);
 
-        const kind = self.currentTokenKind();
-
-        if (kind == Lexer.TokenKind.AmpersandAmpersand) {
+        while (self.currentTokenKind() == Lexer.TokenKind.AmpersandAmpersand) {
             try self.skipToken();
 
             const rhs = try self.equality();
