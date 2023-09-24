@@ -1,13 +1,12 @@
 let prime?(n = 0) = {
-  let testPrime(i) =
+  let testPrime(i = 2) =
     if i == n -> true
      | n % i == 0 -> false
      | testPrime(i + 1)
 
   if n == 0 -> false
    | n == 1 -> false
-   | n == 2 -> true
-   | testPrime(2)
+   | testPrime()
 }
 
 let nextLargestPrime(n) =
