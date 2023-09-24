@@ -481,6 +481,20 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                         },
                     }
                 },
+                AST.Operator.Modulo => {
+                    if (evalExpr(machine, e.kind.binaryOp.left)) return true;
+                    if (evalExpr(machine, e.kind.binaryOp.right)) return true;
+
+                    const right = machine.pop();
+                    const left = machine.pop();
+
+                    if (left.v != ValueValue.IntKind or right.v != ValueValue.IntKind) {
+                        machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+
+                        return true;
+                    }
+                    machine.memoryState.pushIntValue(@mod(left.v.IntKind, right.v.IntKind)) catch return true;
+                },
                 AST.Operator.LessThan => {
                     if (evalExpr(machine, e.kind.binaryOp.left)) return true;
                     if (evalExpr(machine, e.kind.binaryOp.right)) return true;
@@ -716,7 +730,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                     }
                 },
 
-                else => {},
+                // else => unreachable,
             }
         },
         .call => {
