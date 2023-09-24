@@ -9,18 +9,30 @@ pub const Operator = enum {
     Times,
     Divide,
     Modulo,
-    Equals,
-    NotEquals,
+    Equal,
+    NotEqual,
+    LessThan,
+    LessEqual,
+    GreaterThan,
+    GreaterEqual,
+    And,
+    Or,
 
     pub fn toString(self: Operator) []const u8 {
         return switch (self) {
             Operator.Plus => "+",
             Operator.Minus => "-",
-            Operator.Times => "-",
+            Operator.Times => "*",
             Operator.Divide => "/",
             Operator.Modulo => "%",
-            Operator.Equals => "==",
-            Operator.NotEquals => "!=",
+            Operator.Equal => "==",
+            Operator.NotEqual => "!=",
+            Operator.LessThan => "<",
+            Operator.LessEqual => "<=",
+            Operator.GreaterThan => ">",
+            Operator.GreaterEqual => ">=",
+            Operator.And => "&&",
+            Operator.Or => "||",
         };
     }
 };

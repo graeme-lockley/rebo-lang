@@ -167,14 +167,22 @@ pub const Parser = struct {
 
         const kind = self.currentTokenKind();
 
-        if (kind == Lexer.TokenKind.EqualEqual or kind == Lexer.TokenKind.BangEqual) {
+        if (kind == Lexer.TokenKind.EqualEqual or kind == Lexer.TokenKind.BangEqual or kind == Lexer.TokenKind.LessThan or kind == Lexer.TokenKind.LessEqual or kind == Lexer.TokenKind.GreaterThan or kind == Lexer.TokenKind.GreaterEqual) {
             try self.skipToken();
 
             const rhs = try self.additive();
             errdefer AST.destroy(self.allocator, rhs);
 
             const v = try self.allocator.create(AST.Expression);
-            const op = if (kind == Lexer.TokenKind.EqualEqual) AST.Operator.Equals else AST.Operator.NotEquals;
+            const op = switch (kind) {
+                Lexer.TokenKind.EqualEqual => AST.Operator.Equal,
+                Lexer.TokenKind.BangEqual => AST.Operator.NotEqual,
+                Lexer.TokenKind.LessEqual => AST.Operator.LessEqual,
+                Lexer.TokenKind.LessThan => AST.Operator.LessThan,
+                Lexer.TokenKind.GreaterEqual => AST.Operator.GreaterEqual,
+                Lexer.TokenKind.GreaterThan => AST.Operator.GreaterThan,
+                else => unreachable,
+            };
 
             v.* = AST.Expression{
                 .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } },

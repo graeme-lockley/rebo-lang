@@ -148,7 +148,15 @@ pub const Lexer = struct {
             '.' => self.setSymbolToken(TokenKind.Dot, tokenStart),
             ':' => self.setSymbolToken(TokenKind.Colon, tokenStart),
             ';' => self.setSymbolToken(TokenKind.Semicolon, tokenStart),
-            '|' => self.setSymbolToken(TokenKind.Bar, tokenStart),
+            '|' => {
+                self.skipCharacter();
+                if (self.currentCharacter() == '|') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.BarBar, .start = tokenStart, .end = self.offset };
+                } else {
+                    self.current = Token{ .kind = TokenKind.Bar, .start = tokenStart, .end = self.offset };
+                }
+            },
             '+' => self.setSymbolToken(TokenKind.Plus, tokenStart),
             '*' => self.setSymbolToken(TokenKind.Star, tokenStart),
             '/' => self.setSymbolToken(TokenKind.Slash, tokenStart),
@@ -160,6 +168,33 @@ pub const Lexer = struct {
                     self.current = Token{ .kind = TokenKind.EqualEqual, .start = tokenStart, .end = self.offset };
                 } else {
                     self.current = Token{ .kind = TokenKind.Equal, .start = tokenStart, .end = self.offset };
+                }
+            },
+            '<' => {
+                self.skipCharacter();
+                if (self.currentCharacter() == '=') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.LessEqual, .start = tokenStart, .end = self.offset };
+                } else {
+                    self.current = Token{ .kind = TokenKind.LessThan, .start = tokenStart, .end = self.offset };
+                }
+            },
+            '>' => {
+                self.skipCharacter();
+                if (self.currentCharacter() == '=') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.GreaterEqual, .start = tokenStart, .end = self.offset };
+                } else {
+                    self.current = Token{ .kind = TokenKind.GreaterThan, .start = tokenStart, .end = self.offset };
+                }
+            },
+            '&' => {
+                self.skipCharacter();
+                if (self.currentCharacter() == '&') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.AmpersandAmpersand, .start = tokenStart, .end = self.offset };
+                } else {
+                    try self.reportLexicalError(tokenStart);
                 }
             },
             '-' => {
@@ -424,9 +459,9 @@ test "literal string" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / % = == [ { ( , . : ; -> | ] } )" {
+test "+ - * / % = == != < <= > >= && || [ { ( , . : ; -> | ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / % = == [ { ( , . : ; -> | ] } ) ");
+    try lexer.initBuffer("console", " + - * / % = == != < <= > >= && || [ { ( , . : ; -> | ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -441,6 +476,20 @@ test "+ - * / % = == [ { ( , . : ; -> | ] } )" {
     try expectEqual(lexer.current.kind, TokenKind.Equal);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.EqualEqual);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.BangEqual);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.LessThan);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.LessEqual);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.GreaterThan);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.GreaterEqual);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.AmpersandAmpersand);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.BarBar);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LBracket);
     try lexer.next();

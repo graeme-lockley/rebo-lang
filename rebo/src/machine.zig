@@ -466,6 +466,155 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                     }
                     return false;
                 },
+                AST.Operator.LessThan => {
+                    switch (left.v) {
+                        ValueValue.IntKind => {
+                            switch (right.v) {
+                                ValueValue.IntKind => {
+                                    machine.memoryState.pushBoolValue(left.v.IntKind < right.v.IntKind) catch return true;
+                                },
+                                ValueValue.FloatKind => {
+                                    machine.memoryState.pushBoolValue(@as(FloatType, @floatFromInt(left.v.IntKind)) < right.v.FloatKind) catch return true;
+                                },
+                                else => {
+                                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                                    return true;
+                                },
+                            }
+                        },
+                        ValueValue.FloatKind => {
+                            switch (right.v) {
+                                ValueValue.IntKind => {
+                                    machine.memoryState.pushBoolValue(left.v.FloatKind < @as(FloatType, @floatFromInt(right.v.IntKind))) catch return true;
+                                },
+                                ValueValue.FloatKind => {
+                                    machine.memoryState.pushBoolValue(left.v.FloatKind < right.v.FloatKind) catch return true;
+                                },
+                                else => {
+                                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                                    return true;
+                                },
+                            }
+                        },
+                        else => {
+                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                            return true;
+                        },
+                    }
+                    return false;
+                },
+                AST.Operator.LessEqual => {
+                    switch (left.v) {
+                        ValueValue.IntKind => {
+                            switch (right.v) {
+                                ValueValue.IntKind => {
+                                    machine.memoryState.pushBoolValue(left.v.IntKind <= right.v.IntKind) catch return true;
+                                },
+                                ValueValue.FloatKind => {
+                                    machine.memoryState.pushBoolValue(@as(FloatType, @floatFromInt(left.v.IntKind)) <= right.v.FloatKind) catch return true;
+                                },
+                                else => {
+                                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                                    return true;
+                                },
+                            }
+                        },
+                        ValueValue.FloatKind => {
+                            switch (right.v) {
+                                ValueValue.IntKind => {
+                                    machine.memoryState.pushBoolValue(left.v.FloatKind <= @as(FloatType, @floatFromInt(right.v.IntKind))) catch return true;
+                                },
+                                ValueValue.FloatKind => {
+                                    machine.memoryState.pushBoolValue(left.v.FloatKind <= right.v.FloatKind) catch return true;
+                                },
+                                else => {
+                                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                                    return true;
+                                },
+                            }
+                        },
+                        else => {
+                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                            return true;
+                        },
+                    }
+                    return false;
+                },
+                AST.Operator.GreaterThan => {
+                    switch (left.v) {
+                        ValueValue.IntKind => {
+                            switch (right.v) {
+                                ValueValue.IntKind => {
+                                    machine.memoryState.pushBoolValue(left.v.IntKind > right.v.IntKind) catch return true;
+                                },
+                                ValueValue.FloatKind => {
+                                    machine.memoryState.pushBoolValue(@as(FloatType, @floatFromInt(left.v.IntKind)) > right.v.FloatKind) catch return true;
+                                },
+                                else => {
+                                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                                    return true;
+                                },
+                            }
+                        },
+                        ValueValue.FloatKind => {
+                            switch (right.v) {
+                                ValueValue.IntKind => {
+                                    machine.memoryState.pushBoolValue(left.v.FloatKind > @as(FloatType, @floatFromInt(right.v.IntKind))) catch return true;
+                                },
+                                ValueValue.FloatKind => {
+                                    machine.memoryState.pushBoolValue(left.v.FloatKind > right.v.FloatKind) catch return true;
+                                },
+                                else => {
+                                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                                    return true;
+                                },
+                            }
+                        },
+                        else => {
+                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                            return true;
+                        },
+                    }
+                    return false;
+                },
+                AST.Operator.GreaterEqual => {
+                    switch (left.v) {
+                        ValueValue.IntKind => {
+                            switch (right.v) {
+                                ValueValue.IntKind => {
+                                    machine.memoryState.pushBoolValue(left.v.IntKind >= right.v.IntKind) catch return true;
+                                },
+                                ValueValue.FloatKind => {
+                                    machine.memoryState.pushBoolValue(@as(FloatType, @floatFromInt(left.v.IntKind)) >= right.v.FloatKind) catch return true;
+                                },
+                                else => {
+                                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                                    return true;
+                                },
+                            }
+                        },
+                        ValueValue.FloatKind => {
+                            switch (right.v) {
+                                ValueValue.IntKind => {
+                                    machine.memoryState.pushBoolValue(left.v.FloatKind >= @as(FloatType, @floatFromInt(right.v.IntKind))) catch return true;
+                                },
+                                ValueValue.FloatKind => {
+                                    machine.memoryState.pushBoolValue(left.v.FloatKind >= right.v.FloatKind) catch return true;
+                                },
+                                else => {
+                                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                                    return true;
+                                },
+                            }
+                        },
+                        else => {
+                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                            return true;
+                        },
+                    }
+                    return false;
+                },
+
                 else => {},
             }
 
@@ -485,8 +634,8 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
                     machine.memoryState.pushIntValue(@rem(left.v.IntKind, right.v.IntKind)) catch return true;
                 },
-                AST.Operator.Equals => machine.createBoolValue(left.v.IntKind == right.v.IntKind) catch return true,
-                AST.Operator.NotEquals => machine.createBoolValue(left.v.IntKind != right.v.IntKind) catch return true,
+                AST.Operator.Equal => machine.createBoolValue(left.v.IntKind == right.v.IntKind) catch return true,
+                AST.Operator.NotEqual => machine.createBoolValue(left.v.IntKind != right.v.IntKind) catch return true,
                 else => unreachable,
             }
         },
