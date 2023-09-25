@@ -384,6 +384,8 @@ test "additive op" {
     try expectExprEqual("1 - 1.0", "0");
     try expectExprEqual("1 - 2 + 3 - 4 + 5", "3");
 
+    try expectExprEqual("\"hello\" + \" \" + \"world\"", "\"hello world\"");
+
     try expectError("1 + true");
     try expectError("1 - true");
 }

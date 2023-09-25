@@ -89,6 +89,10 @@ pub const MemoryState = struct {
         _ = try self.pushValue(ValueValue{ .StringKind = try self.allocator.dupe(u8, v) });
     }
 
+    pub fn pushOwnedStringValue(self: *MemoryState, v: []u8) !void {
+        _ = try self.pushValue(ValueValue{ .StringKind = v });
+    }
+
     pub fn pushUnitValue(self: *MemoryState) !void {
         _ = try self.pushValue(ValueValue{ .VoidKind = void{} });
     }
@@ -341,6 +345,18 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                                 },
                                 ValueValue.FloatKind => {
                                     machine.memoryState.pushFloatValue(left.v.FloatKind + right.v.FloatKind) catch return true;
+                                },
+                                else => {
+                                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                                    return true;
+                                },
+                            }
+                        },
+                        ValueValue.StringKind => {
+                            switch (right.v) {
+                                ValueValue.StringKind => {
+                                    const slices = [_][]u8{ left.v.StringKind, right.v.StringKind };
+                                    machine.memoryState.pushOwnedStringValue(std.mem.concat(machine.memoryState.allocator, u8, &slices) catch return true) catch return true;
                                 },
                                 else => {
                                     machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
