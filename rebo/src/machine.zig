@@ -68,7 +68,7 @@ pub const MemoryState = struct {
         _ = try self.pushValue(ValueValue{ .IntKind = v });
     }
 
-    pub fn pushListValue(self: *MemoryState, size: usize) !void {
+    pub fn pushSequenceValue(self: *MemoryState, size: usize) !void {
         var items = try self.allocator.alloc(*Value, size);
 
         if (size > 0) {
@@ -83,6 +83,10 @@ pub const MemoryState = struct {
         }
 
         _ = try self.pushValue(ValueValue{ .SequenceKind = items });
+    }
+
+    pub fn pushOwnedSequenceValue(self: *MemoryState, v: []*Value) !void {
+        _ = try self.pushValue(ValueValue{ .SequenceKind = v });
     }
 
     pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
@@ -345,6 +349,18 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                                 },
                                 ValueValue.FloatKind => {
                                     machine.memoryState.pushFloatValue(left.v.FloatKind + right.v.FloatKind) catch return true;
+                                },
+                                else => {
+                                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                                    return true;
+                                },
+                            }
+                        },
+                        ValueValue.SequenceKind => {
+                            switch (right.v) {
+                                ValueValue.SequenceKind => {
+                                    const slices = [_][]*Value{ left.v.SequenceKind, right.v.SequenceKind };
+                                    machine.memoryState.pushOwnedSequenceValue(std.mem.concat(machine.memoryState.allocator, *Value, &slices) catch return true) catch return true;
                                 },
                                 else => {
                                     machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
@@ -933,7 +949,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 if (evalExpr(machine, v)) return true;
             }
 
-            machine.createListValue(e.kind.literalSequence.len) catch return true;
+            machine.createSequenceValue(e.kind.literalSequence.len) catch return true;
         },
         .literalString => machine.createStringValue(e.kind.literalString) catch return true,
         .literalVoid => machine.createVoidValue() catch return true,
@@ -1185,8 +1201,8 @@ pub const Machine = struct {
         try self.memoryState.pushStringValue(v);
     }
 
-    pub fn createListValue(self: *Machine, size: usize) !void {
-        return self.memoryState.pushListValue(size);
+    pub fn createSequenceValue(self: *Machine, size: usize) !void {
+        return self.memoryState.pushSequenceValue(size);
     }
 
     pub fn eval(self: *Machine, e: *AST.Expression) !void {

@@ -385,6 +385,7 @@ test "additive op" {
     try expectExprEqual("1 - 2 + 3 - 4 + 5", "3");
 
     try expectExprEqual("\"hello\" + \" \" + \"world\"", "\"hello world\"");
+    try expectExprEqual("[1, 2, 3] + [] + [4, 5] + [6]", "[1, 2, 3, 4, 5, 6]");
 
     try expectError("1 + true");
     try expectError("1 - true");

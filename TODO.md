@@ -31,6 +31,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Add support for `[start:end]` to access a slice of sequence
 - [X] Add support for `[] = value` to update a sequence
 - [ ] Add support for `[start:end] = value` to update a slice of sequence
+- [X] `+` concatenates two sequences
 - [ ] Add support destructuring a sequence into variables
 - [ ] Move all the functions into the SequenceKind rather than having them lying all over the code base and forcing knowledge of the implementation
 
@@ -52,6 +53,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add support for `[]` to access a field in a record based on value
 - [X] Add support for `.field = value` to update a record
 - [X] Add support for `[] = value` to update a record's field
+- [ ] `+` concatenates two records
 - [ ] Add support for destructing a record into variables
 - [ ] Move all the functions into the RecordKind rather than having them lying all over the code base and forcing knowledge of the implementation
 
