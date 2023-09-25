@@ -187,6 +187,22 @@ test "dot expression" {
     try expectError("{a: 10}.20");
 }
 
+test "index value" {
+    try expectExprEqual("{a: 10, b: 20}[\"a\"]", "10");
+    try expectExprEqual("{a: 10, b: 20}[\"b\"]", "20");
+    try expectExprEqual("{a: 10, b: 20}[\"c\"]", "()");
+
+    try expectExprEqual("[1, 2, 3][0]", "1");
+    try expectExprEqual("[1, 2, 3][2]", "3");
+    try expectExprEqual("[1, 2, 3][3]", "()");
+    try expectExprEqual("[1, 2, 3][-1]", "()");
+
+    try expectExprEqual("\"hello\"[0]", "'h'");
+    try expectExprEqual("\"hello\"[4]", "'o'");
+    try expectExprEqual("\"hello\"[5]", "()");
+    try expectExprEqual("\"hello\"[-1]", "()");
+}
+
 test "literal bool" {
     try expectExprEqual("true", "true");
     try expectExprEqual("false", "false");

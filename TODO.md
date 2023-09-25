@@ -27,7 +27,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [X] Add support for a literal sequence
 - [ ] Add support for `...` when incorporating a literal sequence
-- [ ] Add support for `[]` to access an element in a sequence based on value
+- [X] Add support for `[]` to access an element in a sequence based on value
 - [ ] Add support for `[start:end]` to access a slice of sequence
 - [ ] Add support for `[] = value` to update a sequence
 - [ ] Add support for `[start:end] = value` to update a slice of sequence
@@ -37,7 +37,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [X] Literal string without interpolation
 - [ ] Literal string interpolation
-- [ ] `[]` to access a char in a string
+- [X] `[]` to access a char in a string
 - [ ] `[start:end]` to access a slice of a string
 
 ## Records
@@ -46,7 +46,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Add support for a literal string as a literal record field name
 - [ ] Add support for `...` when incorporating a literal record
 - [X] Add support for `.field` to access a record's field
-- [ ] Add support for `[]` to access a field in a record based on value
+- [X] Add support for `[]` to access a field in a record based on value
 - [ ] Add support for `.field = value` to update a record
 - [ ] Add support for destructing a record into variables
 
@@ -87,6 +87,10 @@ There is so much to do.  The following is my work list on this project.  I will 
 ## match
 
 - [ ] Add support for match expressions
+
+# Built-in Functions
+
+- [ ] import
 
 # REPL Features
 

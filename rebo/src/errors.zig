@@ -66,15 +66,15 @@ pub const IncompatibleOperandTypesError = struct {
     }
 };
 
-pub const InvaludLHSError = struct {
+pub const InvalidLHSError = struct {
     allocator: std.mem.Allocator,
     position: Position,
 
-    pub fn deinit(self: InvaludLHSError) void {
+    pub fn deinit(self: InvalidLHSError) void {
         _ = self;
     }
 
-    pub fn print(self: InvaludLHSError) void {
+    pub fn print(self: InvalidLHSError) void {
         std.log.err("Invalid Left on Assignment: {d}-{d}", .{ self.position.start, self.position.end });
     }
 };
@@ -135,6 +135,34 @@ pub const RecordValueExpectedError = struct {
     }
 };
 
+pub const ExpectedTypeError = struct {
+    allocator: std.mem.Allocator,
+    position: Position,
+    expected: []ValueKind,
+    found: ValueKind,
+
+    pub fn deinit(self: ExpectedTypeError) void {
+        self.allocator.free(self.expected);
+    }
+
+    pub fn print(self: ExpectedTypeError) !void {
+        var buffer = std.ArrayList(u8).init(self.allocator);
+        defer buffer.deinit();
+
+        try std.fmt.format(buffer.writer(), "Expected Type: {d}-{d}: received value of type {s} but expected ", .{ self.position.start, self.position.end, self.found.toString() });
+        for (self.expected, 0..) |expected, i| {
+            if (i > 0) {
+                try buffer.appendSlice(", ");
+            }
+            try buffer.appendSlice(expected.toString());
+        }
+
+        const msg = try buffer.toOwnedSlice();
+        std.log.err("{s}", .{msg});
+        self.allocator.free(msg);
+    }
+};
+
 pub const UnknownIdentifierError = struct {
     allocator: std.mem.Allocator,
     position: Position,
@@ -152,9 +180,10 @@ pub const UnknownIdentifierError = struct {
 pub const Error = union(enum) {
     boolValueExpected: BoolValueExpectedError,
     divideByZero: DivideByZeroError,
+    expectedTypeError: ExpectedTypeError,
     functionValueExpectedError: FunctionValueExpectedError,
     incompatibleOperandTypesError: IncompatibleOperandTypesError,
-    invalidLHSError: InvaludLHSError,
+    invalidLHSError: InvalidLHSError,
     lexicalError: LexicalError,
     literalFloatOverflowError: LexicalError,
     literalIntOverflowError: LexicalError,
@@ -169,6 +198,9 @@ pub const Error = union(enum) {
             },
             .divideByZero => {
                 self.divideByZero.deinit();
+            },
+            .expectedTypeError => {
+                self.expectedTypeError.deinit();
             },
             .functionValueExpectedError => {
                 self.functionValueExpectedError.deinit();
@@ -201,6 +233,9 @@ pub const Error = union(enum) {
             },
             .divideByZero => {
                 self.divideByZero.print();
+            },
+            .expectedTypeError => {
+                try self.expectedTypeError.print();
             },
             .functionValueExpectedError => {
                 self.functionValueExpectedError.print();
@@ -241,6 +276,10 @@ pub fn divideByZeroError(allocator: std.mem.Allocator, position: Position) Error
     return Error{ .divideByZero = .{ .allocator = allocator, .position = position } };
 }
 
+pub fn expectedTypeError(allocator: std.mem.Allocator, position: Position, expected: []ValueKind, found: ValueKind) Error {
+    return Error{ .expectedTypeError = .{ .allocator = allocator, .position = position, .expected = expected, .found = found } };
+}
+
 pub fn functionValueExpectedError(allocator: std.mem.Allocator, position: Position) Error {
     return Error{ .functionValueExpectedError = .{ .allocator = allocator, .position = position } };
 }
@@ -261,7 +300,7 @@ pub fn incompatibleOperandTypesError(
     } };
 }
 
-pub fn invaludLHSError(allocator: std.mem.Allocator, position: Position) Error {
+pub fn invalidLHSError(allocator: std.mem.Allocator, position: Position) Error {
     return Error{ .invalidLHSError = .{ .allocator = allocator, .position = position } };
 }
 

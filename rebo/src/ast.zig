@@ -51,6 +51,7 @@ pub const ExpressionKind = union(enum) {
     exprs: []*Expression,
     identifier: []u8,
     ifte: []IfCouple,
+    indexValue: IndexValueExpression,
     literalBool: bool,
     literalChar: u8,
     literalFunction: Function,
@@ -124,6 +125,11 @@ pub const IfCouple = struct {
     then: *Expression,
 };
 
+pub const IndexValueExpression = struct {
+    expr: *Expression,
+    index: *Expression,
+};
+
 pub const RecordEntry = struct {
     key: []u8,
     value: *Expression,
@@ -166,6 +172,10 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
                 destroy(allocator, v.then);
             }
             allocator.free(expr.kind.ifte);
+        },
+        .indexValue => {
+            destroy(allocator, expr.kind.indexValue.expr);
+            destroy(allocator, expr.kind.indexValue.index);
         },
         .literalBool, .literalChar, .literalFloat, .literalInt, .literalVoid => {},
         .literalFunction => expr.kind.literalFunction.deinit(allocator),

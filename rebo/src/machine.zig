@@ -307,41 +307,6 @@ fn gc(state: *MemoryState) void {
     }
 }
 
-fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) bool {
-    switch (lhs.kind) {
-        .identifier => {
-            if (evalExpr(machine, value)) return true;
-
-            if (!(machine.memoryState.updateInScope(lhs.kind.identifier, machine.memoryState.peek(0)) catch return true)) {
-                machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, lhs.position, lhs.kind.identifier) catch return true);
-                return true;
-            }
-        },
-        .dot => {
-            if (evalExpr(machine, lhs.kind.dot.record)) return true;
-            const record = machine.memoryState.peek(0);
-
-            if (record.v != ValueValue.RecordKind) {
-                machine.replaceErr(Errors.recordValueExpectedError(machine.memoryState.allocator, lhs.kind.dot.record.position));
-                return true;
-            }
-            if (evalExpr(machine, value)) return true;
-
-            V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, lhs.kind.dot.field, machine.memoryState.peek(0)) catch return true;
-
-            const v = machine.memoryState.pop();
-            _ = machine.memoryState.pop();
-            machine.memoryState.push(v) catch return true;
-        },
-        else => {
-            machine.replaceErr(Errors.invaludLHSError(machine.memoryState.allocator, lhs.position));
-            return true;
-        },
-    }
-
-    return false;
-}
-
 fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
     switch (e.kind) {
         .assignment => return assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
@@ -903,6 +868,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
             machine.createVoidValue() catch return true;
         },
+        .indexValue => return indexValue(machine, e.kind.indexValue.expr, e.kind.indexValue.index),
         .literalBool => {
             machine.createBoolValue(e.kind.literalBool) catch return true;
         },
@@ -961,6 +927,133 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         },
         .literalString => machine.createStringValue(e.kind.literalString) catch return true,
         .literalVoid => machine.createVoidValue() catch return true,
+    }
+
+    return false;
+}
+
+fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) bool {
+    switch (lhs.kind) {
+        .identifier => {
+            if (evalExpr(machine, value)) return true;
+
+            if (!(machine.memoryState.updateInScope(lhs.kind.identifier, machine.memoryState.peek(0)) catch return true)) {
+                machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, lhs.position, lhs.kind.identifier) catch return true);
+                return true;
+            }
+        },
+        .dot => {
+            if (evalExpr(machine, lhs.kind.dot.record)) return true;
+            const record = machine.memoryState.peek(0);
+
+            if (record.v != ValueValue.RecordKind) {
+                machine.replaceErr(Errors.recordValueExpectedError(machine.memoryState.allocator, lhs.kind.dot.record.position));
+                return true;
+            }
+            if (evalExpr(machine, value)) return true;
+
+            V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, lhs.kind.dot.field, machine.memoryState.peek(0)) catch return true;
+
+            const v = machine.memoryState.pop();
+            _ = machine.memoryState.pop();
+            machine.memoryState.push(v) catch return true;
+        },
+        else => {
+            machine.replaceErr(Errors.invalidLHSError(machine.memoryState.allocator, lhs.position));
+            return true;
+        },
+    }
+
+    return false;
+}
+
+fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression) bool {
+    if (evalExpr(machine, exprA)) return true;
+    const expr = machine.memoryState.peek(0);
+
+    if (expr.v == ValueValue.RecordKind) {
+        if (evalExpr(machine, indexA)) return true;
+        const index = machine.memoryState.peek(0);
+
+        if (index.v != ValueValue.StringKind) {
+            var expected = machine.memoryState.allocator.alloc(V.ValueKind, 1) catch return true;
+            errdefer machine.memoryState.allocator.free(expected);
+
+            expected[0] = ValueValue.StringKind;
+
+            machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, indexA.position, expected, index.v));
+            return true;
+        }
+
+        machine.memoryState.popn(2);
+
+        const value = expr.v.RecordKind.get(index.v.StringKind);
+
+        if (value == null) {
+            machine.memoryState.pushUnitValue() catch return true;
+        } else {
+            machine.memoryState.push(value.?) catch return true;
+        }
+    } else if (expr.v == ValueValue.SequenceKind) {
+        if (evalExpr(machine, indexA)) return true;
+        const index = machine.memoryState.peek(0);
+
+        if (index.v != ValueValue.IntKind) {
+            var expected = machine.memoryState.allocator.alloc(V.ValueKind, 1) catch return true;
+            errdefer machine.memoryState.allocator.free(expected);
+
+            expected[0] = ValueValue.IntKind;
+
+            machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, indexA.position, expected, index.v));
+            return true;
+        }
+
+        machine.memoryState.popn(2);
+
+        const seq = expr.v.SequenceKind;
+        const idx = index.v.IntKind;
+
+        if (idx < 0 or idx >= seq.len) {
+            machine.memoryState.pushUnitValue() catch return true;
+        } else {
+            machine.memoryState.push(seq[@intCast(idx)]) catch return true;
+        }
+    } else if (expr.v == ValueValue.StringKind) {
+        if (evalExpr(machine, indexA)) return true;
+        const index = machine.memoryState.peek(0);
+
+        if (index.v != ValueValue.IntKind) {
+            var expected = machine.memoryState.allocator.alloc(V.ValueKind, 1) catch return true;
+            errdefer machine.memoryState.allocator.free(expected);
+
+            expected[0] = ValueValue.IntKind;
+
+            machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, indexA.position, expected, index.v));
+            return true;
+        }
+
+        machine.memoryState.popn(2);
+
+        const str = expr.v.StringKind;
+        const idx = index.v.IntKind;
+
+        if (idx < 0 or idx >= str.len) {
+            machine.memoryState.pushUnitValue() catch return true;
+        } else {
+            machine.memoryState.pushCharValue(str[@intCast(idx)]) catch return true;
+        }
+    } else {
+        machine.memoryState.popn(1);
+
+        var expected = machine.memoryState.allocator.alloc(V.ValueKind, 3) catch return true;
+        errdefer machine.memoryState.allocator.free(expected);
+
+        expected[0] = ValueValue.RecordKind;
+        expected[1] = ValueValue.SequenceKind;
+        expected[2] = ValueValue.StringKind;
+
+        machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, exprA.position, expected, expr.v));
+        return true;
     }
 
     return false;

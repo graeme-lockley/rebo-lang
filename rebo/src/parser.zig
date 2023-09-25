@@ -342,6 +342,17 @@ pub const Parser = struct {
                 const v = try self.allocator.create(AST.Expression);
                 v.* = AST.Expression{ .kind = AST.ExpressionKind{ .call = AST.CallExpression{ .callee = result, .args = try args.toOwnedSlice() } }, .position = Errors.Position{ .start = lparen.start, .end = rparen.end } };
                 result = v;
+            } else if (kind == Lexer.TokenKind.LBracket) {
+                const lbracket = try self.nextToken();
+
+                const index = try self.expression();
+                errdefer AST.destroy(self.allocator, index);
+
+                const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
+
+                const v = try self.allocator.create(AST.Expression);
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .indexValue = AST.IndexValueExpression{ .expr = result, .index = index } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
+                result = v;
             } else if (kind == Lexer.TokenKind.Dot) {
                 try self.skipToken();
 
@@ -350,17 +361,6 @@ pub const Parser = struct {
                 const v = try self.allocator.create(AST.Expression);
                 v.* = AST.Expression{ .kind = AST.ExpressionKind{ .dot = AST.DotExpression{ .record = result, .field = try self.allocator.dupe(u8, self.lexer.lexeme(field)) } }, .position = Errors.Position{ .start = result.position.start, .end = field.end } };
                 result = v;
-                // } else if (kind == Lexer.TokenKind.LBracket) {
-                //     const lbracket = try self.nextToken();
-
-                //     const index = try self.expression();
-                //     errdefer AST.destroy(self.allocator, index);
-
-                //     const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
-
-                //     const v = try self.allocator.create(AST.Expression);
-                //     v.* = AST.Expression{ .kind = AST.ExpressionKind{ .index = AST.IndexExpression{ .sequence = result, .index = index } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
-                //     result = v;
             } else {
                 break;
             }
