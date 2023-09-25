@@ -900,6 +900,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
             machine.createVoidValue() catch return true;
         },
+        .indexRange => return indexRange(machine, e.kind.indexRange.expr, e.kind.indexRange.start, e.kind.indexRange.end),
         .indexValue => return indexValue(machine, e.kind.indexValue.expr, e.kind.indexValue.index),
         .literalBool => {
             machine.createBoolValue(e.kind.literalBool) catch return true;
@@ -1057,6 +1058,74 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
     }
 
     return false;
+}
+
+fn clamp(value: V.IntType, min: V.IntType, max: V.IntType) V.IntType {
+    if (value < min) {
+        return min;
+    } else if (value > max) {
+        return max;
+    } else {
+        return value;
+    }
+}
+
+fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) bool {
+    if (evalExpr(machine, exprA)) return true;
+    const expr = machine.memoryState.peek(0);
+
+    if (expr.v == ValueValue.SequenceKind) {
+        const seq = expr.v.SequenceKind;
+
+        const start: V.IntType = clamp(indexPoint(machine, startA, 0) catch return true, 0, @intCast(seq.len));
+        const end: V.IntType = clamp(indexPoint(machine, endA, @intCast(seq.len)) catch return true, start, @intCast(seq.len));
+
+        machine.memoryState.pushOwnedSequenceValue(machine.memoryState.allocator.dupe(*Value, seq[@intCast(start)..@intCast(end)]) catch return true) catch return true;
+    } else if (expr.v == ValueValue.StringKind) {
+        const str = expr.v.StringKind;
+
+        const start: V.IntType = clamp(indexPoint(machine, startA, 0) catch return true, 0, @intCast(str.len));
+        const end: V.IntType = clamp(indexPoint(machine, endA, @intCast(str.len)) catch return true, start, @intCast(str.len));
+
+        machine.memoryState.pushOwnedStringValue(machine.memoryState.allocator.dupe(u8, str[@intCast(start)..@intCast(end)]) catch return true) catch return true;
+    } else {
+        machine.memoryState.popn(1);
+
+        var expected = machine.memoryState.allocator.alloc(V.ValueKind, 2) catch return true;
+        errdefer machine.memoryState.allocator.free(expected);
+
+        expected[0] = ValueValue.SequenceKind;
+        expected[1] = ValueValue.StringKind;
+
+        machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, exprA.position, expected, expr.v));
+        return true;
+    }
+
+    return false;
+}
+
+fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) !V.IntType {
+    if (point != null) {
+        if (evalExpr(machine, point.?)) {
+            return error.InterpreterError;
+        }
+        const pointV = machine.memoryState.peek(0);
+        if (pointV.v != ValueValue.IntKind) {
+            var expected = try machine.memoryState.allocator.alloc(V.ValueKind, 1);
+            errdefer machine.memoryState.allocator.free(expected);
+
+            expected[0] = ValueValue.IntKind;
+
+            machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, point.?.position, expected, pointV.v));
+            return error.InterpreterError;
+        }
+
+        const v = pointV.v.IntKind;
+        _ = machine.memoryState.pop();
+        return v;
+    } else {
+        return def;
+    }
 }
 
 fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression) bool {

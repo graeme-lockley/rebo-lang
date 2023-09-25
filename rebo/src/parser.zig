@@ -345,14 +345,51 @@ pub const Parser = struct {
             } else if (kind == Lexer.TokenKind.LBracket) {
                 const lbracket = try self.nextToken();
 
-                const index = try self.expression();
-                errdefer AST.destroy(self.allocator, index);
+                if (self.currentTokenKind() == Lexer.TokenKind.Colon) {
+                    try self.skipToken();
+                    if (self.currentTokenKind() == Lexer.TokenKind.RBracket) {
+                        const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
+                        const v = try self.allocator.create(AST.Expression);
+                        v.* = AST.Expression{ .kind = AST.ExpressionKind{ .indexRange = AST.IndexRangeExpression{ .expr = result, .start = null, .end = null } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
+                        result = v;
+                    } else {
+                        const end = try self.expression();
+                        errdefer AST.destroy(self.allocator, end);
+                        const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
 
-                const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
+                        const v = try self.allocator.create(AST.Expression);
+                        v.* = AST.Expression{ .kind = AST.ExpressionKind{ .indexRange = AST.IndexRangeExpression{ .expr = result, .start = null, .end = end } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
+                        result = v;
+                    }
+                } else {
+                    const index = try self.expression();
+                    errdefer AST.destroy(self.allocator, index);
 
-                const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .indexValue = AST.IndexValueExpression{ .expr = result, .index = index } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
-                result = v;
+                    if (self.currentTokenKind() == Lexer.TokenKind.Colon) {
+                        try self.skipToken();
+                        if (self.currentTokenKind() == Lexer.TokenKind.RBracket) {
+                            const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
+
+                            const v = try self.allocator.create(AST.Expression);
+                            v.* = AST.Expression{ .kind = AST.ExpressionKind{ .indexRange = AST.IndexRangeExpression{ .expr = result, .start = index, .end = null } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
+                            result = v;
+                        } else {
+                            const end = try self.expression();
+                            errdefer AST.destroy(self.allocator, end);
+                            const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
+
+                            const v = try self.allocator.create(AST.Expression);
+                            v.* = AST.Expression{ .kind = AST.ExpressionKind{ .indexRange = AST.IndexRangeExpression{ .expr = result, .start = index, .end = end } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
+                            result = v;
+                        }
+                    } else {
+                        const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
+
+                        const v = try self.allocator.create(AST.Expression);
+                        v.* = AST.Expression{ .kind = AST.ExpressionKind{ .indexValue = AST.IndexValueExpression{ .expr = result, .index = index } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
+                        result = v;
+                    }
+                }
             } else if (kind == Lexer.TokenKind.Dot) {
                 try self.skipToken();
 

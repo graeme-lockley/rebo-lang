@@ -28,7 +28,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add support for a literal sequence
 - [ ] Add support for `...` when incorporating a literal sequence
 - [X] Add support for `[]` to access an element in a sequence based on value
-- [ ] Add support for `[start:end]` to access a slice of sequence
+- [X] Add support for `[start:end]` to access a slice of sequence
 - [X] Add support for `[] = value` to update a sequence
 - [ ] Add support for `[start:end] = value` to update a slice of sequence
 - [X] `+` concatenates two sequences
@@ -40,7 +40,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Literal string without interpolation
 - [ ] Literal string interpolation
 - [X] `[]` to access a char in a string
-- [ ] `[start:end]` to access a slice of a string
+- [X] `[start:end]` to access a slice of a string
 - [X] `+` concatenates two strings
 - [ ] Move all the functions into the StringKind rather than having them lying all over the code base and forcing knowledge of the implementation
 
