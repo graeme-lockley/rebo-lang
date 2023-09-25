@@ -958,6 +958,72 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             _ = machine.memoryState.pop();
             machine.memoryState.push(v) catch return true;
         },
+        .indexValue => {
+            const exprA = lhs.kind.indexValue.expr;
+            const indexA = lhs.kind.indexValue.index;
+
+            if (evalExpr(machine, exprA)) return true;
+            const expr = machine.memoryState.peek(0);
+
+            if (expr.v == ValueValue.RecordKind) {
+                if (evalExpr(machine, indexA)) return true;
+                const index = machine.memoryState.peek(0);
+
+                if (index.v != ValueValue.StringKind) {
+                    var expected = machine.memoryState.allocator.alloc(V.ValueKind, 1) catch return true;
+                    errdefer machine.memoryState.allocator.free(expected);
+
+                    expected[0] = ValueValue.StringKind;
+
+                    machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, indexA.position, expected, index.v));
+                    return true;
+                }
+
+                if (evalExpr(machine, value)) return true;
+
+                V.recordSet(machine.memoryState.allocator, &expr.v.RecordKind, index.v.StringKind, machine.memoryState.peek(0)) catch return true;
+            } else if (expr.v == ValueValue.SequenceKind) {
+                if (evalExpr(machine, indexA)) return true;
+                const index = machine.memoryState.peek(0);
+
+                if (index.v != ValueValue.IntKind) {
+                    var expected = machine.memoryState.allocator.alloc(V.ValueKind, 1) catch return true;
+                    errdefer machine.memoryState.allocator.free(expected);
+
+                    expected[0] = ValueValue.IntKind;
+
+                    machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, indexA.position, expected, index.v));
+                    return true;
+                }
+
+                if (evalExpr(machine, value)) return true;
+
+                const seq = expr.v.SequenceKind;
+                const idx = index.v.IntKind;
+
+                if (idx < 0 or idx >= seq.len) {
+                    machine.replaceErr(Errors.indexOutOfRangeError(indexA.position, idx, 0, @intCast(seq.len)));
+                    return true;
+                } else {
+                    seq[@intCast(idx)] = machine.memoryState.peek(0);
+                }
+            } else {
+                machine.memoryState.popn(1);
+
+                var expected = machine.memoryState.allocator.alloc(V.ValueKind, 2) catch return true;
+                errdefer machine.memoryState.allocator.free(expected);
+
+                expected[0] = ValueValue.RecordKind;
+                expected[1] = ValueValue.SequenceKind;
+
+                machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, exprA.position, expected, expr.v));
+                return true;
+            }
+
+            const v = machine.memoryState.pop();
+            machine.memoryState.popn(2);
+            machine.memoryState.push(v) catch return true;
+        },
         else => {
             machine.replaceErr(Errors.invalidLHSError(machine.memoryState.allocator, lhs.position));
             return true;

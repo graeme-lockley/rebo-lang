@@ -21,7 +21,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add function literal
 - [X] Add function call
 - [X] Add function value
-- [ ] Add support for ...argument to get the remainder of the arguments as a sequence
+- [ ] Add support for `...` argument to get the remainder of the arguments as a sequence
 
 ## Sequences
 
@@ -29,7 +29,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Add support for `...` when incorporating a literal sequence
 - [X] Add support for `[]` to access an element in a sequence based on value
 - [ ] Add support for `[start:end]` to access a slice of sequence
-- [ ] Add support for `[] = value` to update a sequence
+- [X] Add support for `[] = value` to update a sequence
 - [ ] Add support for `[start:end] = value` to update a slice of sequence
 - [ ] Add support destructuring a sequence into variables
 
@@ -47,7 +47,8 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Add support for `...` when incorporating a literal record
 - [X] Add support for `.field` to access a record's field
 - [X] Add support for `[]` to access a field in a record based on value
-- [ ] Add support for `.field = value` to update a record
+- [X] Add support for `.field = value` to update a record
+- [X] Add support for `[] = value` to update a record's field
 - [ ] Add support for destructing a record into variables
 
 # Operators

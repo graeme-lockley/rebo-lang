@@ -158,6 +158,16 @@ test "assignment expression" {
     try expectExprEqual("let x = {a: 10, b: 20}; x.a := x.a + 1", "11");
     try expectExprEqual("let x = {a: 10, b: 20}; x.a := x.a + 1; [x.a, x.b]", "[11, 20]");
     try expectExprEqual("let x = {a: 10, b: 20}; let getX() = x; getX().a := getX().a + 1; [getX().a, x.a, x.b]", "[11, 11, 20]");
+
+    try expectExprEqual("let v = {a: 10}; v[\"a\"] := 11", "11");
+    try expectExprEqual("let v = {a: 10}; v[\"a\"] := 11; v", "{a: 11}");
+    try expectExprEqual("let v = {}; v[\"b\"] := 11", "11");
+    try expectExprEqual("let v = {}; v[\"b\"] := 11; v", "{b: 11}");
+
+    try expectExprEqual("let v = [1, 2, 3, 4]; v[1] := 11", "11");
+    try expectExprEqual("let v = [1, 2, 3, 4]; v[1] := 11; v", "[1, 11, 3, 4]");
+    try expectError("let v = [1, 2, 3, 4]; v[4] := 11");
+    try expectError("let v = [1, 2, 3, 4]; v[-1] := 11");
 }
 
 test "call expression" {
