@@ -235,6 +235,14 @@ pub fn recordSet(allocator: std.mem.Allocator, record: *std.StringHashMap(*Value
     }
 }
 
+pub fn recordDelete(allocator: std.mem.Allocator, record: *std.StringHashMap(*Value), key: []const u8) !void {
+    const old = record.fetchRemove(key);
+
+    if (old != null) {
+        allocator.free(old.?.key);
+    }
+}
+
 pub const FunctionValue = struct {
     scope: ?*Value,
     arguments: []FunctionArgument,

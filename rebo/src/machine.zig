@@ -952,7 +952,12 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             }
             if (evalExpr(machine, value)) return true;
 
-            V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, lhs.kind.dot.field, machine.memoryState.peek(0)) catch return true;
+            const val = machine.memoryState.peek(0);
+            if (val.v == V.ValueKind.VoidKind) {
+                V.recordDelete(machine.memoryState.allocator, &record.v.RecordKind, lhs.kind.dot.field) catch return true;
+            } else {
+                V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, lhs.kind.dot.field, val) catch return true;
+            }
 
             const v = machine.memoryState.pop();
             _ = machine.memoryState.pop();
@@ -981,7 +986,12 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
 
                 if (evalExpr(machine, value)) return true;
 
-                V.recordSet(machine.memoryState.allocator, &expr.v.RecordKind, index.v.StringKind, machine.memoryState.peek(0)) catch return true;
+                const val = machine.memoryState.peek(0);
+                if (val.v == V.ValueKind.VoidKind) {
+                    V.recordDelete(machine.memoryState.allocator, &expr.v.RecordKind, index.v.StringKind) catch return true;
+                } else {
+                    V.recordSet(machine.memoryState.allocator, &expr.v.RecordKind, index.v.StringKind, val) catch return true;
+                }
             } else if (expr.v == ValueValue.SequenceKind) {
                 if (evalExpr(machine, indexA)) return true;
                 const index = machine.memoryState.peek(0);
