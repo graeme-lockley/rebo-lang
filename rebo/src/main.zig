@@ -264,6 +264,8 @@ test "literal record" {
     // the following is a brittle test but it is good enough for now
     try expectExprEqual("{a: 1, b: 2, c: 3}", "{b: 2, a: 1, c: 3}");
     try expectExprEqual("{a: 1, a: 2, a: 3}", "{a: 3}");
+    try expectExprEqual("{a: 10, b: ()}", "{a: 10}");
+    try expectExprEqual("{a: 10, b: 20, a: ()}", "{b: 20}");
 
     try expectError("{a:1,");
 }

@@ -226,20 +226,20 @@ pub const ValueValue = union(ValueKind) {
 };
 
 pub fn recordSet(allocator: std.mem.Allocator, record: *std.StringHashMap(*Value), key: []const u8, value: *Value) !void {
-    const oldKey = record.getKey(key);
+    if (value.v == ValueKind.VoidKind) {
+        const old = record.fetchRemove(key);
 
-    if (oldKey == null) {
-        try record.put(try allocator.dupe(u8, key), value);
+        if (old != null) {
+            allocator.free(old.?.key);
+        }
     } else {
-        try record.put(oldKey.?, value);
-    }
-}
+        const oldKey = record.getKey(key);
 
-pub fn recordDelete(allocator: std.mem.Allocator, record: *std.StringHashMap(*Value), key: []const u8) !void {
-    const old = record.fetchRemove(key);
-
-    if (old != null) {
-        allocator.free(old.?.key);
+        if (oldKey == null) {
+            try record.put(try allocator.dupe(u8, key), value);
+        } else {
+            try record.put(oldKey.?, value);
+        }
     }
 }
 
