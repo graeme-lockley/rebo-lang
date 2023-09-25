@@ -170,6 +170,13 @@ test "assignment expression" {
 
     try expectExprEqual("let v = [1, 2, 3, 4]; v[1] := 11", "11");
     try expectExprEqual("let v = [1, 2, 3, 4]; v[1] := 11; v", "[1, 11, 3, 4]");
+
+    try expectExprEqual("let v = [1, 2, 3, 4]; v[1:2] := [11, 12, 13]; v", "[1, 11, 12, 13, 3, 4]");
+    try expectExprEqual("let v = [1, 2, 3, 4]; v[:2] := [11, 12, 13]; v", "[11, 12, 13, 3, 4]");
+    try expectExprEqual("let v = [1, 2, 3, 4]; v[1:] := [11, 12, 13]; v", "[1, 11, 12, 13]");
+    try expectExprEqual("let v = [1, 2, 3, 4]; v[:] := [11, 12, 13]; v", "[11, 12, 13]");
+    try expectExprEqual("let v = [1, 2, 3, 4]; v[:] := [11, 12, 13]", "[11, 12, 13]");
+
     try expectError("let v = [1, 2, 3, 4]; v[4] := 11");
     try expectError("let v = [1, 2, 3, 4]; v[-1] := 11");
 }

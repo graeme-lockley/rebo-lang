@@ -340,3 +340,13 @@ pub fn eq(a: *Value, b: *Value) bool {
         .VoidKind => return true,
     }
 }
+
+pub fn clamp(value: IntType, min: IntType, max: IntType) IntType {
+    if (value < min) {
+        return min;
+    } else if (value > max) {
+        return max;
+    } else {
+        return value;
+    }
+}

@@ -985,6 +985,34 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             _ = machine.memoryState.pop();
             machine.memoryState.push(v) catch return true;
         },
+        .indexRange => {
+            if (evalExpr(machine, lhs.kind.indexRange.expr)) return true;
+            const sequence = machine.memoryState.peek(0);
+            if (sequence.v != ValueValue.SequenceKind) {
+                machine.replaceErr(Errors.recordValueExpectedError(machine.memoryState.allocator, lhs.kind.indexRange.expr.position));
+                return true;
+            }
+
+            const seq = sequence.v.SequenceKind;
+
+            const start: V.IntType = V.clamp(indexPoint(machine, lhs.kind.indexRange.start, 0) catch return true, 0, @intCast(seq.len));
+            const end: V.IntType = V.clamp(indexPoint(machine, lhs.kind.indexRange.end, @intCast(seq.len)) catch return true, start, @intCast(seq.len));
+
+            if (evalExpr(machine, value)) return true;
+            const v = machine.memoryState.peek(0);
+
+            if (v.v != ValueValue.SequenceKind) {
+                unreachable;
+            }
+
+            const slices = [_][]*Value{ seq[0..@intCast(start)], v.v.SequenceKind, seq[@intCast(end)..@intCast(seq.len)] };
+            const newSeq = std.mem.concat(machine.memoryState.allocator, *Value, &slices) catch return true;
+            machine.memoryState.allocator.free(seq);
+            sequence.v.SequenceKind = newSeq;
+
+            machine.memoryState.popn(2);
+            machine.memoryState.push(v) catch return true;
+        },
         .indexValue => {
             const exprA = lhs.kind.indexValue.expr;
             const indexA = lhs.kind.indexValue.index;
@@ -1060,16 +1088,6 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
     return false;
 }
 
-fn clamp(value: V.IntType, min: V.IntType, max: V.IntType) V.IntType {
-    if (value < min) {
-        return min;
-    } else if (value > max) {
-        return max;
-    } else {
-        return value;
-    }
-}
-
 fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) bool {
     if (evalExpr(machine, exprA)) return true;
     const expr = machine.memoryState.peek(0);
@@ -1077,15 +1095,15 @@ fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expressio
     if (expr.v == ValueValue.SequenceKind) {
         const seq = expr.v.SequenceKind;
 
-        const start: V.IntType = clamp(indexPoint(machine, startA, 0) catch return true, 0, @intCast(seq.len));
-        const end: V.IntType = clamp(indexPoint(machine, endA, @intCast(seq.len)) catch return true, start, @intCast(seq.len));
+        const start: V.IntType = V.clamp(indexPoint(machine, startA, 0) catch return true, 0, @intCast(seq.len));
+        const end: V.IntType = V.clamp(indexPoint(machine, endA, @intCast(seq.len)) catch return true, start, @intCast(seq.len));
 
         machine.memoryState.pushOwnedSequenceValue(machine.memoryState.allocator.dupe(*Value, seq[@intCast(start)..@intCast(end)]) catch return true) catch return true;
     } else if (expr.v == ValueValue.StringKind) {
         const str = expr.v.StringKind;
 
-        const start: V.IntType = clamp(indexPoint(machine, startA, 0) catch return true, 0, @intCast(str.len));
-        const end: V.IntType = clamp(indexPoint(machine, endA, @intCast(str.len)) catch return true, start, @intCast(str.len));
+        const start: V.IntType = V.clamp(indexPoint(machine, startA, 0) catch return true, 0, @intCast(str.len));
+        const end: V.IntType = V.clamp(indexPoint(machine, endA, @intCast(str.len)) catch return true, start, @intCast(str.len));
 
         machine.memoryState.pushOwnedStringValue(machine.memoryState.allocator.dupe(u8, str[@intCast(start)..@intCast(end)]) catch return true) catch return true;
     } else {
