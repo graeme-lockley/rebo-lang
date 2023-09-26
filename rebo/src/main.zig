@@ -1,5 +1,6 @@
 const std = @import("std");
 const Machine = @import("./machine.zig");
+const V = @import("./value.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -52,7 +53,7 @@ pub fn main() !void {
     }
 }
 
-fn printResult(allocator: std.mem.Allocator, v: ?*Machine.Value) !void {
+fn printResult(allocator: std.mem.Allocator, v: ?*V.Value) !void {
     if (v != null) {
         const result = try v.?.toString(allocator);
         std.debug.print("Result: {s}\n", .{result});
