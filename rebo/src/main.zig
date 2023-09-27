@@ -479,6 +479,10 @@ test "let declaration" {
     try expectExprEqual("let add(a = 0, b = 0) = a + b; add(1, 2, 3);", "3");
     try expectExprEqual("let add(a = 0, b = 0) = a + b; add;", "fn(a = 0, b = 0)");
 
+    try expectExprEqual("let args(...x) = x; args;", "fn(...x)");
+    try expectExprEqual("let args(...x) = x; args();", "[]");
+    try expectExprEqual("let args(...x) = x; args(1, 2, 3);", "[1, 2, 3]");
+
     try expectExprEqual("let add(a = 0, b = 0) = a + b; let fun(x = add(1, 2)) = x * x; fun();", "9");
 }
 
