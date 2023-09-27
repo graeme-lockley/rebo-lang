@@ -145,7 +145,20 @@ pub const Lexer = struct {
             '}' => self.setSymbolToken(TokenKind.RCurly, tokenStart),
             ')' => self.setSymbolToken(TokenKind.RParen, tokenStart),
             ',' => self.setSymbolToken(TokenKind.Comma, tokenStart),
-            '.' => self.setSymbolToken(TokenKind.Dot, tokenStart),
+            '.' => {
+                self.skipCharacter();
+                if (self.currentCharacter() == '.') {
+                    self.skipCharacter();
+                    if (self.currentCharacter() == '.') {
+                        self.skipCharacter();
+                        self.current = Token{ .kind = TokenKind.DotDotDot, .start = tokenStart, .end = self.offset };
+                    } else {
+                        try self.reportLexicalError(tokenStart);
+                    }
+                } else {
+                    self.current = Token{ .kind = TokenKind.Dot, .start = tokenStart, .end = self.offset };
+                }
+            },
             ':' => {
                 self.skipCharacter();
                 if (self.currentCharacter() == '=') {
@@ -467,9 +480,9 @@ test "literal string" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / % = == != < <= > >= && || [ { ( , . : := ; -> | ] } )" {
+test "+ - * / % = == != < <= > >= && || [ { ( , . ... : := ; -> | ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / % = == != < <= > >= && || [ { ( , . : := ; -> | ] } ) ");
+    try lexer.initBuffer("console", " + - * / % = == != < <= > >= && || [ { ( , . ... : := ; -> | ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -508,6 +521,8 @@ test "+ - * / % = == != < <= > >= && || [ { ( , . : := ; -> | ] } )" {
     try expectEqual(lexer.current.kind, TokenKind.Comma);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Dot);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.DotDotDot);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Colon);
     try lexer.next();
