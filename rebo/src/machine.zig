@@ -841,6 +841,10 @@ fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expressio
         return true;
     }
 
+    const result = machine.memoryState.pop();
+    _ = machine.memoryState.pop();
+    machine.memoryState.push(result) catch |err| return errorHandler(err);
+
     return false;
 }
 

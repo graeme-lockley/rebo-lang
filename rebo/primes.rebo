@@ -1,0 +1,33 @@
+let range(min = 10, max) = {
+  if max == () -> {
+    max := min
+    min := 0
+  }
+
+  let loop(l, acc) =
+    if l >= max -> acc
+     | loop(l + 1, acc + [l])       
+
+  loop(min, [])
+}
+
+let filter(l, f) = {
+  let filterLoop(lst = []) =
+    if lst == [] -> []
+     | f(lst[0]) -> [lst[0]] + filterLoop(lst[1:])
+     | filterLoop(lst[1:])
+
+  filterLoop(l)
+}
+
+let prime?(n = 0) = {
+  let testPrime(i = 2) =
+    if i * i > n -> true
+     | n % i == 0 -> false
+     | testPrime(i + 1)
+
+  if n < 2 -> false
+   | testPrime()
+}
+
+filter(range(1000), prime?)

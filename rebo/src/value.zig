@@ -48,7 +48,7 @@ pub const Value = struct {
         }
     }
 
-    fn appendValue(self: *Value, buffer: *std.ArrayList(u8)) !void {
+    pub fn appendValue(self: *Value, buffer: *std.ArrayList(u8)) !void {
         // std.debug.print("appending {}\n", .{self});
 
         switch (self.v) {
