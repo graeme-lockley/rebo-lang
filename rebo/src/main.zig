@@ -111,6 +111,10 @@ fn expectExprEqual(input: []const u8, expected: []const u8) !void {
             std.log.err("Expected: '{s}', got: '{s}'\n", .{ expected, result });
             return error.TestingError;
         }
+        if (machine.memoryState.stack.items.len != 1) {
+            std.log.err("Expected 1 value on the stack, got: {d}\n", .{machine.memoryState.stack.items.len});
+            return error.TestingError;
+        }
     }
 
     const err = gpa.deinit();
