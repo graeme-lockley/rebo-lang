@@ -23,6 +23,9 @@ pub const Value = struct {
                 for (self.v.FunctionKind.arguments) |argument| {
                     allocator.free(argument.name);
                 }
+                if (self.v.FunctionKind.restOfArguments != null) {
+                    allocator.free(self.v.FunctionKind.restOfArguments.?);
+                }
                 allocator.free(self.v.FunctionKind.arguments);
 
                 // This is a problem - an AST is part of a value and therefore needs to be under control of the garbage collector.
@@ -82,6 +85,14 @@ pub const Value = struct {
                     }
 
                     i += 1;
+                }
+                if (self.v.FunctionKind.restOfArguments != null) {
+                    if (i != 0) {
+                        try buffer.appendSlice(", ");
+                    }
+
+                    try buffer.appendSlice("...");
+                    try buffer.appendSlice(self.v.FunctionKind.restOfArguments.?);
                 }
                 try buffer.append(')');
             },
@@ -246,6 +257,7 @@ pub fn recordSet(allocator: std.mem.Allocator, record: *std.StringHashMap(*Value
 pub const FunctionValue = struct {
     scope: ?*Value,
     arguments: []FunctionArgument,
+    restOfArguments: ?[]u8,
     body: *AST.Expression,
 };
 

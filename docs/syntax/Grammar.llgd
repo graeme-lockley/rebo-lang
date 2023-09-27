@@ -88,7 +88,7 @@ RecordItem
     ;
 
 Parameters
-    : "(" [Parameter {"," Parameter}] ")"
+    : "(" [(Parameter {"," Parameter} ["," "..." Identifier]) | ("..." Identifier)] ")"
     ;
 
 Parameter

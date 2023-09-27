@@ -21,7 +21,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add function literal
 - [X] Add function call
 - [X] Add function value
-- [ ] Add support for `...` argument to get the remainder of the arguments as a sequence
+- [X] Add support for `...` argument to get the remainder of the arguments as a sequence
 
 ## Sequences
 

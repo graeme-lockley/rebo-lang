@@ -662,7 +662,13 @@ pub const Parser = struct {
     }
 
     fn functionTail(self: *Parser, start: usize) !*AST.Expression {
-        var params = try self.parameters();
+        var restOfParams: ?[]u8 = null;
+        errdefer {
+            if (restOfParams != null) {
+                self.allocator.free(restOfParams.?);
+            }
+        }
+        var params = try self.parameters(&restOfParams);
         errdefer {
             for (params) |*param| {
                 param.deinit(self.allocator);
@@ -676,11 +682,11 @@ pub const Parser = struct {
         errdefer AST.destroy(self.allocator, body);
 
         const v = try self.allocator.create(AST.Expression);
-        v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalFunction = AST.Function{ .params = params, .body = body } }, .position = Errors.Position{ .start = start, .end = body.position.end } };
+        v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalFunction = AST.Function{ .params = params, .restOfParams = restOfParams, .body = body } }, .position = Errors.Position{ .start = start, .end = body.position.end } };
         return v;
     }
 
-    fn parameters(self: *Parser) ![]AST.FunctionParam {
+    fn parameters(self: *Parser, restOfParams: *?[]u8) ![]AST.FunctionParam {
         var params = std.ArrayList(AST.FunctionParam).init(self.allocator);
         defer params.deinit();
         errdefer for (params.items) |*param| {
@@ -689,10 +695,21 @@ pub const Parser = struct {
 
         try self.matchSkipToken(Lexer.TokenKind.LParen);
 
-        if (self.currentTokenKind() != Lexer.TokenKind.RParen) {
+        if (self.currentTokenKind() == Lexer.TokenKind.DotDotDot) {
+            try self.skipToken();
+            const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
+            restOfParams.* = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
+        } else if (self.currentTokenKind() != Lexer.TokenKind.RParen) {
             try params.append(try self.parameter());
             while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
                 try self.skipToken();
+
+                if (self.currentTokenKind() == Lexer.TokenKind.DotDotDot) {
+                    try self.skipToken();
+                    const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
+                    restOfParams.* = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
+                    break;
+                }
                 try params.append(try self.parameter());
             }
         }

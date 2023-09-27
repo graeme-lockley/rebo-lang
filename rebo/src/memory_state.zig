@@ -143,6 +143,19 @@ pub const MemoryState = struct {
         }
     }
 
+    pub fn addArrayValueToScope(self: *MemoryState, name: []const u8, values: []*V.Value) !void {
+        const s = self.scope().?;
+
+        const oldKey = s.v.ScopeKind.values.getKey(name);
+        const value = try self.newValue(V.ValueValue{ .SequenceKind = try self.allocator.dupe(*V.Value, values) });
+
+        if (oldKey == null) {
+            try s.v.ScopeKind.values.put(try self.allocator.dupe(u8, name), value);
+        } else {
+            try s.v.ScopeKind.values.put(oldKey.?, value);
+        }
+    }
+
     pub fn updateInScope(self: *MemoryState, name: []const u8, value: *V.Value) !bool {
         var runner = self.scope();
 

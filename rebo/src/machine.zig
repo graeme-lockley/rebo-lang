@@ -38,6 +38,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             _ = machine.memoryState.pushValue(V.ValueValue{ .FunctionKind = V.FunctionValue{
                 .scope = machine.memoryState.scope(),
                 .arguments = arguments,
+                .restOfArguments = if (e.kind.literalFunction.restOfParams == null) null else machine.memoryState.allocator.dupe(u8, e.kind.literalFunction.restOfParams.?) catch |err| return errorHandler(err),
                 .body = e.kind.literalFunction.body,
             } }) catch |err| return errorHandler(err);
 
@@ -699,6 +700,11 @@ fn call(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expressio
     while (lp < callee.v.FunctionKind.arguments.len) {
         machine.memoryState.addToScope(callee.v.FunctionKind.arguments[lp].name, machine.memoryState.stack.items[sp + lp + 1]) catch |err| return errorHandler(err);
         lp += 1;
+    }
+
+    if (callee.v.FunctionKind.restOfArguments != null) {
+        const rest = machine.memoryState.stack.items[sp + lp + 1 ..];
+        machine.memoryState.addArrayValueToScope(callee.v.FunctionKind.restOfArguments.?, rest) catch |err| return errorHandler(err);
     }
 
     machine.memoryState.popn(index);
