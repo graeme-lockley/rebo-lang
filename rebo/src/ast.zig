@@ -59,7 +59,7 @@ pub const ExpressionKind = union(enum) {
     literalInt: Value.IntType,
     literalFloat: Value.FloatType,
     literalRecord: []RecordEntry,
-    literalSequence: []*Expression,
+    literalSequence: []LiteralSequenceValue,
     literalString: []u8,
     literalVoid: void,
 };
@@ -141,6 +141,11 @@ pub const IndexValueExpression = struct {
     index: *Expression,
 };
 
+pub const LiteralSequenceValue = union(enum) {
+    value: *Expression,
+    sequence: *Expression,
+};
+
 pub const RecordEntry = struct {
     key: []u8,
     value: *Expression,
@@ -208,7 +213,10 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
         },
         .literalSequence => {
             for (expr.kind.literalSequence) |v| {
-                destroy(allocator, v);
+                switch (v) {
+                    .value => destroy(allocator, v.value),
+                    .sequence => destroy(allocator, v.sequence),
+                }
             }
             allocator.free(expr.kind.literalSequence);
         },

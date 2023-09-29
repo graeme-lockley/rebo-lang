@@ -64,11 +64,36 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             }
         },
         .literalSequence => {
+            var buffer = std.ArrayList(*V.Value).init(machine.memoryState.allocator);
+            defer buffer.deinit();
+
             for (e.kind.literalSequence) |v| {
-                if (evalExpr(machine, v)) return true;
+                switch (v) {
+                    .value => {
+                        if (evalExpr(machine, v.value)) return true;
+                        buffer.append(machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+                    },
+                    .sequence => {
+                        if (evalExpr(machine, v.sequence)) return true;
+                        const seq = machine.memoryState.peek(0);
+
+                        if (seq.v != V.ValueValue.SequenceKind) {
+                            unreachable;
+                            // machine.replaceErr(Errors.sequenceValueExpectedError(machine.memoryState.allocator, v.position));
+                            // return true;
+                        }
+
+                        for (seq.v.SequenceKind) |vv| {
+                            buffer.append(vv) catch |err| return errorHandler(err);
+                        }
+                    },
+                }
             }
 
-            machine.createSequenceValue(e.kind.literalSequence.len) catch |err| return errorHandler(err);
+            machine.memoryState.pushOwnedSequenceValue(buffer.toOwnedSlice() catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
+            const v = machine.memoryState.pop();
+            machine.memoryState.popn(@intCast(e.kind.literalSequence.len));
+            machine.memoryState.push(v) catch |err| return errorHandler(err);
         },
         .literalString => machine.createStringValue(e.kind.literalString) catch |err| return errorHandler(err),
         .literalVoid => machine.createVoidValue() catch |err| return errorHandler(err),

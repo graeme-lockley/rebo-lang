@@ -26,7 +26,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 ## Sequences
 
 - [X] Add support for a literal sequence
-- [ ] Add support for `...` when incorporating a literal sequence
+- [X] Add support for `...` when incorporating a literal sequence
 - [X] Add support for `[]` to access an element in a sequence based on value
 - [X] Add support for `[start:end]` to access a slice of sequence
 - [X] Add support for `[] = value` to update a sequence

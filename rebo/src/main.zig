@@ -320,6 +320,11 @@ test "literal sequence" {
     try expectExprEqual("[1, 2, 3]", "[1, 2, 3]");
     try expectExprEqual("[1, [true, false], 3]", "[1, [true, false], 3]");
 
+    try expectExprEqual("[1, ...[], 3]", "[1, 3]");
+    try expectExprEqual("[1, ...[true], 3]", "[1, true, 3]");
+    try expectExprEqual("[1, ...[true, false], 3]", "[1, true, false, 3]");
+    try expectExprEqual("let x = [true, false]; [...x, 1, ...x, 3, ...x]", "[true, false, 1, true, false, 3, true, false]");
+
     try expectError("[1, 2,");
     try expectError("[1, 2, 3");
 }

@@ -609,19 +609,22 @@ pub const Parser = struct {
             Lexer.TokenKind.LBracket => {
                 const lbracket = try self.nextToken();
 
-                var es = std.ArrayList(*AST.Expression).init(self.allocator);
+                var es = std.ArrayList(AST.LiteralSequenceValue).init(self.allocator);
                 defer {
                     for (es.items) |item| {
-                        AST.destroy(self.allocator, item);
+                        switch (item) {
+                            AST.LiteralSequenceValue.value => AST.destroy(self.allocator, item.value),
+                            AST.LiteralSequenceValue.sequence => AST.destroy(self.allocator, item.sequence),
+                        }
                     }
                     es.deinit();
                 }
 
                 if (self.currentTokenKind() != Lexer.TokenKind.RBracket) {
-                    try es.append(try self.expression());
+                    try es.append(try self.literalListItem());
                     while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
                         try self.skipToken();
-                        try es.append(try self.expression());
+                        try es.append(try self.literalListItem());
                     }
                 }
 
@@ -658,6 +661,16 @@ pub const Parser = struct {
 
                 return error.InterpreterError;
             },
+        }
+    }
+
+    fn literalListItem(self: *Parser) !AST.LiteralSequenceValue {
+        if (self.currentTokenKind() == Lexer.TokenKind.DotDotDot) {
+            try self.skipToken();
+            const expr = try self.expression();
+            return AST.LiteralSequenceValue{ .sequence = expr };
+        } else {
+            return AST.LiteralSequenceValue{ .value = try self.expression() };
         }
     }
 
