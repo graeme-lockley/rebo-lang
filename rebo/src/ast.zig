@@ -146,9 +146,12 @@ pub const LiteralSequenceValue = union(enum) {
     sequence: *Expression,
 };
 
-pub const RecordEntry = struct {
-    key: []u8,
-    value: *Expression,
+pub const RecordEntry = union(enum) {
+    value: struct {
+        key: []u8,
+        value: *Expression,
+    },
+    record: *Expression,
 };
 
 pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
@@ -206,8 +209,13 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
         .literalFunction => expr.kind.literalFunction.deinit(allocator),
         .literalRecord => {
             for (expr.kind.literalRecord) |v| {
-                allocator.free(v.key);
-                destroy(allocator, v.value);
+                switch (v) {
+                    .value => {
+                        allocator.free(v.value.key);
+                        destroy(allocator, v.value.value);
+                    },
+                    .record => destroy(allocator, v.record),
+                }
             }
             allocator.free(expr.kind.literalRecord);
         },

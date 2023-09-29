@@ -299,6 +299,15 @@ pub fn divideByZeroError(allocator: std.mem.Allocator, position: Position) Error
     return Error{ .divideByZero = .{ .allocator = allocator, .position = position } };
 }
 
+pub fn expectedATypeError(allocator: std.mem.Allocator, position: Position, expected: ValueKind, found: ValueKind) !Error {
+    var exp = try allocator.alloc(ValueKind, 1);
+    errdefer allocator.free(exp);
+
+    exp[0] = expected;
+
+    return expectedTypeError(allocator, position, exp, found);
+}
+
 pub fn expectedTypeError(allocator: std.mem.Allocator, position: Position, expected: []ValueKind, found: ValueKind) Error {
     return Error{ .expectedTypeError = .{ .allocator = allocator, .position = position, .expected = expected, .found = found } };
 }

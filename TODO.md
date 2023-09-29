@@ -48,7 +48,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [X] Add support for a literal record
 - [ ] Add support for a literal string as a literal record field name
-- [ ] Add support for `...` when incorporating a literal record
+- [X] Add support for `...` when incorporating a literal record
 - [X] Add support for `.field` to access a record's field
 - [X] Add support for `[]` to access a field in a record based on value
 - [X] Add support for `.field = value` to update a record

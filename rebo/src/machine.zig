@@ -57,10 +57,28 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             var map = machine.topOfStack().?;
 
             for (e.kind.literalRecord) |entry| {
-                if (evalExpr(machine, entry.value)) return true;
+                switch (entry) {
+                    .value => {
+                        if (evalExpr(machine, entry.value.value)) return true;
 
-                const value = machine.memoryState.pop();
-                V.recordSet(machine.memoryState.allocator, &map.v.RecordKind, entry.key, value) catch |err| return errorHandler(err);
+                        const value = machine.memoryState.pop();
+                        V.recordSet(machine.memoryState.allocator, &map.v.RecordKind, entry.value.key, value) catch |err| return errorHandler(err);
+                    },
+                    .record => {
+                        if (evalExpr(machine, entry.record)) return true;
+
+                        const value = machine.memoryState.pop();
+                        if (value.v != V.ValueValue.RecordKind) {
+                            machine.replaceErr(Errors.expectedATypeError(machine.memoryState.allocator, entry.record.position, V.ValueValue.RecordKind, value.v) catch |err| return errorHandler(err));
+                            return true;
+                        }
+
+                        var iterator = value.v.RecordKind.iterator();
+                        while (iterator.next()) |rv| {
+                            V.recordSet(machine.memoryState.allocator, &map.v.RecordKind, rv.key_ptr.*, rv.value_ptr.*) catch |err| return errorHandler(err);
+                        }
+                    },
+                }
             }
         },
         .literalSequence => {
@@ -78,9 +96,8 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                         const seq = machine.memoryState.peek(0);
 
                         if (seq.v != V.ValueValue.SequenceKind) {
-                            unreachable;
-                            // machine.replaceErr(Errors.sequenceValueExpectedError(machine.memoryState.allocator, v.position));
-                            // return true;
+                            machine.replaceErr(Errors.expectedATypeError(machine.memoryState.allocator, v.sequence.position, V.ValueValue.SequenceKind, seq.v) catch |err| return errorHandler(err));
+                            return true;
                         }
 
                         for (seq.v.SequenceKind) |vv| {
@@ -145,7 +162,8 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             const v = machine.memoryState.peek(0);
 
             if (v.v != V.ValueValue.SequenceKind) {
-                unreachable;
+                machine.replaceErr(Errors.expectedATypeError(machine.memoryState.allocator, lhs.kind.indexRange.expr.position, V.ValueValue.RecordKind, v.v) catch |err| return errorHandler(err));
+                return true;
             }
 
             const slices = [_][]*V.Value{ seq[0..@intCast(start)], v.v.SequenceKind, seq[@intCast(end)..@intCast(seq.len)] };

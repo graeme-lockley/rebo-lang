@@ -72,39 +72,6 @@ pub const Parser = struct {
                 v.* = AST.Expression{ .kind = AST.ExpressionKind{ .declaration = AST.DeclarationExpression{ .name = name, .value = value } }, .position = Errors.Position{ .start = letToken.start, .end = value.position.end } };
                 return v;
             }
-
-            // } else if (self.currentTokenKind() == Lexer.TokenKind.If) {
-            //     const ifToken = try self.nextToken();
-
-            //     const condition = try self.expression();
-            //     errdefer AST.destroy(self.allocator, condition);
-
-            //     try self.matchSkipToken(Lexer.TokenKind.Then);
-
-            //     const then = try self.expression();
-            //     errdefer AST.destroy(self.allocator, then);
-
-            //     try self.matchSkipToken(Lexer.TokenKind.Else);
-
-            //     const else_ = try self.expression();
-            //     errdefer AST.destroy(self.allocator, else_);
-
-            //     const v = try self.allocator.create(AST.Expression);
-            //     v.* = AST.Expression{ .kind = AST.ExpressionKind{ .if = AST.IfExpression{ .condition = condition, .then = then, .else = else_ } }, .position = Errors.Position{ .start = ifToken.start, .end = else_.position.end } };
-            //     return v;
-            // } else if (self.currentTokenKind() == Lexer.TokenKind.While) {
-            //     const whileToken = try self.nextToken();
-
-            //     const condition = try self.expression();
-            //     errdefer AST.destroy(self.allocator, condition);
-
-            //     try self.matchSkipToken(Lexer.TokenKind.Do);
-
-            //     const body = try self.expression();
-            //     errdefer AST.destroy(self.allocator, body);
-
-            //     const v = try self.allocator.create(AST.Expression);
-            //     v.* = AST.Expression{ .kind = AST.ExpressionKind{ .while = AST.WhileExpression{ .condition = condition, .body = body } }, .position = Errors.Position{ .start = whileToken.start, .end = body.position
         } else if (self.currentTokenKind() == Lexer.TokenKind.If) {
             const ifToken = try self.nextToken();
 
@@ -429,23 +396,27 @@ pub const Parser = struct {
             Lexer.TokenKind.LCurly => {
                 const lcurly = try self.nextToken();
 
-                if (self.currentTokenKind() == Lexer.TokenKind.RCurly or self.currentTokenKind() == Lexer.TokenKind.Identifier and try self.peekNextToken() == Lexer.TokenKind.Colon) {
+                if (self.currentTokenKind() == Lexer.TokenKind.RCurly or self.currentTokenKind() == Lexer.TokenKind.DotDotDot or self.currentTokenKind() == Lexer.TokenKind.Identifier and try self.peekNextToken() == Lexer.TokenKind.Colon) {
                     var es = std.ArrayList(AST.RecordEntry).init(self.allocator);
                     defer {
                         for (es.items) |item| {
-                            self.allocator.free(item.key);
-                            AST.destroy(self.allocator, item.value);
+                            switch (item) {
+                                .value => {
+                                    self.allocator.free(item.value.key);
+                                    AST.destroy(self.allocator, item.value.value);
+                                },
+                                .record => AST.destroy(self.allocator, item.record),
+                            }
                         }
                         es.deinit();
                     }
 
                     if (self.currentTokenKind() != Lexer.TokenKind.RCurly) {
-                        const me = try self.RecordEntry();
-                        try es.append(me);
+                        try es.append(try self.recordEntry());
 
                         while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
                             try self.skipToken();
-                            try es.append(try self.RecordEntry());
+                            try es.append(try self.recordEntry());
                         }
                     }
 
@@ -747,14 +718,20 @@ pub const Parser = struct {
         }
     }
 
-    fn RecordEntry(self: *Parser) !AST.RecordEntry {
-        const key = try self.matchToken(Lexer.TokenKind.Identifier);
-        try self.matchSkipToken(Lexer.TokenKind.Colon);
-        const value = try self.expression();
+    fn recordEntry(self: *Parser) !AST.RecordEntry {
+        if (self.currentTokenKind() == Lexer.TokenKind.DotDotDot) {
+            try self.skipToken();
+            const e = try self.expression();
+            return AST.RecordEntry{ .record = e };
+        } else {
+            const key = try self.matchToken(Lexer.TokenKind.Identifier);
+            try self.matchSkipToken(Lexer.TokenKind.Colon);
+            const value = try self.expression();
 
-        const keyValue = try self.allocator.dupe(u8, self.lexer.lexeme(key));
+            const keyValue = try self.allocator.dupe(u8, self.lexer.lexeme(key));
 
-        return AST.RecordEntry{ .key = keyValue, .value = value };
+            return AST.RecordEntry{ .value = .{ .key = keyValue, .value = value } };
+        }
     }
 
     fn currentToken(self: *Parser) Lexer.Token {
