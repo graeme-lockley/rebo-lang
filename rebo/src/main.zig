@@ -93,6 +93,32 @@ fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
     return buffer;
 }
 
+fn nike(input: []const u8) !void {
+    var lp: usize = 1;
+
+    while (lp < input.len) {
+        const s = input[0..lp];
+
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        const allocator = gpa.allocator();
+
+        {
+            var machine = try Machine.Machine.init(allocator);
+            defer machine.deinit();
+
+            _ = machine.execute("console", s) catch {};
+        }
+
+        const err = gpa.deinit();
+        if (err == std.heap.Check.leak) {
+            std.log.err("Failed to deinit allocator: {s}\n", .{s});
+            return error.TestingError;
+        }
+
+        lp += 1;
+    }
+}
+
 pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -127,6 +153,8 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         std.log.err("Failed to deinit allocator\n", .{});
         return error.TestingError;
     }
+
+    try nike(input);
 }
 
 fn expectError(input: []const u8) !void {

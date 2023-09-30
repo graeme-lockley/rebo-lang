@@ -78,11 +78,13 @@ pub const Parser = struct {
             var couples = std.ArrayList(AST.IfCouple).init(self.allocator);
             defer couples.deinit();
             errdefer {
-                for (couples.items) |couple| {
-                    if (couple.condition != null) {
-                        AST.destroy(self.allocator, couple.condition.?);
+                for (couples.items, 0..) |couple, idx| {
+                    if (idx > 0) {
+                        if (couple.condition != null) {
+                            AST.destroy(self.allocator, couple.condition.?);
+                        }
+                        AST.destroy(self.allocator, couple.then);
                     }
-                    AST.destroy(self.allocator, couple.then);
                 }
             }
 
@@ -96,6 +98,7 @@ pub const Parser = struct {
             if (self.currentTokenKind() == Lexer.TokenKind.MinusGreater) {
                 try self.skipToken();
                 const then = try self.expression();
+                errdefer AST.destroy(self.allocator, then);
 
                 try couples.append(AST.IfCouple{ .condition = firstGuard, .then = then });
                 while (self.currentTokenKind() == Lexer.TokenKind.Bar) {
@@ -125,6 +128,7 @@ pub const Parser = struct {
             return v;
         } else {
             var lhs = try self.orExpr();
+            errdefer AST.destroy(self.allocator, lhs);
 
             if (self.currentTokenKind() == Lexer.TokenKind.ColonEqual) {
                 try self.skipToken();
@@ -449,10 +453,12 @@ pub const Parser = struct {
                 }
             },
             Lexer.TokenKind.Identifier => {
-                const lexeme = self.lexer.currentLexeme();
+                const lexeme = try self.allocator.dupe(u8, self.lexer.currentLexeme());
+                errdefer self.allocator.free(lexeme);
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .identifier = try self.allocator.dupe(u8, lexeme) }, .position = Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end } };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .identifier = lexeme }, .position = Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end } };
+                errdefer AST.destroy(self.allocator, v);
 
                 try self.skipToken();
 
