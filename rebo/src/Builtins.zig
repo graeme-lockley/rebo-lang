@@ -20,8 +20,51 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
     return Errors.err.InterpreterError;
 }
 
+fn ffn(allocator: std.mem.Allocator, fromSourceName: ?[]const u8, fileName: []const u8) ![]u8 {
+    if (std.fs.path.isAbsolute(fileName)) {
+        return try allocator.dupe(u8, fileName);
+    }
+
+    if (fromSourceName == null) {
+        return std.fs.path.join(allocator, &[_][]const u8{ ".", fileName });
+    }
+
+    const dirname = std.fs.path.dirname(fromSourceName.?).?;
+    return std.fs.path.join(allocator, &[_][]const u8{ dirname, fileName });
+}
+
+test "ffn" {
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+    const expectEqual = std.testing.expectEqual;
+    _ = expectEqual;
+
+    try std.testing.expectEqualSlices(u8, "/hello.txt", try ffn(allocator, null, "/hello.txt"));
+}
+
+fn fullFileName(machine: *Machine, fileName: []const u8) ![]u8 {
+    if (std.fs.path.isAbsolute(fileName)) {
+        return try machine.memoryState.allocator.dupe(u8, fileName);
+    }
+
+    const fromSourceName = machine.memoryState.getFromScope("__FILE");
+
+    if (fromSourceName == null) {
+        return std.fs.path.join(machine.memoryState.allocator, &[_][]const u8{ ".", fileName });
+    }
+
+    const dirname = std.fs.path.dirname(fromSourceName.?.v.StringKind).?;
+    return std.fs.path.join(machine.memoryState.allocator, &[_][]const u8{ dirname, fileName });
+}
+
+test "fullFileName" {}
+
 fn importFile(machine: *Machine, fileName: []const u8) !void {
-    const content = loadBinary(machine.memoryState.allocator, fileName) catch |err| {
+    const name = try fullFileName(machine, fileName);
+    defer machine.memoryState.allocator.free(name);
+
+    const content = loadBinary(machine.memoryState.allocator, name) catch |err| {
         try machine.memoryState.pushEmptyMapValue();
 
         const record = machine.memoryState.peek(0);
@@ -33,14 +76,14 @@ fn importFile(machine: *Machine, fileName: []const u8) !void {
         try std.fmt.format(buffer.writer(), "{}", .{err});
 
         try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
 
         return;
     };
     defer machine.memoryState.allocator.free(content);
 
     try machine.memoryState.openScopeFrom(machine.memoryState.topScope());
-    try machine.memoryState.addToScope("__FILE", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
+    try machine.memoryState.addToScope("__FILE", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
 
     const ast = machine.parse(fileName, content) catch |err| {
         try machine.memoryState.pushEmptyMapValue();
@@ -54,7 +97,7 @@ fn importFile(machine: *Machine, fileName: []const u8) !void {
         try std.fmt.format(buffer.writer(), "{}", .{err});
 
         try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
 
         return;
     };
@@ -72,7 +115,7 @@ fn importFile(machine: *Machine, fileName: []const u8) !void {
         try std.fmt.format(buffer.writer(), "{}", .{err});
 
         try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
 
         return;
     };
@@ -89,7 +132,7 @@ fn importFile(machine: *Machine, fileName: []const u8) !void {
 
     defer machine.memoryState.restoreScope();
 
-    try machine.memoryState.imports.addImport(fileName, result, ast);
+    try machine.memoryState.imports.addImport(name, result, ast);
 }
 
 pub fn import(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
