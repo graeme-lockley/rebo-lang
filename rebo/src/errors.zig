@@ -231,8 +231,14 @@ pub const Error = union(enum) {
             .invalidLHSError => {
                 self.invalidLHSError.deinit();
             },
-            .lexicalError, .literalFloatOverflowError, .literalIntOverflowError => {
+            .lexicalError => {
                 self.lexicalError.deinit();
+            },
+            .literalFloatOverflowError => {
+                self.literalFloatOverflowError.deinit();
+            },
+            .literalIntOverflowError => {
+                self.literalIntOverflowError.deinit();
             },
             .parserError => {
                 self.parserError.deinit();
@@ -273,10 +279,10 @@ pub const Error = union(enum) {
                 self.lexicalError.print("Lexical Error");
             },
             .literalFloatOverflowError => {
-                self.lexicalError.print("Literal Float Overflow Error");
+                self.literalFloatOverflowError.print("Literal Float Overflow Error");
             },
             .literalIntOverflowError => {
-                self.lexicalError.print("Literal Int Overflow Error");
+                self.literalIntOverflowError.print("Literal Int Overflow Error");
             },
             .parserError => {
                 try self.parserError.print();
