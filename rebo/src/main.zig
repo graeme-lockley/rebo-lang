@@ -1,4 +1,5 @@
 const std = @import("std");
+const Builtins = @import("./builtins.zig");
 const Machine = @import("./machine.zig");
 const V = @import("./value.zig");
 
@@ -19,7 +20,7 @@ pub fn main() !void {
     if (args.len == 3 and std.mem.eql(u8, args[1], "run")) {
         const startTime = std.time.milliTimestamp();
 
-        const buffer: []u8 = try loadBinary(allocator, args[2]);
+        const buffer: []u8 = try Builtins.loadBinary(allocator, args[2]);
         defer allocator.free(buffer);
 
         const loadBinaryTime = std.time.milliTimestamp();
@@ -78,19 +79,6 @@ fn errorHandler(err: anyerror, machine: *Machine.Machine) void {
 
 fn execute(machine: *Machine.Machine, name: []const u8, buffer: []const u8) void {
     machine.execute(name, buffer) catch |err| errorHandler(err, machine);
-}
-
-fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
-    var file = std.fs.cwd().openFile(fileName, .{}) catch {
-        std.debug.print("Unable to open file: {s}\n", .{fileName});
-        std.os.exit(1);
-    };
-    defer file.close();
-
-    const fileSize = try file.getEndPos();
-    const buffer: []u8 = try file.readToEndAlloc(allocator, fileSize);
-
-    return buffer;
 }
 
 fn nike(input: []const u8) !void {

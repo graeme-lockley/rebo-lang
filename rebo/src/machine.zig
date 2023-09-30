@@ -1044,12 +1044,18 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .memory_size = 0,
         .memory_capacity = 2,
         .scopes = std.ArrayList(*V.Value).init(allocator),
+        .imports = MS.Imports.init(allocator),
         .unitValue = null,
     };
 
     state.unitValue = try state.newValue(V.ValueValue{ .VoidKind = void{} });
 
     try state.openScope();
+
+    try addBuiltin(&state, "import", &[_]V.FunctionArgument{V.FunctionArgument{
+        .name = "file",
+        .default = null,
+    }}, null, &Builtins.import);
 
     try addBuiltin(&state, "len", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "v",
@@ -1101,7 +1107,7 @@ pub const Machine = struct {
         }
     }
 
-    pub fn execute(self: *Machine, name: []const u8, buffer: []const u8) !void {
+    pub fn parse(self: *Machine, name: []const u8, buffer: []const u8) !*AST.Expression {
         const allocator = self.memoryState.allocator;
 
         var l = Lexer.Lexer.init(allocator);
@@ -1117,9 +1123,18 @@ pub const Machine = struct {
             self.err = p.grabErr();
             return err;
         };
-        defer AST.destroy(allocator, ast);
+        errdefer AST.destroy(allocator, ast);
+
+        return ast;
+    }
+
+    pub fn execute(self: *Machine, name: []const u8, buffer: []const u8) !void {
+        const ast = try self.parse(name, buffer);
+        errdefer AST.destroy(self.memoryState.allocator, ast);
 
         try self.eval(ast);
+
+        try self.memoryState.imports.addAnnie(ast);
     }
 
     pub fn replaceErr(self: *Machine, err: Errors.Error) void {

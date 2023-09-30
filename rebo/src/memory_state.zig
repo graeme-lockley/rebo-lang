@@ -1,5 +1,6 @@
 const std = @import("std");
 
+pub const AST = @import("./ast.zig");
 pub const V = @import("./value.zig");
 
 pub const MemoryState = struct {
@@ -10,7 +11,7 @@ pub const MemoryState = struct {
     memory_size: u32,
     memory_capacity: u32,
     scopes: std.ArrayList(*V.Value),
-
+    imports: Imports,
     unitValue: ?*V.Value,
 
     pub fn newValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
@@ -121,6 +122,10 @@ pub const MemoryState = struct {
         }
     }
 
+    pub fn topScope(self: *MemoryState) *V.Value {
+        return self.scopes.items[0];
+    }
+
     pub fn openScope(self: *MemoryState) !void {
         try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue{ .parent = self.scope(), .values = std.StringHashMap(*V.Value).init(self.allocator) } }));
     }
@@ -221,8 +226,11 @@ pub const MemoryState = struct {
         self.scopes = std.ArrayList(*V.Value).init(self.allocator);
         self.stack.deinit();
         self.stack = std.ArrayList(*V.Value).init(self.allocator);
+        self.imports.deinit();
+        self.imports = Imports.init(self.allocator);
         force_gc(self);
         self.stack.deinit();
+        self.imports.deinit();
 
         // self.stack.deinit();
         // var runner: ?*V.Value = self.root;
@@ -235,7 +243,7 @@ pub const MemoryState = struct {
     }
 };
 
-fn mark(state: *MemoryState, possible_value: ?*V.Value, colour: V.Colour) void {
+fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {
     if (possible_value == null) {
         return;
     }
@@ -251,41 +259,41 @@ fn mark(state: *MemoryState, possible_value: ?*V.Value, colour: V.Colour) void {
     switch (v.v) {
         .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .StringKind, .VoidKind => {},
         .FunctionKind => {
-            mark(state, v.v.FunctionKind.scope, colour);
+            markValue(v.v.FunctionKind.scope, colour);
             for (v.v.FunctionKind.arguments) |argument| {
                 if (argument.default != null) {
-                    mark(state, argument.default.?, colour);
+                    markValue(argument.default.?, colour);
                 }
             }
         },
         .ScopeKind => {
-            markScope(state, &v.v.ScopeKind, colour);
+            markScope(&v.v.ScopeKind, colour);
         },
         .SequenceKind => {
             for (v.v.SequenceKind) |item| {
-                mark(state, item, colour);
+                markValue(item, colour);
             }
         },
         .RecordKind => {
             var iterator = v.v.RecordKind.iterator();
             while (iterator.next()) |entry| {
-                mark(state, entry.value_ptr.*, colour);
+                markValue(entry.value_ptr.*, colour);
             }
         },
     }
 }
 
-fn markScope(state: *MemoryState, scope: ?*V.ScopeValue, colour: V.Colour) void {
+fn markScope(scope: ?*V.ScopeValue, colour: V.Colour) void {
     if (scope == null) {
         return;
     }
 
     var iterator = scope.?.values.valueIterator();
     while (iterator.next()) |entry| {
-        mark(state, entry.*, colour);
+        markValue(entry.*, colour);
     }
 
-    mark(state, scope.?.parent, colour);
+    markValue(scope.?.parent, colour);
 }
 
 fn sweep(state: *MemoryState, colour: V.Colour) void {
@@ -308,14 +316,14 @@ fn force_gc(state: *MemoryState) void {
     const new_colour = if (state.colour == V.Colour.Black) V.Colour.White else V.Colour.Black;
 
     if (state.unitValue != null) {
-        mark(state, state.unitValue.?, new_colour);
+        markValue(state.unitValue.?, new_colour);
     }
 
     for (state.scopes.items) |value| {
-        mark(state, value, new_colour);
+        markValue(value, new_colour);
     }
     for (state.stack.items) |value| {
-        mark(state, value, new_colour);
+        markValue(value, new_colour);
     }
 
     sweep(state, new_colour);
@@ -339,3 +347,56 @@ fn gc(state: *MemoryState) void {
         }
     }
 }
+
+pub const Imports = struct {
+    items: std.StringHashMap(Import),
+    allocator: std.mem.Allocator,
+    annie: u32,
+
+    pub fn init(allocator: std.mem.Allocator) Imports {
+        return Imports{ .items = std.StringHashMap(Import).init(allocator), .allocator = allocator, .annie = 0 };
+    }
+
+    pub fn deinit(self: *Imports) void {
+        var iterator = self.items.iterator();
+
+        while (iterator.next()) |entry| {
+            self.allocator.free(entry.key_ptr.*);
+            AST.destroy(self.allocator, entry.value_ptr.*.ast);
+        }
+        self.items.deinit();
+    }
+
+    pub fn mark(self: *Imports, colour: V.Colour) void {
+        var iterator = self.items.iterator();
+
+        while (iterator.next()) |entry| {
+            entry.value_ptr.*.mark(colour);
+        }
+    }
+
+    pub fn addImport(self: *Imports, name: []const u8, items: *V.Value, e: *AST.Expression) !void {
+        try self.items.put(try self.allocator.dupe(u8, name), Import{ .items = items, .ast = e });
+    }
+
+    pub fn addAnnie(self: *Imports, e: *AST.Expression) !void {
+        var buffer = std.ArrayList(u8).init(self.allocator);
+        defer buffer.deinit();
+
+        try std.fmt.format(buffer.writer(), "repl-{d}", .{self.annie});
+        self.annie += 1;
+
+        try self.items.put(try buffer.toOwnedSlice(), Import{ .items = null, .ast = e });
+    }
+};
+
+pub const Import = struct {
+    items: ?*V.Value,
+    ast: *AST.Expression,
+
+    pub fn mark(this: *Import, colour: V.Colour) void {
+        if (this.items != null) {
+            markValue(this.items.?, colour);
+        }
+    }
+};

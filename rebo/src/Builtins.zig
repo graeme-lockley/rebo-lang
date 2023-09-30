@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const AST = @import("./ast.zig");
 const Errors = @import("./errors.zig");
 const Machine = @import("./machine.zig").Machine;
@@ -16,6 +18,101 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
         machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, position, exp, v));
     }
     return Errors.err.InterpreterError;
+}
+
+fn importFile(machine: *Machine, fileName: []const u8) !void {
+    const content = loadBinary(machine.memoryState.allocator, fileName) catch |err| {
+        try machine.memoryState.pushEmptyMapValue();
+
+        const record = machine.memoryState.peek(0);
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "FileError") }));
+
+        var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+        defer buffer.deinit();
+
+        try std.fmt.format(buffer.writer(), "{}", .{err});
+
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
+
+        return;
+    };
+    defer machine.memoryState.allocator.free(content);
+
+    try machine.memoryState.openScopeFrom(machine.memoryState.topScope());
+    try machine.memoryState.addToScope("__FILE", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
+
+    const ast = machine.parse(fileName, content) catch |err| {
+        try machine.memoryState.pushEmptyMapValue();
+
+        const record = machine.memoryState.peek(0);
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "ExecuteError") }));
+
+        var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+        defer buffer.deinit();
+
+        try std.fmt.format(buffer.writer(), "{}", .{err});
+
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
+
+        return;
+    };
+    errdefer AST.destroy(machine.memoryState.allocator, ast);
+
+    machine.eval(ast) catch |err| {
+        try machine.memoryState.pushEmptyMapValue();
+
+        const record = machine.memoryState.peek(0);
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "ExecuteError") }));
+
+        var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+        defer buffer.deinit();
+
+        try std.fmt.format(buffer.writer(), "{}", .{err});
+
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
+
+        return;
+    };
+    _ = machine.memoryState.pop();
+
+    try machine.memoryState.pushEmptyMapValue();
+
+    const result = machine.memoryState.peek(0);
+
+    var iterator = machine.memoryState.scope().?.v.ScopeKind.values.iterator();
+    while (iterator.next()) |entry| {
+        try V.recordSet(machine.memoryState.allocator, &result.v.RecordKind, entry.key_ptr.*, entry.value_ptr.*);
+    }
+
+    defer machine.memoryState.restoreScope();
+
+    try machine.memoryState.imports.addImport(fileName, result, ast);
+}
+
+pub fn import(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    const v = machine.memoryState.getFromScope("file") orelse machine.memoryState.unitValue;
+
+    switch (v.?.v) {
+        V.ValueValue.StringKind => try importFile(machine, v.?.v.StringKind),
+        else => try reportExpectedTypeError(machine, if (argsAST.len > 0) argsAST[0].position else calleeAST.position, &[_]V.ValueKind{V.ValueValue.StringKind}, v.?.v),
+    }
+}
+
+test "import" {
+    try Main.expectExprEqual("import(\"./test/simple.rebo\").x", "10");
+}
+
+pub fn loadBinary(allocator: std.mem.Allocator, fileName: []const u8) ![]u8 {
+    var file = try std.fs.cwd().openFile(fileName, .{});
+    defer file.close();
+
+    const fileSize = try file.getEndPos();
+    const buffer: []u8 = try file.readToEndAlloc(allocator, fileSize);
+
+    return buffer;
 }
 
 pub fn len(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
