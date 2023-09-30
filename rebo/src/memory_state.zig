@@ -11,7 +11,9 @@ pub const MemoryState = struct {
     memory_capacity: u32,
     scopes: std.ArrayList(*V.Value),
 
-    fn newValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
+    unitValue: ?*V.Value,
+
+    pub fn newValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
         const v = try self.allocator.create(V.Value);
         self.memory_size += 1;
 
@@ -84,7 +86,7 @@ pub const MemoryState = struct {
     }
 
     pub fn pushUnitValue(self: *MemoryState) !void {
-        _ = try self.pushValue(V.ValueValue{ .VoidKind = void{} });
+        _ = try self.push(self.unitValue.?);
     }
 
     pub fn pop(self: *MemoryState) *V.Value {
@@ -173,6 +175,25 @@ pub const MemoryState = struct {
         return false;
     }
 
+    pub fn getFromScope(self: *MemoryState, name: []const u8) ?*V.Value {
+        var runner: ?*V.Value = self.scope();
+
+        while (true) {
+            const value = runner.?.v.ScopeKind.values.get(name);
+
+            if (value != null) {
+                return value;
+            }
+
+            const parent = runner.?.v.ScopeKind.parent;
+            if (parent == null) {
+                return null;
+            }
+
+            runner = parent;
+        }
+    }
+
     pub fn deinit(self: *MemoryState) void {
         // Leave this code in - helpful to use when debugging memory leaks.
         // The code following this comment block just nukes the allocated
@@ -195,6 +216,7 @@ pub const MemoryState = struct {
             }
         }
         std.log.info("gc: memory state stack length: {d} vs {d}: values: {d} vs {d}", .{ self.stack.items.len, count, self.memory_size, number_of_values });
+        self.unitValue = null;
         self.scopes.deinit();
         self.scopes = std.ArrayList(*V.Value).init(self.allocator);
         self.stack.deinit();
@@ -227,7 +249,7 @@ fn mark(state: *MemoryState, possible_value: ?*V.Value, colour: V.Colour) void {
     v.colour = colour;
 
     switch (v.v) {
-        .BoolKind, .CharKind, .IntKind, .FloatKind, .StringKind, .VoidKind => {},
+        .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .StringKind, .VoidKind => {},
         .FunctionKind => {
             mark(state, v.v.FunctionKind.scope, colour);
             for (v.v.FunctionKind.arguments) |argument| {
@@ -284,6 +306,10 @@ fn sweep(state: *MemoryState, colour: V.Colour) void {
 
 fn force_gc(state: *MemoryState) void {
     const new_colour = if (state.colour == V.Colour.Black) V.Colour.White else V.Colour.Black;
+
+    if (state.unitValue != null) {
+        mark(state, state.unitValue.?, new_colour);
+    }
 
     for (state.scopes.items) |value| {
         mark(state, value, new_colour);

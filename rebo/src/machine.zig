@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const AST = @import("./ast.zig");
+const Builtins = @import("./Builtins.zig");
 const Errors = @import("./errors.zig");
 const Lexer = @import("./lexer.zig");
 const MS = @import("./memory_state.zig");
@@ -717,10 +718,12 @@ fn call(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expressio
 
     const callee = machine.memoryState.peek(0);
 
-    if (callee.v != V.ValueValue.FunctionKind) {
+    if (callee.v != V.ValueValue.FunctionKind and callee.v != V.ValueValue.BuiltinKind) {
         machine.replaceErr(Errors.functionValueExpectedError(machine.memoryState.allocator, calleeAST.position));
         return true;
     }
+    const args = if (callee.v == V.ValueValue.FunctionKind) callee.v.FunctionKind.arguments else callee.v.BuiltinKind.arguments;
+    const restOfArgs = if (callee.v == V.ValueValue.FunctionKind) callee.v.FunctionKind.restOfArguments else callee.v.BuiltinKind.restOfArguments;
 
     var index: u8 = 0;
     while (index < argsAST.len) {
@@ -728,30 +731,39 @@ fn call(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expressio
         index += 1;
     }
 
-    while (index < callee.v.FunctionKind.arguments.len) {
-        if (callee.v.FunctionKind.arguments[index].default == null) {
+    while (index < args.len) {
+        if (args[index].default == null) {
             machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
         } else {
-            machine.memoryState.push(callee.v.FunctionKind.arguments[index].default.?) catch |err| return errorHandler(err);
+            machine.memoryState.push(args[index].default.?) catch |err| return errorHandler(err);
         }
         index += 1;
     }
-    machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope) catch |err| return errorHandler(err);
+
+    if (callee.v == V.ValueValue.FunctionKind) {
+        machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope) catch |err| return errorHandler(err);
+    } else {
+        machine.memoryState.openScope() catch |err| return errorHandler(err);
+    }
     defer machine.memoryState.restoreScope();
 
     var lp: u8 = 0;
-    while (lp < callee.v.FunctionKind.arguments.len) {
-        machine.memoryState.addToScope(callee.v.FunctionKind.arguments[lp].name, machine.memoryState.stack.items[sp + lp + 1]) catch |err| return errorHandler(err);
+    while (lp < args.len) {
+        machine.memoryState.addToScope(args[lp].name, machine.memoryState.stack.items[sp + lp + 1]) catch |err| return errorHandler(err);
         lp += 1;
     }
 
-    if (callee.v.FunctionKind.restOfArguments != null) {
+    if (restOfArgs != null) {
         const rest = machine.memoryState.stack.items[sp + lp + 1 ..];
-        machine.memoryState.addArrayValueToScope(callee.v.FunctionKind.restOfArguments.?, rest) catch |err| return errorHandler(err);
+        machine.memoryState.addArrayValueToScope(restOfArgs.?, rest) catch |err| return errorHandler(err);
     }
 
     machine.memoryState.popn(index);
-    if (evalExpr(machine, callee.v.FunctionKind.body)) return true;
+    if (callee.v == V.ValueValue.FunctionKind) {
+        if (evalExpr(machine, callee.v.FunctionKind.body)) return true;
+    } else {
+        callee.v.BuiltinKind.body(machine, calleeAST, argsAST) catch |err| return errorHandler(err);
+    }
 
     const result = machine.memoryState.pop();
     _ = machine.memoryState.pop();
@@ -811,25 +823,15 @@ fn exprs(machine: *Machine, e: *AST.Expression) bool {
 }
 
 fn identifier(machine: *Machine, e: *AST.Expression) bool {
-    var runner: ?*V.Value = machine.memoryState.scope();
+    const result = machine.memoryState.getFromScope(e.kind.identifier);
 
-    while (true) {
-        const value = runner.?.v.ScopeKind.values.get(e.kind.identifier);
-
-        if (value != null) {
-            machine.memoryState.push(value.?) catch |err| return errorHandler(err);
-            break;
-        }
-
-        const parent = runner.?.v.ScopeKind.parent;
-        if (parent == null) {
-            machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, e.position, e.kind.identifier) catch |err| return errorHandler(err));
-            return true;
-        }
-
-        runner = parent;
+    if (result == null) {
+        machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, e.position, e.kind.identifier) catch |err| return errorHandler(err));
+        return true;
+    } else {
+        machine.memoryState.push(result.?) catch |err| return errorHandler(err);
+        return false;
     }
-    return false;
 }
 
 fn ifte(machine: *Machine, e: *AST.Expression) bool {
@@ -1013,6 +1015,24 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
     return false;
 }
 
+fn addBuiltin(
+    state: *MS.MemoryState,
+    name: []const u8,
+    arguments: []const V.FunctionArgument,
+    restOfArguments: ?[]const u8,
+    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.err!void,
+) !void {
+    var vv = V.ValueValue{ .BuiltinKind = .{
+        .arguments = arguments,
+        .restOfArguments = restOfArguments,
+        .body = body,
+    } };
+
+    const value = try state.newValue(vv);
+
+    try state.addToScope(name, value);
+}
+
 fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
     const default_colour = V.Colour.White;
 
@@ -1024,9 +1044,17 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .memory_size = 0,
         .memory_capacity = 2,
         .scopes = std.ArrayList(*V.Value).init(allocator),
+        .unitValue = null,
     };
 
+    state.unitValue = try state.newValue(V.ValueValue{ .VoidKind = void{} });
+
     try state.openScope();
+
+    try addBuiltin(&state, "len", &[_]V.FunctionArgument{V.FunctionArgument{
+        .name = "v",
+        .default = null,
+    }}, null, &Builtins.len);
 
     return state;
 }
@@ -1094,7 +1122,7 @@ pub const Machine = struct {
         try self.eval(ast);
     }
 
-    fn replaceErr(self: *Machine, err: Errors.Error) void {
+    pub fn replaceErr(self: *Machine, err: Errors.Error) void {
         self.eraseErr();
         self.err = err;
     }

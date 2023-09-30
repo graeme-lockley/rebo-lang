@@ -1,6 +1,8 @@
 const std = @import("std");
 
 const AST = @import("./ast.zig");
+const Errors = @import("./errors.zig");
+const Machine = @import("./machine.zig").Machine;
 
 pub const IntType = i64;
 pub const FloatType = f64;
@@ -18,7 +20,7 @@ pub const Value = struct {
 
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         switch (self.v) {
-            .BoolKind, .CharKind, .IntKind, .FloatKind, .VoidKind => {},
+            .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .VoidKind => {},
             .FunctionKind => {
                 for (self.v.FunctionKind.arguments) |argument| {
                     allocator.free(argument.name);
@@ -56,6 +58,32 @@ pub const Value = struct {
 
         switch (self.v) {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
+            .BuiltinKind => {
+                try buffer.appendSlice("bfn(");
+                var i: usize = 0;
+                for (self.v.BuiltinKind.arguments) |argument| {
+                    if (i != 0) {
+                        try buffer.appendSlice(", ");
+                    }
+
+                    try buffer.appendSlice(argument.name);
+                    if (argument.default != null) {
+                        try buffer.appendSlice(" = ");
+                        try argument.default.?.appendValue(buffer);
+                    }
+
+                    i += 1;
+                }
+                if (self.v.BuiltinKind.restOfArguments != null) {
+                    if (i != 0) {
+                        try buffer.appendSlice(", ");
+                    }
+
+                    try buffer.appendSlice("...");
+                    try buffer.appendSlice(self.v.BuiltinKind.restOfArguments.?);
+                }
+                try buffer.append(')');
+            },
             .CharKind => {
                 if (self.v.CharKind == 10) {
                     try buffer.appendSlice("'\\n'");
@@ -197,6 +225,7 @@ pub const Value = struct {
 
 pub const ValueKind = enum {
     BoolKind,
+    BuiltinKind,
     CharKind,
     FunctionKind,
     IntKind,
@@ -210,6 +239,7 @@ pub const ValueKind = enum {
     pub fn toString(self: ValueKind) []const u8 {
         return switch (self) {
             ValueKind.BoolKind => "Bool",
+            ValueKind.BuiltinKind => "Function",
             ValueKind.CharKind => "Char",
             ValueKind.FunctionKind => "Function",
             ValueKind.FloatKind => "Float",
@@ -225,6 +255,7 @@ pub const ValueKind = enum {
 
 pub const ValueValue = union(ValueKind) {
     BoolKind: bool,
+    BuiltinKind: BuiltinValue,
     CharKind: u8,
     FunctionKind: FunctionValue,
     IntKind: IntType,
@@ -234,6 +265,12 @@ pub const ValueValue = union(ValueKind) {
     RecordKind: std.StringHashMap(*Value),
     ScopeKind: ScopeValue,
     VoidKind: void,
+};
+
+pub const BuiltinValue = struct {
+    arguments: []const FunctionArgument,
+    restOfArguments: ?[]const u8,
+    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.err!void,
 };
 
 pub fn recordSet(allocator: std.mem.Allocator, record: *std.StringHashMap(*Value), key: []const u8, value: *Value) !void {
@@ -262,7 +299,7 @@ pub const FunctionValue = struct {
 };
 
 pub const FunctionArgument = struct {
-    name: []u8,
+    name: []const u8,
     default: ?*Value,
 };
 
@@ -301,6 +338,7 @@ pub fn eq(a: *Value, b: *Value) bool {
 
     switch (a.v) {
         .BoolKind => return a.v.BoolKind == b.v.BoolKind,
+        .BuiltinKind => return @intFromPtr(a) == @intFromPtr(b),
         .CharKind => return a.v.CharKind == b.v.CharKind,
         .FunctionKind => return @intFromPtr(a) == @intFromPtr(b),
         .IntKind => return a.v.IntKind == b.v.IntKind,

@@ -93,7 +93,7 @@ fn loadBinary(allocator: std.mem.Allocator, fileName: [:0]const u8) ![]u8 {
     return buffer;
 }
 
-fn expectExprEqual(input: []const u8, expected: []const u8) !void {
+pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
