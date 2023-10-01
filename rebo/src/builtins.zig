@@ -155,7 +155,12 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
 
     var iterator = machine.memoryState.scope().?.v.ScopeKind.values.iterator();
     while (iterator.next()) |entry| {
-        try V.recordSet(machine.memoryState.allocator, &result.v.RecordKind, entry.key_ptr.*, entry.value_ptr.*);
+        const entryName = entry.key_ptr.*;
+
+        if (entryName.len > 0 and entryName[0] == '_') {
+            continue;
+        }
+        try V.recordSet(machine.memoryState.allocator, &result.v.RecordKind, entryName, entry.value_ptr.*);
     }
 
     defer machine.memoryState.restoreScope();

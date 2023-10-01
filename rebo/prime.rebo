@@ -11,5 +11,3 @@ let prime?(n = 0) = {
 let nextLargestPrime(n) =
   if prime?(n) -> n
    | nextLargestPrime(n + 1)
-
-nextLargestPrime(100000)

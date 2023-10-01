@@ -21,5 +21,3 @@ let filter(l, f) = {
 }
 
 let prime? = import("prime.rebo").prime?
-
-filter(range(500), prime?)
