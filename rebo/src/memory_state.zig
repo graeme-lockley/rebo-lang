@@ -219,7 +219,7 @@ pub const MemoryState = struct {
             _ = v;
         }
 
-        force_gc(self);
+        _ = force_gc(self);
         var number_of_values: u32 = 0;
         {
             var runner: ?*V.Value = self.root;
@@ -237,7 +237,7 @@ pub const MemoryState = struct {
         self.stack = std.ArrayList(*V.Value).init(self.allocator);
         self.imports.deinit();
         self.imports = Imports.init(self.allocator);
-        force_gc(self);
+        _ = force_gc(self);
         self.stack.deinit();
         self.imports.deinit();
 
@@ -321,7 +321,17 @@ fn sweep(state: *MemoryState, colour: V.Colour) void {
     }
 }
 
-fn force_gc(state: *MemoryState) void {
+pub const GCResult = struct {
+    capacity: u32,
+    oldSize: u32,
+    newSize: u32,
+    duration: i64,
+};
+
+pub fn force_gc(state: *MemoryState) GCResult {
+    const start_time = std.time.milliTimestamp();
+    const old_size = state.memory_size;
+
     const new_colour = if (state.colour == V.Colour.Black) V.Colour.White else V.Colour.Black;
 
     state.imports.mark(new_colour);
@@ -337,19 +347,19 @@ fn force_gc(state: *MemoryState) void {
     }
 
     sweep(state, new_colour);
+    const end_time = std.time.milliTimestamp();
 
     state.colour = new_colour;
+
+    return GCResult{ .capacity = state.memory_capacity, .oldSize = old_size, .newSize = state.memory_size, .duration = end_time - start_time };
 }
 
 fn gc(state: *MemoryState) void {
     const threshold_rate = 0.75;
 
     if (state.memory_size > state.memory_capacity) {
-        const old_size = state.memory_size;
-        const start_time = std.time.milliTimestamp();
-        force_gc(state);
-        const end_time = std.time.milliTimestamp();
-        std.log.info("gc: time={d}ms, nodes freed={d}, heap size: {d}", .{ end_time - start_time, old_size - state.memory_size, state.memory_size });
+        const gcResult = force_gc(state);
+        std.log.info("gc: time={d}ms, nodes freed={d}, heap size: {d}", .{ gcResult.duration, gcResult.oldSize - gcResult.newSize, gcResult.newSize });
 
         if (@as(f32, @floatFromInt(state.memory_size)) / @as(f32, @floatFromInt(state.memory_capacity)) > threshold_rate) {
             state.memory_capacity *= 2;

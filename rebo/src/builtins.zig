@@ -3,6 +3,7 @@ const std = @import("std");
 const AST = @import("./ast.zig");
 const Errors = @import("./errors.zig");
 const Machine = @import("./machine.zig").Machine;
+const MS = @import("./memory_state.zig");
 const Main = @import("./main.zig");
 const V = @import("./value.zig");
 
@@ -18,6 +19,20 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
         machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, position, exp, v));
     }
     return Errors.err.InterpreterError;
+}
+
+pub fn gc(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    _ = argsAST;
+    _ = calleeAST;
+    const result = MS.force_gc(&machine.memoryState);
+
+    try machine.memoryState.pushEmptyMapValue();
+
+    const record = machine.memoryState.peek(0);
+    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "capacity", try machine.memoryState.newValue(V.ValueValue{ .IntKind = result.capacity }));
+    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "before", try machine.memoryState.newValue(V.ValueValue{ .IntKind = result.oldSize }));
+    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "after", try machine.memoryState.newValue(V.ValueValue{ .IntKind = result.newSize }));
+    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "duration", try machine.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(result.duration) }));
 }
 
 fn ffn(allocator: std.mem.Allocator, fromSourceName: ?[]const u8, fileName: []const u8) ![]u8 {

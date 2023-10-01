@@ -105,11 +105,15 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [ ] Add support for match expressions
 
+## while
+
+- [ ] Add support for a while loop
+
 # Built-in Functions
 
 - [X] len
 - [X] import
-- [ ] gc - which is actually a force gc
+- [X] gc - which is actually a force gc
 - [ ] print
 - [ ] println
 

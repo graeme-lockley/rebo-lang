@@ -1052,6 +1052,7 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
 
     try state.openScope();
 
+    try addBuiltin(&state, "gc", &[0]V.FunctionArgument{}, null, &Builtins.gc);
     try addBuiltin(&state, "import", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "file",
         .default = null,
