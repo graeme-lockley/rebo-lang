@@ -20,14 +20,6 @@ let filter(l, f) = {
   filterLoop(l)
 }
 
-let prime?(n = 0) = {
-  let testPrime(i = 2) =
-    if i * i > n -> true
-     | n % i == 0 -> false
-     | testPrime(i + 1)
+let prime? = import("prime.rebo").prime?
 
-  if n < 2 -> false
-   | testPrime()
-}
-
-filter(range(1000), prime?)
+filter(range(500), prime?)

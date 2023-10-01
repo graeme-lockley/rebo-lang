@@ -199,6 +199,15 @@ pub const MemoryState = struct {
         }
     }
 
+    pub fn reset(self: *MemoryState) !void {
+        while (self.scopes.items.len > 2) {
+            self.restoreScope();
+        }
+
+        self.stack.deinit();
+        self.stack = std.ArrayList(*V.Value).init(self.allocator);
+    }
+
     pub fn deinit(self: *MemoryState) void {
         // Leave this code in - helpful to use when debugging memory leaks.
         // The code following this comment block just nukes the allocated
@@ -315,6 +324,7 @@ fn sweep(state: *MemoryState, colour: V.Colour) void {
 fn force_gc(state: *MemoryState) void {
     const new_colour = if (state.colour == V.Colour.Black) V.Colour.White else V.Colour.Black;
 
+    state.imports.mark(new_colour);
     if (state.unitValue != null) {
         markValue(state.unitValue.?, new_colour);
     }
@@ -375,8 +385,17 @@ pub const Imports = struct {
         }
     }
 
-    pub fn addImport(self: *Imports, name: []const u8, items: *V.Value, e: *AST.Expression) !void {
-        try self.items.put(try self.allocator.dupe(u8, name), Import{ .items = items, .ast = e });
+    pub fn addImport(self: *Imports, name: []const u8, items: ?*V.Value, e: *AST.Expression) !void {
+        const oldName = self.items.getKey(name);
+
+        if (oldName == null) {
+            try self.items.put(try self.allocator.dupe(u8, name), Import{ .items = items, .ast = e });
+        } else {
+            try self.items.put(oldName.?, Import{ .items = items, .ast = e });
+        }
+
+        // try self.items.put(try self.allocator.dupe(u8, name), Import{ .items = items, .ast = e });
+        // self.dump();
     }
 
     pub fn addAnnie(self: *Imports, e: *AST.Expression) !void {
@@ -387,6 +406,18 @@ pub const Imports = struct {
         self.annie += 1;
 
         try self.items.put(try buffer.toOwnedSlice(), Import{ .items = null, .ast = e });
+        // self.dump();
+    }
+
+    pub fn find(self: *Imports, name: []const u8) ?Import {
+        return self.items.get(name);
+    }
+
+    fn dump(self: *Imports) void {
+        var iterator = self.items.iterator();
+        while (iterator.next()) |entry| {
+            std.log.info("- {s}: {?}", .{ entry.key_ptr.*, entry.value_ptr.*.items });
+        }
     }
 };
 

@@ -1057,10 +1057,14 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .default = null,
     }}, null, &Builtins.import);
 
+    try addBuiltin(&state, "imports", &[0]V.FunctionArgument{}, null, &Builtins.imports);
+
     try addBuiltin(&state, "len", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "v",
         .default = null,
     }}, null, &Builtins.len);
+
+    try state.openScope();
 
     return state;
 }
@@ -1166,8 +1170,7 @@ pub const Machine = struct {
 
     pub fn reset(self: *Machine) !void {
         self.eraseErr();
-        self.memoryState.deinit();
-        self.memoryState = try initMemoryState(self.memoryState.allocator);
+        try self.memoryState.reset();
     }
 };
 

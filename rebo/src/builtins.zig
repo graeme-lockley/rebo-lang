@@ -26,43 +26,69 @@ fn ffn(allocator: std.mem.Allocator, fromSourceName: ?[]const u8, fileName: []co
     }
 
     if (fromSourceName == null) {
-        return std.fs.path.join(allocator, &[_][]const u8{ ".", fileName });
+        var buffer = std.ArrayList(u8).init(allocator);
+        defer buffer.deinit();
+
+        return try std.fs.cwd().realpathAlloc(allocator, fileName);
     }
 
     const dirname = std.fs.path.dirname(fromSourceName.?).?;
-    return std.fs.path.join(allocator, &[_][]const u8{ dirname, fileName });
+    const dir = try std.fs.openDirAbsolute(dirname, std.fs.Dir.OpenDirOptions{ .access_sub_paths = false, .no_follow = false });
+
+    return try dir.realpathAlloc(allocator, fileName);
 }
 
 test "ffn" {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const allocator = arena.allocator();
-    const expectEqual = std.testing.expectEqual;
-    _ = expectEqual;
+    // This test is commented out because it requires tinkering to work and therefore serves as an exploratory test.
 
-    try std.testing.expectEqualSlices(u8, "/hello.txt", try ffn(allocator, null, "/hello.txt"));
+    // var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    // defer arena.deinit();
+    // const allocator = arena.allocator();
+
+    // try std.testing.expectEqualSlices(u8, "/hello.txt", try ffn(allocator, null, "/hello.txt"));
+    // try std.testing.expectEqualSlices(u8, "test/simple.rebo", try ffn(allocator, null, "test/simple.rebo"));
+    // try std.testing.expectEqualSlices(u8, "test/simple.rebo", try ffn(allocator, "/Users/graemelockley/Projects/rebo-lang/rebo/test/simple.rebo", "../src/ast.zig"));
 }
 
 fn fullFileName(machine: *Machine, fileName: []const u8) ![]u8 {
-    if (std.fs.path.isAbsolute(fileName)) {
-        return try machine.memoryState.allocator.dupe(u8, fileName);
-    }
-
     const fromSourceName = machine.memoryState.getFromScope("__FILE");
-
-    if (fromSourceName == null) {
-        return std.fs.path.join(machine.memoryState.allocator, &[_][]const u8{ ".", fileName });
-    }
-
-    const dirname = std.fs.path.dirname(fromSourceName.?.v.StringKind).?;
-    return std.fs.path.join(machine.memoryState.allocator, &[_][]const u8{ dirname, fileName });
+    return try ffn(machine.memoryState.allocator, if (fromSourceName == null) null else fromSourceName.?.v.StringKind, fileName);
 }
 
 test "fullFileName" {}
 
-fn importFile(machine: *Machine, fileName: []const u8) !void {
-    const name = try fullFileName(machine, fileName);
+pub fn importFile(machine: *Machine, fileName: []const u8) !void {
+    const name = fullFileName(machine, fileName) catch |err| {
+        try machine.memoryState.pushEmptyMapValue();
+
+        const record = machine.memoryState.peek(0);
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "FileError") }));
+
+        var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+        defer buffer.deinit();
+
+        try std.fmt.format(buffer.writer(), "{}", .{err});
+
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
+
+        return;
+    };
     defer machine.memoryState.allocator.free(name);
+
+    const loadedImport = machine.memoryState.imports.find(name);
+    if (loadedImport != null) {
+        if (loadedImport.?.items == null) {
+            std.log.err("Fatal Error: Cyclic Import: {s}", .{name});
+            std.os.exit(1);
+            return;
+        }
+
+        try machine.memoryState.push(loadedImport.?.items.?);
+        return;
+    }
+
+    std.log.info("loading import {s}...", .{name});
 
     const content = loadBinary(machine.memoryState.allocator, name) catch |err| {
         try machine.memoryState.pushEmptyMapValue();
@@ -102,6 +128,8 @@ fn importFile(machine: *Machine, fileName: []const u8) !void {
         return;
     };
     errdefer AST.destroy(machine.memoryState.allocator, ast);
+
+    try machine.memoryState.imports.addImport(name, null, ast);
 
     machine.eval(ast) catch |err| {
         try machine.memoryState.pushEmptyMapValue();
@@ -146,6 +174,25 @@ pub fn import(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Exp
 
 test "import" {
     try Main.expectExprEqual("import(\"./test/simple.rebo\").x", "10");
+}
+
+pub fn imports(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    _ = argsAST;
+    _ = calleeAST;
+    try machine.memoryState.pushEmptyMapValue();
+
+    const result = machine.memoryState.peek(0);
+
+    var iterator = machine.memoryState.imports.items.iterator();
+    while (iterator.next()) |entry| {
+        const items: *V.Value = if (entry.value_ptr.*.items == null) machine.memoryState.unitValue.? else entry.value_ptr.*.items.?;
+
+        // unitValues are not stored in a record set so the repl lines will not be included in the result.
+        // if you would like to see them then comment out the statement below.
+        // const items: *V.Value = if (entry.value_ptr.*.items == null) try machine.memoryState.newValue(V.ValueValue{ .RecordKind = std.StringHashMap(*V.Value).init(machine.memoryState.allocator) }) else entry.value_ptr.*.items.?;
+
+        try V.recordSet(machine.memoryState.allocator, &result.v.RecordKind, entry.key_ptr.*, items);
+    }
 }
 
 pub fn loadBinary(allocator: std.mem.Allocator, fileName: []const u8) ![]u8 {

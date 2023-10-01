@@ -107,16 +107,20 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 # Built-in Functions
 
-- [ ] import
+- [X] len
+- [X] import
+- [ ] gc - which is actually a force gc
+- [ ] print
+- [ ] println
 
 # REPL Features
 
-- [ ] Add support for state in the REPL
+- [X] Add support for state in the REPL
 - [ ] Add a `readline` like capability into the REPL
 
 # Chore Features
 
 - [X] Add a github pipeline to continuously test the project
 - [ ] Expand the pipeline to test against Linux and Mac OS
-- [ ] Place the AST under garbage collection.  At the moment it is not which makes AST memory management impossible.
+- [X] Place the AST under garbage collection.  At the moment it is not which makes AST memory management impossible.
 - [ ] Add a string heap to store identifier names and field names.  This will reduce memory footprint and allow for faster comparisons.

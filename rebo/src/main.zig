@@ -20,17 +20,14 @@ pub fn main() !void {
     if (args.len == 3 and std.mem.eql(u8, args[1], "run")) {
         const startTime = std.time.milliTimestamp();
 
-        const buffer: []u8 = try Builtins.loadBinary(allocator, args[2]);
-        defer allocator.free(buffer);
-
-        const loadBinaryTime = std.time.milliTimestamp();
         var machine = try Machine.Machine.init(allocator);
         defer machine.deinit();
 
-        execute(&machine, args[2], buffer);
+        try Builtins.importFile(&machine, args[2]);
+
         const executeTime = std.time.milliTimestamp();
         try printResult(allocator, machine.topOfStack());
-        std.log.info("time: load: {d}ms, execute: {d}ms", .{ loadBinaryTime - startTime, executeTime - loadBinaryTime });
+        std.log.info("time: {d}ms", .{executeTime - startTime});
     } else if (args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
         var buffer = try allocator.alloc(u8, 1024);
         defer allocator.free(buffer);
