@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const AST = @import("./ast.zig");
-const Builtins = @import("./Builtins.zig");
+const Builtins = @import("./builtins.zig");
 const Errors = @import("./errors.zig");
 const Lexer = @import("./lexer.zig");
 const MS = @import("./memory_state.zig");
