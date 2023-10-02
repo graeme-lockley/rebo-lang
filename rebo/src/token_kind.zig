@@ -14,6 +14,7 @@ pub const TokenKind = enum {
     Fn,
     If,
     Let,
+    While,
 
     AmpersandAmpersand,
     BangEqual,
@@ -60,6 +61,7 @@ pub const TokenKind = enum {
             TokenKind.Fn => return "fn",
             TokenKind.If => return "if",
             TokenKind.Let => return "let",
+            TokenKind.While => return "while",
 
             TokenKind.AmpersandAmpersand => return "'&&'",
             TokenKind.BangEqual => return "'!='",

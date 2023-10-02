@@ -11,6 +11,7 @@ const keywords = std.ComptimeStringMap(TokenKind, .{
     .{ "fn", TokenKind.Fn },
     .{ "if", TokenKind.If },
     .{ "let", TokenKind.Let },
+    .{ "while", TokenKind.While },
 });
 
 fn isAlpha(c: u8) bool {
@@ -393,7 +394,7 @@ const expectEqualStrings = std.testing.expectEqualStrings;
 
 test "identifier and keywords" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " foo fn if let ");
+    try lexer.initBuffer("console", " foo fn if let while ");
 
     try expectEqual(lexer.current.kind, TokenKind.Identifier);
     try expectEqualStrings(lexer.lexeme(lexer.current), "foo");
@@ -403,6 +404,8 @@ test "identifier and keywords" {
     try expectEqual(lexer.current.kind, TokenKind.If);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Let);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.While);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }

@@ -1,4 +1,4 @@
-let prime?(n = 0) = {
+let prime?(n = 0) = {  
   let testPrime(i = 2) =
     if i * i > n -> true
      | n % i == 0 -> false

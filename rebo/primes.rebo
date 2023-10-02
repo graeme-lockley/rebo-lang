@@ -4,11 +4,13 @@ let range(min = 10, max) = {
     min := 0
   }
 
-  let loop(l, acc) =
-    if l >= max -> acc
-     | loop(l + 1, acc + [l])       
+  let result = []
+  while min < max -> {
+    result := result + [min]
+    min := min + 1
+  }
 
-  loop(min, [])
+  result
 }
 
 let filter(l, f) = {

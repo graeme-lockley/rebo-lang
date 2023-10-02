@@ -115,6 +115,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         },
         .literalString => machine.createStringValue(e.kind.literalString) catch |err| return errorHandler(err),
         .literalVoid => machine.createVoidValue() catch |err| return errorHandler(err),
+        .whilee => return whilee(machine, e),
     }
 
     return false;
@@ -1011,6 +1012,31 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, exprA.position, expected, expr.v));
         return true;
     }
+
+    return false;
+}
+
+fn whilee(machine: *Machine, e: *AST.Expression) bool {
+    while (true) {
+        if (evalExpr(machine, e.kind.whilee.condition)) return true;
+
+        const condition = machine.memoryState.pop();
+
+        if (condition.v != V.ValueValue.BoolKind) {
+            machine.replaceErr(Errors.expectedATypeError(machine.memoryState.allocator, e.kind.whilee.condition.position, V.ValueValue.BoolKind, condition.v) catch |err| return errorHandler(err));
+            return true;
+        }
+
+        if (!condition.v.BoolKind) {
+            break;
+        }
+
+        if (evalExpr(machine, e.kind.whilee.body)) return true;
+
+        _ = machine.memoryState.pop();
+    }
+
+    machine.createVoidValue() catch |err| return errorHandler(err);
 
     return false;
 }

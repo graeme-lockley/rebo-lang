@@ -126,6 +126,20 @@ pub const Parser = struct {
             const v = try self.allocator.create(AST.Expression);
             v.* = AST.Expression{ .kind = AST.ExpressionKind{ .ifte = try couples.toOwnedSlice() }, .position = Errors.Position{ .start = ifToken.start, .end = self.lexer.current.end } };
             return v;
+        } else if (self.currentTokenKind() == Lexer.TokenKind.While) {
+            const whileToken = try self.nextToken();
+
+            const condition = try self.expression();
+            errdefer AST.destroy(self.allocator, condition);
+
+            try self.matchSkipToken(Lexer.TokenKind.MinusGreater);
+
+            const body = try self.expression();
+            errdefer AST.destroy(self.allocator, body);
+
+            const v = try self.allocator.create(AST.Expression);
+            v.* = AST.Expression{ .kind = AST.ExpressionKind{ .whilee = AST.WhileExpression{ .condition = condition, .body = body } }, .position = Errors.Position{ .start = whileToken.start, .end = body.position.end } };
+            return v;
         } else {
             var lhs = try self.orExpr();
             errdefer AST.destroy(self.allocator, lhs);

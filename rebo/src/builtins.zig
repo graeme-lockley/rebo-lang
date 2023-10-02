@@ -124,6 +124,8 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
     defer machine.memoryState.allocator.free(content);
 
     try machine.memoryState.openScopeFrom(machine.memoryState.topScope());
+    defer machine.memoryState.restoreScope();
+
     try machine.memoryState.addToScope("__FILE", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
 
     const ast = machine.parse(fileName, content) catch |err| {
@@ -177,8 +179,6 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
         }
         try V.recordSet(machine.memoryState.allocator, &result.v.RecordKind, entryName, entry.value_ptr.*);
     }
-
-    defer machine.memoryState.restoreScope();
 
     try machine.memoryState.imports.addImport(name, result, ast);
 }

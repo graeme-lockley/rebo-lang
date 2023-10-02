@@ -62,6 +62,7 @@ pub const ExpressionKind = union(enum) {
     literalSequence: []LiteralSequenceValue,
     literalString: []u8,
     literalVoid: void,
+    whilee: WhileExpression,
 };
 
 pub const AssignmentExpression = struct {
@@ -154,6 +155,11 @@ pub const RecordEntry = union(enum) {
     record: *Expression,
 };
 
+pub const WhileExpression = struct {
+    condition: *Expression,
+    body: *Expression,
+};
+
 pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
     switch (expr.kind) {
         .assignment => {
@@ -229,6 +235,10 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
             allocator.free(expr.kind.literalSequence);
         },
         .literalString => allocator.free(expr.kind.literalString),
+        .whilee => {
+            destroy(allocator, expr.kind.whilee.condition);
+            destroy(allocator, expr.kind.whilee.body);
+        },
     }
 
     allocator.destroy(expr);
