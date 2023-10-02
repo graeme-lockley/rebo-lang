@@ -114,6 +114,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] len
 - [X] import
 - [X] gc - which is actually a force gc
+- [X] typeof
 - [ ] print
 - [ ] println
 

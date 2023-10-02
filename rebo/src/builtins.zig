@@ -249,3 +249,38 @@ test "len" {
     try Main.expectExprEqual("len(\"x\")", "1");
     try Main.expectExprEqual("len(\"hello\")", "5");
 }
+
+pub fn typeof(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    _ = argsAST;
+    _ = calleeAST;
+
+    const v = machine.memoryState.getFromScope("v") orelse machine.memoryState.unitValue;
+
+    const typeName = switch (v.?.v) {
+        V.ValueKind.BoolKind => "Bool",
+        V.ValueKind.BuiltinKind => "Function",
+        V.ValueKind.CharKind => "Char",
+        V.ValueKind.FunctionKind => "Function",
+        V.ValueKind.FloatKind => "Float",
+        V.ValueKind.IntKind => "Int",
+        V.ValueKind.SequenceKind => "Sequence",
+        V.ValueKind.StringKind => "String",
+        V.ValueKind.RecordKind => "Record",
+        V.ValueKind.ScopeKind => "Scope",
+        V.ValueKind.VoidKind => "Unit",
+    };
+    try machine.memoryState.pushStringValue(typeName);
+}
+
+test "typeof" {
+    try Main.expectExprEqual("typeof(true)", "\"Bool\"");
+    try Main.expectExprEqual("typeof(len)", "\"Function\"");
+    try Main.expectExprEqual("typeof('x')", "\"Char\"");
+    try Main.expectExprEqual("typeof(fn() = ())", "\"Function\"");
+    try Main.expectExprEqual("typeof(1.0)", "\"Float\"");
+    try Main.expectExprEqual("typeof(1)", "\"Int\"");
+    try Main.expectExprEqual("typeof([])", "\"Sequence\"");
+    try Main.expectExprEqual("typeof({})", "\"Record\"");
+    try Main.expectExprEqual("typeof(())", "\"Unit\"");
+    try Main.expectExprEqual("typeof()", "\"Unit\"");
+}

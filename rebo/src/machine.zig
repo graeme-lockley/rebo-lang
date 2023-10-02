@@ -1065,6 +1065,11 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .default = null,
     }}, null, &Builtins.len);
 
+    try addBuiltin(&state, "typeof", &[_]V.FunctionArgument{V.FunctionArgument{
+        .name = "v",
+        .default = null,
+    }}, null, &Builtins.typeof);
+
     try state.openScope();
 
     return state;
