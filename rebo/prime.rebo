@@ -1,11 +1,19 @@
 let prime?(n = 0) = {  
-  let testPrime(i = 2) =
-    if i * i > n -> true
-     | n % i == 0 -> false
-     | testPrime(i + 1)
-
   if n < 2 -> false
-   | testPrime()
+   | n == 2 -> true
+   | { 
+        let finished = false
+        let i = 2
+        let result = true
+
+        while finished == false -> {
+           if i * i > n -> finished := true
+            | n % i == 0 -> { finished := true; result := false }
+            | i := i + 1
+        }
+
+        result
+      }
 }
 
 let nextLargestPrime(n) =
