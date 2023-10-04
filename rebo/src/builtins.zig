@@ -367,9 +367,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *V.Value) !void {
     }
 }
 
-fn printSequence(vs: *V.Value) !void {
-    const stdout = std.io.getStdOut().writer();
-
+fn printSequence(stdout: std.fs.File.Writer, vs: *V.Value) !void {
     switch (vs.v) {
         V.ValueKind.SequenceKind => {
             for (vs.v.SequenceKind) |v| {
@@ -383,9 +381,10 @@ fn printSequence(vs: *V.Value) !void {
 pub fn print(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;
+    const stdout = std.io.getStdOut().writer();
     const vs = machine.memoryState.getFromScope("vs") orelse machine.memoryState.unitValue;
 
-    printSequence(vs.?) catch {};
+    printSequence(stdout, vs.?) catch {};
 
     try machine.memoryState.pushUnitValue();
 }
@@ -396,7 +395,7 @@ pub fn println(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Ex
     const stdout = std.io.getStdOut().writer();
     const vs = machine.memoryState.getFromScope("vs") orelse machine.memoryState.unitValue;
 
-    printSequence(vs.?) catch {};
+    printSequence(stdout, vs.?) catch {};
     stdout.print("\n", .{}) catch {};
 
     try machine.memoryState.pushUnitValue();
