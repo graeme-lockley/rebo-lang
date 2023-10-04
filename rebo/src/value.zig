@@ -180,15 +180,12 @@ pub const Value = struct {
             },
             .SequenceKind => {
                 try buffer.append('[');
-                var i: usize = 0;
-                for (self.v.SequenceKind) |v| {
+                for (self.v.SequenceKind, 0..) |v, i| {
                     if (i != 0) {
                         try buffer.appendSlice(", ");
                     }
 
                     try v.appendValue(buffer);
-
-                    i += 1;
                 }
                 try buffer.append(']');
             },

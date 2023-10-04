@@ -250,6 +250,158 @@ test "len" {
     try Main.expectExprEqual("len(\"hello\")", "5");
 }
 
+fn printValue(stdout: std.fs.File.Writer, v: *V.Value) !void {
+    switch (v.v) {
+        .BoolKind => try stdout.print("{s}", .{if (v.v.BoolKind) "true" else "false"}),
+        .BuiltinKind => {
+            try stdout.print("fn(", .{});
+            for (v.v.BuiltinKind.arguments, 0..) |argument, i| {
+                if (i != 0) {
+                    try stdout.print(", ", .{});
+                }
+
+                try stdout.print("{s}", .{argument.name});
+                if (argument.default != null) {
+                    try stdout.print(" = ", .{});
+                    try printValue(stdout, argument.default.?);
+                }
+            }
+            if (v.v.BuiltinKind.restOfArguments != null) {
+                if (v.v.BuiltinKind.arguments.len > 0) {
+                    try stdout.print(", ", .{});
+                }
+
+                try stdout.print("...{s}", .{v.v.BuiltinKind.restOfArguments.?});
+            }
+            try stdout.print(")", .{});
+        },
+        .CharKind => try stdout.print("{c}", .{v.v.CharKind}),
+        .FloatKind => try stdout.print("{d}", .{v.v.FloatKind}),
+        .FunctionKind => {
+            try stdout.print("fn(", .{});
+            for (v.v.FunctionKind.arguments, 0..) |argument, i| {
+                if (i != 0) {
+                    try stdout.print(", ", .{});
+                }
+
+                try stdout.print("{s}", .{argument.name});
+                if (argument.default != null) {
+                    try stdout.print(" = ", .{});
+                    try printValue(stdout, argument.default.?);
+                }
+            }
+            if (v.v.FunctionKind.restOfArguments != null) {
+                if (v.v.BuiltinKind.arguments.len > 0) {
+                    try stdout.print(", ", .{});
+                }
+
+                try stdout.print("...{s}", .{v.v.BuiltinKind.restOfArguments.?});
+            }
+            try stdout.print(")", .{});
+        },
+        .IntKind => try stdout.print("{d}", .{v.v.IntKind}),
+        .RecordKind => {
+            var first = true;
+
+            try stdout.print("{s}", .{"{"});
+            var iterator = v.v.RecordKind.iterator();
+            while (iterator.next()) |entry| {
+                if (first) {
+                    first = false;
+                } else {
+                    try stdout.print(", ", .{});
+                }
+
+                try stdout.print("{s}: ", .{entry.key_ptr.*});
+                try printValue(stdout, entry.value_ptr.*);
+            }
+            try stdout.print("{s}", .{"}"});
+        },
+        .ScopeKind => {
+            var first = true;
+            var runner: ?*V.Value = v;
+
+            try stdout.print("<", .{});
+            while (true) {
+                if (first) {
+                    first = false;
+                } else {
+                    try stdout.print(" ", .{});
+                }
+
+                try stdout.print("{s}", .{"{"});
+                var innerFirst = true;
+                var iterator = runner.?.v.ScopeKind.values.iterator();
+                while (iterator.next()) |entry| {
+                    if (innerFirst) {
+                        innerFirst = false;
+                    } else {
+                        try stdout.print(", ", .{});
+                    }
+                    try stdout.print("{s}: ", .{entry.key_ptr.*});
+                    try printValue(stdout, entry.value_ptr.*);
+                }
+                try stdout.print("{s}", .{"}"});
+
+                if (runner.?.v.ScopeKind.parent == null) {
+                    break;
+                }
+
+                runner = runner.?.v.ScopeKind.parent;
+            }
+            try stdout.print(">", .{});
+        },
+        .SequenceKind => {
+            try stdout.print("[", .{});
+            for (v.v.SequenceKind, 0..) |item, i| {
+                if (i != 0) {
+                    try stdout.print(", ", .{});
+                }
+
+                try printValue(stdout, item);
+            }
+            try stdout.print("]", .{});
+        },
+        .StringKind => try stdout.print("{s}", .{v.v.StringKind}),
+        .VoidKind => try stdout.print("()", .{}),
+    }
+}
+
+fn printSequence(vs: *V.Value) !void {
+    const stdout = std.io.getStdOut().writer();
+
+    switch (vs.v) {
+        V.ValueKind.SequenceKind => {
+            for (vs.v.SequenceKind) |v| {
+                try printValue(stdout, v);
+            }
+        },
+        else => try printValue(stdout, vs),
+    }
+}
+
+pub fn print(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    _ = argsAST;
+    _ = calleeAST;
+    const vs = machine.memoryState.getFromScope("vs") orelse machine.memoryState.unitValue;
+
+    printSequence(vs.?) catch {};
+
+    try machine.memoryState.pushUnitValue();
+}
+
+pub fn println(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    _ = argsAST;
+    _ = calleeAST;
+    const stdout = std.io.getStdOut().writer();
+    const vs = machine.memoryState.getFromScope("vs") orelse machine.memoryState.unitValue;
+
+    printSequence(vs.?) catch {};
+    stdout.print("\n", .{}) catch {};
+
+    try machine.memoryState.pushUnitValue();
+}
+
 pub fn typeof(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;
