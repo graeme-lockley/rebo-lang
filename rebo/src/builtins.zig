@@ -250,6 +250,12 @@ test "len" {
     try Main.expectExprEqual("len(\"hello\")", "5");
 }
 
+pub fn milliTimestamp(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    _ = argsAST;
+    _ = calleeAST;
+    try machine.memoryState.pushIntValue(@intCast(std.time.milliTimestamp()));
+}
+
 fn printValue(stdout: std.fs.File.Writer, v: *V.Value) !void {
     switch (v.v) {
         .BoolKind => try stdout.print("{s}", .{if (v.v.BoolKind) "true" else "false"}),
