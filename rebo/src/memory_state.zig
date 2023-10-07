@@ -358,12 +358,13 @@ fn gc(state: *MemoryState) void {
     const threshold_rate = 0.75;
 
     if (state.memory_size > state.memory_capacity) {
-        const gcResult = force_gc(state);
-        std.log.info("gc: time={d}ms, nodes freed={d}, heap size: {d}", .{ gcResult.duration, gcResult.oldSize - gcResult.newSize, gcResult.newSize });
+        _ = force_gc(state);
+        // const gcResult = force_gc(state);
+        // std.log.info("gc: time={d}ms, nodes freed={d}, heap size: {d}", .{ gcResult.duration, gcResult.oldSize - gcResult.newSize, gcResult.newSize });
 
         if (@as(f32, @floatFromInt(state.memory_size)) / @as(f32, @floatFromInt(state.memory_capacity)) > threshold_rate) {
             state.memory_capacity *= 2;
-            std.log.info("gc: double heap capacity to {}", .{state.memory_capacity});
+            // std.log.info("gc: double heap capacity to {}", .{state.memory_capacity});
         }
     }
 }
