@@ -8,8 +8,9 @@ Expression
     : "let" Pattern "=" Expression
     | "let" Identifier FunctionTail
     | "if" ["|"] Expression "->" Expression {"|" Expression "->" Expression}
+    | "while" Expression "->" Expression
     | "match" Expression MatchCase {MatchCase}
-    | Or [":=" Expression]
+    | Pipe [":=" Expression]
     ;
 
 MatchCase
@@ -33,6 +34,8 @@ MapPattern
     : Identifier [":" Pattern] ["@" Identifier]
     ;
 
+Pipe
+    : Or {"|>" Or}
 Or
     : And {"||" And}
     ;
@@ -80,7 +83,7 @@ Factor
     ;
 
 FunctionTail
-    : Parameters "=" Expression
+    : Parameters ["="] Expression
     ;
 
 RecordItem

@@ -4,11 +4,11 @@ let harness(title) = {
   let tests = []
 
   let self = {
-    eq: fn(name, result, expected) = {
+    eq: fn(name, result, expected) {
       tests := [...tests, {name: name, passed?: result == expected, result: result, expected: expected, duration: _resetTimestamp!()}]
     },
     assert: fn(name, result) = self.eq(name, result, true),
-    suite: fn(name, runner) =  {
+    suite: fn(name, runner) {
         let r = harness(title + ": " + name)
         tests := [...tests, r]
 
@@ -16,7 +16,7 @@ let harness(title) = {
 
         r
     },
-    report: fn(totals = false) = {
+    report: fn(totals = false) {
       _reportSuite(title, tests, totals)
     }
   }
@@ -29,17 +29,17 @@ let harness(title) = {
 let _suite?(t) = t.passed? == ()
 let _test?(t) = t.passed? != ()
 
-let _reportSuite(title, tests, totals) = {
+let _reportSuite(title, tests, totals) {
   let endTime = if totals -> _resetTimestamp!() | 0
 
   let ansi = Std.ansi
 
-  let actuals = Std.filter(tests, _test?)
+  let actuals = tests |> Std.filter(_test?)
 
   if len(actuals) > 0 -> {
     println(ansi.foreground.lightGray, "run ", len(actuals), " tests from ", title, ansi.control.reset);
 
-    Std.each(actuals, fn(t) = {
+    actuals |> Std.each(fn(t) = {
       let name = t.name
       let passed = t.passed?
       let result = t.result
@@ -62,8 +62,9 @@ let _reportSuite(title, tests, totals) = {
     failed: len(Std.filter(actuals, fn(test) = !test.passed?))
   }
 
-  let suites = Std.filter(tests, _suite?)
-  Std.each(suites, fn(suite) = _addTotal!(suiteTotals, suite.report()))
+  tests 
+    |> Std.filter(_suite?) 
+    |> Std.each(fn(suite) = _addTotal!(suiteTotals, suite.report()))
 
   if totals -> {
     println()
@@ -80,13 +81,13 @@ let _reportSuite(title, tests, totals) = {
 
 let _timestamp = 0
 
-let _resetTimestamp!() = {
+let _resetTimestamp!() {
   let current = _timestamp
   _timestamp := milliTimestamp()
   _timestamp - current
 }
 
-let _addTotal!(totals, t) = {
+let _addTotal!(totals, t) {
   totals.total := totals.total + t.total;
   totals.passed := totals.passed + t.passed;
   totals.failed := totals.failed + t.failed;

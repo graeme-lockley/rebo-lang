@@ -185,6 +185,9 @@ pub const Lexer = struct {
                 if (self.currentCharacter() == '|') {
                     self.skipCharacter();
                     self.current = Token{ .kind = TokenKind.BarBar, .start = tokenStart, .end = self.offset };
+                } else if (self.currentCharacter() == '>') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.BarGreater, .start = tokenStart, .end = self.offset };
                 } else {
                     self.current = Token{ .kind = TokenKind.Bar, .start = tokenStart, .end = self.offset };
                 }
@@ -493,9 +496,9 @@ test "literal string" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / % = == ! != < <= > >= && || [ { ( , . ... : := ; -> | ] } )" {
+test "+ - * / % = == ! != < <= > >= && || [ { ( , . ... : := ; -> | |> ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / % = == ! != < <= > >= && || [ { ( , . ... : := ; -> | ] } ) ");
+    try lexer.initBuffer("console", " + - * / % = == ! != < <= > >= && || [ { ( , . ... : := ; -> | |> ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -548,6 +551,8 @@ test "+ - * / % = == ! != < <= > >= && || [ { ( , . ... : := ; -> | ] } )" {
     try expectEqual(lexer.current.kind, TokenKind.MinusGreater);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Bar);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.BarGreater);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.RBracket);
     try lexer.next();

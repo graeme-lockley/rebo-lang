@@ -141,7 +141,7 @@ pub const Parser = struct {
             v.* = AST.Expression{ .kind = AST.ExpressionKind{ .whilee = AST.WhileExpression{ .condition = condition, .body = body } }, .position = Errors.Position{ .start = whileToken.start, .end = body.position.end } };
             return v;
         } else {
-            var lhs = try self.orExpr();
+            var lhs = try self.pipeExpr();
             errdefer AST.destroy(self.allocator, lhs);
 
             if (self.currentTokenKind() == Lexer.TokenKind.ColonEqual) {
@@ -159,6 +159,36 @@ pub const Parser = struct {
 
             return lhs;
         }
+    }
+
+    fn pipeExpr(self: *Parser) Errors.err!*AST.Expression {
+        var lhs = try self.orExpr();
+        errdefer AST.destroy(self.allocator, lhs);
+
+        while (self.currentTokenKind() == Lexer.TokenKind.BarGreater) {
+            try self.skipToken();
+
+            const rhs = try self.orExpr();
+            errdefer AST.destroy(self.allocator, rhs);
+
+            if (rhs.kind == .call) {
+                const args = try self.allocator.alloc(*AST.Expression, rhs.kind.call.args.len + 1);
+                errdefer self.allocator.free(args);
+
+                args[0] = lhs;
+                for (rhs.kind.call.args, 0..) |arg, idx| {
+                    args[idx + 1] = arg;
+                }
+                self.allocator.free(rhs.kind.call.args);
+                rhs.kind.call.args = args;
+
+                lhs = rhs;
+            } else {
+                unreachable;
+            }
+        }
+
+        return lhs;
     }
 
     fn orExpr(self: *Parser) Errors.err!*AST.Expression {
@@ -687,7 +717,9 @@ pub const Parser = struct {
             self.allocator.free(params);
         }
 
-        try self.matchSkipToken(Lexer.TokenKind.Equal);
+        if (self.currentTokenKind() == Lexer.TokenKind.Equal) {
+            try self.skipToken();
+        }
 
         const body = try self.expression();
         errdefer AST.destroy(self.allocator, body);
