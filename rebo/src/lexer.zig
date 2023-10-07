@@ -107,9 +107,12 @@ pub const Lexer = struct {
             self.skipCharacter();
         }
 
-        if (self.currentCharacter() == '#') {
+        while (self.currentCharacter() == '#') {
             self.skipCharacter();
             while (!self.atEnd() and self.currentCharacter() != '\n') {
+                self.skipCharacter();
+            }
+            while (!self.atEnd() and self.currentCharacter() <= ' ') {
                 self.skipCharacter();
             }
         }
