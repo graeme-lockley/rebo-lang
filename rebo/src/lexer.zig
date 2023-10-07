@@ -107,6 +107,13 @@ pub const Lexer = struct {
             self.skipCharacter();
         }
 
+        if (self.currentCharacter() == '#') {
+            self.skipCharacter();
+            while (!self.atEnd() and self.currentCharacter() != '\n') {
+                self.skipCharacter();
+            }
+        }
+
         if (self.atEnd()) {
             self.current = Token{ .kind = TokenKind.EOS, .start = self.sourceLength, .end = self.sourceLength };
             return;
