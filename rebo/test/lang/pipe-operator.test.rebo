@@ -1,0 +1,30 @@
+let run(suite) = {
+  "|> into user defined function" |> 
+    suite.eq({ 
+      let f(a = 0, b = 0) = a + b
+
+      1 |> f(2)
+    }, 3)
+
+  "|> into builtin function" |> 
+    suite.eq([1, 2, 3] |> len(), 3)
+
+
+  "<| into user defined function" |> 
+    suite.eq({ 
+      let f(a = 0, b = 0) = a + b
+
+      f(1) <| 2
+    }, 3)
+
+  "<| into builtin function" |> 
+    suite.eq(len() <| [1, 2, 3], 3)
+
+  "<| and |> into user defined function" |> 
+    suite.eq({ 
+      let f(a = 0, b = 0) = a + b
+
+      1 |> f() <| 2
+    }, 3)
+}
+

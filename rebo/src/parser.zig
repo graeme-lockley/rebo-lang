@@ -165,26 +165,49 @@ pub const Parser = struct {
         var lhs = try self.orExpr();
         errdefer AST.destroy(self.allocator, lhs);
 
-        while (self.currentTokenKind() == Lexer.TokenKind.BarGreater) {
-            try self.skipToken();
+        while (true) {
+            if (self.currentTokenKind() == Lexer.TokenKind.BarGreater) {
+                try self.skipToken();
 
-            const rhs = try self.orExpr();
-            errdefer AST.destroy(self.allocator, rhs);
+                const rhs = try self.orExpr();
+                errdefer AST.destroy(self.allocator, rhs);
 
-            if (rhs.kind == .call) {
-                const args = try self.allocator.alloc(*AST.Expression, rhs.kind.call.args.len + 1);
-                errdefer self.allocator.free(args);
+                if (rhs.kind == .call) {
+                    const args = try self.allocator.alloc(*AST.Expression, rhs.kind.call.args.len + 1);
+                    errdefer self.allocator.free(args);
 
-                args[0] = lhs;
-                for (rhs.kind.call.args, 0..) |arg, idx| {
-                    args[idx + 1] = arg;
+                    args[0] = lhs;
+                    for (rhs.kind.call.args, 0..) |arg, idx| {
+                        args[idx + 1] = arg;
+                    }
+                    self.allocator.free(rhs.kind.call.args);
+                    rhs.kind.call.args = args;
+
+                    lhs = rhs;
+                } else {
+                    unreachable;
                 }
-                self.allocator.free(rhs.kind.call.args);
-                rhs.kind.call.args = args;
+            } else if (self.currentTokenKind() == Lexer.TokenKind.LessBar) {
+                try self.skipToken();
 
-                lhs = rhs;
+                const rhs = try self.orExpr();
+                errdefer AST.destroy(self.allocator, rhs);
+
+                if (lhs.kind == .call) {
+                    const args = try self.allocator.alloc(*AST.Expression, lhs.kind.call.args.len + 1);
+                    errdefer self.allocator.free(args);
+
+                    args[lhs.kind.call.args.len] = rhs;
+                    for (lhs.kind.call.args, 0..) |arg, idx| {
+                        args[idx] = arg;
+                    }
+                    self.allocator.free(lhs.kind.call.args);
+                    lhs.kind.call.args = args;
+                } else {
+                    unreachable;
+                }
             } else {
-                unreachable;
+                break;
             }
         }
 

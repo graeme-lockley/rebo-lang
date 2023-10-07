@@ -84,7 +84,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Boolean '||'
 - [X] Boolean '!'
 - [X] '|>' pipe operator
-- [ ] '<|' pipe operator
+- [X] '<|' pipe operator
 - [ ] '>>' prepend operator leaving the underlying structure unaffected
 - [ ] '>!' prepend operator changing the underlying structure
 - [ ] '<<' append operator leaving the underlying structure unaffected
