@@ -126,7 +126,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 ## Test
 
-- [ ] Tidy up the guards once `!` has been implemented
+- [X] Tidy up the guards once `!` has been implemented
 - [ ] Should a test fail then exit(1) otherwise exit(0) so that I can add into pipeline
 - [ ] Fix: duration of the entire test suite is incorrectly calculated
 
