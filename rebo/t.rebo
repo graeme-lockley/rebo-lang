@@ -1,4 +1,4 @@
-#!/Users/graemelockley/Projects/rebo-lang/rebo/zig-out/bin/rebo t.rebo
+#!/Users/graemelockley/Projects/rebo-lang/rebo/zig-out/bin/rebo
 
 let Test = import("lib/test.rebo")
 

@@ -1,0 +1,10 @@
+#!/Users/graemelockley/Projects/rebo-lang/rebo/zig-out/bin/rebo
+
+let Test = import("../lib/test.rebo")
+let test = Test.harness("suite.rebo")
+
+let _testSuite(name) = import("./" + name + ".test.rebo").run(test.suite(name))
+
+_testSuite("lang/if-statement")
+
+test.report(true)

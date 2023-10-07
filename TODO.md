@@ -100,6 +100,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 ## if
 
 - [X] Add support for if expressions
+- [X] The if guard succeeds if the expression is boolean and true.  It is synonymous with `guard == true`.  Equality does not fail if the values being compared are of different types.
 
 ## match
 
@@ -117,6 +118,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] typeof
 - [X] print
 - [X] println
+- [X] milliTimestamp
 
 # REPL Features
 

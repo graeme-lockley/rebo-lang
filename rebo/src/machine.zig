@@ -846,12 +846,7 @@ fn ifte(machine: *Machine, e: *AST.Expression) bool {
 
         const condition = machine.memoryState.pop();
 
-        if (condition.v != V.ValueValue.BoolKind) {
-            machine.replaceErr(Errors.boolValueExpectedError(machine.memoryState.allocator, case.condition.?.position, condition.v));
-            return true;
-        }
-
-        if (condition.v.BoolKind) {
+        if (condition.v == V.ValueValue.BoolKind and condition.v.BoolKind) {
             if (evalExpr(machine, case.then)) return true;
             return false;
         }
