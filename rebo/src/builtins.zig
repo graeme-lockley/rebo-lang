@@ -141,6 +141,18 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
 
         try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
         try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
+        const __file = machine.memoryState.getFromScope("__FILE");
+        if (__file != null) {
+            try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "__FILE", __file.?);
+        }
+
+        const e = machine.grabErr();
+        if (e == null) {
+            std.debug.print("Error: {}\n", .{err});
+        } else {
+            e.?.print() catch {};
+            e.?.deinit();
+        }
 
         return;
     };
@@ -161,6 +173,18 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
 
         try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
         try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
+        const __file = machine.memoryState.getFromScope("__FILE");
+        if (__file != null) {
+            try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "__FILE", __file.?);
+        }
+
+        const e = machine.grabErr();
+        if (e == null) {
+            std.debug.print("Error: {}\n", .{err});
+        } else {
+            e.?.print() catch {};
+            e.?.deinit();
+        }
 
         return;
     };
