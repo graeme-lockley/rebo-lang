@@ -25,3 +25,35 @@ let ansi = {
     darkGray: "\x27;[90m"
   }
 }
+
+
+# `each` calls the given iterator function `f` for each element of the iterable
+# `xs`. The iterator function receives arguments (`element`, `index`).
+let each(xs, f) = {
+  let lp = 0
+
+  while lp < len(xs) -> {
+    f(xs[lp], lp)
+
+    lp := lp + 1
+  }
+}
+
+# `filter` produces a sequence containing only the elements of `xs` that return
+# `true` when passed to the filter predicate `f`. `f` receives arguments 
+# (`element`, `index`).
+let filter(xs, f) = {
+  let result = []
+  let lp = 0
+
+  while lp < len(xs) -> {
+    let item = xs[lp]
+
+    if f(item, lp) -> {
+      result := result + [item]
+    }
+    lp := lp + 1
+  }
+
+  result
+}

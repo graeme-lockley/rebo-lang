@@ -1,0 +1,11 @@
+#!/Users/graemelockley/Projects/rebo-lang/rebo/zig-out/bin/rebo t.rebo
+
+let Test = import("lib/test.rebo")
+
+let test = Test.harness("t.rebo");
+
+let lenSuite = test.suite("len");
+lenSuite.eq("on empty record", len({}), 0)
+lenSuite.eq("on non-empty record", len({a: 1, b: 2}), 2)
+
+test.report(true)

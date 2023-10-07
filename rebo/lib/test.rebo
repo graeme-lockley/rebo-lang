@@ -1,0 +1,90 @@
+let Std = import("./std.rebo")
+
+let harness(title) = {
+  let tests = []
+
+  let self = {
+    eq: fn(name, result, expected) = {
+      tests := [...tests, {name: name, passed?: result == expected, result: result, expected: expected, duration: _resetTimestamp!()}]
+    },
+    assert: fn(name, result) = self.eq(name, result, true),
+    suite: fn(name, runner) =  {
+        let r = harness(title + ": " + name)
+        tests := [...tests, r]
+
+        _resetTimestamp!()
+
+        r
+    },
+    report: fn(totals = false) = {
+      _reportSuite(title, tests, totals)
+    }
+  }
+
+  _resetTimestamp!()
+
+  self
+}
+
+let _suite?(t) = t.passed? == ()
+let _test?(t) = t.passed? != ()
+
+let _reportSuite(title, tests, totals) = {
+  let endTime = if totals -> _resetTimestamp!() | 0
+
+  let ansi = Std.ansi
+
+  let actuals = Std.filter(tests, _test?)
+
+  if len(actuals) > 0 -> {
+    println(ansi.foreground.lightGray, "running ", len(actuals), " tests from ", title, ansi.control.reset);
+
+    Std.each(actuals, fn(t) = {
+      let name = t.name
+      let passed = t.passed?
+      let result = t.result
+      let expected = t.expected
+      let duration = t.duration
+
+      if passed ->
+        println(ansi.foreground.green, "✓ ", ansi.control.reset, name, ansi.foreground.lightGray, " (", duration, "ms)", ansi.control.reset)
+      | {
+          println(ansi.foreground.red, "✗ ", ansi.control.reset, name, ansi.foreground.lightGray, " (", duration, "ms)", ansi.control.reset)
+          println("  expected: ", expected)
+          println("  actual: ", result)
+        }
+    })
+  }
+
+  let suiteTotals = {
+    total: len(actuals),
+    passed: len(Std.filter(actuals, fn(test) = test.passed? == true)),
+    failed: len(Std.filter(actuals, fn(test) = test.passed? == false))
+  }
+
+  let suites = Std.filter(tests, _suite?)
+  Std.each(suites, fn(suite) = _addTotal!(suiteTotals, suite.report()))
+
+  if totals -> {
+    println()
+    if suiteTotals.failed == 0 ->
+      println(ansi.foreground.green, "✓ ", ansi.control.reset, suiteTotals.total, " total | ", suiteTotals.passed, " passed | ", suiteTotals.failed, " failed ", ansi.foreground.lightGray, "(", endTime, "ms)", ansi.control.reset)
+    | println(ansi.foreground.red, "✗ ", ansi.control.reset, suiteTotals.total, " total | ", suiteTotals.passed, " passed | ", suiteTotals.failed, " failed ", ansi.foreground.lightGray, "(", endTime, "ms)", ansi.control.reset)
+  }
+
+  suiteTotals
+}
+
+let _timestamp = 0
+
+let _resetTimestamp!() = {
+  let current = _timestamp
+  _timestamp := milliTimestamp()
+  _timestamp - current
+}
+
+let _addTotal!(totals, t) = {
+  totals.total := totals.total + t.total;
+  totals.passed := totals.passed + t.passed;
+  totals.failed := totals.failed + t.failed;
+}
