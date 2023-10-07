@@ -17,18 +17,7 @@ pub fn main() !void {
     var args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    if (args.len == 3 and std.mem.eql(u8, args[1], "run")) {
-        const startTime = std.time.milliTimestamp();
-
-        var machine = try Machine.Machine.init(allocator);
-        defer machine.deinit();
-
-        try Builtins.importFile(&machine, args[2]);
-
-        const executeTime = std.time.milliTimestamp();
-        try printResult(allocator, machine.topOfStack());
-        std.log.info("time: {d}ms", .{executeTime - startTime});
-    } else if (args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
+    if (args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
         var buffer = try allocator.alloc(u8, 1024);
         defer allocator.free(buffer);
 
@@ -52,7 +41,16 @@ pub fn main() !void {
             }
         }
     } else {
-        std.debug.print("Usage: {s} [repl|run <filename>]\n", .{args[0]});
+        const startTime = std.time.milliTimestamp();
+
+        var machine = try Machine.Machine.init(allocator);
+        defer machine.deinit();
+
+        try Builtins.importFile(&machine, args[1]);
+
+        const executeTime = std.time.milliTimestamp();
+        // try printResult(allocator, machine.topOfStack());
+        std.log.info("time: {d}ms", .{executeTime - startTime});
     }
 }
 
