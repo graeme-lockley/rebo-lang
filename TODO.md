@@ -109,6 +109,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 ## while
 
 - [X] Add support for a while loop
+- [X] The while guard succeeds if the expression is boolean and true.  It is synonymous with `guard == true`.  Equality does not fail if the values being compared are of different types.
 
 # Built-in Functions
 

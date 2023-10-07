@@ -1017,12 +1017,7 @@ fn whilee(machine: *Machine, e: *AST.Expression) bool {
 
         const condition = machine.memoryState.pop();
 
-        if (condition.v != V.ValueValue.BoolKind) {
-            machine.replaceErr(Errors.expectedATypeError(machine.memoryState.allocator, e.kind.whilee.condition.position, V.ValueValue.BoolKind, condition.v) catch |err| return errorHandler(err));
-            return true;
-        }
-
-        if (!condition.v.BoolKind) {
+        if (condition.v != V.ValueValue.BoolKind or !condition.v.BoolKind) {
             break;
         }
 

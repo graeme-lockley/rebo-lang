@@ -37,7 +37,7 @@ let _reportSuite(title, tests, totals) = {
   let actuals = Std.filter(tests, _test?)
 
   if len(actuals) > 0 -> {
-    println(ansi.foreground.lightGray, "running ", len(actuals), " tests from ", title, ansi.control.reset);
+    println(ansi.foreground.lightGray, "run ", len(actuals), " tests from ", title, ansi.control.reset);
 
     Std.each(actuals, fn(t) = {
       let name = t.name
