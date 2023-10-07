@@ -576,8 +576,6 @@ pub const Parser = struct {
 
                                 const c2 = std.fmt.parseInt(u8, lexeme[start..i], 10) catch 0;
                                 try std.fmt.format(buffer.writer(), "{c}", .{c2});
-
-                                i += 1;
                             },
                             else => {},
                         }
