@@ -1,5 +1,16 @@
 let run(suite) = {
-  suite.eq("if guard is true", { let t = true; if t -> 1 | 0 }, 1)
-  suite.eq("if guard is false", { let t = false; if t -> 1 | 0 }, 0)
-  suite.eq("if guard is falsy", { let t = (); if t -> 1 | 0 }, 0)
+  suite.eq("if guard is true", 
+    { let t = true
+      if t -> 1 | 0 
+    }, 1)
+
+  suite.eq("if guard is false", 
+    { let t = false
+      if t -> 1 | 0 
+    }, 0)
+
+  suite.eq("if guard is falsy", 
+    { let t = ()
+      if t -> 1 | 0
+    }, 0)
 }

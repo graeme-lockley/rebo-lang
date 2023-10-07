@@ -1,7 +1,24 @@
 let run(suite) = {
-  suite.eq("while guard is true", { let t = true; while t -> { t := () }; t }, ())
-  suite.eq("while guard is false", { let t = false; while t -> { t := () }; t }, false)
-  suite.eq("while guard is ()", { let t = (); while t -> { t := () }; t }, ())
+  suite.eq("while guard is true", 
+    { let t = true
+      while t -> t := ();
+
+      t 
+    }, ())
+
+  suite.eq("while guard is false", 
+    { let t = false
+      while t -> t := ();
+
+      t 
+    }, false)
+
+  suite.eq("while guard is ()", 
+    { let t = ()
+      while t -> t := ();
+
+      t 
+    }, ())
 
   suite.eq("while zero iterations",
     { let n = 0
