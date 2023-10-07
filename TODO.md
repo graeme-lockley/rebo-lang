@@ -121,6 +121,14 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] println
 - [X] milliTimestamp
 
+# Library
+
+## Test
+
+- [ ] Tidy up the guards once `!` has been implemented
+- [ ] Should a test fail then exit(1) otherwise exit(0) so that I can add into pipeline
+- [ ] Duration of the entire test suite is incorrectly calculated
+
 # REPL Features
 
 - [X] Add support for state in the REPL

@@ -58,7 +58,7 @@ let _reportSuite(title, tests, totals) = {
 
   let suiteTotals = {
     total: len(actuals),
-    passed: len(Std.filter(actuals, fn(test) = test.passed? == true)),
+    passed: len(Std.filter(actuals, fn(test) = test.passed?)),
     failed: len(Std.filter(actuals, fn(test) = test.passed? == false))
   }
 
@@ -67,9 +67,12 @@ let _reportSuite(title, tests, totals) = {
 
   if totals -> {
     println()
+
     if suiteTotals.failed == 0 ->
-      println(ansi.foreground.green, "✓ ", ansi.control.reset, suiteTotals.total, " total | ", suiteTotals.passed, " passed | ", suiteTotals.failed, " failed ", ansi.foreground.lightGray, "(", endTime, "ms)", ansi.control.reset)
-    | println(ansi.foreground.red, "✗ ", ansi.control.reset, suiteTotals.total, " total | ", suiteTotals.passed, " passed | ", suiteTotals.failed, " failed ", ansi.foreground.lightGray, "(", endTime, "ms)", ansi.control.reset)
+      print(ansi.foreground.green, "✓ ", ansi.control.reset)
+    | print(ansi.foreground.red, "✗ ", ansi.control.reset)
+
+    println(suiteTotals.total, " total | ", suiteTotals.passed, " passed | ", suiteTotals.failed, " failed ", ansi.foreground.lightGray, "(", endTime, "ms)", ansi.control.reset)
   }
 
   suiteTotals
