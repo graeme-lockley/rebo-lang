@@ -62,6 +62,7 @@ pub const ExpressionKind = union(enum) {
     literalSequence: []LiteralSequenceValue,
     literalString: []u8,
     literalVoid: void,
+    notOp: NotOpExpression,
     whilee: WhileExpression,
 };
 
@@ -145,6 +146,10 @@ pub const IndexValueExpression = struct {
 pub const LiteralSequenceValue = union(enum) {
     value: *Expression,
     sequence: *Expression,
+};
+
+pub const NotOpExpression = struct {
+    value: *Expression,
 };
 
 pub const RecordEntry = union(enum) {
@@ -235,6 +240,7 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
             allocator.free(expr.kind.literalSequence);
         },
         .literalString => allocator.free(expr.kind.literalString),
+        .notOp => destroy(allocator, expr.kind.notOp.value),
         .whilee => {
             destroy(allocator, expr.kind.whilee.condition);
             destroy(allocator, expr.kind.whilee.body);

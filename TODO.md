@@ -82,7 +82,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] All '>='
 - [X] Boolean '&&'
 - [X] Boolean '||'
-- [ ] Boolean '!'
+- [X] Boolean '!'
 - [ ] '|>' pipe operator
 - [ ] '<|' pipe operator
 - [ ] '>>' prepend operator leaving the underlying structure unaffected
@@ -128,7 +128,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [ ] Tidy up the guards once `!` has been implemented
 - [ ] Should a test fail then exit(1) otherwise exit(0) so that I can add into pipeline
-- [ ] Duration of the entire test suite is incorrectly calculated
+- [ ] Fix: duration of the entire test suite is incorrectly calculated
 
 # REPL Features
 

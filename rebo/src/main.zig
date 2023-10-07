@@ -510,3 +510,10 @@ test "if" {
     try expectExprEqual("if false -> 1", "()");
     try expectExprEqual("if false -> 1 | false -> 2 | 3", "3");
 }
+
+test "not" {
+    try expectExprEqual("!true", "false");
+    try expectExprEqual("!false", "true");
+
+    try expectError("!()");
+}

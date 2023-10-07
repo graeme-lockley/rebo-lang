@@ -628,6 +628,15 @@ pub const Parser = struct {
 
                 return self.functionTail(fnToken.start);
             },
+            Lexer.TokenKind.Bang => {
+                try self.skipToken();
+                const value = try self.expression();
+                errdefer AST.destroy(self.allocator, value);
+
+                const v = try self.allocator.create(AST.Expression);
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .notOp = AST.NotOpExpression{ .value = value } }, .position = Errors.Position{ .start = self.currentToken().start, .end = value.position.end } };
+                return v;
+            },
             else => {
                 {
                     var expected = try self.allocator.alloc(Lexer.TokenKind, 11);

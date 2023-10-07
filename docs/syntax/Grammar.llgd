@@ -76,6 +76,7 @@ Factor
     | LiteralString
     | "[" [Expression {"," ["..."] Expression}] "]"
     | "fn" FunctionTail
+    | "!" Expression
     ;
 
 FunctionTail

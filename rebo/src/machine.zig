@@ -115,6 +115,17 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         },
         .literalString => machine.createStringValue(e.kind.literalString) catch |err| return errorHandler(err),
         .literalVoid => machine.createVoidValue() catch |err| return errorHandler(err),
+        .notOp => {
+            if (evalExpr(machine, e.kind.notOp.value)) return true;
+
+            const v = machine.memoryState.pop();
+            if (v.v != V.ValueValue.BoolKind) {
+                machine.replaceErr(Errors.expectedATypeError(machine.memoryState.allocator, e.position, V.ValueValue.BoolKind, v.v) catch |err| return errorHandler(err));
+                return true;
+            }
+
+            machine.memoryState.pushBoolValue(!v.v.BoolKind) catch |err| return errorHandler(err);
+        },
         .whilee => return whilee(machine, e),
     }
 
