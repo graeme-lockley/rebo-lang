@@ -185,7 +185,8 @@ pub const Parser = struct {
 
                     lhs = rhs;
                 } else {
-                    unreachable;
+                    self.replaceErr(Errors.functionValueExpectedError(self.allocator, rhs.position));
+                    return error.InterpreterError;
                 }
             } else if (self.currentTokenKind() == Lexer.TokenKind.LessBar) {
                 try self.skipToken();
@@ -204,7 +205,8 @@ pub const Parser = struct {
                     self.allocator.free(lhs.kind.call.args);
                     lhs.kind.call.args = args;
                 } else {
-                    unreachable;
+                    self.replaceErr(Errors.functionValueExpectedError(self.allocator, lhs.position));
+                    return error.InterpreterError;
                 }
             } else {
                 break;
