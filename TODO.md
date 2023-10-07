@@ -120,6 +120,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] print
 - [X] println
 - [X] milliTimestamp
+- [ ] toString with two forms - one raw and the other literal.  The default is literal.
 
 # Library
 

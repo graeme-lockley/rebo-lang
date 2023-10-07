@@ -16,14 +16,14 @@ let run(suite) = {
     }, [0, 0])
 
   suite.eq("while multiple iterations",
-    { let n = 5
+    { let n = 10
       let iterations = 0
 
       while n > 0 -> { 
         n := n - 1
         iterations := iterations + 1
       };
-      
+
       [n, iterations] 
-    }, [0, 5])
+    }, [0, 10])
 }
