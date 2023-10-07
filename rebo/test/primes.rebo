@@ -13,22 +13,6 @@ let range(min = 10, max) = {
   result
 }
 
-let filter(l, f) = {
-  let result = []
-  let lp = 0
-
-  while lp < len(l) -> {
-    let item = l[lp]
-
-    if f(item) -> {
-      result := result + [item]
-    }
-    lp := lp + 1
-  }
-
-  result
-}
-
 let prime? = import("prime.rebo").prime?
 
-let go(n) = filter(range(n), prime?)
+let primes(n) = import("../lib/std.rebo").filter(range(n), prime?)

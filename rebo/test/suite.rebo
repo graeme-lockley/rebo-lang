@@ -8,4 +8,6 @@ let _testSuite(name) = import("./" + name + ".test.rebo").run(test.suite(name))
 _testSuite("lang/if-statement")
 _testSuite("lang/while-statement")
 
+_testSuite("primes")
+
 test.report(true)

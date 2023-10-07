@@ -59,7 +59,7 @@ let _reportSuite(title, tests, totals) = {
   let suiteTotals = {
     total: len(actuals),
     passed: len(Std.filter(actuals, fn(test) = test.passed?)),
-    failed: len(Std.filter(actuals, fn(test) = test.passed? == false))
+    failed: len(Std.filter(actuals, fn(test) = !test.passed?))
   }
 
   let suites = Std.filter(tests, _suite?)
