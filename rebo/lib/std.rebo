@@ -1,0 +1,27 @@
+# `ansiColours` are the ANSI/VT100 terminal codes that allow colours to be 
+# displayed on the terminal.  The codes are used in the `print` and `println` 
+# function to change the colour of the text.
+let ansi = {
+  control: {
+    reset: "\x27;[0m"
+  },
+  foreground: {
+    black: "\x27;[30m",
+    red: "\x27;[31m",
+    green: "\x27;[32m",
+    yellow: "\x27;[33m",
+    blue: "\x27;[34m",
+    magenta: "\x27;[35m",
+    cyan: "\x27;[36m",
+    white: "\x27;[37m",
+    lightRed: "\x27;[91m",
+    lightGreen: "\x27;[92m",
+    lightYellow: "\x27;[93m",
+    lightBlue: "\x27;[94m",
+    lightMagenta: "\x27;[95m",
+    lightCyan: "\x27;[96m",
+    lightWhite: "\x27;[97m",
+    lightGray: "\x27;[37m",
+    darkGray: "\x27;[90m"
+  }
+}
