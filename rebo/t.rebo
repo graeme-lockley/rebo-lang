@@ -1,11 +1,23 @@
 #!/Users/graemelockley/Projects/rebo-lang/rebo/zig-out/bin/rebo
 
-let Test = import("lib/test.rebo")
+let Std = import("lib/std.rebo")
+let Primes = import("test/primes.rebo")
+Primes.primes(10)
 
-let test = Test.harness("t.rebo");
+let timePrimes(n = 10) {
+  println("Items: ", n)
 
-let lenSuite = test.suite("len");
-lenSuite.eq("on empty record", len({}), 0)
-lenSuite.eq("on non-empty record", len({a: 1, b: 2}), 2)
+  let start = milliTimestamp()
+  Primes.primes(n)
+  let duration = milliTimestamp() - start;
 
-test.report(true)
+  println("  duration: ", duration);
+  println("  rate: ", (0.0 + n) / duration);
+}
+
+let items = [5000, 100, 1000, 2000, 3000, 4000, 5000]
+
+items |> Std.each(fn (n) {
+  gc()
+  timePrimes(n)
+})
