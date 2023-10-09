@@ -1,15 +1,16 @@
 let prime?(n = 0) = {
   if n < 2 -> false
    | n == 2 -> true
+   | n % 2 == 0 -> false
    | { 
         let finished = false
-        let i = 2
+        let i = 3
         let result = true
 
         while !finished -> {
            if i * i > n -> finished := true
             | n % i == 0 -> { finished := true; result := false }
-            | i := i + 1
+            | i := i + 2
         }
 
         result
