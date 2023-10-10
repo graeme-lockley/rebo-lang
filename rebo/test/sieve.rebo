@@ -1,0 +1,52 @@
+let _primes(n = 2) {
+  let primes = []
+
+  let initialisePrimes() {
+      let i = 0
+      while i <= n -> {
+        primes := [...primes, true]
+        i := i + 1
+      }
+  }
+
+  println("start init")
+  initialisePrimes()
+  println("finish init")
+
+  let outer = 2
+  while outer * outer <= n -> {
+    if primes[outer] -> {
+        let inner = outer * outer
+        while inner <= n -> {
+            primes[inner] := false
+            inner := inner + outer
+        }
+    }
+
+    outer := outer + 1
+  }
+
+  primes
+}
+
+let prime?(n = 2) = _primes(n)[n]
+
+let primes(n = 2) {
+  let result = []
+  let values = _primes(n)
+
+  let i = 2
+  while i <= n -> {
+    if values[i] -> {
+        result := [...result, i]
+    }
+
+    i := i + 1
+  }
+
+  result
+}
+
+# let P = import("./test/sieve.rebo")
+
+println(primes(10000))
