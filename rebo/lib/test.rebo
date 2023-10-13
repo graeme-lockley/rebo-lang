@@ -16,9 +16,7 @@ let harness(title) = {
 
         r
     },
-    report: fn(totals = false) {
-      _reportSuite(title, tests, totals)
-    }
+    report: fn(totals = false) = _reportSuite(title, tests, totals)
   }
 
   _resetTimestamp!()
@@ -58,13 +56,13 @@ let _reportSuite(title, tests, totals) {
 
   let suiteTotals = {
     total: len(actuals),
-    passed: len(Std.filter(actuals, fn(test) = test.passed?)),
-    failed: len(Std.filter(actuals, fn(test) = !test.passed?))
+    passed: len(Std.filter(actuals, fn(test) test.passed?)),
+    failed: len(Std.filter(actuals, fn(test) !test.passed?))
   }
 
   tests 
     |> Std.filter(_suite?) 
-    |> Std.each(fn(suite) = _addTotal!(suiteTotals, suite.report()))
+    |> Std.each(fn(suite) _addTotal!(suiteTotals, suite.report()))
 
   if totals -> {
     println()
