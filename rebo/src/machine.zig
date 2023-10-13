@@ -717,7 +717,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             }
         },
 
-        // else => unreachable,
+        else => unreachable,
     }
 
     return false;

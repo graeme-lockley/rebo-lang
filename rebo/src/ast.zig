@@ -17,6 +17,10 @@ pub const Operator = enum {
     GreaterEqual,
     And,
     Or,
+    Append,
+    AppendUpdate,
+    Prepend,
+    PrependUpdate,
 
     pub fn toString(self: Operator) []const u8 {
         return switch (self) {
@@ -33,6 +37,10 @@ pub const Operator = enum {
             Operator.GreaterEqual => ">=",
             Operator.And => "&&",
             Operator.Or => "||",
+            Operator.Append => "<<",
+            Operator.AppendUpdate => "<!",
+            Operator.Prepend => ">>",
+            Operator.PrependUpdate => ">!",
         };
     }
 };

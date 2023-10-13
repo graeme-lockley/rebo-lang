@@ -213,6 +213,12 @@ pub const Lexer = struct {
                 } else if (self.currentCharacter() == '|') {
                     self.skipCharacter();
                     self.current = Token{ .kind = TokenKind.LessBar, .start = tokenStart, .end = self.offset };
+                } else if (self.currentCharacter() == '!') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.LessBang, .start = tokenStart, .end = self.offset };
+                } else if (self.currentCharacter() == '<') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.LessLess, .start = tokenStart, .end = self.offset };
                 } else {
                     self.current = Token{ .kind = TokenKind.LessThan, .start = tokenStart, .end = self.offset };
                 }
@@ -222,6 +228,12 @@ pub const Lexer = struct {
                 if (self.currentCharacter() == '=') {
                     self.skipCharacter();
                     self.current = Token{ .kind = TokenKind.GreaterEqual, .start = tokenStart, .end = self.offset };
+                } else if (self.currentCharacter() == '!') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.GreaterBang, .start = tokenStart, .end = self.offset };
+                } else if (self.currentCharacter() == '>') {
+                    self.skipCharacter();
+                    self.current = Token{ .kind = TokenKind.GreaterGreater, .start = tokenStart, .end = self.offset };
                 } else {
                     self.current = Token{ .kind = TokenKind.GreaterThan, .start = tokenStart, .end = self.offset };
                 }
@@ -499,9 +511,9 @@ test "literal string" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / % = == ! != <| < <= > >= && || [ { ( , . ... : := ; -> | |> ] } )" {
+test "+ - * / % = == ! != <! <| < <= << >! > >= >> && || [ { ( , . ... : := ; -> | |> ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / % = == ! != <| < <= > >= && || [ { ( , . ... : := ; -> | |> ] } ) ");
+    try lexer.initBuffer("console", " + - * / % = == ! != <! <| < <= << >! > >= >> && || [ { ( , . ... : := ; -> | |> ] } ) ");
 
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
@@ -521,15 +533,23 @@ test "+ - * / % = == ! != <| < <= > >= && || [ { ( , . ... : := ; -> | |> ] } )"
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.BangEqual);
     try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.LessBang);
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LessBar);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LessThan);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.LessEqual);
     try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.LessLess);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.GreaterBang);
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.GreaterThan);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.GreaterEqual);
+    try lexer.next();
+    try expectEqual(lexer.current.kind, TokenKind.GreaterGreater);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.AmpersandAmpersand);
     try lexer.next();
