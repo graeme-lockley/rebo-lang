@@ -1,11 +1,16 @@
 let Primes = import("./primes.rebo")
+let Sieve = import("./sieve.rebo")
 
 let run(suite) = {
   suite.eq("verify prime", Primes.prime?(3), true)
+  
+  suite.eq("verify prime using sieve", Sieve.prime?(3), true)
 
   suite.eq("verify all primes < 100", Primes.primes(100), [
     2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
     31, 37, 41, 43, 47, 53, 59, 61, 67,
     71, 73, 79, 83, 89, 97
   ])
+
+  suite.eq("verify all primes < 1000 are equivalent across prime and sieve", Primes.primes(1000), Sieve.primes(1000))
 }
