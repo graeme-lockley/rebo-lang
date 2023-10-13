@@ -47,6 +47,3 @@ let primes(n = 2) {
   result
 }
 
-# let P = import("./test/sieve.rebo")
-
-println(primes(10000))
