@@ -34,7 +34,7 @@ pub const Value = struct {
                 // At the moment, this is not possible as the AST is managed as general memory.
                 // AST.destroy(allocator, self.v.FunctionKind.body);
             },
-            .SequenceKind => self.v.SequenceKind.destroy(allocator),
+            .SequenceKind => self.v.SequenceKind.destroy(),
             .StringKind => allocator.free(self.v.StringKind),
             .RecordKind => {
                 var iterator = self.v.RecordKind.keyIterator();
@@ -53,7 +53,7 @@ pub const Value = struct {
         }
     }
 
-    pub fn appendValue(self: *Value, buffer: *std.ArrayList(u8)) !void {
+    pub fn appendValue(self: *const Value, buffer: *std.ArrayList(u8)) !void {
         // std.debug.print("appending {}\n", .{self});
 
         switch (self.v) {
@@ -145,7 +145,7 @@ pub const Value = struct {
             },
             .ScopeKind => {
                 var first = true;
-                var runner: ?*Value = self;
+                var runner: ?*const Value = self;
 
                 try buffer.append('<');
                 while (true) {
@@ -301,39 +301,55 @@ pub const FunctionArgument = struct {
 };
 
 pub const SequenceValue = struct {
-    values: []*Value,
+    values: std.ArrayList(*Value),
 
-    pub fn init(values: []*Value) SequenceValue {
+    pub fn init(allocator: std.mem.Allocator) !SequenceValue {
         var result = SequenceValue{
-            .values = values,
+            .values = std.ArrayList(*Value).init(allocator),
         };
 
         return result;
     }
 
-    pub fn destroy(self: *SequenceValue, allocator: std.mem.Allocator) void {
-        allocator.free(self.values);
+    pub fn destroy(self: *SequenceValue) void {
+        self.values.deinit();
     }
 
-    pub fn replaceSlice(self: *SequenceValue, allocator: std.mem.Allocator, values: []*Value) void {
-        self.destroy(allocator);
-        self.values = values;
+    pub fn append(self: *SequenceValue, value: *Value) !void {
+        try self.values.append(value);
+    }
+
+    pub fn prepend(self: *SequenceValue, value: *Value) !void {
+        try self.values.insert(0, value);
+    }
+
+    pub fn appendSlice(self: *SequenceValue, values: []const *Value) !void {
+        try self.values.appendSlice(values);
+    }
+
+    pub fn replaceSlice(self: *SequenceValue, values: []*Value) !void {
+        self.values.clearAndFree();
+        try self.values.appendSlice(values);
+    }
+
+    pub fn replaceRange(self: *SequenceValue, start: usize, end: usize, values: []*Value) !void {
+        try self.values.replaceRange(start, end - start, values);
     }
 
     pub fn len(self: *const SequenceValue) usize {
-        return self.values.len;
+        return self.values.items.len;
     }
 
     pub fn items(self: *const SequenceValue) []*Value {
-        return self.values;
+        return self.values.items;
     }
 
     pub fn at(self: *const SequenceValue, i: usize) *Value {
-        return self.values[i];
+        return self.values.items[i];
     }
 
     pub fn set(self: *const SequenceValue, i: usize, v: *Value) void {
-        self.values[i] = v;
+        self.values.items[i] = v;
     }
 };
 

@@ -261,7 +261,7 @@ pub const Parser = struct {
     }
 
     fn equality(self: *Parser) Errors.err!*AST.Expression {
-        var lhs = try self.additive();
+        var lhs = try self.starpend();
         errdefer AST.destroy(self.allocator, lhs);
 
         const kind = self.currentTokenKind();
@@ -269,7 +269,7 @@ pub const Parser = struct {
         if (kind == Lexer.TokenKind.EqualEqual or kind == Lexer.TokenKind.BangEqual or kind == Lexer.TokenKind.LessThan or kind == Lexer.TokenKind.LessEqual or kind == Lexer.TokenKind.GreaterThan or kind == Lexer.TokenKind.GreaterEqual) {
             try self.skipToken();
 
-            const rhs = try self.additive();
+            const rhs = try self.starpend();
             errdefer AST.destroy(self.allocator, rhs);
 
             const v = try self.allocator.create(AST.Expression);
@@ -288,6 +288,39 @@ pub const Parser = struct {
                 .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
             };
             lhs = v;
+        }
+
+        return lhs;
+    }
+
+    pub fn starpend(self: *Parser) Errors.err!*AST.Expression {
+        var lhs = try self.additive();
+        errdefer AST.destroy(self.allocator, lhs);
+
+        var kind = self.currentTokenKind();
+
+        while (kind == Lexer.TokenKind.GreaterBang or kind == Lexer.TokenKind.GreaterGreater or kind == Lexer.TokenKind.LessBang or kind == Lexer.TokenKind.LessLess) {
+            try self.skipToken();
+
+            const rhs = try self.additive();
+            errdefer AST.destroy(self.allocator, rhs);
+
+            const v = try self.allocator.create(AST.Expression);
+            const op = switch (kind) {
+                Lexer.TokenKind.GreaterBang => AST.Operator.PrependUpdate,
+                Lexer.TokenKind.GreaterGreater => AST.Operator.Prepend,
+                Lexer.TokenKind.LessBang => AST.Operator.AppendUpdate,
+                Lexer.TokenKind.LessLess => AST.Operator.Append,
+                else => unreachable,
+            };
+
+            v.* = AST.Expression{
+                .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } },
+                .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
+            };
+            lhs = v;
+
+            kind = self.currentTokenKind();
         }
 
         return lhs;

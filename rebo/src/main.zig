@@ -479,6 +479,20 @@ test "multiplicative op" {
     try expectError("100 / (10.0 / 0.0)");
 }
 
+test "list append/prepend" {
+    try expectExprEqual("[1, 2] << 3", "[1, 2, 3]");
+    try expectExprEqual("[1, 2] <! 3", "[1, 2, 3]");
+
+    try expectExprEqual("let x = [1, 2]; x << 3; x", "[1, 2]");
+    try expectExprEqual("let x = [1, 2]; x <! 3; x", "[1, 2, 3]");
+
+    try expectExprEqual("1 >> [2, 3]", "[1, 2, 3]");
+    try expectExprEqual("1 >! [2, 3]", "[1, 2, 3]");
+
+    try expectExprEqual("let x = [2, 3]; 1 >> x; x", "[2, 3]");
+    try expectExprEqual("let x = [2, 3]; 1 >! x 3; x", "[1, 2, 3]");
+}
+
 test "parenthesis" {
     try expectExprEqual("(1)", "1");
     try expectExprEqual("(((1)))", "1");

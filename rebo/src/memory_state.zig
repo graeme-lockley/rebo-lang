@@ -57,26 +57,13 @@ pub const MemoryState = struct {
         _ = try self.pushValue(V.ValueValue{ .IntKind = v });
     }
 
-    pub fn pushSequenceValue(self: *MemoryState, size: usize) !void {
-        var items = try self.allocator.alloc(*V.Value, size);
-
-        if (size > 0) {
-            var tos: usize = size - 1;
-            while (true) {
-                items[tos] = self.stack.pop();
-                if (tos == 0) {
-                    break;
-                }
-                tos -= 1;
-            }
-        }
-
-        _ = try self.pushValue(V.ValueValue{ .SequenceKind = V.SequenceValue.init(items) });
+    pub fn pushEmptySequenceValue(self: *MemoryState) !void {
+        _ = try self.pushValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
     }
 
-    pub fn pushOwnedSequenceValue(self: *MemoryState, v: []*V.Value) !void {
-        _ = try self.pushValue(V.ValueValue{ .SequenceKind = V.SequenceValue.init(v) });
-    }
+    // pub fn pushOwnedSequenceValue(self: *MemoryState, v: []*V.Value) !void {
+    //     _ = try self.pushValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator, v) });
+    // }
 
     pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
         _ = try self.pushValue(V.ValueValue{ .StringKind = try self.allocator.dupe(u8, v) });
@@ -154,7 +141,8 @@ pub const MemoryState = struct {
         const s = self.scope().?;
 
         const oldKey = s.v.ScopeKind.values.getKey(name);
-        const value = try self.newValue(V.ValueValue{ .SequenceKind = V.SequenceValue.init(try self.allocator.dupe(*V.Value, values)) });
+        const value = try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
+        try value.v.SequenceKind.appendSlice(values);
 
         if (oldKey == null) {
             try s.v.ScopeKind.values.put(try self.allocator.dupe(u8, name), value);

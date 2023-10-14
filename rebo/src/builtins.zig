@@ -280,7 +280,7 @@ pub fn milliTimestamp(machine: *Machine, calleeAST: *AST.Expression, argsAST: []
     try machine.memoryState.pushIntValue(@intCast(std.time.milliTimestamp()));
 }
 
-fn printValue(stdout: std.fs.File.Writer, v: *V.Value) !void {
+fn printValue(stdout: std.fs.File.Writer, v: *const V.Value) !void {
     switch (v.v) {
         .BoolKind => try stdout.print("{s}", .{if (v.v.BoolKind) "true" else "false"}),
         .BuiltinKind => {
@@ -349,7 +349,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *V.Value) !void {
         },
         .ScopeKind => {
             var first = true;
-            var runner: ?*V.Value = v;
+            var runner: ?*const V.Value = v;
 
             try stdout.print("<", .{});
             while (true) {

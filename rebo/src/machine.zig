@@ -83,35 +83,28 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             }
         },
         .literalSequence => {
-            var buffer = std.ArrayList(*V.Value).init(machine.memoryState.allocator);
-            defer buffer.deinit();
+            machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
+            const seq = machine.memoryState.peek(0);
 
             for (e.kind.literalSequence) |v| {
                 switch (v) {
                     .value => {
                         if (evalExpr(machine, v.value)) return true;
-                        buffer.append(machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+                        seq.v.SequenceKind.append(machine.memoryState.pop()) catch |err| return errorHandler(err);
                     },
                     .sequence => {
                         if (evalExpr(machine, v.sequence)) return true;
-                        const seq = machine.memoryState.peek(0);
+                        const vs = machine.memoryState.pop();
 
-                        if (seq.v != V.ValueValue.SequenceKind) {
-                            machine.replaceErr(Errors.expectedATypeError(machine.memoryState.allocator, v.sequence.position, V.ValueValue.SequenceKind, seq.v) catch |err| return errorHandler(err));
+                        if (vs.v != V.ValueValue.SequenceKind) {
+                            machine.replaceErr(Errors.expectedATypeError(machine.memoryState.allocator, v.sequence.position, V.ValueValue.SequenceKind, vs.v) catch |err| return errorHandler(err));
                             return true;
                         }
 
-                        for (seq.v.SequenceKind.items()) |vv| {
-                            buffer.append(vv) catch |err| return errorHandler(err);
-                        }
+                        seq.v.SequenceKind.appendSlice(vs.v.SequenceKind.items()) catch |err| return errorHandler(err);
                     },
                 }
             }
-
-            machine.memoryState.pushOwnedSequenceValue(buffer.toOwnedSlice() catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
-            const v = machine.memoryState.pop();
-            machine.memoryState.popn(@intCast(e.kind.literalSequence.len));
-            machine.memoryState.push(v) catch |err| return errorHandler(err);
         },
         .literalString => machine.createStringValue(e.kind.literalString) catch |err| return errorHandler(err),
         .literalVoid => machine.createVoidValue() catch |err| return errorHandler(err),
@@ -166,10 +159,10 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
                 return true;
             }
 
-            const seq = sequence.v.SequenceKind;
+            const seqLen = sequence.v.SequenceKind.len();
 
-            const start: V.IntType = V.clamp(indexPoint(machine, lhs.kind.indexRange.start, 0) catch |err| return errorHandler(err), 0, @intCast(seq.len()));
-            const end: V.IntType = V.clamp(indexPoint(machine, lhs.kind.indexRange.end, @intCast(seq.len())) catch |err| return errorHandler(err), start, @intCast(seq.len()));
+            const start: V.IntType = V.clamp(indexPoint(machine, lhs.kind.indexRange.start, 0) catch |err| return errorHandler(err), 0, @intCast(seqLen));
+            const end: V.IntType = V.clamp(indexPoint(machine, lhs.kind.indexRange.end, @intCast(seqLen)) catch |err| return errorHandler(err), start, @intCast(seqLen));
 
             if (evalExpr(machine, value)) return true;
             const v = machine.memoryState.peek(0);
@@ -179,10 +172,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
                 return true;
             }
 
-            const slices = [_][]*V.Value{ seq.items()[0..@intCast(start)], v.v.SequenceKind.items(), seq.items()[@intCast(end)..@intCast(seq.len())] };
-            const newSeq = std.mem.concat(machine.memoryState.allocator, *V.Value, &slices) catch |err| return errorHandler(err);
-
-            sequence.v.SequenceKind.replaceSlice(machine.memoryState.allocator, newSeq);
+            sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), v.v.SequenceKind.items()) catch |err| return errorHandler(err);
 
             machine.memoryState.popn(2);
             machine.memoryState.push(v) catch |err| return errorHandler(err);
@@ -272,16 +262,18 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             if (evalExpr(machine, leftAST)) return true;
             if (evalExpr(machine, rightAST)) return true;
 
-            const right = machine.pop();
-            const left = machine.pop();
+            const right = machine.memoryState.peek(0);
+            const left = machine.memoryState.peek(1);
 
             switch (left.v) {
                 V.ValueValue.IntKind => {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
+                            machine.memoryState.popn(2);
                             machine.memoryState.pushIntValue(left.v.IntKind + right.v.IntKind) catch |err| return errorHandler(err);
                         },
                         V.ValueValue.FloatKind => {
+                            machine.memoryState.popn(2);
                             machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) + right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
@@ -293,9 +285,11 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                 V.ValueValue.FloatKind => {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
+                            machine.memoryState.popn(2);
                             machine.memoryState.pushFloatValue(left.v.FloatKind + @as(V.FloatType, @floatFromInt(right.v.IntKind))) catch |err| return errorHandler(err);
                         },
                         V.ValueValue.FloatKind => {
+                            machine.memoryState.popn(2);
                             machine.memoryState.pushFloatValue(left.v.FloatKind + right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
@@ -307,8 +301,12 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                 V.ValueValue.SequenceKind => {
                     switch (right.v) {
                         V.ValueValue.SequenceKind => {
-                            const slices = [_][]*V.Value{ left.v.SequenceKind.items(), right.v.SequenceKind.items() };
-                            machine.memoryState.pushOwnedSequenceValue(std.mem.concat(machine.memoryState.allocator, *V.Value, &slices) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
+                            machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
+                            const seq = machine.memoryState.peek(0);
+                            seq.v.SequenceKind.appendSlice(left.v.SequenceKind.items()) catch |err| return errorHandler(err);
+                            seq.v.SequenceKind.appendSlice(right.v.SequenceKind.items()) catch |err| return errorHandler(err);
+                            machine.memoryState.popn(3);
+                            machine.memoryState.push(seq) catch |err| return errorHandler(err);
                         },
                         else => {
                             machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
@@ -319,6 +317,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                 V.ValueValue.StringKind => {
                     switch (right.v) {
                         V.ValueValue.StringKind => {
+                            machine.memoryState.popn(2);
+
                             const slices = [_][]u8{ left.v.StringKind, right.v.StringKind };
                             machine.memoryState.pushOwnedStringValue(std.mem.concat(machine.memoryState.allocator, u8, &slices) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
                         },
@@ -716,8 +716,79 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                 }
             }
         },
+        AST.Operator.Append => {
+            if (evalExpr(machine, leftAST)) return true;
+            if (evalExpr(machine, rightAST)) return true;
+            const left = machine.memoryState.peek(1);
+            const right = machine.memoryState.peek(0);
 
-        else => unreachable,
+            if (left.v != V.ValueValue.SequenceKind) {
+                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                return true;
+            }
+
+            machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
+            const result = machine.memoryState.peek(0);
+
+            result.v.SequenceKind.appendSlice(left.v.SequenceKind.items()) catch |err| return errorHandler(err);
+            result.v.SequenceKind.append(right) catch |err| return errorHandler(err);
+
+            machine.memoryState.popn(3);
+            machine.memoryState.push(result) catch |err| return errorHandler(err);
+        },
+        AST.Operator.AppendUpdate => {
+            if (evalExpr(machine, leftAST)) return true;
+            if (evalExpr(machine, rightAST)) return true;
+            const left = machine.memoryState.peek(1);
+            const right = machine.memoryState.peek(0);
+
+            if (left.v != V.ValueValue.SequenceKind) {
+                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                return true;
+            }
+
+            left.v.SequenceKind.append(right) catch |err| return errorHandler(err);
+
+            machine.memoryState.popn(1);
+        },
+        AST.Operator.Prepend => {
+            if (evalExpr(machine, leftAST)) return true;
+            if (evalExpr(machine, rightAST)) return true;
+            const left = machine.memoryState.peek(1);
+            const right = machine.memoryState.peek(0);
+
+            if (right.v != V.ValueValue.SequenceKind) {
+                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                return true;
+            }
+
+            machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
+            const result = machine.memoryState.peek(0);
+
+            result.v.SequenceKind.append(left) catch |err| return errorHandler(err);
+            result.v.SequenceKind.appendSlice(right.v.SequenceKind.items()) catch |err| return errorHandler(err);
+
+            machine.memoryState.popn(3);
+            machine.memoryState.push(result) catch |err| return errorHandler(err);
+        },
+        AST.Operator.PrependUpdate => {
+            if (evalExpr(machine, leftAST)) return true;
+            if (evalExpr(machine, rightAST)) return true;
+            const left = machine.memoryState.peek(1);
+            const right = machine.memoryState.peek(0);
+
+            if (right.v != V.ValueValue.SequenceKind) {
+                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, e.position, e.kind.binaryOp.op, left.v, right.v));
+                return true;
+            }
+
+            right.v.SequenceKind.prepend(left) catch |err| return errorHandler(err);
+
+            machine.memoryState.popn(2);
+            machine.memoryState.push(right) catch |err| return errorHandler(err);
+        },
+
+        // else => unreachable,
     }
 
     return false;
@@ -878,7 +949,8 @@ fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expressio
         const start: V.IntType = V.clamp(indexPoint(machine, startA, 0) catch |err| return errorHandler(err), 0, @intCast(seq.len()));
         const end: V.IntType = V.clamp(indexPoint(machine, endA, @intCast(seq.len())) catch |err| return errorHandler(err), start, @intCast(seq.len()));
 
-        machine.memoryState.pushOwnedSequenceValue(machine.memoryState.allocator.dupe(*V.Value, seq.items()[@intCast(start)..@intCast(end)]) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
+        machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
+        machine.memoryState.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]) catch |err| return errorHandler(err);
     } else if (expr.v == V.ValueValue.StringKind) {
         const str = expr.v.StringKind;
 

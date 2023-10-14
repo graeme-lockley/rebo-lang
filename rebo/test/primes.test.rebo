@@ -14,3 +14,5 @@ let run(suite) = {
 
   suite.eq("verify all primes < 100 are equivalent across prime and sieve", Primes.primes(1000), Sieve.primes(1000))
 }
+
+# 2.6s

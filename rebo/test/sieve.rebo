@@ -1,35 +1,3 @@
-let _primes(n = 2) {
-  let primes = []
-
-  let initialisePrimes() {
-      let i = 0
-      while i <= n -> {
-        primes := [...primes, true]
-        i := i + 1
-      }
-  }
-
-  println("start init: ", n)
-  let startTime = milliTimestamp()
-  initialisePrimes()
-  println("finish init: ", milliTimestamp() - startTime, "ms");
-
-  let outer = 2
-  while outer * outer <= n -> {
-    if primes[outer] -> {
-        let inner = outer * outer
-        while inner <= n -> {
-            primes[inner] := false
-            inner := inner + outer
-        }
-    }
-
-    outer := outer + 1
-  }
-
-  primes
-}
-
 let prime?(n = 2) = _primes(n)[n]
 
 let primes(n = 2) {
@@ -39,12 +7,43 @@ let primes(n = 2) {
   let i = 2
   while i <= n -> {
     if values[i] -> {
-        result := [...result, i]
+      result <! i
     }
 
     i := i + 1
   }
 
   result
+}
+
+let _primes(n = 2) {
+  let primes = _initialisePrimes(n)
+
+  let outer = 2
+  while outer * outer <= n -> {
+    if primes[outer] -> {
+      let inner = outer * outer
+      while inner <= n -> {
+        primes[inner] := false
+        inner := inner + outer
+      }
+    }
+
+    outer := outer + 1
+  }
+
+  primes
+}
+
+let _initialisePrimes(n) {
+  let primes = []
+
+  let i = 0
+  while i <= n -> {
+    primes <! true
+    i := i + 1
+  }
+
+  primes
 }
 
