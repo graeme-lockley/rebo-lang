@@ -17,7 +17,7 @@ let primes(n = 2) {
 }
 
 let _primes(n = 2) {
-  let primes = _initialisePrimes(n)
+  let primes = range(0, n + 1, 1, fn(n) true)
 
   let outer = 2
   while outer * outer <= n -> {
@@ -45,5 +45,49 @@ let _initialisePrimes(n) {
   }
 
   primes
+}
+
+let range(start = 10, end = (), step = (), f = fn(n) n) { 
+  if step == 0 -> {
+    step := ()
+  }
+
+  if end == () -> {
+    end := start
+    start := 0
+  }
+
+  if start <= end && step == () -> {
+    step := 1
+  }
+
+  if start > end && step == () -> {
+    step := -1
+  }
+
+  let result = []
+  if step > 0 -> {
+    if f == () ->
+      while start < end -> {
+        result <! start
+        start := start + step
+      }
+    | while start < end -> {
+        result <! f(start)
+        start := start + step
+      }
+  } | {
+    if f == () ->
+      while start > end -> {
+        result <! start
+        start := start + step
+      }
+    | while start > end -> {
+        result <! f(start)
+        start := start + step
+      }
+  }
+
+  result
 }
 

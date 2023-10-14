@@ -50,7 +50,7 @@ let filter(xs, f) {
     let item = xs[lp]
 
     if f(item, lp) -> {
-      result := result + [item]
+      result <! item
     }
     
     lp := lp + 1

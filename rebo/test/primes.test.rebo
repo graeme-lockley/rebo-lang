@@ -12,7 +12,7 @@ let run(suite) = {
     71, 73, 79, 83, 89, 97
   ])
 
-  suite.eq("verify all primes < 100 are equivalent across prime and sieve", Primes.primes(1000), Sieve.primes(1000))
+  suite.eq("verify all primes < 100 are equivalent across prime and sieve", Primes.primes(100), Sieve.primes(100))
 }
 
 # 2.6s
