@@ -9,9 +9,10 @@ let _primes(n = 2) {
       }
   }
 
-  println("start init")
+  println("start init: ", n)
+  let startTime = milliTimestamp()
   initialisePrimes()
-  println("finish init")
+  println("finish init: ", milliTimestamp() - startTime, "ms");
 
   let outer = 2
   while outer * outer <= n -> {

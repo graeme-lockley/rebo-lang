@@ -34,7 +34,7 @@ pub const Value = struct {
                 // At the moment, this is not possible as the AST is managed as general memory.
                 // AST.destroy(allocator, self.v.FunctionKind.body);
             },
-            .SequenceKind => allocator.free(self.v.SequenceKind),
+            .SequenceKind => self.v.SequenceKind.destroy(allocator),
             .StringKind => allocator.free(self.v.StringKind),
             .RecordKind => {
                 var iterator = self.v.RecordKind.keyIterator();
@@ -180,7 +180,7 @@ pub const Value = struct {
             },
             .SequenceKind => {
                 try buffer.append('[');
-                for (self.v.SequenceKind, 0..) |v, i| {
+                for (self.v.SequenceKind.items(), 0..) |v, i| {
                     if (i != 0) {
                         try buffer.appendSlice(", ");
                     }
@@ -257,7 +257,7 @@ pub const ValueValue = union(ValueKind) {
     FunctionKind: FunctionValue,
     IntKind: IntType,
     FloatKind: FloatType,
-    SequenceKind: []*Value,
+    SequenceKind: SequenceValue,
     StringKind: []u8,
     RecordKind: std.StringHashMap(*Value),
     ScopeKind: ScopeValue,
@@ -298,6 +298,43 @@ pub const FunctionValue = struct {
 pub const FunctionArgument = struct {
     name: []const u8,
     default: ?*Value,
+};
+
+pub const SequenceValue = struct {
+    values: []*Value,
+
+    pub fn init(values: []*Value) SequenceValue {
+        var result = SequenceValue{
+            .values = values,
+        };
+
+        return result;
+    }
+
+    pub fn destroy(self: *SequenceValue, allocator: std.mem.Allocator) void {
+        allocator.free(self.values);
+    }
+
+    pub fn replaceSlice(self: *SequenceValue, allocator: std.mem.Allocator, values: []*Value) void {
+        self.destroy(allocator);
+        self.values = values;
+    }
+
+    pub fn len(self: *const SequenceValue) usize {
+        return self.values.len;
+    }
+
+    pub fn items(self: *const SequenceValue) []*Value {
+        return self.values;
+    }
+
+    pub fn at(self: *const SequenceValue, i: usize) *Value {
+        return self.values[i];
+    }
+
+    pub fn set(self: *const SequenceValue, i: usize, v: *Value) void {
+        self.values[i] = v;
+    }
 };
 
 pub const ScopeValue = struct {
@@ -341,10 +378,10 @@ pub fn eq(a: *Value, b: *Value) bool {
         .IntKind => return a.v.IntKind == b.v.IntKind,
         .FloatKind => return a.v.FloatKind == b.v.FloatKind,
         .SequenceKind => {
-            if (a.v.SequenceKind.len != b.v.SequenceKind.len) return false;
+            if (a.v.SequenceKind.len() != b.v.SequenceKind.len()) return false;
 
-            for (a.v.SequenceKind, 0..) |v, i| {
-                if (!eq(v, b.v.SequenceKind[i])) return false;
+            for (a.v.SequenceKind.items(), 0..) |v, i| {
+                if (!eq(v, b.v.SequenceKind.at(i))) return false;
             }
 
             return true;

@@ -71,11 +71,11 @@ pub const MemoryState = struct {
             }
         }
 
-        _ = try self.pushValue(V.ValueValue{ .SequenceKind = items });
+        _ = try self.pushValue(V.ValueValue{ .SequenceKind = V.SequenceValue.init(items) });
     }
 
     pub fn pushOwnedSequenceValue(self: *MemoryState, v: []*V.Value) !void {
-        _ = try self.pushValue(V.ValueValue{ .SequenceKind = v });
+        _ = try self.pushValue(V.ValueValue{ .SequenceKind = V.SequenceValue.init(v) });
     }
 
     pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
@@ -154,7 +154,7 @@ pub const MemoryState = struct {
         const s = self.scope().?;
 
         const oldKey = s.v.ScopeKind.values.getKey(name);
-        const value = try self.newValue(V.ValueValue{ .SequenceKind = try self.allocator.dupe(*V.Value, values) });
+        const value = try self.newValue(V.ValueValue{ .SequenceKind = V.SequenceValue.init(try self.allocator.dupe(*V.Value, values)) });
 
         if (oldKey == null) {
             try s.v.ScopeKind.values.put(try self.allocator.dupe(u8, name), value);
@@ -279,7 +279,7 @@ fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {
             markScope(&v.v.ScopeKind, colour);
         },
         .SequenceKind => {
-            for (v.v.SequenceKind) |item| {
+            for (v.v.SequenceKind.items()) |item| {
                 markValue(item, colour);
             }
         },

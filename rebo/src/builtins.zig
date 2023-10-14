@@ -254,7 +254,7 @@ pub fn len(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expres
 
     switch (v.?.v) {
         V.ValueValue.RecordKind => try machine.memoryState.pushIntValue(@intCast(v.?.v.RecordKind.count())),
-        V.ValueValue.SequenceKind => try machine.memoryState.pushIntValue(@intCast(v.?.v.SequenceKind.len)),
+        V.ValueValue.SequenceKind => try machine.memoryState.pushIntValue(@intCast(v.?.v.SequenceKind.len())),
         V.ValueValue.StringKind => try machine.memoryState.pushIntValue(@intCast(v.?.v.StringKind.len)),
         else => try reportExpectedTypeError(machine, if (argsAST.len > 0) argsAST[0].position else calleeAST.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, v.?.v),
     }
@@ -383,7 +383,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *V.Value) !void {
         },
         .SequenceKind => {
             try stdout.print("[", .{});
-            for (v.v.SequenceKind, 0..) |item, i| {
+            for (v.v.SequenceKind.items(), 0..) |item, i| {
                 if (i != 0) {
                     try stdout.print(", ", .{});
                 }
@@ -400,7 +400,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *V.Value) !void {
 fn printSequence(stdout: std.fs.File.Writer, vs: *V.Value) !void {
     switch (vs.v) {
         V.ValueKind.SequenceKind => {
-            for (vs.v.SequenceKind) |v| {
+            for (vs.v.SequenceKind.items()) |v| {
                 try printValue(stdout, v);
             }
         },
