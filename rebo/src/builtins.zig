@@ -21,6 +21,19 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
     return Errors.err.InterpreterError;
 }
 
+pub fn exit(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    _ = argsAST;
+    _ = calleeAST;
+    const v = machine.memoryState.getFromScope("v") orelse machine.memoryState.unitValue;
+
+    if (v.?.v == V.ValueKind.IntKind) {
+        std.os.exit(@intCast(v.?.v.IntKind));
+    } else {
+        std.os.exit(0);
+    }
+    return;
+}
+
 pub fn gc(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;

@@ -1151,25 +1151,23 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
 
     try state.openScope();
 
+    try addBuiltin(&state, "exit", &[_]V.FunctionArgument{V.FunctionArgument{
+        .name = "v",
+        .default = null,
+    }}, null, &Builtins.exit);
     try addBuiltin(&state, "gc", &[0]V.FunctionArgument{}, null, &Builtins.gc);
     try addBuiltin(&state, "import", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "file",
         .default = null,
     }}, null, &Builtins.import);
-
     try addBuiltin(&state, "imports", &[0]V.FunctionArgument{}, null, &Builtins.imports);
-
     try addBuiltin(&state, "len", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "v",
         .default = null,
     }}, null, &Builtins.len);
-
     try addBuiltin(&state, "milliTimestamp", &[0]V.FunctionArgument{}, null, &Builtins.milliTimestamp);
-
     try addBuiltin(&state, "print", &[_]V.FunctionArgument{}, "vs", &Builtins.print);
-
     try addBuiltin(&state, "println", &[_]V.FunctionArgument{}, "vs", &Builtins.println);
-
     try addBuiltin(&state, "typeof", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "v",
         .default = null,

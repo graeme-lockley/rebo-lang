@@ -14,4 +14,6 @@ _testLib("std")
 
 _testSuite("primes")
 
-test.report(true)
+let stats = test.report(true)
+
+exit(stats.failed)

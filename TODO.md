@@ -85,10 +85,10 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Boolean '!'
 - [X] '|>' pipe operator
 - [X] '<|' pipe operator
-- [ ] '>>' prepend operator leaving the underlying structure unaffected
-- [ ] '>!' prepend operator changing the underlying structure
-- [ ] '<<' append operator leaving the underlying structure unaffected
-- [ ] '<!' append operator changing the underlying structure
+- [X] '>>' prepend operator leaving the underlying structure unaffected
+- [X] '>!' prepend operator changing the underlying structure
+- [X] '<<' append operator leaving the underlying structure unaffected
+- [X] '<!' append operator changing the underlying structure
 
 # Control Statements
 
@@ -113,14 +113,15 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 # Built-in Functions
 
-- [X] len
-- [X] import
+- [X] exit
 - [X] gc - which is actually a force gc
-- [X] typeof
+- [X] import
+- [X] len
+- [X] milliTimestamp
 - [X] print
 - [X] println
-- [X] milliTimestamp
 - [ ] toString with two forms - one raw and the other literal.  The default is literal.
+- [X] typeof
 
 # Library
 
