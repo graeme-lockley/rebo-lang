@@ -130,8 +130,9 @@ There is so much to do.  The following is my work list on this project.  I will 
 ## Test
 
 - [X] Tidy up the guards once `!` has been implemented
-- [ ] Should a test fail then exit(1) otherwise exit(0) so that I can add into pipeline
+- [X] Should a test fail then exit(1) otherwise exit(0) so that I can add into pipeline
 - [ ] Fix: duration of the entire test suite is incorrectly calculated
+- [ ] Display the report after each suite rather than all at the end
 
 # REPL Features
 
