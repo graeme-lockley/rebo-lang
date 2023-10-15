@@ -12,4 +12,19 @@ let run(suite) = {
 
   "add with comma and newline separated numbers should return the sum" |>
     suite.eq(add("1,2\n3"), 6)
+
+  "add with negative numbers should return the negative numbers" |>
+    suite.eq(add("1,-2,3,-3,4"), [-2, -3])
+
+  "add with a single custom separator should return the sum" |>
+    suite.eq(add("//;\n1;2;3;4"), 10)
+
+  "add with a single multi-character custom separator should return the sum" |>
+    suite.eq(add("//[==]\n1==2==3==4"), 10)
+
+  "add with a multiple multi-character custom separator should return the sum" |>
+    suite.eq(add("//[==][*]\n1==2*3==4"), 10)
+
+  "add with numbers return the sum while ignoring all numbers greater than 1000" |>
+    suite.eq(add("1,1001,2,1009,3,1002,4"), 10)
 }

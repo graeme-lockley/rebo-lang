@@ -26,6 +26,19 @@ let ansi = {
   }
 }
 
+let any(xs, f) {
+  let lp = 0
+  let found = false
+
+  while lp < len(xs) && !found -> {
+    if f(xs[lp], lp) -> found := true
+
+    lp := lp + 1
+  }
+
+  found
+}
+
 # `each` calls the given iterator function `f` for each element of the iterable
 # `xs`. The iterator function receives arguments (`element`, `index`).
 let each(xs, f) {
@@ -138,7 +151,24 @@ let reduce(xs, f, init = ()) {
 
 # `split` breaks a string up into a sequence of substrings using the given separator.
 let split(s, sep = " ") {
-  if typeof(sep) == "String" && len(sep) > 0 -> {
+  if typeof(sep) == "Char" -> {
+      let result = []
+      let lp = 0
+      let start = 0
+
+      while lp < len(s) -> {
+        if s[lp] == sep -> {
+          result <! s[start:lp]
+          start := lp + 1
+        }
+
+        lp := lp + 1
+      }
+
+      result <! s[start:lp]
+      result
+    } 
+  | typeof(sep) == "String" && len(sep) > 0 -> {
       let result = []
       let lp = 0
       let start = 0

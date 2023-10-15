@@ -1,5 +1,28 @@
 let std = import("../lib/std.rebo")
 
-let add(v = "") =
-  if v == "" -> 0
-   | v |> std.split([",", "\n"]) |> std.map(int) |> std.reduce(fn(a, b) a + b, 0)
+let add(v = "") {
+  let tokens = 
+    if v == "" -> 
+        []
+    | v[:3] == "//[" -> {
+        let items = std.split(v[2:], "\n")
+        let delimiters = items[0][1:len(items[0]) - 1] |> std.split("][")
+
+        items[1] |> std.split(delimiters)
+      }
+    | v[:2] == "//" -> 
+        v[2:] |> std.split(v[2])
+    | v |> std.split([",", "\n"])
+
+  let numbers =
+    tokens |> std.map(int)
+
+  if std.any(numbers, negative?) -> std.filter(numbers, negative?)
+   | numbers |> sumSmallNumbers()
+}
+
+let negative?(n) = 
+  n < 0
+
+let sumSmallNumbers(ns) =
+  ns |> std.filter(fn(n) n < 1000) |> std.reduce(fn(a, b) a + b, 0)
