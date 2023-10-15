@@ -26,6 +26,38 @@ let ansi = {
   }
 }
 
+# `each` calls the given iterator function `f` for each element of the iterable
+# `xs`. The iterator function receives arguments (`element`, `index`).
+let each(xs, f) {
+  let lp = 0
+
+  while lp < len(xs) -> {
+    f(xs[lp], lp)
+
+    lp := lp + 1
+  }
+}
+
+# `filter` produces a sequence containing only the elements of `xs` that return
+# `true` when passed to the filter predicate `f`. `f` receives arguments 
+# (`element`, `index`).
+let filter(xs, f) {
+  let result = []
+  let lp = 0
+
+  while lp < len(xs) -> {
+    let item = xs[lp]
+
+    if f(item, lp) -> {
+      result <! item
+    }
+    
+    lp := lp + 1
+  }
+
+  result
+}
+
 # `range` produces a sequence of numbers from `start` to `end` (exclusive). This
 # function can also accept a set value as well as a mapping function.
 #
@@ -80,34 +112,75 @@ let range(start = 10, end = (), step = (), f = fn(n) n) {
   result
 }
 
-# `each` calls the given iterator function `f` for each element of the iterable
-# `xs`. The iterator function receives arguments (`element`, `index`).
-let each(xs, f) {
-  let lp = 0
-
-  while lp < len(xs) -> {
-    f(xs[lp], lp)
-
-    lp := lp + 1
-  }
-}
-
-# `filter` produces a sequence containing only the elements of `xs` that return
-# `true` when passed to the filter predicate `f`. `f` receives arguments 
-# (`element`, `index`).
-let filter(xs, f) {
+let map(xs, f) {
   let result = []
   let lp = 0
 
   while lp < len(xs) -> {
-    let item = xs[lp]
-
-    if f(item, lp) -> {
-      result <! item
-    }
-    
+    result <! f(xs[lp], lp)
     lp := lp + 1
   }
 
   result
+}
+
+let reduce(xs, f, init = ()) {
+  let result = init
+  let lp = 0
+
+  while lp < len(xs) -> {
+    result := f(result, xs[lp], lp)
+    lp := lp + 1
+  }
+
+  result
+}
+
+# `split` breaks a string up into a sequence of substrings using the given separator.
+let split(s, sep = " ") {
+  if typeof(sep) == "String" && len(sep) > 0 -> {
+      let result = []
+      let lp = 0
+      let start = 0
+
+      while lp < len(s) -> {
+        if s[lp:lp + len(sep)] == sep -> {
+          result <! s[start:lp]
+          start := lp + len(sep)
+        }
+
+        lp := lp + 1
+      }
+
+      result <! s[start:lp]
+      result
+    }
+  | typeof(sep) == "Sequence" && len(sep) > 0 -> {
+      let result = []
+      let lp = 0
+      let start = 0
+
+      while lp < len(s) -> {
+        let found = false
+        let sp = 0
+
+        while (!found) && sp < len(sep) -> {
+          println("-- sep: ", sep, ", sp: ", sp, ", len(sep): ", len(sep), ", sep[sp]: ", sep[sp])
+
+          if s[lp:lp + len(sep[sp])] == sep[sp] -> found := true
+           | sp := sp + 1
+        }
+
+        if found -> {
+          result <! s[start:lp]
+          start := lp + len(sep[sp])
+        }
+
+        lp := lp + 1
+      }
+
+      result <! s[start:lp]
+      result
+    }
+  | []
 }

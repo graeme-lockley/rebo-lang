@@ -1,3 +1,5 @@
+let std = import("../lib/std.rebo")
+
 let add(v = "") =
   if v == "" -> 0
-   | int(v)
+   | v |> std.split([",", "\n"]) |> std.map(int) |> std.reduce(fn(a, b) a + b, 0)

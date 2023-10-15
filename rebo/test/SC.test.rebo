@@ -6,4 +6,10 @@ let run(suite) = {
 
   "add with a single number should return that number" |>
     suite.eq(add("1"), 1)
+
+  "add with comma separated numbers should return the sum" |>
+    suite.eq(add("1,2,3"), 6)
+
+  "add with comma and newline separated numbers should return the sum" |>
+    suite.eq(add("1,2\n3"), 6)
 }
