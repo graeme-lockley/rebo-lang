@@ -20,7 +20,12 @@ jobs:
         with:
           zig-version: 0.11.0 # released versions or master
 
-      - name: Test
+      - name: Test Build
         run: |
           cd ./rebo
           zig build test
+
+      - name: Test Rebo
+        run: |
+          cd ./rebo
+          zig build run -- ./test/suite.rebo
