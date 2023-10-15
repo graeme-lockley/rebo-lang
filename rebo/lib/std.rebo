@@ -26,6 +26,59 @@ let ansi = {
   }
 }
 
+# `range` produces a sequence of numbers from `start` to `end` (exclusive). This
+# function can also accept a set value as well as a mapping function.
+#
+# ``` rebo
+# range(10) == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+# range(1, 10) == [1, 2, 3, 4, 5, 6, 7, 8, 9]
+# range(1, 10, 2) == [1, 3, 5, 7, 9]
+# range(1, 10, 2, fn(n) n * n) == [1, 9, 25, 49, 81]
+# range(10, 1, -1) == [10, 9, 8, 7, 6, 5, 4, 3, 2]
+# ```
+let range(start = 10, end = (), step = (), f = fn(n) n) { 
+  if step == 0 -> {
+    step := ()
+  }
+
+  if end == () -> {
+    end := start
+    start := 0
+  }
+
+  if start <= end && step == () -> {
+    step := 1
+  }
+
+  if start > end && step == () -> {
+    step := -1
+  }
+
+  let result = []
+  if step > 0 -> {
+    if f == () ->
+      while start < end -> {
+        result <! start
+        start := start + step
+      }
+    | while start < end -> {
+        result <! f(start)
+        start := start + step
+      }
+  } | {
+    if f == () ->
+      while start > end -> {
+        result <! start
+        start := start + step
+      }
+    | while start > end -> {
+        result <! f(start)
+        start := start + step
+      }
+  }
+
+  result
+}
 
 # `each` calls the given iterator function `f` for each element of the iterable
 # `xs`. The iterator function receives arguments (`element`, `index`).

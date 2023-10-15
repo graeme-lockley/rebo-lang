@@ -4,10 +4,13 @@ let Test = import("../lib/test.rebo")
 let test = Test.harness("suite.rebo")
 
 let _testSuite(name) = import("./" + name + ".test.rebo").run(test.suite(name))
+let _testLib(name) = import("./../lib/" + name + ".test.rebo").run(test.suite(name))
 
 _testSuite("lang/if-statement")
 _testSuite("lang/pipe-operator")
 _testSuite("lang/while-statement")
+
+_testLib("std")
 
 _testSuite("primes")
 
