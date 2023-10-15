@@ -155,7 +155,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             if (evalExpr(machine, lhs.kind.indexRange.expr)) return true;
             const sequence = machine.memoryState.peek(0);
             if (sequence.v != V.ValueValue.SequenceKind) {
-                machine.replaceErr(Errors.recordValueExpectedError(machine.memoryState.allocator, lhs.kind.indexRange.expr.position));
+                machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v) catch |err| return errorHandler(err));
                 return true;
             }
 
@@ -168,7 +168,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             const v = machine.memoryState.peek(0);
 
             if (v.v != V.ValueValue.SequenceKind) {
-                machine.replaceErr(Errors.expectedATypeError(machine.memoryState.allocator, lhs.kind.indexRange.expr.position, V.ValueValue.RecordKind, v.v) catch |err| return errorHandler(err));
+                machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, v.v) catch |err| return errorHandler(err));
                 return true;
             }
 

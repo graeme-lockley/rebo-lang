@@ -314,6 +314,17 @@ pub fn expectedATypeError(allocator: std.mem.Allocator, position: Position, expe
     return expectedTypeError(allocator, position, exp, found);
 }
 
+pub fn reportExpectedTypeError(allocator: std.mem.Allocator, position: Position, expected: []const ValueKind, v: ValueKind) !Error {
+    var exp = try allocator.alloc(ValueKind, expected.len);
+    errdefer allocator.free(exp);
+
+    for (expected, 0..) |vk, i| {
+        exp[i] = vk;
+    }
+
+    return expectedTypeError(allocator, position, exp, v);
+}
+
 pub fn expectedTypeError(allocator: std.mem.Allocator, position: Position, expected: []ValueKind, found: ValueKind) Error {
     return Error{ .expectedTypeError = .{ .allocator = allocator, .position = position, .expected = expected, .found = found } };
 }
