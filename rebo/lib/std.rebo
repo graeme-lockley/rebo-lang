@@ -165,8 +165,6 @@ let split(s, sep = " ") {
         let sp = 0
 
         while (!found) && sp < len(sep) -> {
-          println("-- sep: ", sep, ", sp: ", sp, ", len(sep): ", len(sep), ", sep[sp]: ", sep[sp])
-
           if s[lp:lp + len(sep[sp])] == sep[sp] -> found := true
            | sp := sp + 1
         }
