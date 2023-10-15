@@ -718,7 +718,7 @@ pub const Parser = struct {
             },
             Lexer.TokenKind.Bang => {
                 try self.skipToken();
-                const value = try self.expression();
+                const value = try self.qualifier();
                 errdefer AST.destroy(self.allocator, value);
 
                 const v = try self.allocator.create(AST.Expression);

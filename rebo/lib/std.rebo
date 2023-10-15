@@ -164,7 +164,7 @@ let split(s, sep = " ") {
         let found = false
         let sp = 0
 
-        while (!found) && sp < len(sep) -> {
+        while !found && sp < len(sep) -> {
           if s[lp:lp + len(sep[sp])] == sep[sp] -> found := true
            | sp := sp + 1
         }

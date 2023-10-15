@@ -45,7 +45,11 @@ And
     ;
 
 Equality
-    : Relational [("==" | "!=" | "<" | "<=" | ">" | ">=") Relational]
+    : Starpend [("==" | "!=" | "<" | "<=" | ">" | ">=") Starpend]
+    ;
+
+Starpend
+    : Additive {(">>" | ">!" | "<<" | "<!") Additive}
     ;
 
 Additive
@@ -79,7 +83,7 @@ Factor
     | LiteralString
     | "[" [Expression {"," ["..."] Expression}] "]"
     | "fn" FunctionTail
-    | "!" Expression
+    | "!" Qualifier
     ;
 
 FunctionTail
