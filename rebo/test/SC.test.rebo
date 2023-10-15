@@ -1,0 +1,9 @@
+let add = import("./SC.rebo").add
+
+let run(suite) = {
+  "add without arguments should return 0" |>
+    suite.eq(add(), 0)
+
+  "add with a single number should return that number" |>
+    suite.eq(add("1"), 1)
+}

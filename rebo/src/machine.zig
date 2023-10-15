@@ -1161,6 +1161,16 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .default = null,
     }}, null, &Builtins.import);
     try addBuiltin(&state, "imports", &[0]V.FunctionArgument{}, null, &Builtins.imports);
+    try addBuiltin(&state, "int", &[_]V.FunctionArgument{ V.FunctionArgument{
+        .name = "value",
+        .default = null,
+    }, V.FunctionArgument{
+        .name = "default",
+        .default = null,
+    }, V.FunctionArgument{
+        .name = "base",
+        .default = null,
+    } }, null, &Builtins.int);
     try addBuiltin(&state, "len", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "v",
         .default = null,

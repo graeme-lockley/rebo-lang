@@ -116,11 +116,13 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] exit
 - [X] gc - which is actually a force gc
 - [X] import
+- [X] imports
+- [X] int
 - [X] len
 - [X] milliTimestamp
 - [X] print
 - [X] println
-- [ ] toString with two forms - one raw and the other literal.  The default is literal.
+- [ ] string with two forms - one raw and the other literal.  The default is literal.
 - [X] typeof
 
 # Library

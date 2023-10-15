@@ -1,0 +1,3 @@
+let add(v = "") =
+  if v == "" -> 0
+   | int(v)
