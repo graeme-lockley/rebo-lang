@@ -465,6 +465,20 @@ pub fn println(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Ex
     try machine.memoryState.pushUnitValue();
 }
 
+pub fn str(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    _ = calleeAST;
+    _ = argsAST;
+    const v = machine.memoryState.getFromScope("value") orelse machine.memoryState.unitValue;
+
+    try machine.memoryState.pushOwnedStringValue(try v.?.toString(machine.memoryState.allocator));
+
+    return;
+}
+
+test "str" {
+    try Main.expectExprEqual("str(1)", "\"1\"");
+}
+
 pub fn typeof(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;
