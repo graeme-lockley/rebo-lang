@@ -1,0 +1,29 @@
+#!env rebo
+
+let CLI = import("../lib/cli.rebo")
+let Std = import("../lib/std.rebo")
+let Test = import("../lib/test.rebo")
+
+let args = CLI.parse()
+
+let test = Test.harness("suite")
+
+let args' = (if args.verb == () -> [] | [args.verb]) + args.args
+
+args'
+  |> Std.each(fn(name) {
+      let module = import(name)
+
+      if typeof(module) == "Record" && typeof(module.run) == "Function" ->
+          module.run(test.suite(name))
+      | {
+          println("Error: File ", name, " did not load correctly or does not have a run function: ", module)
+          exit(1)
+        } 
+    })
+
+let silent = if args.opts.silent -> true | false
+let showTotals = if args.opts["no-totals"] -> false | true
+let stats = test.report(showTotals, silent)
+
+exit(stats.failed)
