@@ -127,6 +127,11 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 # Library
 
+## CLI
+
+- [X] Implement based on Oak
+- [ ] Add support for flag + or - suffix to enable is disable.
+
 ## Test
 
 - [X] Tidy up the guards once `!` has been implemented
