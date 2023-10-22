@@ -44,4 +44,4 @@ let parseArgs(argv) {
   }
 }
 
-let parse() = parseArgs(args())
+let parse() = parseArgs(rebo.args)
