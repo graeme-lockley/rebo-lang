@@ -17,7 +17,10 @@ pub fn main() !void {
     var args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    if (args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
+    if (args.len == 1) {
+        std.debug.print("Usage: {s} [file ...args | repl]\n", .{args[0]});
+        std.process.exit(1);
+    } else if (args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
         var buffer = try allocator.alloc(u8, 1024);
         defer allocator.free(buffer);
 
