@@ -1,9 +1,8 @@
 let Std = import("./std.rebo")
-let Str = import("./str.rebo")
 
 let _option(part) =
-  if Str.startsWith?(part, "--") -> Str.dropStart(part, 2)
-   | Str.startsWith?(part, "-") -> Str.dropStart(part, 1)
+  if part[0:2] == "--" -> part[2:]
+   | part[0] == '-' -> part[1:]
    | ()
 
 let parseArgs(argv) {
@@ -13,8 +12,8 @@ let parseArgs(argv) {
   let lastOpt = ()
   let onlyPositional? = false
 
-  let verb = if argv[2] == () || Str.startsWith?(argv[2], "-") -> () | argv[2]
-  let argv' = if verb == () -> Str.dropStart(argv, 2) | Str.dropStart(argv, 3)
+  let verb = if argv[2] == () || argv[2][0] == '-' -> () | argv[2]
+  let argv' = if verb == () -> argv[2:] | argv[3:]
 
   argv' |> Std.each(fn(part) {
     let opt = _option(part)
