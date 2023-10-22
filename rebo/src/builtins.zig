@@ -12,6 +12,20 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
     return Errors.err.InterpreterError;
 }
 
+pub fn cwd(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    _ = argsAST;
+    _ = calleeAST;
+    var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+
+    const c = std.os.getcwd(&buf) catch {
+        try machine.memoryState.pushStringValue("./");
+        return;
+    };
+
+    try machine.memoryState.pushStringValue(c);
+    return;
+}
+
 pub fn exit(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;

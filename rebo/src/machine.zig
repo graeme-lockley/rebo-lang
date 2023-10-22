@@ -1132,6 +1132,21 @@ fn addBuiltin(
     try state.addToScope(name, value);
 }
 
+fn addRebo(state: *MS.MemoryState) !void {
+    var args = try std.process.argsAlloc(state.allocator);
+    defer std.process.argsFree(state.allocator, args);
+
+    const value = try state.newValue(V.ValueValue{ .RecordKind = std.StringHashMap(*V.Value).init(state.allocator) });
+    try state.addToScope("rebo", value);
+
+    const reboArgs = try state.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(state.allocator) });
+    try V.recordSet(state.allocator, &value.v.RecordKind, "args", reboArgs);
+
+    for (args) |arg| {
+        try reboArgs.v.SequenceKind.append(try state.newStringValue(arg));
+    }
+}
+
 fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
     const default_colour = V.Colour.White;
 
@@ -1151,6 +1166,7 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
 
     try state.openScope();
 
+    try addBuiltin(&state, "cwd", &[0]V.FunctionArgument{}, null, &Builtins.cwd);
     try addBuiltin(&state, "exit", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "v",
         .default = null,
@@ -1190,6 +1206,8 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .name = "v",
         .default = null,
     }}, null, &Builtins.typeof);
+
+    try addRebo(&state);
 
     try state.openScope();
 

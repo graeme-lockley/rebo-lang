@@ -61,12 +61,12 @@ pub const MemoryState = struct {
         _ = try self.pushValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
     }
 
-    // pub fn pushOwnedSequenceValue(self: *MemoryState, v: []*V.Value) !void {
-    //     _ = try self.pushValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator, v) });
-    // }
+    pub fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
+        return try self.newValue(V.ValueValue{ .StringKind = try self.allocator.dupe(u8, v) });
+    }
 
     pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
-        _ = try self.pushValue(V.ValueValue{ .StringKind = try self.allocator.dupe(u8, v) });
+        _ = try self.push(try self.newStringValue(v));
     }
 
     pub fn pushOwnedStringValue(self: *MemoryState, v: []u8) !void {
