@@ -1,0 +1,50 @@
+let Str = import("./str.rebo")
+
+let run(suite) {
+  runDropEnd(suite.suite("dropEnd"))
+  runDropStart(suite.suite("dropStart"))
+  runEndsWith?(suite.suite("endsWith?"))
+  runStartsWith?(suite.suite("startsWith?"))
+}
+
+let runDropEnd(suite) {
+  let _dropEnd(s, n, expected) =
+    suite.eq("\"" + s + "\" " + str(n), Str.dropEnd(s, n), expected)
+
+  _dropEnd("", 0, "")
+  _dropEnd("hello", 0, "hello")
+  _dropEnd("hello", 2, "hel")
+  _dropEnd("hello", 10, "")
+}
+
+let runDropStart(suite) {
+  let _dropStart(s, n, expected) =
+    suite.eq("\"" + s + "\" " + str(n), Str.dropStart(s, n), expected)
+
+  _dropStart("", 0, "")
+  _dropStart("hello", 0, "hello")
+  _dropStart("hello", 2, "llo")
+  _dropStart("hello", 10, "")
+}
+
+let runEndsWith?(suite) {
+  let _endsWith?(s, prefix, expected) =
+    suite.eq("\"" + s + "\" \"" + prefix + "\"", Str.endsWith?(s, prefix), expected)
+
+  _endsWith?("", "", true)
+  _endsWith?("hello", "", true)
+  _endsWith?("hello", "lo", true)
+  _endsWith?("hello", "lllo", false)
+  _endsWith?("hello", "shello", false)
+}
+
+let runStartsWith?(suite) {
+  let _startsWith?(s, prefix, expected) =
+    suite.eq("\"" + s + "\" \"" + prefix + "\"", Str.startsWith?(s, prefix), expected)
+
+  _startsWith?("", "", true)
+  _startsWith?("hello", "", true)
+  _startsWith?("hello", "he", true)
+  _startsWith?("hello", "help", false)
+  _startsWith?("hello", "hellos", false)
+}

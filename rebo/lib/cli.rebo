@@ -1,0 +1,48 @@
+let Std = import("./std.rebo")
+let Str = import("./str.rebo")
+
+let _option(part) =
+  if Str.startsWith?(part, "--") -> Str.dropStart(part, 2)
+   | Str.startsWith?(part, "-") -> Str.dropStart(part, 1)
+   | ()
+
+let parseArgs(argv) {
+  let opts = {}
+  let args = []
+
+  let lastOpt = ()
+  let onlyPositional? = false
+
+  let verb = if argv[2] == () || Str.startsWith?(argv[2], "-") -> () | argv[2]
+  let argv' = if verb == () -> Str.dropStart(argv, 2) | Str.dropStart(argv, 3)
+
+  argv' |> Std.each(fn(part) {
+    let opt = _option(part)
+
+    if part == "--" ->
+        onlyPositional? := true
+    | onlyPositional? ->
+        args <! part
+    | lastOpt == () && opt == () ->
+        args <! part
+    | lastOpt != () && opt == () -> 
+        { opts[lastOpt] := part ; lastOpt := () }
+    | lastOpt == () && opt != () ->
+        lastOpt := opt
+    | lastOpt != () && opt != () ->
+        { opts[lastOpt] := true ; lastOpt := opt }
+  })
+
+  if lastOpt != () ->
+    opts[lastOpt] := true
+
+  {
+    exe: argv[0],
+    main: argv[1],
+    verb: verb,
+    opts: opts,
+    args: args
+  }
+}
+
+let parse() = parseArgs(args())

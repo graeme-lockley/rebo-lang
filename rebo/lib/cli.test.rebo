@@ -1,0 +1,109 @@
+let CLI = import("./cli.rebo")
+let Std = import("./std.rebo")
+
+let _parse(args) =
+  ["/bin/rebo", "main.rebo"] + Std.split(args, " ") |> Std.filter(fn(s) s != "") |> CLI.parseArgs()
+
+let run(suite) {
+  let argsEq(args, expected) =
+    args |> suite.eq(_parse(args), expected)
+
+  "no args" |> suite.eq(_parse(""), {
+    exe: "/bin/rebo",
+    main: "main.rebo",
+    opts: {},
+    args: []
+  })
+
+  "-a -b" |> argsEq({
+    exe: "/bin/rebo",
+    main: "main.rebo",
+    opts: {
+      a: true,
+      b: true
+    },
+    args: []
+  })
+
+  "compile" |> argsEq({
+    exe: "/bin/rebo",
+    main: "main.rebo",
+    verb: "compile",
+    opts: {},
+    args: []
+  })
+
+  "compile -f" |> argsEq({
+    exe: "/bin/rebo",
+    main: "main.rebo",
+    verb: "compile",
+    opts: {
+      f: true
+    },
+    args: []
+  })
+
+  "compile -f fred" |> argsEq({
+    exe: "/bin/rebo",
+    main: "main.rebo",
+    verb: "compile",
+    opts: {
+      f: "fred"
+    },
+    args: []
+  })
+
+  "compile --f fred" |> argsEq({
+    exe: "/bin/rebo",
+    main: "main.rebo",
+    verb: "compile",
+    opts: {
+      f: "fred"
+    },
+    args: []
+  })
+
+  "compile -f -- fred" |> argsEq({
+    exe: "/bin/rebo",
+    main: "main.rebo",
+    verb: "compile",
+    opts: {
+      f: true
+    },
+    args: ["fred"]
+  })
+
+  "compile --f -- fred" |> argsEq({
+    exe: "/bin/rebo",
+    main: "main.rebo",
+    verb: "compile",
+    opts: {
+      f: true
+    },
+    args: ["fred"]
+  })
+
+  "compile -a -b -c" |> argsEq({
+    exe: "/bin/rebo",
+    main: "main.rebo",
+    verb: "compile",
+    opts: {
+      a: true,
+      b: true,
+      c: true
+    },
+    args: []
+  })
+
+  "compile --a --b --c" |> argsEq({
+    exe: "/bin/rebo",
+    main: "main.rebo",
+    verb: "compile",
+    opts: {
+      a: true,
+      b: true,
+      c: true
+    },
+    args: []
+  })
+}

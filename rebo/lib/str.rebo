@@ -1,0 +1,11 @@
+let endsWith?(s, suffix) = 
+  s[len(s) - len(suffix):] == suffix
+
+let startsWith?(s, prefix) = 
+  s[0:len(prefix)] == prefix
+
+let dropStart(s, n) = 
+  s[n:]
+
+let dropEnd(s, n) =
+  s[0:len(s) - n]

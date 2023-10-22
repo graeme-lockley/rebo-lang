@@ -1,4 +1,4 @@
-#!/Users/graemelockley/Projects/rebo-lang/rebo/zig-out/bin/rebo
+#!/Users/graeme.lockley/Projects/rebo-lang/rebo/zig-out/bin/rebo
 
 let Test = import("../lib/test.rebo")
 let test = Test.harness("suite.rebo")
@@ -10,7 +10,9 @@ _testSuite("lang/if-statement")
 _testSuite("lang/pipe-operator")
 _testSuite("lang/while-statement")
 
+_testLib("cli")
 _testLib("std")
+_testLib("str")
 
 _testSuite("primes")
 _testSuite("SC")
