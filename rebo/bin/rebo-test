@@ -2,17 +2,29 @@
 
 let CLI = import("../lib/cli.rebo")
 let Std = import("../lib/std.rebo")
+let Str = import("../lib/str.rebo")
 let Test = import("../lib/test.rebo")
 
 let args = CLI.parse()
 
 let test = Test.harness("suite")
 
+let normaliseName(name) {
+  if name[0] == '/' -> name
+  | {
+      let dir = cwd()
+
+      if Str.endsWith?(dir, "/") -> dir + name
+      | dir + "/" + name
+    }
+}
+
 let args' = (if args.verb == () -> [] | [args.verb]) + args.args
 
 args'
   |> Std.each(fn(name) {
-      let module = import(name)
+      let normalisedName = normaliseName(name)
+      let module = import(normalisedName)
 
       if typeof(module) == "Record" && typeof(module.run) == "Function" ->
           module.run(test.suite(name))
