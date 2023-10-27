@@ -112,17 +112,16 @@ pub const ParserError = struct {
 };
 
 pub const ExpectedTypeError = struct {
-    allocator: std.mem.Allocator,
     position: Position,
     expected: []ValueKind,
     found: ValueKind,
 
-    pub fn deinit(self: ExpectedTypeError) void {
-        self.allocator.free(self.expected);
+    pub fn deinit(self: ExpectedTypeError, allocator: std.mem.Allocator) void {
+        allocator.free(self.expected);
     }
 
-    pub fn print(self: ExpectedTypeError) !void {
-        var buffer = std.ArrayList(u8).init(self.allocator);
+    pub fn print(self: ExpectedTypeError, allocator: std.mem.Allocator) !void {
+        var buffer = std.ArrayList(u8).init(allocator);
         defer buffer.deinit();
 
         try std.fmt.format(buffer.writer(), "Expected Type: {d}-{d}: received value of type {s} but expected ", .{ self.position.start, self.position.end, self.found.toString() });
@@ -135,7 +134,7 @@ pub const ExpectedTypeError = struct {
 
         const msg = try buffer.toOwnedSlice();
         std.log.err("{s}", .{msg});
-        self.allocator.free(msg);
+        allocator.free(msg);
     }
 };
 
@@ -153,7 +152,25 @@ pub const UnknownIdentifierError = struct {
     }
 };
 
-pub const Error = union(enum) {
+pub const Error = struct {
+    allocator: std.mem.Allocator,
+    detail: ErrorDetail,
+    stack: u32,
+
+    pub fn init(allocator: std.mem.Allocator, detail: ErrorDetail) !Error {
+        return Error{ .allocator = allocator, .detail = detail, .stack = 0 };
+    }
+
+    pub fn deinit(self: *Error) void {
+        self.detail.deinit(self.allocator);
+    }
+
+    pub fn print(self: *Error) !void {
+        try self.detail.print(self.allocator);
+    }
+};
+
+pub const ErrorDetail = union(enum) {
     divideByZero: DivideByZeroError,
     expectedTypeError: ExpectedTypeError,
     incompatibleOperandTypesError: IncompatibleOperandTypesError,
@@ -165,13 +182,13 @@ pub const Error = union(enum) {
     parserError: ParserError,
     unknownIdentifierError: UnknownIdentifierError,
 
-    pub fn deinit(self: Error) void {
+    pub fn deinit(self: ErrorDetail, allocator: std.mem.Allocator) void {
         switch (self) {
             .divideByZero => {
                 self.divideByZero.deinit();
             },
             .expectedTypeError => {
-                self.expectedTypeError.deinit();
+                self.expectedTypeError.deinit(allocator);
             },
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.deinit();
@@ -200,13 +217,13 @@ pub const Error = union(enum) {
         }
     }
 
-    pub fn print(self: Error) !void {
+    pub fn print(self: ErrorDetail, allocator: std.mem.Allocator) !void {
         switch (self) {
             .divideByZero => {
                 self.divideByZero.print();
             },
             .expectedTypeError => {
-                try self.expectedTypeError.print();
+                try self.expectedTypeError.print(allocator);
             },
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.print();
@@ -240,8 +257,8 @@ pub fn boolValueExpectedError(allocator: std.mem.Allocator, position: Position, 
     return expectedATypeError(allocator, position, ValueKind.BoolKind, found);
 }
 
-pub fn divideByZeroError(allocator: std.mem.Allocator, position: Position) Error {
-    return Error{ .divideByZero = .{ .allocator = allocator, .position = position } };
+pub fn divideByZeroError(allocator: std.mem.Allocator, position: Position) !Error {
+    return Error.init(allocator, ErrorDetail{ .divideByZero = .{ .allocator = allocator, .position = position } });
 }
 
 pub fn expectedATypeError(allocator: std.mem.Allocator, position: Position, expected: ValueKind, found: ValueKind) !Error {
@@ -261,11 +278,11 @@ pub fn reportExpectedTypeError(allocator: std.mem.Allocator, position: Position,
         exp[i] = vk;
     }
 
-    return expectedTypeError(allocator, position, exp, v);
+    return try expectedTypeError(allocator, position, exp, v);
 }
 
-pub fn expectedTypeError(allocator: std.mem.Allocator, position: Position, expected: []ValueKind, found: ValueKind) Error {
-    return Error{ .expectedTypeError = .{ .allocator = allocator, .position = position, .expected = expected, .found = found } };
+pub fn expectedTypeError(allocator: std.mem.Allocator, position: Position, expected: []ValueKind, found: ValueKind) !Error {
+    return Error.init(allocator, ErrorDetail{ .expectedTypeError = .{ .position = position, .expected = expected, .found = found } });
 }
 
 pub fn functionValueExpectedError(allocator: std.mem.Allocator, position: Position, found: ValueKind) !Error {
@@ -278,60 +295,60 @@ pub fn incompatibleOperandTypesError(
     op: AST.Operator,
     left: ValueKind,
     right: ValueKind,
-) Error {
-    return Error{ .incompatibleOperandTypesError = .{
+) !Error {
+    return Error.init(allocator, ErrorDetail{ .incompatibleOperandTypesError = .{
         .allocator = allocator,
         .position = position,
         .op = op,
         .left = left,
         .right = right,
-    } };
+    } });
 }
 
-pub fn invalidLHSError(allocator: std.mem.Allocator, position: Position) Error {
-    return Error{ .invalidLHSError = .{ .allocator = allocator, .position = position } };
+pub fn invalidLHSError(allocator: std.mem.Allocator, position: Position) !Error {
+    return Error.init(allocator, ErrorDetail{ .invalidLHSError = .{ .allocator = allocator, .position = position } });
 }
 
-pub fn indexOutOfRangeError(position: Position, idx: Value.IntType, lower: Value.IntType, upper: Value.IntType) Error {
-    return Error{ .indexOutOfRangeError = .{
+pub fn indexOutOfRangeError(allocator: std.mem.Allocator, position: Position, idx: Value.IntType, lower: Value.IntType, upper: Value.IntType) !Error {
+    return Error.init(allocator, ErrorDetail{ .indexOutOfRangeError = .{
         .position = position,
         .idx = idx,
         .lower = lower,
         .upper = upper,
-    } };
+    } });
 }
 
 pub fn lexicalError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {
-    return Error{ .lexicalError = .{
+    return Error.init(allocator, ErrorDetail{ .lexicalError = .{
         .allocator = allocator,
         .position = position,
         .lexeme = try allocator.dupe(u8, lexeme),
-    } };
+    } });
 }
 
 pub fn literalFloatOverflowError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {
-    return Error{ .literalFloatOverflowError = .{
+    return Error.init(allocator, ErrorDetail{ .literalFloatOverflowError = .{
         .allocator = allocator,
         .position = position,
         .lexeme = try allocator.dupe(u8, lexeme),
-    } };
+    } });
 }
 
 pub fn literalIntOverflowError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8) !Error {
-    return Error{ .literalIntOverflowError = .{
+    return Error.init(allocator, ErrorDetail{ .literalIntOverflowError = .{
         .allocator = allocator,
         .position = position,
         .lexeme = try allocator.dupe(u8, lexeme),
-    } };
+    } });
 }
 
 pub fn parserError(allocator: std.mem.Allocator, position: Position, lexeme: []const u8, expected: []const TokenKind) !Error {
-    return Error{ .parserError = .{
+    return Error.init(allocator, ErrorDetail{ .parserError = .{
         .allocator = allocator,
         .position = position,
         .lexeme = try allocator.dupe(u8, lexeme),
         .expected = expected,
-    } };
+    } });
 }
 
 pub fn recordValueExpectedError(allocator: std.mem.Allocator, position: Position, found: ValueKind) !Error {
@@ -339,9 +356,9 @@ pub fn recordValueExpectedError(allocator: std.mem.Allocator, position: Position
 }
 
 pub fn unknownIdentifierError(allocator: std.mem.Allocator, position: Position, identifier: []const u8) !Error {
-    return Error{ .unknownIdentifierError = .{
+    return Error.init(allocator, ErrorDetail{ .unknownIdentifierError = .{
         .allocator = allocator,
         .position = position,
         .identifier = try allocator.dupe(u8, identifier),
-    } };
+    } });
 }

@@ -66,7 +66,7 @@ fn printResult(allocator: std.mem.Allocator, v: ?*V.Value) !void {
 }
 
 fn errorHandler(err: anyerror, machine: *Machine.Machine) void {
-    const e = machine.grabErr();
+    var e = machine.grabErr();
     if (e == null) {
         std.debug.print("Error: {}\n", .{err});
     } else {
@@ -164,7 +164,7 @@ fn expectError(input: []const u8) !void {
         }
     }
 
-    const err = gpa.deinit();
+    var err = gpa.deinit();
     if (err == std.heap.Check.leak) {
         std.log.err("Failed to deinit allocator\n", .{});
         return error.TestingError;

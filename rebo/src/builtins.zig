@@ -164,7 +164,7 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
             try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "__FILE", __file.?);
         }
 
-        const e = machine.grabErr();
+        var e = machine.grabErr();
         if (e == null) {
             std.debug.print("Error: {}\n", .{err});
         } else {
@@ -196,7 +196,7 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
             try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "__FILE", __file.?);
         }
 
-        const e = machine.grabErr();
+        var e = machine.grabErr();
         if (e == null) {
             std.debug.print("Error: {}\n", .{err});
         } else {
