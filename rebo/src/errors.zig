@@ -11,20 +11,6 @@ pub const Position = struct {
     end: usize,
 };
 
-pub const BoolValueExpectedError = struct {
-    allocator: std.mem.Allocator,
-    position: Position,
-    found: ValueKind,
-
-    pub fn deinit(self: BoolValueExpectedError) void {
-        _ = self;
-    }
-
-    pub fn print(self: BoolValueExpectedError) void {
-        std.log.err("Type Error: {d}-{d}: if guard needs to be boolean rather than {s}", .{ self.position.start, self.position.end, self.found.toString() });
-    }
-};
-
 pub const DivideByZeroError = struct {
     allocator: std.mem.Allocator,
     position: Position,
@@ -35,19 +21,6 @@ pub const DivideByZeroError = struct {
 
     pub fn print(self: DivideByZeroError) void {
         std.log.err("Divide By Zero: {d}-{d}", .{ self.position.start, self.position.end });
-    }
-};
-
-pub const FunctionValueExpectedError = struct {
-    allocator: std.mem.Allocator,
-    position: Position,
-
-    pub fn deinit(self: FunctionValueExpectedError) void {
-        _ = self;
-    }
-
-    pub fn print(self: FunctionValueExpectedError) void {
-        std.log.err("Function Value Expected: {d}-{d}: expression value is not a function", .{ self.position.start, self.position.end });
     }
 };
 
@@ -138,19 +111,6 @@ pub const ParserError = struct {
     }
 };
 
-pub const RecordValueExpectedError = struct {
-    allocator: std.mem.Allocator,
-    position: Position,
-
-    pub fn deinit(self: RecordValueExpectedError) void {
-        _ = self;
-    }
-
-    pub fn print(self: RecordValueExpectedError) void {
-        std.log.err("Record Value Expected: {d}-{d}: expression value is not a record", .{ self.position.start, self.position.end });
-    }
-};
-
 pub const ExpectedTypeError = struct {
     allocator: std.mem.Allocator,
     position: Position,
@@ -194,10 +154,8 @@ pub const UnknownIdentifierError = struct {
 };
 
 pub const Error = union(enum) {
-    boolValueExpected: BoolValueExpectedError,
     divideByZero: DivideByZeroError,
     expectedTypeError: ExpectedTypeError,
-    functionValueExpectedError: FunctionValueExpectedError,
     incompatibleOperandTypesError: IncompatibleOperandTypesError,
     indexOutOfRangeError: IndexOutOfRangeError,
     invalidLHSError: InvalidLHSError,
@@ -205,22 +163,15 @@ pub const Error = union(enum) {
     literalFloatOverflowError: LexicalError,
     literalIntOverflowError: LexicalError,
     parserError: ParserError,
-    recordValueExpectedError: RecordValueExpectedError,
     unknownIdentifierError: UnknownIdentifierError,
 
     pub fn deinit(self: Error) void {
         switch (self) {
-            .boolValueExpected => {
-                self.boolValueExpected.deinit();
-            },
             .divideByZero => {
                 self.divideByZero.deinit();
             },
             .expectedTypeError => {
                 self.expectedTypeError.deinit();
-            },
-            .functionValueExpectedError => {
-                self.functionValueExpectedError.deinit();
             },
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.deinit();
@@ -243,9 +194,6 @@ pub const Error = union(enum) {
             .parserError => {
                 self.parserError.deinit();
             },
-            .recordValueExpectedError => {
-                self.recordValueExpectedError.deinit();
-            },
             .unknownIdentifierError => {
                 self.unknownIdentifierError.deinit();
             },
@@ -254,17 +202,11 @@ pub const Error = union(enum) {
 
     pub fn print(self: Error) !void {
         switch (self) {
-            .boolValueExpected => {
-                self.boolValueExpected.print();
-            },
             .divideByZero => {
                 self.divideByZero.print();
             },
             .expectedTypeError => {
                 try self.expectedTypeError.print();
-            },
-            .functionValueExpectedError => {
-                self.functionValueExpectedError.print();
             },
             .incompatibleOperandTypesError => {
                 self.incompatibleOperandTypesError.print();
@@ -287,9 +229,6 @@ pub const Error = union(enum) {
             .parserError => {
                 try self.parserError.print();
             },
-            .recordValueExpectedError => {
-                self.recordValueExpectedError.print();
-            },
             .unknownIdentifierError => {
                 self.unknownIdentifierError.print();
             },
@@ -297,8 +236,8 @@ pub const Error = union(enum) {
     }
 };
 
-pub fn boolValueExpectedError(allocator: std.mem.Allocator, position: Position, found: ValueKind) Error {
-    return Error{ .boolValueExpected = .{ .allocator = allocator, .position = position, .found = found } };
+pub fn boolValueExpectedError(allocator: std.mem.Allocator, position: Position, found: ValueKind) !Error {
+    return expectedATypeError(allocator, position, ValueKind.BoolKind, found);
 }
 
 pub fn divideByZeroError(allocator: std.mem.Allocator, position: Position) Error {
@@ -329,8 +268,8 @@ pub fn expectedTypeError(allocator: std.mem.Allocator, position: Position, expec
     return Error{ .expectedTypeError = .{ .allocator = allocator, .position = position, .expected = expected, .found = found } };
 }
 
-pub fn functionValueExpectedError(allocator: std.mem.Allocator, position: Position) Error {
-    return Error{ .functionValueExpectedError = .{ .allocator = allocator, .position = position } };
+pub fn functionValueExpectedError(allocator: std.mem.Allocator, position: Position, found: ValueKind) !Error {
+    return expectedATypeError(allocator, position, ValueKind.FunctionKind, found);
 }
 
 pub fn incompatibleOperandTypesError(
@@ -395,8 +334,8 @@ pub fn parserError(allocator: std.mem.Allocator, position: Position, lexeme: []c
     } };
 }
 
-pub fn recordValueExpectedError(allocator: std.mem.Allocator, position: Position) Error {
-    return Error{ .recordValueExpectedError = .{ .allocator = allocator, .position = position } };
+pub fn recordValueExpectedError(allocator: std.mem.Allocator, position: Position, found: ValueKind) !Error {
+    return expectedATypeError(allocator, position, ValueKind.RecordKind, found);
 }
 
 pub fn unknownIdentifierError(allocator: std.mem.Allocator, position: Position, identifier: []const u8) !Error {

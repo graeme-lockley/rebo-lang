@@ -4,6 +4,7 @@ const AST = @import("./ast.zig");
 const Errors = @import("./errors.zig");
 const Machine = @import("./machine.zig");
 const Lexer = @import("./lexer.zig");
+const V = @import("./value.zig");
 
 pub const Parser = struct {
     allocator: std.mem.Allocator,
@@ -185,7 +186,7 @@ pub const Parser = struct {
 
                     lhs = rhs;
                 } else {
-                    self.replaceErr(Errors.functionValueExpectedError(self.allocator, rhs.position));
+                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, rhs.position, V.ValueKind.VoidKind));
                     return error.InterpreterError;
                 }
             } else if (self.currentTokenKind() == Lexer.TokenKind.LessBar) {
@@ -205,7 +206,7 @@ pub const Parser = struct {
                     self.allocator.free(lhs.kind.call.args);
                     lhs.kind.call.args = args;
                 } else {
-                    self.replaceErr(Errors.functionValueExpectedError(self.allocator, lhs.position));
+                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, lhs.position, V.ValueKind.VoidKind));
                     return error.InterpreterError;
                 }
             } else {

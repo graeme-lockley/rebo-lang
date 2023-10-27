@@ -140,7 +140,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             const record = machine.memoryState.peek(0);
 
             if (record.v != V.ValueValue.RecordKind) {
-                machine.replaceErr(Errors.recordValueExpectedError(machine.memoryState.allocator, lhs.kind.dot.record.position));
+                machine.replaceErr(Errors.recordValueExpectedError(machine.memoryState.allocator, lhs.kind.dot.record.position, record.v) catch |err| return errorHandler(err));
                 return true;
             }
             if (evalExpr(machine, value)) return true;
@@ -802,7 +802,7 @@ fn call(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expressio
     const callee = machine.memoryState.peek(0);
 
     if (callee.v != V.ValueValue.FunctionKind and callee.v != V.ValueValue.BuiltinKind) {
-        machine.replaceErr(Errors.functionValueExpectedError(machine.memoryState.allocator, calleeAST.position));
+        machine.replaceErr(Errors.functionValueExpectedError(machine.memoryState.allocator, calleeAST.position, callee.v) catch |err| return errorHandler(err));
         return true;
     }
     const args = if (callee.v == V.ValueValue.FunctionKind) callee.v.FunctionKind.arguments else callee.v.BuiltinKind.arguments;
@@ -871,7 +871,7 @@ fn dot(machine: *Machine, e: *AST.Expression) bool {
     const record = machine.memoryState.pop();
 
     if (record.v != V.ValueValue.RecordKind) {
-        machine.replaceErr(Errors.recordValueExpectedError(machine.memoryState.allocator, e.kind.dot.record.position));
+        machine.replaceErr(Errors.recordValueExpectedError(machine.memoryState.allocator, e.kind.dot.record.position, record.v) catch |err| return errorHandler(err));
         return true;
     }
 
