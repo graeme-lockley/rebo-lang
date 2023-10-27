@@ -1,4 +1,4 @@
-#!/Users/graemelockley/Projects/rebo-lang/rebo/zig-out/bin/rebo
+#!env rebo
 
 let Std = import("lib/std.rebo")
 let Primes = import("test/sieve.rebo")
