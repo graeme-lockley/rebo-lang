@@ -114,9 +114,15 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 # Built-in Functions
 
-- [X] exit
+- [ ] exit
+    - [X] Basic function
+    - [ ] If a non-integer is passed then print it to stderr and exit with 1
+    - [ ] Add an option to print the entire stack trace as well
 - [X] gc - which is actually a force gc
-- [X] import
+- [ ] import
+    - [X] Basic function
+    - [ ] Add a fatal option to the import function; this is default behavior
+    - [ ] Add a non-fatal option
 - [X] imports
 - [X] int
 - [X] len
