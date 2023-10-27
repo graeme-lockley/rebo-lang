@@ -1,0 +1,25 @@
+Rebo is released with a number of builtin functions. These functions are always available and are attached to the top-level scope.
+
+## cwd()
+
+Returns the current working directory as a string.
+
+```rebo
+cwd()
+```
+
+## exit(code = 0)
+
+Immediately exits the program with the given exit code.
+
+```rebo
+exit()
+```
+
+Should `code` be anything other than an integer, it will be converted to a string, printed to stderr and exit with exit code 1.
+
+```rebo
+exit("Invalid number of arguments")
+```
+
+## gc()
