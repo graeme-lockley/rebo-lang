@@ -28,4 +28,4 @@ jobs:
       - name: Test Rebo
         run: |
           cd ./rebo
-          zig build run -- ./test/suite.rebo
+          zig build run -- ./bin/rebo-test `find . -name "*.test.rebo" -print`
