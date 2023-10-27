@@ -5,7 +5,14 @@ let Std = import("../lib/std.rebo")
 let Str = import("../lib/str.rebo")
 let Test = import("../lib/test.rebo")
 
-let args = CLI.parse()
+let cli = CLI.parse({
+  cmd: false,
+  enforcing: true,
+  opts: {
+    silent: false,
+    totals: true
+  }    
+})
 
 let test = Test.harness("suite")
 
@@ -19,12 +26,7 @@ let normaliseName(name) {
     }
 }
 
-let args' = (if args.verb == () -> [] | [args.verb]) + args.args
-
-let silent = if args.opts.silent -> true | false
-let showTotals = if args.opts["no-totals"] -> false | true
-
-args'
+cli.args
   |> Std.each(fn(name) {
       let module = normaliseName(name) |> import()
 
@@ -35,10 +37,10 @@ args'
         let newSuite = test.suite(name)
           
         newSuite |> module.run()
-        newSuite.report(false, silent)
+        newSuite.report(false, cli.opts.silent)
       }
     })
 
-let stats = test.report(showTotals, true)
+let stats = test.report(cli.opts.totals, true)
 
 exit(stats.failed)

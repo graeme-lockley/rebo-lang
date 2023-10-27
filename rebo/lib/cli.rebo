@@ -1,18 +1,29 @@
 let Std = import("./std.rebo")
+let Str = import("./str.rebo")
+
+let defaults = {
+  cmd: true,
+  enforcing: false,
+  opts: {}
+}
 
 let _option(part) =
   if part[0:2] == "--" -> part[2:]
    | part[0] == '-' -> part[1:]
    | ()
 
-let parseArgs(argv) {
-  let opts = {}
+let parseArgs(argv, cfg = defaults) {
+  let opts = {...cfg.opts}
   let args = []
 
   let lastOpt = ()
   let onlyPositional? = false
 
-  let verb = if argv[2] == () || argv[2][0] == '-' -> () | argv[2]
+  let verb = 
+    if
+    | !cfg.cmd -> ()
+    | argv[2] == () || argv[2][0] == '-' -> () 
+    | argv[2]
   let argv' = if verb == () -> argv[2:] | argv[3:]
 
   argv' |> Std.each(fn(part) {
@@ -26,8 +37,25 @@ let parseArgs(argv) {
         args <! part
     | lastOpt != () && opt == () -> 
         { opts[lastOpt] := part ; lastOpt := () }
-    | lastOpt == () && opt != () ->
-        lastOpt := opt
+    | lastOpt == () && opt != () -> {
+        if !cfg.enforcing ->
+          lastOpt := opt
+        | Str.endsWith?(opt, "-") -> {
+            let opt' = Str.dropEnd(opt, 1)
+            if typeof(opts[opt']) == "Bool" ->
+              opts[opt'] := false
+            | println("Error: Ignoring ", opt', " is not a valid flag option")
+          }
+        | Str.endsWith?(opt, "+") -> {
+            let opt' = Str.dropEnd(opt, 1)
+            if typeof(opts[opt']) == "Bool" ->
+              opts[opt'] := true
+           | println("Error: Ignoring ", opt', " is not a valid flag option")
+          }
+        | typeof(opts[opt]) == "Bool" ->
+            opts[opt] := true
+        | lastOpt := opt
+      }
     | lastOpt != () && opt != () ->
         { opts[lastOpt] := true ; lastOpt := opt }
   })
@@ -44,4 +72,4 @@ let parseArgs(argv) {
   }
 }
 
-let parse() = parseArgs(rebo.args)
+let parse(cfg = defaults) = parseArgs(rebo.args, cfg)
