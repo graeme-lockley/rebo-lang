@@ -31,9 +31,10 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add support for `[start:end]` to access a slice of sequence
 - [X] Add support for `[] = value` to update a sequence
 - [X] Add support for `[start:end] = value` to update a slice of sequence
+- [ ] Add support for `[start:end] = ()` to remove a slice from a sequence
 - [X] `+` concatenates two sequences
 - [ ] Add support destructuring a sequence into variables
-- [ ] Move all the functions into the SequenceKind rather than having them lying all over the code base and forcing knowledge of the implementation
+- [X] Move all the functions into the SequenceKind rather than having them lying all over the code base and forcing knowledge of the implementation
 
 ## Strings
 
@@ -130,14 +131,14 @@ There is so much to do.  The following is my work list on this project.  I will 
 ## CLI
 
 - [X] Implement based on Oak
-- [ ] Add support for flag + or - suffix to enable is disable.
+- [X] Add support for flag + or - suffix to enable is disable.
 
 ## Test
 
 - [X] Tidy up the guards once `!` has been implemented
 - [X] Should a test fail then exit(1) otherwise exit(0) so that I can add into pipeline
 - [ ] Fix: duration of the entire test suite is incorrectly calculated
-- [ ] Display the report after each suite rather than all at the end
+- [X] Display the report after each suite rather than all at the end
 
 # REPL Features
 
@@ -150,3 +151,5 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Expand the pipeline to test against Linux and Mac OS
 - [X] Place the AST under garbage collection.  At the moment it is not which makes AST memory management impossible.
 - [ ] Add a string heap to store identifier names and field names.  This will reduce memory footprint and allow for faster comparisons.
+- [ ] On an error - display the line number and column number
+- [ ] When an error is reported, unwind the stack so that the error is reported in the full context of the caller
