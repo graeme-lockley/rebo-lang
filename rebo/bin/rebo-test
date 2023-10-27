@@ -26,6 +26,14 @@ let normaliseName(name) {
     }
 }
 
+if len(cli.args) == 0 -> {
+  println("Usage: rebo-test [options] <file>...")
+  println("Options:")
+  println("  --silent  Don't print test results")
+  println("  --totals  Print test totals")
+  exit(1)
+}
+
 cli.args
   |> Std.each(fn(name) {
       let module = normaliseName(name) |> import()
