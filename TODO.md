@@ -157,5 +157,6 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] Expand the pipeline to test against Linux and Mac OS
 - [X] Place the AST under garbage collection.  At the moment it is not which makes AST memory management impossible.
 - [ ] Add a string heap to store identifier names and field names.  This will reduce memory footprint and allow for faster comparisons.
-- [ ] On an error - display the line number and column number
-- [ ] When an error is reported, unwind the stack so that the error is reported in the full context of the caller
+- [X] On an error - display the line number and column number
+- [X] When an error is reported, unwind the stack so that the error is reported in the full context of the caller
+- [X] Record error position whenever an error is reported
