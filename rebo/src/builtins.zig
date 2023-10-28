@@ -322,6 +322,47 @@ test "len" {
     try Main.expectExprEqual("len(\"hello\")", "5");
 }
 
+pub fn ls(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    _ = argsAST;
+    _ = calleeAST;
+    const v = machine.memoryState.getFromScope("path") orelse machine.memoryState.unitValue;
+
+    const path = if (v.?.v == V.ValueKind.StringKind) v.?.v.StringKind else "./";
+    try machine.memoryState.pushEmptySequenceValue();
+
+    var dir = std.fs.cwd().openIterableDir(path, .{}) catch return;
+    defer dir.close();
+
+    const result = machine.memoryState.peek(0);
+
+    var it = dir.iterate();
+    while (it.next() catch return) |entry| {
+        if (std.mem.eql(u8, entry.name, ".") or std.mem.eql(u8, entry.name, "..")) {
+            continue;
+        }
+
+        const record = try machine.memoryState.newMapValue();
+        try result.v.SequenceKind.append(record);
+
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newStringValue(entry.name));
+
+        const kind = switch (entry.kind) {
+            std.fs.IterableDir.Entry.Kind.block_device => "block_device",
+            std.fs.IterableDir.Entry.Kind.character_device => "character_device",
+            std.fs.IterableDir.Entry.Kind.directory => "directory",
+            std.fs.IterableDir.Entry.Kind.door => "door",
+            std.fs.IterableDir.Entry.Kind.event_port => "event_port",
+            std.fs.IterableDir.Entry.Kind.file => "file",
+            std.fs.IterableDir.Entry.Kind.named_pipe => "named_pipe",
+            std.fs.IterableDir.Entry.Kind.sym_link => "sym_link",
+            std.fs.IterableDir.Entry.Kind.unix_domain_socket => "unix_domain_socket",
+            std.fs.IterableDir.Entry.Kind.unknown => "unknown",
+            std.fs.IterableDir.Entry.Kind.whiteout => "whiteout",
+        };
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newStringValue(kind));
+    }
+}
+
 pub fn milliTimestamp(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;

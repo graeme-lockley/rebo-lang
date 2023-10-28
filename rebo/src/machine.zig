@@ -1201,6 +1201,10 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .name = "v",
         .default = null,
     }}, null, &Builtins.len);
+    try addBuiltin(&state, "ls", &[_]V.FunctionArgument{V.FunctionArgument{
+        .name = "path",
+        .default = null,
+    }}, null, &Builtins.ls);
     try addBuiltin(&state, "milliTimestamp", &[0]V.FunctionArgument{}, null, &Builtins.milliTimestamp);
     try addBuiltin(&state, "print", &[_]V.FunctionArgument{}, "vs", &Builtins.print);
     try addBuiltin(&state, "println", &[_]V.FunctionArgument{}, "vs", &Builtins.println);

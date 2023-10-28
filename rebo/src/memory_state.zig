@@ -41,8 +41,12 @@ pub const MemoryState = struct {
         _ = try self.pushValue(V.ValueValue{ .BoolKind = b });
     }
 
+    pub fn newMapValue(self: *MemoryState) !*V.Value {
+        return try self.newValue(V.ValueValue{ .RecordKind = std.StringHashMap(*V.Value).init(self.allocator) });
+    }
+
     pub fn pushEmptyMapValue(self: *MemoryState) !void {
-        _ = try self.pushValue(V.ValueValue{ .RecordKind = std.StringHashMap(*V.Value).init(self.allocator) });
+        try self.push(try self.newMapValue());
     }
 
     pub fn pushCharValue(self: *MemoryState, v: u8) !void {
