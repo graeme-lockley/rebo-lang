@@ -1,11 +1,24 @@
 let Std = import("./std.rebo")
 
+# The default options for the `files` function.  The `recursive?` option is 
+# whether or not to recursively search the directory.  The `predicate` option
+# accepts a file path and returns whether or not to include the file in the
+# results.  The `dirPredicate` option accepts a directory path and returns
+# whether or not to recurse into the directory.
 let defaultFiles = {
    recursive?: true,
    predicate: fn(_) true,
    dirPredicate: fn(_) true
 };
 
+# Returns a list of files in the given directory.  The `opt` argument is an
+# object with the following options:
+#  - `recursive?` (default: `true`): Whether or not to recursively search the
+#    directory.
+#  - `predicate` (default: `fn(_) true`): A function that accepts a file path
+#    and returns whether or not to include the file in the results.
+#  - `dirPredicate` (default: `fn(_) true`): A function that accepts a
+#    directory path and returns whether or not to recurse into the directory.
 let files(path, opt = defaultFiles) {
    opt := {...defaultFiles, ...opt}
 
