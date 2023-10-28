@@ -1,0 +1,9 @@
+let FS = import("./fs.rebo")
+let Str = import("./str.rebo")
+
+let run(suite) {
+    "files" |> suite.eq(
+       __FILE |> Str.dropEnd(13) |> FS.files() |> len(), 
+       9
+    )
+}

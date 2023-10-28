@@ -1,0 +1,28 @@
+let Std = import("./std.rebo")
+
+let defaultFiles = {
+   recursive?: true,
+   predicate: fn(_) true,
+   dirPredicate: fn(_) true
+};
+
+let files(path, opt = defaultFiles) {
+   opt := {...defaultFiles, ...opt}
+
+   let result = []
+
+   _files(path, opt, result)
+
+   result
+}
+
+let _files(path, opt, result) {
+   ls(path) |> Std.each(fn(item) {
+      let fullPath = path + "/" + item.name
+   
+      if item.kind == "directory" && opt.recursive? && opt.dirPredicate(fullPath) ->
+            _files(fullPath, opt, result)
+       | item.kind == "file" && opt.predicate(fullPath) ->
+            result <! fullPath
+   })
+}
