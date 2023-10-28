@@ -849,7 +849,11 @@ fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsA
             return true;
         }
     } else {
-        callee.v.BuiltinKind.body(machine, calleeAST, argsAST) catch |err| return errorHandler(err);
+        callee.v.BuiltinKind.body(machine, calleeAST, argsAST) catch |err| {
+            machine.memoryState.restoreScope();
+            machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end }) catch |err2| return errorHandler(err2);
+            return errorHandler(err);
+        };
     }
 
     const result = machine.memoryState.pop();
