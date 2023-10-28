@@ -8,7 +8,7 @@ const Main = @import("./main.zig");
 const V = @import("./value.zig");
 
 fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
-    machine.replaceErr(try Errors.reportExpectedTypeError(machine.memoryState.allocator, position, expected, v));
+    machine.replaceErr(try Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), position, expected, v));
     return Errors.err.InterpreterError;
 }
 

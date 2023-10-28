@@ -85,7 +85,7 @@ pub const Lexer = struct {
     fn reportLexicalError(self: *Lexer, tokenStart: usize) Errors.err!void {
         self.current = Token{ .kind = TokenKind.Invalid, .start = tokenStart, .end = self.offset };
 
-        self.replaceErr(try Errors.lexicalError(self.allocator, Errors.Position{ .start = tokenStart, .end = self.offset }, self.lexeme(self.current)));
+        self.replaceErr(try Errors.lexicalError(self.allocator, self.name, Errors.Position{ .start = tokenStart, .end = self.offset }, self.lexeme(self.current)));
 
         return error.InterpreterError;
     }

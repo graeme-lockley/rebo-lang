@@ -186,7 +186,7 @@ pub const Parser = struct {
 
                     lhs = rhs;
                 } else {
-                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, rhs.position, V.ValueKind.VoidKind));
+                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, rhs.position, V.ValueKind.VoidKind));
                     return error.InterpreterError;
                 }
             } else if (self.currentTokenKind() == Lexer.TokenKind.LessBar) {
@@ -206,7 +206,7 @@ pub const Parser = struct {
                     self.allocator.free(lhs.kind.call.args);
                     lhs.kind.call.args = args;
                 } else {
-                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, lhs.position, V.ValueKind.VoidKind));
+                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, lhs.position, V.ValueKind.VoidKind));
                     return error.InterpreterError;
                 }
             } else {
@@ -609,7 +609,7 @@ pub const Parser = struct {
 
                 const literalInt = std.fmt.parseInt(i32, lexeme, 10) catch {
                     const token = self.currentToken();
-                    self.replaceErr(try Errors.literalIntOverflowError(self.allocator, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
+                    self.replaceErr(try Errors.literalIntOverflowError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
                     return error.InterpreterError;
                 };
 
@@ -626,7 +626,7 @@ pub const Parser = struct {
 
                 const literalFloat = std.fmt.parseFloat(f64, lexeme) catch {
                     const token = self.currentToken();
-                    self.replaceErr(try Errors.literalFloatOverflowError(self.allocator, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
+                    self.replaceErr(try Errors.literalFloatOverflowError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
                     return error.InterpreterError;
                 };
 
@@ -743,7 +743,7 @@ pub const Parser = struct {
                     expected[9] = Lexer.TokenKind.LiteralString;
                     expected[10] = Lexer.TokenKind.Fn;
 
-                    self.replaceErr(try Errors.parserError(self.allocator, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
+                    self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
                 }
 
                 return error.InterpreterError;
@@ -889,7 +889,7 @@ pub const Parser = struct {
                 errdefer self.allocator.free(expected);
 
                 expected[0] = kind;
-                self.replaceErr(try Errors.parserError(self.allocator, Errors.Position{ .start = token.start, .end = token.end }, self.currentTokenLexeme(), expected));
+                self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, self.currentTokenLexeme(), expected));
             }
 
             return error.InterpreterError;
