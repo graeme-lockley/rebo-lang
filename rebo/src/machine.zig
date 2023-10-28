@@ -12,7 +12,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
     switch (e.kind) {
         .assignment => return assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
         .binaryOp => return binaryOp(machine, e),
-        .call => return call(machine, e.kind.call.callee, e.kind.call.args),
+        .call => return call(machine, e, e.kind.call.callee, e.kind.call.args),
         .declaration => return declaration(machine, e),
         .dot => return dot(machine, e),
         .exprs => return exprs(machine, e),
@@ -430,7 +430,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             if (right.v.IntKind == 0) {
-                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, e.position) catch |err| return errorHandler(err));
+                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, machine.src(), e.position) catch |err| return errorHandler(err));
 
                                 return true;
                             }
@@ -438,7 +438,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                         V.ValueValue.FloatKind => {
                             if (right.v.FloatKind == 0.0) {
-                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, e.position) catch |err| return errorHandler(err));
+                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, machine.src(), e.position) catch |err| return errorHandler(err));
 
                                 return true;
                             }
@@ -454,7 +454,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             if (right.v.IntKind == 0) {
-                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, e.position) catch |err| return errorHandler(err));
+                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, machine.src(), e.position) catch |err| return errorHandler(err));
 
                                 return true;
                             }
@@ -462,7 +462,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                         V.ValueValue.FloatKind => {
                             if (right.v.FloatKind == 0.0) {
-                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, e.position) catch |err| return errorHandler(err));
+                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, machine.src(), e.position) catch |err| return errorHandler(err));
 
                                 return true;
                             }
@@ -794,7 +794,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
     return false;
 }
 
-fn call(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) bool {
+fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) bool {
     const sp = machine.memoryState.stack.items.len;
 
     if (evalExpr(machine, calleeAST)) return true;
@@ -828,7 +828,7 @@ fn call(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expressio
     } else {
         machine.memoryState.openScope() catch |err| return errorHandler(err);
     }
-    defer machine.memoryState.restoreScope();
+    errdefer machine.memoryState.restoreScope();
 
     var lp: u8 = 0;
     while (lp < args.len) {
@@ -843,7 +843,11 @@ fn call(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expressio
 
     machine.memoryState.popn(index);
     if (callee.v == V.ValueValue.FunctionKind) {
-        if (evalExpr(machine, callee.v.FunctionKind.body)) return true;
+        if (evalExpr(machine, callee.v.FunctionKind.body)) {
+            machine.memoryState.restoreScope();
+            machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end }) catch |err| return errorHandler(err);
+            return true;
+        }
     } else {
         callee.v.BuiltinKind.body(machine, calleeAST, argsAST) catch |err| return errorHandler(err);
     }
@@ -851,6 +855,8 @@ fn call(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expressio
     const result = machine.memoryState.pop();
     _ = machine.memoryState.pop();
     machine.memoryState.push(result) catch |err| return errorHandler(err);
+
+    machine.memoryState.restoreScope();
 
     return false;
 }
@@ -1316,6 +1322,24 @@ pub const Machine = struct {
     pub fn reset(self: *Machine) !void {
         self.eraseErr();
         try self.memoryState.reset();
+    }
+
+    pub fn src(self: *Machine) []const u8 {
+        const result = self.memoryState.getFromScope("__FILE");
+
+        if (result == null) {
+            return Errors.STREAM_SRC;
+        } else if (result.?.v == V.ValueValue.StringKind) {
+            return result.?.v.StringKind;
+        } else {
+            return Errors.STREAM_SRC;
+        }
+    }
+
+    pub fn appendStackItem(self: *Machine, position: Errors.Position) !void {
+        if (self.err != null) {
+            try self.err.?.appendStackItem(self.src(), position);
+        }
     }
 };
 

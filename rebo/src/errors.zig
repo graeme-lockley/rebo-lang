@@ -1,10 +1,13 @@
 const std = @import("std");
 
 const AST = @import("./ast.zig");
+const Builtin = @import("./builtins.zig");
 const TokenKind = @import("./token_kind.zig").TokenKind;
 const Value = @import("./value.zig");
 const ValueKind = @import("./value.zig").ValueKind;
 pub const err = error{ InterpreterError, OutOfMemory, NotYetImplemented };
+
+pub const STREAM_SRC = "repl";
 
 pub const Position = struct {
     start: usize,
@@ -12,15 +15,13 @@ pub const Position = struct {
 };
 
 pub const DivideByZeroError = struct {
-    allocator: std.mem.Allocator,
-    position: Position,
-
     pub fn deinit(self: DivideByZeroError) void {
         _ = self;
     }
 
     pub fn print(self: DivideByZeroError) void {
-        std.log.err("Divide By Zero: {d}-{d}", .{ self.position.start, self.position.end });
+        _ = self;
+        std.log.err("Divide By Zero", .{});
     }
 };
 
@@ -152,21 +153,95 @@ pub const UnknownIdentifierError = struct {
     }
 };
 
+pub const StackItem = struct {
+    src: []const u8,
+    position: Position,
+
+    pub fn location(self: StackItem, allocator: std.mem.Allocator) !LocationRange {
+        const content = try Builtin.loadBinary(allocator, self.src);
+        defer allocator.free(content);
+
+        var line: usize = 1;
+        var column: usize = 1;
+
+        var from = Location{ .line = 0, .column = 0 };
+        var to = Location{ .line = 0, .column = 0 };
+
+        for (content, 0..) |c, i| {
+            if (i == self.position.start) {
+                from = Location{ .line = line, .column = column };
+            }
+            if (i == self.position.end - 1) {
+                to = Location{ .line = line, .column = column };
+            }
+            if (i >= self.position.start and i >= self.position.end) {
+                break;
+            }
+
+            if (c == '\n') {
+                line += 1;
+                column = 1;
+            } else {
+                column += 1;
+            }
+        }
+
+        return LocationRange{ .from = from, .to = to };
+    }
+};
+
+const Location = struct {
+    line: usize,
+    column: usize,
+};
+
+const LocationRange = struct {
+    from: Location,
+    to: Location,
+};
+
 pub const Error = struct {
     allocator: std.mem.Allocator,
     detail: ErrorDetail,
-    stack: u32,
+    stack: std.ArrayList(StackItem),
 
     pub fn init(allocator: std.mem.Allocator, detail: ErrorDetail) !Error {
-        return Error{ .allocator = allocator, .detail = detail, .stack = 0 };
+        return Error{ .allocator = allocator, .detail = detail, .stack = std.ArrayList(StackItem).init(allocator) };
     }
 
     pub fn deinit(self: *Error) void {
         self.detail.deinit(self.allocator);
+
+        for (self.stack.items) |item| {
+            self.allocator.free(item.src);
+        }
+
+        self.stack.deinit();
     }
 
     pub fn print(self: *Error) !void {
         try self.detail.print(self.allocator);
+
+        for (self.stack.items) |item| {
+            if (std.mem.eql(u8, item.src, STREAM_SRC)) {
+                continue;
+            }
+
+            const locationRange = try item.location(self.allocator);
+            if (item.position.start == item.position.end or item.position.start == item.position.end - 1) {
+                std.log.err("  at {s}: {d}:{d}", .{ item.src, locationRange.from.line, locationRange.from.column });
+            } else if (locationRange.from.line == locationRange.to.line) {
+                std.log.err("  at {s}: {d},{d}-{d}", .{ item.src, locationRange.from.line, locationRange.from.column, locationRange.to.column });
+            } else {
+                std.log.err("  at {s}: {d},{d}-{d},{d}", .{ item.src, locationRange.from.line, locationRange.from.column, locationRange.to.line, locationRange.to.column });
+            }
+        }
+    }
+
+    pub fn appendStackItem(self: *Error, src: []const u8, position: Position) !void {
+        var stackItem = StackItem{ .src = try self.allocator.dupe(u8, src), .position = position };
+
+        try self.stack.append(stackItem);
     }
 };
 
@@ -257,8 +332,12 @@ pub fn boolValueExpectedError(allocator: std.mem.Allocator, position: Position, 
     return expectedATypeError(allocator, position, ValueKind.BoolKind, found);
 }
 
-pub fn divideByZeroError(allocator: std.mem.Allocator, position: Position) !Error {
-    return Error.init(allocator, ErrorDetail{ .divideByZero = .{ .allocator = allocator, .position = position } });
+pub fn divideByZeroError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
+    var result = try Error.init(allocator, ErrorDetail{ .divideByZero = .{} });
+
+    try result.appendStackItem(src, position);
+
+    return result;
 }
 
 pub fn expectedATypeError(allocator: std.mem.Allocator, position: Position, expected: ValueKind, found: ValueKind) !Error {
