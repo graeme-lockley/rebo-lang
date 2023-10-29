@@ -13,6 +13,8 @@ let _option(part) =
    | ()
 
 let parseArgs(argv, cfg = defaults) {
+  cfg := {...defaults, ...cfg}
+
   let opts = {...cfg.opts}
   let args = []
 
