@@ -21,6 +21,7 @@ pub const Value = struct {
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         switch (self.v) {
             .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .VoidKind => {},
+            .FileKind => self.v.FileKind.deinit(),
             .FunctionKind => {
                 for (self.v.FunctionKind.arguments) |argument| {
                     allocator.free(argument.name);
@@ -97,6 +98,7 @@ pub const Value = struct {
                     try std.fmt.format(buffer.writer(), "'{c}'", .{self.v.CharKind});
                 }
             },
+            .FileKind => try std.fmt.format(buffer.writer(), "<file: {d} {s}>", .{ self.v.FileKind.file.handle, if (self.v.FileKind.isOpen) "open" else "closed" }),
             .FloatKind => try std.fmt.format(buffer.writer(), "{d}", .{self.v.FloatKind}),
             .FunctionKind => {
                 try buffer.appendSlice("fn(");
@@ -224,6 +226,7 @@ pub const ValueKind = enum {
     BoolKind,
     BuiltinKind,
     CharKind,
+    FileKind,
     FunctionKind,
     IntKind,
     FloatKind,
@@ -238,6 +241,7 @@ pub const ValueKind = enum {
             ValueKind.BoolKind => "Bool",
             ValueKind.BuiltinKind => "Function",
             ValueKind.CharKind => "Char",
+            ValueKind.FileKind => "File",
             ValueKind.FunctionKind => "Function",
             ValueKind.FloatKind => "Float",
             ValueKind.IntKind => "Int",
@@ -254,6 +258,7 @@ pub const ValueValue = union(ValueKind) {
     BoolKind: bool,
     BuiltinKind: BuiltinValue,
     CharKind: u8,
+    FileKind: FileValue,
     FunctionKind: FunctionValue,
     IntKind: IntType,
     FloatKind: FloatType,
@@ -269,6 +274,10 @@ pub const BuiltinValue = struct {
     restOfArguments: ?[]const u8,
     body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.err!void,
 };
+
+pub fn recordGet(record: *const std.StringHashMap(*Value), key: []const u8) ?*Value {
+    return record.get(key);
+}
 
 pub fn recordSet(allocator: std.mem.Allocator, record: *std.StringHashMap(*Value), key: []const u8, value: *Value) !void {
     if (value.v == ValueKind.VoidKind) {
@@ -287,6 +296,29 @@ pub fn recordSet(allocator: std.mem.Allocator, record: *std.StringHashMap(*Value
         }
     }
 }
+
+pub const FileValue = struct {
+    isOpen: bool,
+    file: std.fs.File,
+
+    pub fn init(file: std.fs.File) FileValue {
+        return FileValue{
+            .isOpen = true,
+            .file = file,
+        };
+    }
+
+    pub fn deinit(self: *FileValue) void {
+        self.close();
+    }
+
+    pub fn close(self: *FileValue) void {
+        if (self.isOpen) {
+            self.file.close();
+            self.isOpen = false;
+        }
+    }
+};
 
 pub const FunctionValue = struct {
     scope: ?*Value,
@@ -390,6 +422,7 @@ pub fn eq(a: *Value, b: *Value) bool {
         .BoolKind => return a.v.BoolKind == b.v.BoolKind,
         .BuiltinKind => return @intFromPtr(a) == @intFromPtr(b),
         .CharKind => return a.v.CharKind == b.v.CharKind,
+        .FileKind => return a.v.FileKind.file.handle == b.v.FileKind.file.handle,
         .FunctionKind => return @intFromPtr(a) == @intFromPtr(b),
         .IntKind => return a.v.IntKind == b.v.IntKind,
         .FloatKind => return a.v.FloatKind == b.v.FloatKind,

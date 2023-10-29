@@ -12,6 +12,18 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
     return Errors.err.InterpreterError;
 }
 
+pub fn close(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    const handle = machine.memoryState.getFromScope("handle") orelse machine.memoryState.unitValue;
+
+    if (handle.?.v != V.ValueKind.FileKind) {
+        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.FileKind}, handle.?.v);
+    }
+
+    handle.?.v.FileKind.close();
+    try machine.memoryState.pushUnitValue();
+}
+
 pub fn cwd(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;
@@ -369,6 +381,69 @@ pub fn milliTimestamp(machine: *Machine, calleeAST: *AST.Expression, argsAST: []
     try machine.memoryState.pushIntValue(@intCast(std.time.milliTimestamp()));
 }
 
+fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
+    try machine.memoryState.pushEmptyMapValue();
+
+    const record = machine.memoryState.peek(0);
+    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "error", try machine.memoryState.newStringValue("SystemError"));
+    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "operation", try machine.memoryState.newStringValue(operation));
+
+    var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+    defer buffer.deinit();
+
+    try std.fmt.format(buffer.writer(), "{}", .{err});
+
+    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+}
+
+fn booleanOption(options: *V.Value, name: []const u8, default: bool) bool {
+    const option = V.recordGet(&options.v.RecordKind, name);
+
+    if (option == null or option.?.v != V.ValueKind.BoolKind) {
+        return default;
+    }
+
+    return option.?.v.BoolKind;
+}
+
+pub fn open(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    const path = machine.memoryState.getFromScope("path") orelse machine.memoryState.unitValue;
+    const options = machine.memoryState.getFromScope("options") orelse machine.memoryState.unitValue;
+
+    if (path.?.v != V.ValueKind.StringKind) {
+        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.StringKind}, path.?.v);
+    }
+    if (options.?.v != V.ValueKind.RecordKind and options.?.v != V.ValueKind.VoidKind) {
+        const position = if (argsAST.len > 1) argsAST[1].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.RecordKind}, options.?.v);
+    }
+
+    if (options.?.v == V.ValueKind.VoidKind) {
+        try machine.memoryState.push(try machine.memoryState.newFileValue(std.fs.cwd().openFile(path.?.v.StringKind, .{}) catch |err| return osError(machine, "open", err)));
+        return;
+    }
+
+    const readF = booleanOption(options.?, "read", false);
+    const writeF = booleanOption(options.?, "write", false);
+    const appendF = booleanOption(options.?, "append", false);
+    const truncateF = booleanOption(options.?, "truncate", false);
+    const createF = booleanOption(options.?, "create", false);
+
+    if (createF) {
+        try machine.memoryState.push(try machine.memoryState.newFileValue(std.fs.cwd().createFile(path.?.v.StringKind, .{ .read = readF, .truncate = truncateF, .exclusive = true }) catch |err| return osError(machine, "open", err)));
+    } else {
+        const mode = if (readF and writeF) std.fs.File.OpenMode.read_write else if (readF) std.fs.File.OpenMode.read_only else std.fs.File.OpenMode.write_only;
+        var file = std.fs.cwd().openFile(path.?.v.StringKind, .{ .mode = mode }) catch |err| return osError(machine, "open", err);
+
+        try machine.memoryState.push(try machine.memoryState.newFileValue(file));
+
+        if (appendF) {
+            file.seekFromEnd(0) catch |err| return osError(machine, "open", err);
+        }
+    }
+}
+
 fn printValue(stdout: std.fs.File.Writer, v: *const V.Value) !void {
     switch (v.v) {
         .BoolKind => try stdout.print("{s}", .{if (v.v.BoolKind) "true" else "false"}),
@@ -395,6 +470,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *const V.Value) !void {
             try stdout.print(")", .{});
         },
         .CharKind => try stdout.print("{c}", .{v.v.CharKind}),
+        .FileKind => try stdout.print("file: {d}", .{v.v.FileKind.file.handle}),
         .FloatKind => try stdout.print("{d}", .{v.v.FloatKind}),
         .FunctionKind => {
             try stdout.print("fn(", .{});
@@ -520,6 +596,35 @@ pub fn println(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Ex
     try machine.memoryState.pushUnitValue();
 }
 
+pub fn read(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    const handle = machine.memoryState.getFromScope("handle") orelse machine.memoryState.unitValue;
+    const bytes = machine.memoryState.getFromScope("bytes") orelse machine.memoryState.unitValue;
+
+    if (handle.?.v != V.ValueKind.FileKind) {
+        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.FileKind}, handle.?.v);
+    }
+
+    if (bytes.?.v == V.ValueKind.IntKind) {
+        const buffer = try machine.memoryState.allocator.alloc(u8, @intCast(bytes.?.v.IntKind));
+        defer machine.memoryState.allocator.free(buffer);
+
+        const bytesRead = handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
+
+        try machine.memoryState.push(try machine.memoryState.newStringValue(buffer[0..bytesRead]));
+    } else if (bytes.?.v == V.ValueKind.VoidKind) {
+        const buffer = try machine.memoryState.allocator.alloc(u8, 4096);
+        defer machine.memoryState.allocator.free(buffer);
+
+        const bytesRead = handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
+
+        try machine.memoryState.push(try machine.memoryState.newStringValue(buffer[0..bytesRead]));
+    } else {
+        const position = if (argsAST.len > 1) argsAST[1].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.IntKind}, handle.?.v);
+    }
+}
+
 pub fn str(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = calleeAST;
     _ = argsAST;
@@ -544,6 +649,7 @@ pub fn typeof(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Exp
         V.ValueKind.BoolKind => "Bool",
         V.ValueKind.BuiltinKind => "Function",
         V.ValueKind.CharKind => "Char",
+        V.ValueKind.FileKind => "File",
         V.ValueKind.FunctionKind => "Function",
         V.ValueKind.FloatKind => "Float",
         V.ValueKind.IntKind => "Int",

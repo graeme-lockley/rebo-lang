@@ -39,3 +39,33 @@ let _files(path, opt, result) {
             result <! fullPath
    })
 }
+
+# Returns the contents of the given file as a string.  If the file cannot be
+# opened, the function returns the file error.
+let readFile(path, bufferSize = 1024) {
+   let handle = open(path, { read: true })
+
+   if typeof(handle) == "File" -> {
+      let result = ""
+      
+      let buffer = read(handle)
+      while len(buffer) == bufferSize -> {
+         result := result + buffer
+         buffer := read(handle)
+      }
+      result := result + buffer
+      
+      close(handle)
+
+      result
+   } | handle
+}
+
+# Returns the contents of the given file as a list of lines.  If the file
+# cannot be opened, the function returns the file error.
+let lines(path) {
+   let contents = readFile(path)
+
+   if typeof(contents) == "String" -> contents |> Std.split("\n")
+   | contents
+}

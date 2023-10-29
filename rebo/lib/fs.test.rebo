@@ -1,9 +1,53 @@
 let FS = import("./fs.rebo")
 let Str = import("./str.rebo")
 
+let _path = __FILE |> Str.dropEnd(13)
+
 let run(suite) {
+  runFiles(suite.suite("files"))
+  runReadFile(suite.suite("readFile"))
+  runLines(suite.suite("lines"))
+}
+
+let runFiles(suite) {
     "files" |> suite.eq(
-       __FILE |> Str.dropEnd(13) |> FS.files() |> len(), 
-       9
+       _path |> FS.files() |> len(), 
+       10
+    )
+}
+
+let runReadFile(suite) {
+    let path = _path + "/t.rebo"
+
+    "valid file" |> suite.eq(
+       len(FS.readFile(path)),
+       451
+    )
+
+    "invalid file" |> suite.eq(
+       FS.readFile("invalid"),
+       {
+          error: "SystemError",
+          operation: "open",
+          kind: "error.FileNotFound" 
+       }
+    )
+}
+
+let runLines(suite) {
+    let path = _path + "/t.rebo"
+
+    "valid file" |> suite.eq(
+       len(FS.lines(path)),
+       24
+    )
+
+    "invalid file" |> suite.eq(
+       FS.lines("invalid"),
+       {
+          error: "SystemError",
+          operation: "open",
+          kind: "error.FileNotFound" 
+       }
     )
 }

@@ -53,6 +53,10 @@ pub const MemoryState = struct {
         _ = try self.pushValue(V.ValueValue{ .CharKind = v });
     }
 
+    pub fn newFileValue(self: *MemoryState, file: std.fs.File) !*V.Value {
+        return try self.newValue(V.ValueValue{ .FileKind = V.FileValue.init(file) });
+    }
+
     pub fn pushFloatValue(self: *MemoryState, v: V.FloatType) !void {
         _ = try self.pushValue(V.ValueValue{ .FloatKind = v });
     }
@@ -258,7 +262,7 @@ fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {
     v.colour = colour;
 
     switch (v.v) {
-        .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .StringKind, .VoidKind => {},
+        .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FileKind, .FloatKind, .StringKind, .VoidKind => {},
         .FunctionKind => {
             markValue(v.v.FunctionKind.scope, colour);
             for (v.v.FunctionKind.arguments) |argument| {

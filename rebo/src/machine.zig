@@ -1176,6 +1176,10 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
 
     try state.openScope();
 
+    try addBuiltin(&state, "close", &[_]V.FunctionArgument{V.FunctionArgument{
+        .name = "handle",
+        .default = null,
+    }}, null, &Builtins.close);
     try addBuiltin(&state, "cwd", &[0]V.FunctionArgument{}, null, &Builtins.cwd);
     try addBuiltin(&state, "exit", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "v",
@@ -1206,8 +1210,22 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .default = null,
     }}, null, &Builtins.ls);
     try addBuiltin(&state, "milliTimestamp", &[0]V.FunctionArgument{}, null, &Builtins.milliTimestamp);
+    try addBuiltin(&state, "open", &[_]V.FunctionArgument{ V.FunctionArgument{
+        .name = "path",
+        .default = null,
+    }, V.FunctionArgument{
+        .name = "options",
+        .default = null,
+    } }, null, &Builtins.open);
     try addBuiltin(&state, "print", &[_]V.FunctionArgument{}, "vs", &Builtins.print);
     try addBuiltin(&state, "println", &[_]V.FunctionArgument{}, "vs", &Builtins.println);
+    try addBuiltin(&state, "read", &[_]V.FunctionArgument{ V.FunctionArgument{
+        .name = "handle",
+        .default = null,
+    }, V.FunctionArgument{
+        .name = "bytes",
+        .default = null,
+    } }, null, &Builtins.read);
     try addBuiltin(&state, "str", &[_]V.FunctionArgument{ V.FunctionArgument{
         .name = "value",
         .default = null,
