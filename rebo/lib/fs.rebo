@@ -66,6 +66,6 @@ let readFile(path, bufferSize = 1024) {
 let lines(path) {
    let contents = readFile(path)
 
-   if typeof(contents) == "String" -> contents |> Std.split("\n")
+   if typeof(contents) == "String" -> contents |> Std.split('\n')
    | contents
 }
