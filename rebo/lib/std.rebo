@@ -166,7 +166,6 @@ let split(s, sep = " ") {
       }
 
       result <! s[start:lp]
-      result
     } 
   | typeof(sep) == "String" && len(sep) > 0 -> {
       let result = []
@@ -183,7 +182,6 @@ let split(s, sep = " ") {
       }
 
       result <! s[start:lp]
-      result
     }
   | typeof(sep) == "Sequence" && len(sep) > 0 -> {
       let result = []
@@ -208,7 +206,6 @@ let split(s, sep = " ") {
       }
 
       result <! s[start:lp]
-      result
     }
   | []
 }
