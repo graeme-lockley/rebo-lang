@@ -21,7 +21,7 @@ let runReadFile(suite) {
 
     "valid file" |> suite.eq(
        len(FS.readFile(path)),
-       451
+       452
     )
 
     "invalid file" |> suite.eq(

@@ -1,7 +1,7 @@
 #!env rebo
 
-let Std = import("lib/std.rebo")
-let Primes = import("test/sieve.rebo")
+let Std = import("./std.rebo")
+let Primes = import("../test/sieve.rebo")
 Primes.primes(10)
 
 let timePrimes(n = 10) {
