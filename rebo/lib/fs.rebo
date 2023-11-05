@@ -58,7 +58,7 @@ let readFile(path, bufferSize = 1024) {
       close(handle)
 
       result
-   } | handle
+   } | {...handle, path: path, bufferSize: bufferSize}
 }
 
 # Returns the contents of the given file as a list of lines.  If the file
