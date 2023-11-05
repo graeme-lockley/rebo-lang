@@ -26,6 +26,9 @@ let ansi = {
   }
 }
 
+# `any` returns `true` if any element of the iterable `xs` returns `true` when
+# passed to the predicate function `f`. The predicate function receives arguments
+# (`element`, `index`).
 let any(xs, f) {
   let lp = 0
   let found = false
@@ -125,6 +128,9 @@ let range(start = 10, end = (), step = (), f = fn(n) n) {
   result
 }
 
+# `map` applies the given mapping function `f` to each element of the sequence
+# `xs` and returns a new sequence containing the results. The mapping function
+# receives arguments (`element`, `index`).
 let map(xs, f) {
   let result = []
   let lp = 0
@@ -137,6 +143,9 @@ let map(xs, f) {
   result
 }
 
+# `reduce` applies the given reducer function `f` to each element of the iterable
+# `xs` and returns a single value. The reducer function receives arguments
+# (`accumulator`, `element`, `index`).
 let reduce(xs, f, init = ()) {
   let result = init
   let lp = 0
@@ -150,6 +159,9 @@ let reduce(xs, f, init = ()) {
 }
 
 # `split` breaks a string up into a sequence of substrings using the given separator.
+# If no separator is given, the string is split on whitespace.
+# If the separator is a sequence then the string is split on any of the characters
+# in the sequence.
 let split(s, sep = " ") {
   if typeof(sep) == "Char" -> {
       let result = []
@@ -207,5 +219,23 @@ let split(s, sep = " ") {
 
       result <! s[start:lp]
     }
-  | []
+  | [s]
+}
+
+# `join` concatenates the elements of `lst` into a single string using `sep` as
+# the separator.
+let join(lst, sep) {
+  let result = ""
+  let lp = 0
+
+  while lp < len(lst) -> {
+    if lp > 0 ->
+      result := result + sep
+
+    result := result + lst[lp]
+
+    lp := lp + 1
+  }
+
+  result
 }
