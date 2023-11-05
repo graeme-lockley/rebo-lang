@@ -22,10 +22,8 @@ jobs:
 
       - name: Test Build
         run: |
-          cd ./rebo
           zig build test
 
       - name: Test Rebo
         run: |
-          cd ./rebo
           zig build run -- ./bin/rebo-test

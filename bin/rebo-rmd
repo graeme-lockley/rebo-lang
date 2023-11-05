@@ -1,0 +1,40 @@
+#!env rebo
+
+let CLI = import("../lib/cli.rebo")
+let FS = import("../lib/fs.rebo")
+let Std = import("../lib/std.rebo")
+let Str = import("../lib/str.rebo")
+
+let cli = CLI.parse({
+   cmd: false,
+   enforcing: true,
+   opts: {}    
+})
+
+let processFile(path) {
+   let content = FS.lines(path)
+
+   let lp = 0
+
+   while lp < len(content) -> {
+      if Str.startsWith?(content[lp], "```") -> {
+         let upper = lp + 1
+
+         while upper < len(content) && !Str.startsWith?(content[upper], "```") ->
+            upper := upper + 1
+
+         println("******", content[lp + 1 : upper] |> Std.join("\n"), "******")
+
+         lp := upper + 1
+      } | {
+         println(content[lp])
+         lp := lp + 1
+      }
+   }
+}
+
+if len(cli.args) == 0 -> 
+   cli.args := import("../lib/fs.rebo").files(".", { predicate: fn(n) Str.endsWith?(n, ".rmd") })
+
+cli.args
+   |> Std.each(processFile)
