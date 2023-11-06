@@ -295,6 +295,8 @@ pub fn int(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expres
             return;
         };
         try machine.memoryState.pushIntValue(literalInt);
+    } else if (v.?.v == V.ValueKind.CharKind) {
+        try machine.memoryState.pushIntValue(@intCast(v.?.v.CharKind));
     } else {
         try reportExpectedTypeError(machine, argsAST[0].position, &[_]V.ValueKind{V.ValueValue.StringKind}, v.?.v);
     }
@@ -307,6 +309,12 @@ test "int" {
     try Main.expectExprEqual("int(\"123\", 0, 8)", "83");
 
     try Main.expectExprEqual("int(\"xxx\", 0, 8)", "0");
+
+    try Main.expectExprEqual("int('1')", "49");
+    try Main.expectExprEqual("int('\\n')", "10");
+    try Main.expectExprEqual("int('\\\\')", "92");
+    try Main.expectExprEqual("int('\\'')", "39");
+    try Main.expectExprEqual("int('\\x13')", "13");
 }
 
 pub fn len(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
