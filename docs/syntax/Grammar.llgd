@@ -9,12 +9,12 @@ Expression
     | "let" Identifier FunctionTail
     | "if" ["|"] Expression "->" Expression {"|" Expression "->" Expression}
     | "while" Expression "->" Expression
-    | "match" Expression MatchCase {MatchCase}
+    | "match" Expression ["|"] MatchCase {"|" MatchCase}
     | Pipe [":=" Expression]
     ;
 
 MatchCase
-    : "|" Pattern "->" Expression
+    : Pattern "->" Expression
     ;
 
 Pattern
@@ -31,11 +31,12 @@ Pattern
     ;
 
 MapPattern
-    : Identifier [":" Pattern] ["@" Identifier]
+    : Identifier [":" Pattern]
     ;
 
 Pipe
     : Or {"|>" Or}
+
 Or
     : And {"||" And}
     ;
@@ -57,7 +58,11 @@ Additive
     ;
 
 Multiplicative
-    : Qualifier {["*" | "/" | "%"] Qualifier}
+    : NullDefault {["*" | "/" | "%"] NullDefault}
+    ;
+
+NullDefault
+    : Qualifier ["?" Qualifier]
     ;
 
 Qualifier
