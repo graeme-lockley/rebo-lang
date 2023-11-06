@@ -90,6 +90,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] '>!' prepend operator changing the underlying structure
 - [X] '<<' append operator leaving the underlying structure unaffected
 - [X] '<!' append operator changing the underlying structure
+- [ ] '?' operator to provide default values for null
 
 # Control Statements
 
@@ -150,6 +151,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [X] Add support for state in the REPL
 - [ ] Add a `readline` like capability into the REPL
+- [ ] Auto-import the following libraries into the REPL - Std, Str, FS.  Add an option to disable this.
 
 # Chore Features
 
