@@ -168,7 +168,7 @@ let add(a = 0, b = 1) = a + b
 ? fn(a = 0, b = 1)
 ```
 
-Should a parameter not be given a default value and an argument is not passed then it is defaulted to `()`.
+Should a parameter not be given a default it will default to `()`.
 
 ```rebo
 let identity(x) = x
