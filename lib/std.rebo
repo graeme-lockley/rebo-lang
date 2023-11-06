@@ -26,10 +26,13 @@ let ansi = {
   }
 }
 
+# `constant` returns a function that always returns the given value.
+let constant(value) = fn() value
+
 # `any` returns `true` if any element of the iterable `xs` returns `true` when
 # passed to the predicate function `f`. The predicate function receives arguments
 # (`element`, `index`).
-let any(xs, f) {
+let any(xs = [], f = constant(false)) {
   let lp = 0
   let found = false
 
