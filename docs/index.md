@@ -43,58 +43,65 @@ The smallest building block in Rebo is called a **value**.  A value is a piece o
 Let's start by looking at the simplest value, the unit value.  The unit value is written as `()` and represents the absence of a value.  It is used in situations where a value is required but there is no value to provide.
 
 ``` rebo
+> ()
 ()
-? ()
-typeof(())
-? "Unit"
+
+> typeof(())
+"Unit"
 ```
 
 The `?` operator is used to provide an alternative value should the first value be `()`.
 
 ``` rebo
-() ? 10
-? 10
-11 ? 10
-? 11
+> () ? 10
+10
+
+> 11 ? 10
+11
 ```
 
 The boolean values are `true` and `false`.  They are used to represent the truth of a condition.
 
 ``` rebo
+> true
 true
-? true
+
+> false
 false
-? false
-typeof(true)
-? "Bool"
+
+> typeof(true)
+"Bool"
 ```
 
 The customary operators `&&` and `||` are used to combine boolean values.
 
-``` rebo
-
 The char value is a single character.  It is written as `'c'` where `c` is any character.  Internally a char value is represented as an 8 bit unsigned byte.
 
 ``` rebo
+> 'a'
 'a'
-? 'a'
+
+> '1'
 '1'
-? '1'
-typeof('a')
-? "Char"
+
+> typeof('a')
+"Char"
 ```
 
 There are 3 special characters that can be used is a char literal.
 
 ```rebo
-int('\n')
-? 10
-int('\\')
-? 92
-int('\'')
-? 39
-int('\x13')
-? 13
+> int('\n')
+10
+
+> int('\\')
+92
+
+> int('\'')
+39
+
+> int('\x13')
+13
 ```
 
 The last special character is the escape character and used when special characters are needed in char literals.
@@ -102,93 +109,107 @@ The last special character is the escape character and used when special charact
 An integer value is a whole number.  It is written as `n` where `n` is any whole number.  Internally an integer value is represented as a 64 bit signed integer.
 
 ```rebo
-10 + 3
-? 13
-typeof(3)
-? "Int"
+> 10 + 3
+13
+
+> typeof(3)
+"Int"
 ```
 
 A float value is a decimal number.  It is written as `n.m` where `n` is any whole number and `m` is any whole number.  Internally a float value is represented as a 64 bit floating point number.
 
 ```rebo
+> 3.151
 3.151
-? 3.151
-10 + 2.134
-? 12.134
-typeof(3.151)
-? "Float"
+
+> 10 + 2.134
+12.134
+
+> typeof(3.151)
+"Float"
 ```
 
 A float value can also be written using scientific notation.
 
 ```rebo
-3.151e2
-? 315.1
-3.151e-2
-? 0.03151
+> 3.151e2
+315.1
+
+> 3.151e-2
+0.03151
 ```
 
 A string value is a sequence of characters.  It is written as `"s"` where `s` is any sequence of characters.  Internally a string value is represented as a sequence of 8 bit unsigned bytes.
 
 ```rebo
+> "Hello World"
 "Hello World"
-? "Hello World"
-typeof("Hello World")
-? "String"
+
+> typeof("Hello World")
+"String"
 ```
 
 Like character, there are 3 special characters that can be used is a string literal.
 
 ```rebo
+> "Hello\n\"World\""
 "Hello\n\"World\""
-? "Hello\n\"World\""
-"\x72;\x101;\x108;\x108;\x111;"
-? "Hello"
+
+> "\x72;\x101;\x108;\x108;\x111;"
+"Hello"
 ```
 
 A function value is a piece of code that can be executed.  It is written as `fn(args) = expr` where `args` is a comma separated list of arguments each with an optional default value and `expr` is an expression.  The `=` character used in the definition of a function is optional.  Idiomatically it is used when the function body is a single expression.
 
 ```rebo
-let add = fn(a = 0, b = 1) = a + b
-? fn(a = 0, b = 1)
-add()
-? 1
-add(10)
-? 11
-add(10, 20)
-? 30
-add(10, 20, 100)
-? 30
+> let add = fn(a = 0, b = 1) = a + b
+fn(a = 0, b = 1)
+
+> add()
+1
+
+> add(10)
+11
+
+> add(10, 20)
+30
+
+> add(10, 20, 100)
+30
 ```
 
 The above definition for `add` is equivalent to the following.
 
 ```rebo
-let add(a = 0, b = 1) = a + b
-? fn(a = 0, b = 1)
+> let add(a = 0, b = 1) = a + b
+fn(a = 0, b = 1)
 ```
 
 Should a parameter not be given a default it will default to `()`.
 
 ```rebo
-let identity(x) = x
-? fn(x)
-identity(10)
-? 10
-identity()
-? ()
+> let identity(x) = x
+fn(x)
+
+> identity(10)
+10
+
+> identity()
+()
 ```
 
 A function can also be declared with many parameters which are then passed as a sequence.
 
-```rebo
-let add(...args) = Std.reduce(args, fn(a, b) = a + b, 0)
-? fn(...args)
-add()
-? 0
-add(10)
-? 10
-add(1, 2, 3, 4, 5)
-? 15
 ```
+> let add(...args) = Std.reduce(args, fn(a, b) = a + b, 0)
+fn(...args)
 
+> add()
+0
+
+> add(10)
+10
+
+> add(1, 2, 3, 4, 5)
+15
+```
