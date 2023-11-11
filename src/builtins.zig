@@ -35,7 +35,31 @@ pub fn cwd(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expres
     };
 
     try machine.memoryState.pushStringValue(c);
-    return;
+}
+
+pub fn eval(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    const code = machine.memoryState.getFromScope("code") orelse machine.memoryState.unitValue;
+
+    if (code.?.v != V.ValueKind.StringKind) {
+        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.StringKind}, code.?.v);
+    }
+
+    const stackSize = machine.memoryState.stack.items.len;
+    defer {
+        while (machine.memoryState.stack.items.len > stackSize + 1) {
+            _ = machine.memoryState.pop();
+        }
+    }
+    try machine.execute("eval", code.?.v.StringKind);
+}
+
+test "eval" {
+    try Main.expectExprEqual("eval(\"\")", "()");
+
+    try Main.expectExprEqual("eval(\"1\")", "1");
+    try Main.expectExprEqual("eval(\"let x = 10; x + 1\")", "11");
+    try Main.expectExprEqual("eval(\"let add(a, b) a + b; add\")(1, 2)", "3");
 }
 
 pub fn exit(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {

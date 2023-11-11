@@ -1181,6 +1181,10 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .default = null,
     }}, null, &Builtins.close);
     try addBuiltin(&state, "cwd", &[0]V.FunctionArgument{}, null, &Builtins.cwd);
+    try addBuiltin(&state, "eval", &[_]V.FunctionArgument{V.FunctionArgument{
+        .name = "code",
+        .default = null,
+    }}, null, &Builtins.eval);
     try addBuiltin(&state, "exit", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "v",
         .default = null,

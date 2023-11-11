@@ -115,6 +115,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 # Built-in Functions
 
+- [X] eval with all it's evilness
 - [ ] exit
     - [X] Basic function
     - [ ] If a non-integer is passed then print it to stderr and exit with 1
