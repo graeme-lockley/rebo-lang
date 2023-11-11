@@ -21,6 +21,7 @@ pub const Operator = enum {
     AppendUpdate,
     Prepend,
     PrependUpdate,
+    Hook,
 
     pub fn toString(self: Operator) []const u8 {
         return switch (self) {
@@ -41,6 +42,7 @@ pub const Operator = enum {
             Operator.AppendUpdate => "<!",
             Operator.Prepend => ">>",
             Operator.PrependUpdate => ">!",
+            Operator.Hook => "?",
         };
     }
 };

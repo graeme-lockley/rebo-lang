@@ -90,7 +90,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] '>!' prepend operator changing the underlying structure
 - [X] '<<' append operator leaving the underlying structure unaffected
 - [X] '<!' append operator changing the underlying structure
-- [ ] '?' operator to provide default values for null
+- [X] '?' operator to provide default values for null
 
 # Control Statements
 

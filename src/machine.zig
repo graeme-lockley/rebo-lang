@@ -787,6 +787,17 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             machine.memoryState.popn(2);
             machine.memoryState.push(right) catch |err| return errorHandler(err);
         },
+        AST.Operator.Hook => {
+            if (evalExpr(machine, leftAST)) return true;
+
+            const left = machine.memoryState.peek(0);
+
+            if (left.v == V.ValueValue.VoidKind) {
+                _ = machine.memoryState.pop();
+
+                if (evalExpr(machine, rightAST)) return true;
+            }
+        },
 
         // else => unreachable,
     }
