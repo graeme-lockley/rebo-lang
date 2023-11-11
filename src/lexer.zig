@@ -149,6 +149,7 @@ pub const Lexer = struct {
                     self.current = Token{ .kind = TokenKind.Bang, .start = tokenStart, .end = self.offset };
                 }
             },
+            '?' => self.setSymbolToken(TokenKind.Hook, tokenStart),
             '[' => self.setSymbolToken(TokenKind.LBracket, tokenStart),
             '{' => self.setSymbolToken(TokenKind.LCurly, tokenStart),
             '(' => self.setSymbolToken(TokenKind.LParen, tokenStart),
@@ -422,7 +423,7 @@ const expectEqualStrings = std.testing.expectEqualStrings;
 
 test "identifier and keywords" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " foo fn if let while ");
+    try lexer.initBuffer(Errors.STREAM_SRC, " foo fn if let while ");
 
     try expectEqual(lexer.current.kind, TokenKind.Identifier);
     try expectEqualStrings(lexer.lexeme(lexer.current), "foo");
@@ -440,7 +441,7 @@ test "identifier and keywords" {
 
 test "literal bool" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", "true   false");
+    try lexer.initBuffer(Errors.STREAM_SRC, "true   false");
 
     try expectEqual(lexer.current.kind, TokenKind.LiteralBoolTrue);
     try lexer.next();
@@ -461,7 +462,7 @@ fn expectTokenEqual(lexer: *Lexer, kind: TokenKind, lexeme: []const u8) !void {
 
 test "literal char" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", "'x' '\\n' '\\\\' '\\'' '\\x31'");
+    try lexer.initBuffer(Errors.STREAM_SRC, "'x' '\\n' '\\\\' '\\'' '\\x31'");
 
     try expectTokenEqual(&lexer, TokenKind.LiteralChar, "'x'");
     try expectTokenEqual(&lexer, TokenKind.LiteralChar, "'\\n'");
@@ -473,7 +474,7 @@ test "literal char" {
 
 test "literal float" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", "1.0 -1.0 1.0e1 -1.0e1 1.0e+1 -1.0e+1 1.0e-1 -1.0e-1");
+    try lexer.initBuffer(Errors.STREAM_SRC, "1.0 -1.0 1.0e1 -1.0e1 1.0e+1 -1.0e+1 1.0e-1 -1.0e-1");
 
     try expectTokenEqual(&lexer, TokenKind.LiteralFloat, "1.0");
     try expectTokenEqual(&lexer, TokenKind.LiteralFloat, "-1.0");
@@ -489,7 +490,7 @@ test "literal float" {
 
 test "literal int" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", "0 123 -1 -0 -123");
+    try lexer.initBuffer(Errors.STREAM_SRC, "0 123 -1 -0 -123");
 
     try expectTokenEqual(&lexer, TokenKind.LiteralInt, "0");
     try expectTokenEqual(&lexer, TokenKind.LiteralInt, "123");
@@ -502,7 +503,7 @@ test "literal int" {
 
 test "literal string" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", "\"\" \"hello world\" \"\\n\\\\\\\" \\x123;x\"");
+    try lexer.initBuffer(Errors.STREAM_SRC, "\"\" \"hello world\" \"\\n\\\\\\\" \\x123;x\"");
 
     try expectTokenEqual(&lexer, TokenKind.LiteralString, "\"\"");
     try expectTokenEqual(&lexer, TokenKind.LiteralString, "\"hello world\"");
@@ -511,10 +512,12 @@ test "literal string" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "+ - * / % = == ! != <! <| < <= << >! > >= >> && || [ { ( , . ... : := ; -> | |> ] } )" {
+test "? + - * / % = == ! != <! <| < <= << >! > >= >> && || [ { ( , . ... : := ; -> | |> ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer("console", " + - * / % = == ! != <! <| < <= << >! > >= >> && || [ { ( , . ... : := ; -> | |> ] } ) ");
+    try lexer.initBuffer(Errors.STREAM_SRC, " ? + - * / % = == ! != <! <| < <= << >! > >= >> && || [ { ( , . ... : := ; -> | |> ] } ) ");
 
+    try expectEqual(lexer.current.kind, TokenKind.Hook);
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Plus);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Minus);
