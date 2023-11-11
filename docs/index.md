@@ -88,7 +88,7 @@ The char value is a single character.  It is written as `'c'` where `c` is any c
 "Char"
 ```
 
-There are 3 special characters that can be used is a char literal.
+There are 4 special forms that can be used as a char literal.
 
 ```rebo
 > int('\n')
@@ -139,7 +139,7 @@ A float value can also be written using scientific notation.
 0.03151
 ```
 
-A string value is a sequence of characters.  It is written as `"s"` where `s` is any sequence of characters.  Internally a string value is represented as a sequence of 8 bit unsigned bytes.
+A string value is an immutable sequence of characters.  It is written as `"s"` where `s` is any sequence of characters.  Internally a string value is represented as a sequence of 8 bit unsigned bytes.
 
 ```rebo
 > "Hello World"
@@ -149,15 +149,17 @@ A string value is a sequence of characters.  It is written as `"s"` where `s` is
 "String"
 ```
 
-Like character, there are 3 special characters that can be used is a string literal.
+Like character, there are 4 special characters that can be used is a string literal.
 
 ```rebo
-> "Hello\n\"World\""
-"Hello\n\"World\""
+> "Hello\n \\ \"World\""
+"Hello\n \\ \"World\""
 
 > "\x72;\x101;\x108;\x108;\x111;"
 "Hello"
 ```
+
+## Functions
 
 A function value is a piece of code that can be executed.  It is written as `fn(args) = expr` where `args` is a comma separated list of arguments each with an optional default value and `expr` is an expression.  The `=` character used in the definition of a function is optional.  Idiomatically it is used when the function body is a single expression.
 
@@ -212,4 +214,185 @@ fn(...args)
 
 > add(1, 2, 3, 4, 5)
 15
+```
+
+## If Expression
+
+An `if` expression is used to support conditional behavior.  A definition of Ackermann function would be a good example of this.
+
+```rebo
+> let ackermann(m, n) = 
+.   if m == 0 -> n + 1 
+.    | n == 0 -> ackermann(m - 1, 1) 
+.    | ackermann(m - 1, ackermann(m, n - 1))
+fn(m, n)
+
+> ackermann(1, 2)
+4
+
+> ackermann(2, 3)
+9
+
+> ackermann(3, 2)
+29
+```
+
+## While Expression
+
+A `while` expression is used to support looping behavior.  A definition of the factorial function would be a good example of this.
+
+```rebo
+> let factorial(n) {
+.   let result = 1
+.   let i = 1
+.   while i <= n -> {
+.     result := result * i
+.     i := i + 1
+.   }
+.   result
+. }
+
+> factorial(5)
+120
+```
+
+## Sequences
+
+This structure is used to represent a sequence of values.  It is written as `[v1, v2, ...]` where `v1`, `v2`, etc are values.
+
+```rebo
+> [1, 2, 3]
+[1, 2, 3]
+
+> typeof([1, 2, 3])
+"Sequence"
+```
+
+The `[]` operator is used to access a value in a sequence.  The index is zero based.
+
+```rebo
+> let seq = [1, 2, 3]
+[1, 2, 3]
+
+> seq[0]
+1
+```
+
+A range can be used to access a subsequence of a sequence.  The range is written as `start:end` where `start` and `end` are integers.  The range is inclusive of `start` and exclusive of `end`.
+
+```rebo
+> let seq = [1, 2, 3]
+[1, 2, 3]
+
+> seq[0:2]
+[1, 2]
+```
+
+The `[]` operator can also be used to update a value in a sequence.
+
+```rebo
+> let seq = [1, 2, 3]
+[1, 2, 3]
+
+> seq[0] := 10
+10
+
+> seq
+[10, 2, 3]
+
+> seq[0:2] := [100, 200, 300]
+[100, 200, 300]
+
+> seq
+[100, 200, 300, 3]
+```
+
+The operators `>>` and `<<` are used to append and prepend a value onto to a sequence.
+
+```rebo
+> let seq = [1, 2, 3]
+[1, 2, 3]
+
+> seq << 4
+[1, 2, 3, 4]
+
+> 0 >> seq
+[0, 1, 2, 3]
+
+> seq
+[1, 2, 3]
+```
+
+As can be seen, the operators do not modify the sequence but return a new sequence. The operators '>!' and '<!' are used to modify the sequence.
+
+```rebo
+> let seq = [1, 2, 3]
+[1, 2, 3]
+
+> seq <! 4
+[1, 2, 3, 4]
+
+> 0 >! seq
+[0, 1, 2, 3, 4]
+
+> seq
+[0, 1, 2, 3, 4]
+```
+
+Finally, the `...` notation is used to create lists from existing lists.
+
+```rebo
+> let seq = [1, 2, 3]
+[1, 2, 3]
+
+> [0, ...seq, 4]
+[0, 1, 2, 3, 4]
+```
+
+## Records
+
+A record is a collection of named values.  It is written as `{name1: v1, name2: v2, ...}` where `name1`, `name2`, etc are names and `v1`, `v2`, etc are values.
+
+```rebo
+> let person = {name: "John", age: 20}
+{name: "John", age: 20}
+
+> typeof(person)
+"Record"
+```
+
+The `.` operator is used to access a value in a record.
+
+```rebo
+> let person = {name: "John", age: 20}
+{name: "John", age: 20}
+
+> person.name
+"John"
+```
+
+The `.` operator can also be used to update a value in a record.
+
+```rebo
+> let person = {name: "John", age: 20}
+{name: "John", age: 20}
+
+> person.name := "Jane"
+"Jane"
+
+> person
+{name: "Jane", age: 20}
+```
+
+Like with sequences, the "..." operator can be used to create a new record from an existing record.
+
+```rebo
+> let person = {name: "John", age: 20}
+{name: "John", age: 20}
+
+> let person2 = {...person, age: 21}
+{name: "John", age: 21}
+
+> person
+{name: "John", age: 20}
 ```
