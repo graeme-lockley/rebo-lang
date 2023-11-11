@@ -5,6 +5,7 @@ let run(suite) {
   runDropStart(suite.suite("dropStart"))
   runEndsWith?(suite.suite("endsWith?"))
   runStartsWith?(suite.suite("startsWith?"))
+  runTrim(suite.suite("trim"))
 }
 
 let runDropEnd(suite) {
@@ -47,4 +48,15 @@ let runStartsWith?(suite) {
   _startsWith?("hello", "he", true)
   _startsWith?("hello", "help", false)
   _startsWith?("hello", "hellos", false)
+}
+
+let runTrim(suite) {
+  let _trim(s, expected) =
+    suite.eq("\"" + s + "\"", Str.trim(s), expected)
+
+  _trim("", "")
+  _trim("hello world", "hello world")
+  _trim("  hello world", "hello world")
+  _trim("  hello world  ", "hello world")
+  _trim("hello world  ", "hello world")
 }

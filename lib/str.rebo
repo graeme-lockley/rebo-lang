@@ -9,3 +9,13 @@ let dropStart(s, n) =
 
 let dropEnd(s, n) =
   s[0:len(s) - n]
+
+let trim(s) {
+  let i = 0
+  while i < len(s) && int(s[i]) <= 32 -> i := i + 1
+
+  let j = len(s) - 1
+  while j >= 0 && int(s[j]) <= 32 -> j := j - 1
+
+  s[i:j+1]
+}
