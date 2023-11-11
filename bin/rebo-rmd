@@ -11,30 +11,69 @@ let cli = CLI.parse({
    opts: {}    
 })
 
+let execute(path, startLine, endLine, code) {
+   let cmd = "()"
+   let lp = 0
+
+   while lp < len(code) -> {
+      if Str.startsWith?(code[lp], ">") -> {
+         let codeStartLine = startLine + lp + 1
+
+         cmd := cmd + " ; " + Str.trim(Str.dropStart(code[lp], 1))
+         lp := lp + 1
+
+         while lp < len(code) && Str.startsWith?(code[lp], ".") -> {
+            cmd := cmd + "\n" + Str.trim(Str.dropStart(code[lp], 1))
+            lp := lp + 1
+         }
+
+         let result = str(eval(cmd))
+
+         let expected = ""
+         while lp < len(code) && !Str.startsWith?(code[lp], ">") -> {
+            expected := expected + "\n" + Str.trim(code[lp])
+            lp := lp + 1
+         }
+
+         expected := Str.trim(expected)
+
+         if len(expected) > 0 && result != expected -> {
+            println("Error: ", path, ": ", codeStartLine);
+            println("  Code: ", cmd)
+            println("  Expected: ", expected)
+            println("  Result: ", result)
+            exit(1)
+         }
+      } | {
+         println("Error: ", path, ": ", startLine + lp, ": ", code[lp], " needed to start with '>'")
+         exit(1)
+      }
+   }
+}
+
 let processFile(path) {
    let content = FS.lines(path)
 
    let lp = 0
 
    while lp < len(content) -> {
-      if Str.startsWith?(content[lp], "```") -> {
+      if Str.startsWith?(content[lp], "```rebo") ||  Str.startsWith?(content[lp], "``` rebo")-> {
          let upper = lp + 1
 
          while upper < len(content) && !Str.startsWith?(content[upper], "```") ->
             upper := upper + 1
 
-         println("******", content[lp + 1 : upper] |> Std.join("\n"), "******")
+         execute(path, lp + 1, upper, content[lp + 1 : upper])
 
          lp := upper + 1
       } | {
-         println(content[lp])
          lp := lp + 1
       }
    }
 }
 
 if len(cli.args) == 0 -> 
-   cli.args := import("../lib/fs.rebo").files(".", { predicate: fn(n) Str.endsWith?(n, ".rmd") })
+   cli.args := import("../lib/fs.rebo").files(".", { predicate: fn(n) Str.endsWith?(n, ".md") })
 
 cli.args
    |> Std.each(processFile)

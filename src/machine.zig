@@ -1177,7 +1177,7 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .colour = default_colour,
         .root = null,
         .memory_size = 0,
-        .memory_capacity = 2,
+        .memory_capacity = 1024 * 64,
         .scopes = std.ArrayList(*V.Value).init(allocator),
         .imports = MS.Imports.init(allocator),
         .unitValue = null,
