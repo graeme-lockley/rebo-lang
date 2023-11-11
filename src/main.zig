@@ -1,5 +1,6 @@
 const std = @import("std");
 const Builtins = @import("./builtins.zig");
+const Errors = @import("./errors.zig");
 const Machine = @import("./machine.zig");
 const V = @import("./value.zig");
 
@@ -36,7 +37,7 @@ pub fn main() !void {
                 if (line.len == 0) {
                     break;
                 }
-                execute(&machine, "console", line);
+                execute(&machine, Errors.STREAM_SRC, line);
                 try printResult(allocator, machine.topOfStack());
                 try machine.reset();
             } else {
@@ -68,9 +69,11 @@ fn printResult(allocator: std.mem.Allocator, v: ?*V.Value) !void {
 fn errorHandler(err: anyerror, machine: *Machine.Machine) void {
     var e = machine.grabErr();
     if (e == null) {
-        std.debug.print("Error: {}\n", .{err});
+        std.log.err("Error: {}\n", .{err});
     } else {
-        e.?.print() catch {};
+        e.?.print() catch |err2| {
+            std.log.err("Error: {}: {}\n", .{ err, err2 });
+        };
         e.?.deinit();
     }
 }
@@ -92,7 +95,7 @@ fn nike(input: []const u8) !void {
             var machine = try Machine.Machine.init(allocator);
             defer machine.deinit();
 
-            _ = machine.execute("console", s) catch {};
+            _ = machine.execute(Errors.STREAM_SRC, s) catch {};
         }
 
         const err = gpa.deinit();
@@ -113,7 +116,7 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         var machine = try Machine.Machine.init(allocator);
         defer machine.deinit();
 
-        execute(&machine, "console", input);
+        execute(&machine, Errors.STREAM_SRC, input);
         const v = machine.topOfStack();
 
         if (v == null) {
@@ -151,7 +154,7 @@ fn expectError(input: []const u8) !void {
         var machine = try Machine.Machine.init(allocator);
         defer machine.deinit();
 
-        const result = machine.execute("console", input);
+        const result = machine.execute(Errors.STREAM_SRC, input);
 
         if (result != error.InterpreterError) {
             const v = machine.topOfStack();

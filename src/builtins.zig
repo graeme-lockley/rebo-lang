@@ -46,12 +46,33 @@ pub fn eval(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expre
     }
 
     const stackSize = machine.memoryState.stack.items.len;
-    defer {
-        while (machine.memoryState.stack.items.len > stackSize + 1) {
+
+    machine.execute("eval", code.?.v.StringKind) catch |e| {
+        while (machine.memoryState.stack.items.len > stackSize) {
             _ = machine.memoryState.pop();
         }
-    }
-    try machine.execute("eval", code.?.v.StringKind);
+
+        try machine.memoryState.pushEmptyMapValue();
+        const record = machine.memoryState.peek(0);
+
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newStringValue("EvalError"));
+        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "content", code.?);
+
+        var err = machine.grabErr();
+
+        if (err == null) {
+            std.debug.print("Error: {}\n", .{e});
+        } else {
+            var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+            defer buffer.deinit();
+
+            err.?.append(&buffer) catch {};
+
+            try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "message", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+
+            err.?.deinit();
+        }
+    };
 }
 
 test "eval" {
