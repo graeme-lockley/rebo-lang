@@ -19,9 +19,9 @@ pub const DivideByZeroError = struct {
         _ = self;
     }
 
-    pub fn print(self: DivideByZeroError) void {
+    pub fn append(self: DivideByZeroError, buffer: *std.ArrayList(u8)) !void {
         _ = self;
-        std.log.err("Divide By Zero", .{});
+        try buffer.appendSlice("Divide By Zero");
     }
 };
 
@@ -34,8 +34,8 @@ pub const IncompatibleOperandTypesError = struct {
         _ = self;
     }
 
-    pub fn print(self: IncompatibleOperandTypesError) void {
-        std.log.err("Incompatible Operands: '{s}' is incompatible with {s} and {s} operands", .{ self.op.toString(), self.left.toString(), self.right.toString() });
+    pub fn append(self: IncompatibleOperandTypesError, buffer: *std.ArrayList(u8)) !void {
+        try std.fmt.format(buffer.writer(), "Incompatible Operands: '{s}' is incompatible with {s} and {s} operands", .{ self.op.toString(), self.left.toString(), self.right.toString() });
     }
 };
 
@@ -48,8 +48,8 @@ pub const IndexOutOfRangeError = struct {
         _ = self;
     }
 
-    pub fn print(self: IndexOutOfRangeError) void {
-        std.log.err("Index Out Of Range: {d} is out of range [{d}..{d})", .{ self.idx, self.lower, self.upper });
+    pub fn append(self: IndexOutOfRangeError, buffer: *std.ArrayList(u8)) !void {
+        try std.fmt.format(buffer.writer(), "Index Out Of Range: {d} is out of range [{d}..{d})", .{ self.idx, self.lower, self.upper });
     }
 };
 
@@ -58,9 +58,9 @@ pub const InvalidLHSError = struct {
         _ = self;
     }
 
-    pub fn print(self: InvalidLHSError) void {
+    pub fn append(self: InvalidLHSError, buffer: *std.ArrayList(u8)) !void {
         _ = self;
-        std.log.err("Invalid Left on Assignment", .{});
+        try buffer.appendSlice("Invalid Left on Assignment");
     }
 };
 
@@ -71,8 +71,8 @@ pub const LexicalError = struct {
         allocator.free(self.lexeme);
     }
 
-    pub fn print(self: LexicalError, nature: []const u8) void {
-        std.log.err("{s}: \"{s}\"", .{ nature, self.lexeme });
+    pub fn append(self: LexicalError, buffer: *std.ArrayList(u8), nature: []const u8) !void {
+        try std.fmt.format(buffer.writer(), "{s}: \"{s}\"", .{ nature, self.lexeme });
     }
 };
 
@@ -85,10 +85,7 @@ pub const ParserError = struct {
         allocator.free(self.expected);
     }
 
-    pub fn print(self: ParserError, allocator: std.mem.Allocator) !void {
-        var buffer = std.ArrayList(u8).init(allocator);
-        defer buffer.deinit();
-
+    pub fn append(self: ParserError, buffer: *std.ArrayList(u8)) !void {
         try std.fmt.format(buffer.writer(), "Parser Error: Found \"{s}\" but expected: ", .{self.lexeme});
         for (self.expected, 0..) |expected, i| {
             if (i > 0) {
@@ -96,11 +93,6 @@ pub const ParserError = struct {
             }
             try buffer.appendSlice(expected.toString());
         }
-
-        const msg = try buffer.toOwnedSlice();
-        defer allocator.free(msg);
-
-        std.log.err("{s}", .{msg});
     }
 };
 
@@ -112,10 +104,7 @@ pub const ExpectedTypeError = struct {
         allocator.free(self.expected);
     }
 
-    pub fn print(self: ExpectedTypeError, allocator: std.mem.Allocator) !void {
-        var buffer = std.ArrayList(u8).init(allocator);
-        defer buffer.deinit();
-
+    pub fn append(self: ExpectedTypeError, buffer: *std.ArrayList(u8)) !void {
         try std.fmt.format(buffer.writer(), "Expected Type: Received value of type {s} but expected ", .{self.found.toString()});
         for (self.expected, 0..) |expected, i| {
             if (i > 0) {
@@ -123,11 +112,6 @@ pub const ExpectedTypeError = struct {
             }
             try buffer.appendSlice(expected.toString());
         }
-
-        const msg = try buffer.toOwnedSlice();
-        defer allocator.free(msg);
-
-        std.log.err("{s}", .{msg});
     }
 };
 
@@ -138,8 +122,8 @@ pub const UnknownIdentifierError = struct {
         allocator.free(self.identifier);
     }
 
-    pub fn print(self: UnknownIdentifierError) void {
-        std.log.err("Unknown Identifier: {s}", .{self.identifier});
+    pub fn append(self: UnknownIdentifierError, buffer: *std.ArrayList(u8)) !void {
+        try std.fmt.format(buffer.writer(), "Unknown Identifier: {s}", .{self.identifier});
     }
 };
 
@@ -209,8 +193,8 @@ pub const Error = struct {
         self.stack.deinit();
     }
 
-    pub fn print(self: *Error) !void {
-        try self.detail.print(self.allocator);
+    pub fn append(self: *Error, buffer: *std.ArrayList(u8)) !void {
+        try self.detail.append(buffer);
 
         for (self.stack.items) |item| {
             if (std.mem.eql(u8, item.src, STREAM_SRC)) {
@@ -219,13 +203,24 @@ pub const Error = struct {
 
             const locationRange = try item.location(self.allocator);
             if (item.position.start == item.position.end or item.position.start == item.position.end - 1) {
-                std.log.err("  at {s}: {d}:{d}", .{ item.src, locationRange.from.line, locationRange.from.column });
+                try std.fmt.format(buffer.writer(), "\n  at {s}: {d}:{d}", .{ item.src, locationRange.from.line, locationRange.from.column });
             } else if (locationRange.from.line == locationRange.to.line) {
-                std.log.err("  at {s}: {d},{d}-{d}", .{ item.src, locationRange.from.line, locationRange.from.column, locationRange.to.column });
+                try std.fmt.format(buffer.writer(), "\n  at {s}: {d},{d}-{d}", .{ item.src, locationRange.from.line, locationRange.from.column, locationRange.to.column });
             } else {
-                std.log.err("  at {s}: {d},{d}-{d},{d}", .{ item.src, locationRange.from.line, locationRange.from.column, locationRange.to.line, locationRange.to.column });
+                try std.fmt.format(buffer.writer(), "\n  at {s}: {d},{d}-{d},{d}", .{ item.src, locationRange.from.line, locationRange.from.column, locationRange.to.line, locationRange.to.column });
             }
         }
+    }
+
+    pub fn print(self: *Error) !void {
+        var buffer = std.ArrayList(u8).init(self.allocator);
+        defer buffer.deinit();
+
+        try self.append(&buffer);
+        const msg = try buffer.toOwnedSlice();
+        defer self.allocator.free(msg);
+
+        std.log.err("{s}", .{msg});
     }
 
     pub fn appendStackItem(self: *Error, src: []const u8, position: Position) !void {
@@ -249,71 +244,31 @@ pub const ErrorDetail = union(enum) {
 
     pub fn deinit(self: ErrorDetail, allocator: std.mem.Allocator) void {
         switch (self) {
-            .divideByZero => {
-                self.divideByZero.deinit();
-            },
-            .expectedTypeError => {
-                self.expectedTypeError.deinit(allocator);
-            },
-            .incompatibleOperandTypesError => {
-                self.incompatibleOperandTypesError.deinit();
-            },
-            .indexOutOfRangeError => {
-                self.indexOutOfRangeError.deinit();
-            },
-            .invalidLHSError => {
-                self.invalidLHSError.deinit();
-            },
-            .lexicalError => {
-                self.lexicalError.deinit(allocator);
-            },
-            .literalFloatOverflowError => {
-                self.literalFloatOverflowError.deinit(allocator);
-            },
-            .literalIntOverflowError => {
-                self.literalIntOverflowError.deinit(allocator);
-            },
-            .parserError => {
-                self.parserError.deinit(allocator);
-            },
-            .unknownIdentifierError => {
-                self.unknownIdentifierError.deinit(allocator);
-            },
+            .divideByZero => self.divideByZero.deinit(),
+            .expectedTypeError => self.expectedTypeError.deinit(allocator),
+            .incompatibleOperandTypesError => self.incompatibleOperandTypesError.deinit(),
+            .indexOutOfRangeError => self.indexOutOfRangeError.deinit(),
+            .invalidLHSError => self.invalidLHSError.deinit(),
+            .lexicalError => self.lexicalError.deinit(allocator),
+            .literalFloatOverflowError => self.literalFloatOverflowError.deinit(allocator),
+            .literalIntOverflowError => self.literalIntOverflowError.deinit(allocator),
+            .parserError => self.parserError.deinit(allocator),
+            .unknownIdentifierError => self.unknownIdentifierError.deinit(allocator),
         }
     }
 
-    pub fn print(self: ErrorDetail, allocator: std.mem.Allocator) !void {
+    pub fn append(self: ErrorDetail, buffer: *std.ArrayList(u8)) !void {
         switch (self) {
-            .divideByZero => {
-                self.divideByZero.print();
-            },
-            .expectedTypeError => {
-                try self.expectedTypeError.print(allocator);
-            },
-            .incompatibleOperandTypesError => {
-                self.incompatibleOperandTypesError.print();
-            },
-            .indexOutOfRangeError => {
-                self.indexOutOfRangeError.print();
-            },
-            .invalidLHSError => {
-                self.invalidLHSError.print();
-            },
-            .lexicalError => {
-                self.lexicalError.print("Lexical Error");
-            },
-            .literalFloatOverflowError => {
-                self.literalFloatOverflowError.print("Literal Float Overflow Error");
-            },
-            .literalIntOverflowError => {
-                self.literalIntOverflowError.print("Literal Int Overflow Error");
-            },
-            .parserError => {
-                try self.parserError.print(allocator);
-            },
-            .unknownIdentifierError => {
-                self.unknownIdentifierError.print();
-            },
+            .divideByZero => try self.divideByZero.append(buffer),
+            .expectedTypeError => try self.expectedTypeError.append(buffer),
+            .incompatibleOperandTypesError => try self.incompatibleOperandTypesError.append(buffer),
+            .indexOutOfRangeError => try self.indexOutOfRangeError.append(buffer),
+            .invalidLHSError => try self.invalidLHSError.append(buffer),
+            .lexicalError => try self.lexicalError.append(buffer, "Lexical Error"),
+            .literalFloatOverflowError => try self.literalFloatOverflowError.append(buffer, "Literal Float Overflow Error"),
+            .literalIntOverflowError => try self.literalIntOverflowError.append(buffer, "Literal Int Overflow Error"),
+            .parserError => try self.parserError.append(buffer),
+            .unknownIdentifierError => try self.unknownIdentifierError.append(buffer),
         }
     }
 };
