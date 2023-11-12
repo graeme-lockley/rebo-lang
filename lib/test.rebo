@@ -4,6 +4,7 @@ let harness(title) = {
   let tests = []
 
   let self = {
+    start: milliTimestamp(),
     eq: fn(name, result, expected, context) {
       tests := [...tests, {name: name, passed?: result == expected, result: result, expected: expected, context: context, duration: _resetTimestamp!()}]
     },
@@ -16,7 +17,7 @@ let harness(title) = {
 
         r
     },
-    report: fn(totals = false, silent = false) = _reportSuite(title, silent, tests, totals)
+    report: fn(totals = false, silent = false) = _reportSuite(title, silent, tests, totals, self.start)
   }
 
   _resetTimestamp!()
@@ -27,15 +28,15 @@ let harness(title) = {
 let _suite?(t) = t.passed? == ()
 let _test?(t) = t.passed? != ()
 
-let _reportSuite(title, silent, tests, totals) {
-  let endTime = if totals -> _resetTimestamp!() | 0
+let _reportSuite(title, silent, tests, totals, startTime) {
+  let endTime = milliTimestamp() - startTime
 
   let ansi = Std.ansi
 
   let actuals = tests |> Std.filter(_test?)
 
   if !silent && len(actuals) > 0 -> {
-    println(ansi.foreground.lightGray, "run ", len(actuals), " tests from ", title, ansi.control.reset);
+    println(ansi.foreground.lightGray, "run ", len(actuals), " tests from ", title, " (", endTime, "ms)", ansi.control.reset);
 
     actuals |> Std.each(fn(t) = {
       let name = t.name
