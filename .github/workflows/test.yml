@@ -24,10 +24,6 @@ jobs:
         run: |
           zig build test
 
-      - name: Test Rebo
+      - name: Test Rebo suite and markdown code blocks
         run: |
           zig build run -- ./bin/rebo-test
-
-      - name: Test Code Blocks
-        run: |
-          zig build run -- ./bin/rebo-rmd ./docs/index.md

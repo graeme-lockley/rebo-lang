@@ -1,9 +1,14 @@
 #!env rebo
 
+# zig build-exe ./src/main.zig -O ReleaseFast -fstrip -fsingle-threaded
+
 let CLI = import("../lib/cli.rebo")
 let Std = import("../lib/std.rebo")
 let Str = import("../lib/str.rebo")
 let Test = import("../lib/test.rebo")
+
+let Markdown = import("./test-markdown.rebo")
+let Suite = import("./test-suite.rebo")
 
 let cli = CLI.parse({
   cmd: false,
@@ -14,35 +19,16 @@ let cli = CLI.parse({
   }    
 })
 
+if len(cli.args) == 0 -> 
+  cli.args := import("../lib/fs.rebo").files(".", { predicate: fn(n) Str.endsWith?(n, ".test.rebo") || Str.endsWith?(n, ".md")})
+
 let test = Test.harness("suite")
 
-let normaliseName(name) {
-  if name[0] == '/' -> name
-  | {
-      let dir = cwd()
-
-      if Str.endsWith?(dir, "/") -> dir + name
-      | dir + "/" + name
-    }
-}
-
-if len(cli.args) == 0 -> 
-  cli.args := import("../lib/fs.rebo").files(".", { predicate: fn(n) Str.endsWith?(n, ".test.rebo") })
-
-cli.args
-  |> Std.each(fn(name) {
-      let module = normaliseName(name) |> import()
-
-      if module.run == () -> {
-        println("Error: File ", name, " did not load correctly or does not have a run function: ", module)
-        exit(1)
-      } | {
-        let newSuite = test.suite(name)
-          
-        newSuite |> module.run()
-        newSuite.report(false, cli.opts.silent)
-      }
-    })
+cli.args|> Std.each(fn(name) 
+  if Str.endsWith?(name, ".test.rebo") -> Suite.process(name, test, cli.opts.silent)
+   | Str.endsWith?(name, ".md") -> Markdown.process(name, test, cli.opts.silent)
+   | else -> println("Unknown file type: " + name + " - ignoring")
+)
 
 let stats = test.report(cli.opts.totals, true)
 

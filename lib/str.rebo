@@ -19,3 +19,19 @@ let trim(s) {
 
   s[i:j+1]
 }
+
+let replace(s, from, to) {
+  let i = 0
+  let result = ""
+  while i < len(s) -> {
+    if startsWith?(s[i:], from) -> {
+      result := result + to
+      i := i + len(from)
+    } | {
+      result := result + s[i:i+1]
+      i := i + 1
+    }
+  }
+
+  result
+}

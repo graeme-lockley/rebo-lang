@@ -4,8 +4,8 @@ let harness(title) = {
   let tests = []
 
   let self = {
-    eq: fn(name, result, expected) {
-      tests := [...tests, {name: name, passed?: result == expected, result: result, expected: expected, duration: _resetTimestamp!()}]
+    eq: fn(name, result, expected, context) {
+      tests := [...tests, {name: name, passed?: result == expected, result: result, expected: expected, context: context, duration: _resetTimestamp!()}]
     },
     assert: fn(name, result) = self.eq(name, result, true),
     suite: fn(name, runner) {
@@ -50,6 +50,7 @@ let _reportSuite(title, silent, tests, totals) {
           println(ansi.foreground.red, "✗ ", ansi.control.reset, name, ansi.foreground.lightGray, " (", duration, "ms)", ansi.control.reset)
           println("  expected: ", expected)
           println("  actual: ", result)
+          if t.context != () -> println("  context: ", t.context)
         }
     })
   }

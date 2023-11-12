@@ -20,7 +20,7 @@ Rebo itself has the following features:
 - Pattern matching, and
 - Unit, boolean, char, integer, float, string, function, sequence,  record types and files
 
-The interpreter and runtime system is written in Zig however as much of the library functions are written in Rebo.  As more and more is built out and the runtime system is optimised, the language semantics will be preserved.
+The interpreter and runtime system is written in Zig however much of the library functions are written in Rebo.  As more and more is built out and the runtime system is optimised, the language semantics will be preserved.
 
 
 # Core Language
@@ -38,11 +38,11 @@ $ rebo repl
 
 ## Values
 
-The smallest building block in Rebo is called a **value**.  A value is a piece of data that can be manipulated by a program.  There are 10 of different types of values in Rebo: unit, boolean, char, integer, float, string, function, sequence,  record types and files.
+The smallest building block in Rebo is called a **value**.  A value is a piece of data that can be manipulated by a program.  There are 10 of different types of values in Rebo: unit, boolean, char, integer, float, string, function, sequence, record types and files.
 
 Let's start by looking at the simplest value, the unit value.  The unit value is written as `()` and represents the absence of a value.  It is used in situations where a value is required but there is no value to provide.
 
-``` rebo
+```rebo-repl
 > ()
 ()
 
@@ -52,7 +52,7 @@ Let's start by looking at the simplest value, the unit value.  The unit value is
 
 The `?` operator is used to provide an alternative value should the first value be `()`.
 
-``` rebo
+```rebo-repl
 > () ? 10
 10
 
@@ -62,7 +62,7 @@ The `?` operator is used to provide an alternative value should the first value 
 
 The boolean values are `true` and `false`.  They are used to represent the truth of a condition.
 
-``` rebo
+```rebo-repl
 > true
 true
 
@@ -77,7 +77,7 @@ The customary operators `&&` and `||` are used to combine boolean values.
 
 The char value is a single character.  It is written as `'c'` where `c` is any character.  Internally a char value is represented as an 8 bit unsigned byte.
 
-``` rebo
+```rebo-repl
 > 'a'
 'a'
 
@@ -90,7 +90,7 @@ The char value is a single character.  It is written as `'c'` where `c` is any c
 
 There are 4 special forms that can be used as a char literal.
 
-```rebo
+```rebo-repl
 > int('\n')
 10
 
@@ -108,7 +108,7 @@ The last special character is the escape character and used when special charact
 
 An integer value is a whole number.  It is written as `n` where `n` is any whole number.  Internally an integer value is represented as a 64 bit signed integer.
 
-```rebo
+```rebo-repl
 > 10 + 3
 13
 
@@ -118,7 +118,7 @@ An integer value is a whole number.  It is written as `n` where `n` is any whole
 
 A float value is a decimal number.  It is written as `n.m` where `n` is any whole number and `m` is any whole number.  Internally a float value is represented as a 64 bit floating point number.
 
-```rebo
+```rebo-repl
 > 3.151
 3.151
 
@@ -131,7 +131,7 @@ A float value is a decimal number.  It is written as `n.m` where `n` is any whol
 
 A float value can also be written using scientific notation.
 
-```rebo
+```rebo-repl
 > 3.151e2
 315.1
 
@@ -141,7 +141,7 @@ A float value can also be written using scientific notation.
 
 A string value is an immutable sequence of characters.  It is written as `"s"` where `s` is any sequence of characters.  Internally a string value is represented as a sequence of 8 bit unsigned bytes.
 
-```rebo
+```rebo-repl
 > "Hello World"
 "Hello World"
 
@@ -149,9 +149,9 @@ A string value is an immutable sequence of characters.  It is written as `"s"` w
 "String"
 ```
 
-Like character, there are 4 special characters that can be used is a string literal.
+Like character, there are 4 special characters that can be used in a string literal.
 
-```rebo
+```rebo-repl
 > "Hello\n \\ \"World\""
 "Hello\n \\ \"World\""
 
@@ -163,7 +163,7 @@ Like character, there are 4 special characters that can be used is a string lite
 
 A function value is a piece of code that can be executed.  It is written as `fn(args) = expr` where `args` is a comma separated list of arguments each with an optional default value and `expr` is an expression.  The `=` character used in the definition of a function is optional.  Idiomatically it is used when the function body is a single expression.
 
-```rebo
+```rebo-repl
 > let add = fn(a = 0, b = 1) = a + b
 fn(a = 0, b = 1)
 
@@ -182,14 +182,14 @@ fn(a = 0, b = 1)
 
 The above definition for `add` is equivalent to the following.
 
-```rebo
+```rebo-repl
 > let add(a = 0, b = 1) = a + b
 fn(a = 0, b = 1)
 ```
 
 Should a parameter not be given a default it will default to `()`.
 
-```rebo
+```rebo-repl
 > let identity(x) = x
 fn(x)
 
@@ -202,7 +202,7 @@ fn(x)
 
 A function can also be declared with many parameters which are then passed as a sequence.
 
-```
+```rebo-repl
 > let add(...args) = Std.reduce(args, fn(a, b) = a + b, 0)
 fn(...args)
 
@@ -218,9 +218,9 @@ fn(...args)
 
 ## If Expression
 
-An `if` expression is used to support conditional behavior.  A definition of Ackermann function would be a good example of this.
+An `if` expression is used to support conditional behavior.  A definition of the Ackermann function would be a good example of this.
 
-```rebo
+```rebo-repl
 > let ackermann(m, n) = 
 .   if m == 0 -> n + 1 
 .    | n == 0 -> ackermann(m - 1, 1) 
@@ -241,7 +241,7 @@ fn(m, n)
 
 A `while` expression is used to support looping behavior.  A definition of the factorial function would be a good example of this.
 
-```rebo
+```rebo-repl
 > let factorial(n) {
 .   let result = 1
 .   let i = 1
@@ -251,16 +251,26 @@ A `while` expression is used to support looping behavior.  A definition of the f
 .   }
 .   result
 . }
+fn(n)
 
 > factorial(5)
 120
+
+> factorial(20)
+2432902008176640000
+
+> Std.range(11) |> Std.map(factorial)
+[1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800]
 ```
 
 ## Sequences
 
 This structure is used to represent a sequence of values.  It is written as `[v1, v2, ...]` where `v1`, `v2`, etc are values.
 
-```rebo
+```rebo-repl
+> []
+[]
+
 > [1, 2, 3]
 [1, 2, 3]
 
@@ -270,7 +280,7 @@ This structure is used to represent a sequence of values.  It is written as `[v1
 
 The `[]` operator is used to access a value in a sequence.  The index is zero based.
 
-```rebo
+```rebo-repl
 > let seq = [1, 2, 3]
 [1, 2, 3]
 
@@ -280,7 +290,7 @@ The `[]` operator is used to access a value in a sequence.  The index is zero ba
 
 A range can be used to access a subsequence of a sequence.  The range is written as `start:end` where `start` and `end` are integers.  The range is inclusive of `start` and exclusive of `end`.
 
-```rebo
+```rebo-repl
 > let seq = [1, 2, 3]
 [1, 2, 3]
 
@@ -290,7 +300,7 @@ A range can be used to access a subsequence of a sequence.  The range is written
 
 The `[]` operator can also be used to update a value in a sequence.
 
-```rebo
+```rebo-repl
 > let seq = [1, 2, 3]
 [1, 2, 3]
 
@@ -307,9 +317,9 @@ The `[]` operator can also be used to update a value in a sequence.
 [100, 200, 300, 3]
 ```
 
-The operators `>>` and `<<` are used to append and prepend a value onto to a sequence.
+The operators `<<` and `>>` are used to append and prepend a value onto to a sequence.
 
-```rebo
+```rebo-repl
 > let seq = [1, 2, 3]
 [1, 2, 3]
 
@@ -325,7 +335,7 @@ The operators `>>` and `<<` are used to append and prepend a value onto to a seq
 
 As can be seen, the operators do not modify the sequence but return a new sequence. The operators '>!' and '<!' are used to modify the sequence.
 
-```rebo
+```rebo-repl
 > let seq = [1, 2, 3]
 [1, 2, 3]
 
@@ -341,7 +351,7 @@ As can be seen, the operators do not modify the sequence but return a new sequen
 
 Finally, the `...` notation is used to create lists from existing lists.
 
-```rebo
+```rebo-repl
 > let seq = [1, 2, 3]
 [1, 2, 3]
 
@@ -351,9 +361,9 @@ Finally, the `...` notation is used to create lists from existing lists.
 
 ## Records
 
-A record is a collection of named values.  It is written as `{name1: v1, name2: v2, ...}` where `name1`, `name2`, etc are names and `v1`, `v2`, etc are values.
+A record is a collection of named values.  It is written as `{name1: v1, name2: v2, ...}` where `name1`, `name2` are names and `v1`, `v2` are values.
 
-```rebo
+```rebo-repl
 > let person = {name: "John", age: 20}
 {name: "John", age: 20}
 
@@ -363,7 +373,7 @@ A record is a collection of named values.  It is written as `{name1: v1, name2: 
 
 The `.` operator is used to access a value in a record.
 
-```rebo
+```rebo-repl
 > let person = {name: "John", age: 20}
 {name: "John", age: 20}
 
@@ -373,7 +383,7 @@ The `.` operator is used to access a value in a record.
 
 The `.` operator can also be used to update a value in a record.
 
-```rebo
+```rebo-repl
 > let person = {name: "John", age: 20}
 {name: "John", age: 20}
 
@@ -384,9 +394,9 @@ The `.` operator can also be used to update a value in a record.
 {name: "Jane", age: 20}
 ```
 
-Like with sequences, the "..." operator can be used to create a new record from an existing record.
+Like with sequences, the `...` operator can be used to create a new record from an existing record.
 
-```rebo
+```rebo-repl
 > let person = {name: "John", age: 20}
 {name: "John", age: 20}
 

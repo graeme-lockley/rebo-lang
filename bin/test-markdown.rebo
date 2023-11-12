@@ -1,0 +1,69 @@
+let FS = import("../lib/fs.rebo")
+let Std = import("../lib/std.rebo")
+let Str = import("../lib/str.rebo")
+
+let process(path, test, silent = false) {
+   let formatCmdSegment(cmd) {
+      cmd := cmd |> Str.replace("\n", " ")
+
+      if len(cmd) > 70 -> cmd[0:70] + "..." | cmd
+   }
+
+   let execute(suite, path, startLine, endLine, code) {
+      let cmd = "()"
+      let lp = 0
+
+      while lp < len(code) -> {
+         if Str.startsWith?(code[lp], ">") -> {
+            let codeStartLine = startLine + lp + 1
+
+            let cmdSegment = Str.trim(Str.dropStart(code[lp], 1))
+            lp := lp + 1
+
+            while lp < len(code) && Str.startsWith?(code[lp], ".") -> {
+               cmdSegment := cmdSegment + "\n" + Str.trim(Str.dropStart(code[lp], 1))
+               lp := lp + 1
+            }
+
+            cmd := cmd + " ; " + cmdSegment
+            let result = str(eval(cmd))
+
+            let expected = ""
+            while lp < len(code) && !Str.startsWith?(code[lp], ">") -> {
+               expected := expected + "\n" + Str.trim(code[lp])
+               lp := lp + 1
+            }
+
+            expected := Str.trim(expected)
+
+            if len(expected) > 0 -> suite.eq(formatCmdSegment(cmdSegment), result, expected, cmd)
+         } | {
+            println("Error: ", path, ": ", startLine + lp, ": ", code[lp], " needed to start with '>'")
+            exit(1)
+         }
+      }
+   }
+
+   let newSuite = test.suite(path)
+
+   let content = FS.lines(path)
+
+   let lp = 0
+
+   while lp < len(content) -> {
+      if Str.startsWith?(content[lp], "```rebo-repl") ||  Str.startsWith?(content[lp], "``` rebo-repl")-> {
+         let upper = lp + 1
+
+         while upper < len(content) && !Str.startsWith?(content[upper], "```") ->
+            upper := upper + 1
+
+         execute(newSuite, path, lp + 1, upper, content[lp + 1 : upper])
+
+         lp := upper + 1
+      } | {
+         lp := lp + 1
+      }
+   }
+
+   newSuite.report(false, silent)
+}

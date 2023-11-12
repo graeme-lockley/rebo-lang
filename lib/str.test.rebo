@@ -5,6 +5,7 @@ let run(suite) {
   runDropStart(suite.suite("dropStart"))
   runEndsWith?(suite.suite("endsWith?"))
   runStartsWith?(suite.suite("startsWith?"))
+  runReplace(suite.suite("replace"))
   runTrim(suite.suite("trim"))
 }
 
@@ -48,6 +49,15 @@ let runStartsWith?(suite) {
   _startsWith?("hello", "he", true)
   _startsWith?("hello", "help", false)
   _startsWith?("hello", "hellos", false)
+}
+
+let runReplace(suite) {
+  let _replace(s, m, n, expected) =
+    suite.eq("\"" + s + "\" \"" + m + "\" \"" + n + "\"", Str.replace(s, m, n), expected)
+
+  _replace("", "xx", "yy", "")
+  _replace("1xx2xx3", "xx", "yy", "1yy2yy3")
+  _replace("1xx2xx3", "xx", "", "123")
 }
 
 let runTrim(suite) {
