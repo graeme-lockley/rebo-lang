@@ -1,14 +1,12 @@
 #!env rebo
 
-# zig build-exe ./src/main.zig -O ReleaseFast -fstrip -fsingle-threaded
-
 let CLI = import("../lib/cli.rebo")
 let Std = import("../lib/std.rebo")
 let Str = import("../lib/str.rebo")
 let Test = import("../lib/test.rebo")
 
-let Markdown = import("./test-markdown.rebo")
-let Suite = import("./test-suite.rebo")
+let Markdown = import("./src/test-markdown.rebo")
+let Suite = import("./src/test-suite.rebo")
 
 let cli = CLI.parse({
   cmd: false,
