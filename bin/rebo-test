@@ -27,7 +27,7 @@ let test = Test.harness("suite")
 cli.args|> Std.each(fn(name) 
   if Str.endsWith?(name, ".test.rebo") -> Suite.process(name, test, cli.opts.silent)
    | Str.endsWith?(name, ".md") -> Markdown.process(name, test, cli.opts.silent)
-   | else -> println("Unknown file type: " + name + " - ignoring")
+   | println("Unknown file type: " + name + " - ignoring")
 )
 
 let stats = test.report(cli.opts.totals, true)
