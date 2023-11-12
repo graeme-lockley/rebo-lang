@@ -1,17 +1,12 @@
 let Str = import("../../lib/str.rebo")
 
 let process(name, test, silent = false) {
-  let normaliseName(name) {
+  let normalise(name) =
     if name[0] == '/' -> name
-    | {
-        let dir = cwd()
+     | cwd() |> Str.endsWith?("/") -> cwd() + name
+     | cwd() + "/" + name
 
-        if Str.endsWith?(dir, "/") -> dir + name
-        | dir + "/" + name
-        }
-    }
-
-  let module = normaliseName(name) |> import()
+  let module = name |> normalise() |> import()
 
   if module.run == () -> {
     println("Error: File ", name, " did not load correctly or does not have a run function: ", module)
