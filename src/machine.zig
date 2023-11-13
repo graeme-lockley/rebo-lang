@@ -1166,6 +1166,16 @@ fn addRebo(state: *MS.MemoryState) !void {
     for (args) |arg| {
         try reboArgs.v.SequenceKind.append(try state.newStringValue(arg));
     }
+
+    var env = try std.process.getEnvMap(state.allocator);
+    defer env.deinit();
+    const reboEnv = try state.newValue(V.ValueValue{ .RecordKind = std.StringHashMap(*V.Value).init(state.allocator) });
+    try V.recordSet(state.allocator, &value.v.RecordKind, "env", reboEnv);
+
+    var iterator = env.iterator();
+    while (iterator.next()) |entry| {
+        try V.recordSet(state.allocator, &reboEnv.v.RecordKind, entry.key_ptr.*, try state.newStringValue(entry.value_ptr.*));
+    }
 }
 
 fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {

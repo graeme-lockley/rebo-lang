@@ -125,12 +125,16 @@ There is so much to do.  The following is my work list on this project.  I will 
     - [X] Basic function
     - [ ] Add a fatal option to the import function; this is default behavior
     - [ ] Add a non-fatal option
+    - [ ] Add ability to import lib files without path or extension
 - [X] imports
 - [X] int
 - [X] len
 - [X] milliTimestamp
 - [X] print
 - [X] println
+- [X] rebo value
+    - [X] args
+    - [X] env
 - [ ] string with two forms - one raw and the other literal.  The default is literal.
 - [X] typeof
 
