@@ -610,6 +610,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *const V.Value) !void {
             }
             try stdout.print("]", .{});
         },
+        .StreamKind => try stdout.print("stream: {d}", .{v.v.StreamKind.stream.handle}),
         .StringKind => try stdout.print("{s}", .{v.v.StringKind}),
         .VoidKind => try stdout.print("()", .{}),
     }
@@ -707,6 +708,7 @@ pub fn typeof(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Exp
         V.ValueKind.FloatKind => "Float",
         V.ValueKind.IntKind => "Int",
         V.ValueKind.SequenceKind => "Sequence",
+        V.ValueKind.StreamKind => "Stream",
         V.ValueKind.StringKind => "String",
         V.ValueKind.RecordKind => "Record",
         V.ValueKind.ScopeKind => "Scope",

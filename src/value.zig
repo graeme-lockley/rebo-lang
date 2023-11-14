@@ -36,6 +36,7 @@ pub const Value = struct {
                 // AST.destroy(allocator, self.v.FunctionKind.body);
             },
             .SequenceKind => self.v.SequenceKind.destroy(),
+            .StreamKind => self.v.StreamKind.deinit(),
             .StringKind => allocator.free(self.v.StringKind),
             .RecordKind => {
                 var iterator = self.v.RecordKind.keyIterator();
@@ -145,6 +146,7 @@ pub const Value = struct {
                 }
                 try buffer.append('}');
             },
+            .StreamKind => try std.fmt.format(buffer.writer(), "<stream: {d} {s}>", .{ self.v.StreamKind.stream.handle, if (self.v.StreamKind.isOpen) "open" else "closed" }),
             .ScopeKind => {
                 var first = true;
                 var runner: ?*const Value = self;
@@ -231,6 +233,7 @@ pub const ValueKind = enum {
     IntKind,
     FloatKind,
     SequenceKind,
+    StreamKind,
     StringKind,
     RecordKind,
     ScopeKind,
@@ -246,6 +249,7 @@ pub const ValueKind = enum {
             ValueKind.FloatKind => "Float",
             ValueKind.IntKind => "Int",
             ValueKind.SequenceKind => "Sequence",
+            ValueKind.StreamKind => "Stream",
             ValueKind.StringKind => "String",
             ValueKind.RecordKind => "Record",
             ValueKind.ScopeKind => "Scope",
@@ -263,6 +267,7 @@ pub const ValueValue = union(ValueKind) {
     IntKind: IntType,
     FloatKind: FloatType,
     SequenceKind: SequenceValue,
+    StreamKind: StreamValue,
     StringKind: []u8,
     RecordKind: std.StringHashMap(*Value),
     ScopeKind: ScopeValue,
@@ -385,6 +390,29 @@ pub const SequenceValue = struct {
     }
 };
 
+pub const StreamValue = struct {
+    isOpen: bool,
+    stream: std.net.Stream,
+
+    pub fn init(stream: std.net.Stream) StreamValue {
+        return StreamValue{
+            .isOpen = true,
+            .stream = stream,
+        };
+    }
+
+    pub fn deinit(self: *StreamValue) void {
+        self.close();
+    }
+
+    pub fn close(self: *StreamValue) void {
+        if (self.isOpen) {
+            self.stream.close();
+            self.isOpen = false;
+        }
+    }
+};
+
 pub const ScopeValue = struct {
     parent: ?*Value,
     values: std.StringHashMap(*Value),
@@ -435,6 +463,7 @@ pub fn eq(a: *Value, b: *Value) bool {
 
             return true;
         },
+        .StreamKind => return a.v.StreamKind.stream.handle == b.v.StreamKind.stream.handle,
         .StringKind => {
             if (a.v.StringKind.len != b.v.StringKind.len) return false;
 
