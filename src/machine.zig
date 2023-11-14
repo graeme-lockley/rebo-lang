@@ -1251,6 +1251,13 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .name = "bytes",
         .default = null,
     } }, null, &Builtins.read);
+    try addBuiltin(&state, "socket", &[_]V.FunctionArgument{ V.FunctionArgument{
+        .name = "name",
+        .default = null,
+    }, V.FunctionArgument{
+        .name = "port",
+        .default = null,
+    } }, null, &Builtins.socket);
     try addBuiltin(&state, "str", &[_]V.FunctionArgument{ V.FunctionArgument{
         .name = "value",
         .default = null,

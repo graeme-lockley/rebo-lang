@@ -69,6 +69,10 @@ pub const MemoryState = struct {
         _ = try self.pushValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
     }
 
+    pub fn newStreamValue(self: *MemoryState, v: std.net.Stream) !*V.Value {
+        return try self.newValue(V.ValueValue{ .StreamKind = V.StreamValue.init(v) });
+    }
+
     pub fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
         return try self.newValue(V.ValueValue{ .StringKind = try self.allocator.dupe(u8, v) });
     }

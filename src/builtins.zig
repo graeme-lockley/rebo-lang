@@ -15,12 +15,14 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
 pub fn close(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     const handle = machine.memoryState.getFromScope("handle") orelse machine.memoryState.unitValue;
 
-    if (handle.?.v != V.ValueKind.FileKind) {
+    if (handle.?.v == V.ValueKind.FileKind) {
+        handle.?.v.FileKind.close();
+    } else if (handle.?.v == V.ValueKind.StreamKind) {
+        handle.?.v.StreamKind.close();
+    } else {
         const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
         try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.FileKind}, handle.?.v);
     }
-
-    handle.?.v.FileKind.close();
     try machine.memoryState.pushUnitValue();
 }
 
@@ -654,29 +656,60 @@ pub fn read(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expre
     const handle = machine.memoryState.getFromScope("handle") orelse machine.memoryState.unitValue;
     const bytes = machine.memoryState.getFromScope("bytes") orelse machine.memoryState.unitValue;
 
-    if (handle.?.v != V.ValueKind.FileKind) {
+    if (handle.?.v != V.ValueKind.FileKind and handle.?.v != V.ValueKind.StreamKind) {
         const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.FileKind}, handle.?.v);
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{ V.ValueValue.FileKind, V.ValueValue.StreamKind }, handle.?.v);
     }
 
     if (bytes.?.v == V.ValueKind.IntKind) {
         const buffer = try machine.memoryState.allocator.alloc(u8, @intCast(bytes.?.v.IntKind));
         defer machine.memoryState.allocator.free(buffer);
 
-        const bytesRead = handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
+        var bytesRead: usize = 0;
+
+        if (handle.?.v == V.ValueKind.FileKind) {
+            bytesRead = handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
+        } else {
+            bytesRead = handle.?.v.StreamKind.stream.read(buffer) catch |err| return osError(machine, "read", err);
+        }
+        // bytesRead = handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
 
         try machine.memoryState.push(try machine.memoryState.newStringValue(buffer[0..bytesRead]));
     } else if (bytes.?.v == V.ValueKind.VoidKind) {
         const buffer = try machine.memoryState.allocator.alloc(u8, 4096);
         defer machine.memoryState.allocator.free(buffer);
 
-        const bytesRead = handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
+        var bytesRead: usize = 0;
+
+        if (handle.?.v == V.ValueKind.FileKind) {
+            bytesRead = handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
+        } else {
+            bytesRead = handle.?.v.StreamKind.stream.read(buffer) catch |err| return osError(machine, "read", err);
+        }
+        // bytesRead= handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
 
         try machine.memoryState.push(try machine.memoryState.newStringValue(buffer[0..bytesRead]));
     } else {
         const position = if (argsAST.len > 1) argsAST[1].position else calleeAST.position;
         try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.IntKind}, handle.?.v);
     }
+}
+
+pub fn socket(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    const name = machine.memoryState.getFromScope("name") orelse machine.memoryState.unitValue;
+    const port = machine.memoryState.getFromScope("port") orelse machine.memoryState.unitValue;
+
+    if (name.?.v != V.ValueKind.StringKind) {
+        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.StringKind}, name.?.v);
+    }
+    if (port.?.v != V.ValueKind.IntKind) {
+        const position = if (argsAST.len > 1) argsAST[1].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.IntKind}, port.?.v);
+    }
+
+    const stream = std.net.tcpConnectToHost(machine.memoryState.allocator, name.?.v.StringKind, @intCast(port.?.v.IntKind)) catch |err| return osError(machine, "socket", err);
+    try machine.memoryState.push(try machine.memoryState.newStreamValue(stream));
 }
 
 pub fn str(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
