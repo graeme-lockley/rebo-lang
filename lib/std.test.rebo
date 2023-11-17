@@ -1,4 +1,4 @@
-let Std = import("./std.rebo")
+let Std = import("std")
 
 let run(suite) {
   runRange(suite.suite("range"))

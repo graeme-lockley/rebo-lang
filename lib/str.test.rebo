@@ -1,4 +1,4 @@
-let Str = import("./str.rebo")
+let Str = import("str")
 
 let run(suite) {
   runDropEnd(suite.suite("dropEnd"))

@@ -1,5 +1,5 @@
-let CLI = import("./cli.rebo")
-let Std = import("./std.rebo")
+let CLI = import("cli")
+let Std = import("std")
 
 let _parse(args) =
   ["/bin/rebo", "main.rebo"] + Std.split(args, " ") |> Std.filter(fn(s) s != "") |> CLI.parseArgs()

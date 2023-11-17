@@ -124,8 +124,9 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [ ] import
     - [X] Basic function
     - [ ] Add a fatal option to the import function; this is default behavior
+    - [ ] Add an option to import the private members of a module
     - [ ] Add a non-fatal option
-    - [ ] Add ability to import lib files without path or extension
+    - [X] Add ability to import lib files without path or extension
 - [X] imports
 - [X] int
 - [X] len

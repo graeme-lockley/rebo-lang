@@ -1,5 +1,5 @@
-let Std = import("./std.rebo")
-let Str = import("./str.rebo")
+let Std = import("std")
+let Str = import("str")
 
 let defaults = {
   cmd: true,

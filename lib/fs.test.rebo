@@ -1,5 +1,5 @@
-let FS = import("./fs.rebo")
-let Str = import("./str.rebo")
+let FS = import("fs")
+let Str = import("str")
 
 let _path = __FILE |> Str.dropEnd(13)
 

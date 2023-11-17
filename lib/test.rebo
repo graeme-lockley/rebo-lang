@@ -1,4 +1,4 @@
-let Std = import("./std.rebo")
+let Std = import("std")
 
 let harness(title) = {
   let tests = []
