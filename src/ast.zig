@@ -302,17 +302,17 @@ pub const Pattern = struct {
 
 pub const PatternKind = union(enum) {
     identifier: []u8,
-    list: ListPattern,
     literalChar: u8,
     literalBool: bool,
     literalFloat: Value.FloatType,
     literalInt: Value.IntType,
     literalString: []u8,
     map: MapPattern,
+    sequence: SequencePattern,
     void: void,
 };
 
-pub const ListPattern = struct {
+pub const SequencePattern = struct {
     patterns: []*Pattern,
     restOfPatterns: ?[]u8,
     id: ?[]u8,
@@ -330,18 +330,6 @@ fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
         .identifier => allocator.free(pattern.kind.identifier),
         .literalChar, .literalFloat, .literalInt, .literalBool, .void => {},
         .literalString => allocator.free(pattern.kind.literalString),
-        .list => {
-            for (pattern.kind.list.patterns) |p| {
-                destroyPattern(allocator, p);
-            }
-            allocator.free(pattern.kind.list.patterns);
-            if (pattern.kind.list.restOfPatterns != null) {
-                allocator.free(pattern.kind.list.restOfPatterns.?);
-            }
-            if (pattern.kind.list.id != null) {
-                allocator.free(pattern.kind.list.id.?);
-            }
-        },
         .map => {
             for (pattern.kind.map.entries) |e| {
                 allocator.free(e.key);
@@ -352,6 +340,18 @@ fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
             allocator.free(pattern.kind.map.entries);
             if (pattern.kind.map.id != null) {
                 allocator.free(pattern.kind.map.id.?);
+            }
+        },
+        .sequence => {
+            for (pattern.kind.sequence.patterns) |p| {
+                destroyPattern(allocator, p);
+            }
+            allocator.free(pattern.kind.sequence.patterns);
+            if (pattern.kind.sequence.restOfPatterns != null) {
+                allocator.free(pattern.kind.sequence.restOfPatterns.?);
+            }
+            if (pattern.kind.sequence.id != null) {
+                allocator.free(pattern.kind.sequence.id.?);
             }
         },
     }

@@ -1119,7 +1119,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
 fn match(machine: *Machine, e: *AST.Expression) bool {
     if (evalExpr(machine, e.kind.match.value)) return true;
 
-    const value = machine.memoryState.pop();
+    const value = machine.memoryState.peek(0);
 
     for (e.kind.match.cases) |case| {
         machine.memoryState.openScope() catch |err| return errorHandler(err);
@@ -1129,10 +1129,15 @@ fn match(machine: *Machine, e: *AST.Expression) bool {
             const result = evalExpr(machine, case.body);
 
             machine.memoryState.restoreScope();
+            const v = machine.memoryState.pop();
+            _ = machine.memoryState.pop();
+            machine.memoryState.push(v) catch |err| return errorHandler(err);
             return result;
         }
         machine.memoryState.restoreScope();
     }
+
+    _ = machine.memoryState.pop();
 
     machine.createVoidValue() catch |err| return errorHandler(err);
 
@@ -1142,7 +1147,9 @@ fn match(machine: *Machine, e: *AST.Expression) bool {
 fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
     return switch (p.kind) {
         .identifier => {
-            machine.memoryState.addToScope(p.kind.identifier, v) catch |err| return errorHandler(err);
+            if (!std.mem.eql(u8, p.kind.identifier, "_")) {
+                machine.memoryState.addToScope(p.kind.identifier, v) catch |err| return errorHandler(err);
+            }
             return true;
         },
         .literalBool => return v.v == V.ValueValue.BoolKind and v.v.BoolKind == p.kind.literalBool,
@@ -1150,6 +1157,36 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
         .literalFloat => return v.v == V.ValueValue.FloatKind and v.v.FloatKind == p.kind.literalFloat or v.v == V.ValueValue.IntKind and v.v.IntKind == @as(V.IntType, @intFromFloat(p.kind.literalFloat)),
         .literalInt => return v.v == V.ValueValue.IntKind and v.v.IntKind == p.kind.literalInt or v.v == V.ValueValue.FloatKind and v.v.FloatKind == @as(V.FloatType, @floatFromInt(p.kind.literalInt)),
         .literalString => return v.v == V.ValueValue.StringKind and std.mem.eql(u8, v.v.StringKind, p.kind.literalString),
+        .sequence => {
+            if (v.v != V.ValueValue.SequenceKind) return false;
+
+            const seq = v.v.SequenceKind;
+
+            if (p.kind.sequence.restOfPatterns == null and seq.len() != p.kind.sequence.patterns.len) return false;
+            if (p.kind.sequence.restOfPatterns != null) {
+                if (seq.len() < p.kind.sequence.patterns.len) return false;
+
+                if (!std.mem.eql(u8, p.kind.sequence.restOfPatterns.?, "_")) {
+                    var newSeq = try V.SequenceValue.init(machine.memoryState.allocator);
+                    if (seq.len() > p.kind.sequence.patterns.len) {
+                        newSeq.appendSlice(seq.items()[p.kind.sequence.patterns.len..]) catch |err| return errorHandler(err);
+                    }
+                    machine.memoryState.addToScope(p.kind.sequence.restOfPatterns.?, machine.memoryState.newValue(V.ValueValue{ .SequenceKind = newSeq }) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
+                }
+            }
+
+            var index: u8 = 0;
+            while (index < p.kind.sequence.patterns.len) {
+                if (!matchPattern(machine, p.kind.sequence.patterns[index], seq.at(index))) return false;
+                index += 1;
+            }
+
+            if (p.kind.sequence.id != null) {
+                machine.memoryState.addToScope(p.kind.sequence.id.?, v) catch |err| return errorHandler(err);
+            }
+
+            return true;
+        },
         .void => return v.v == V.ValueValue.VoidKind,
         else => false,
     };

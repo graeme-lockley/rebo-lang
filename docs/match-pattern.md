@@ -129,3 +129,122 @@ With pattern matching, int and float matching are interchangeable.
 > matchValue(2.0)
 "two"
 ```
+
+Now, this is where the fun starts - we are also able to match against sequences.  This pattern matching has different forms so it is best to work through these forms one by one.
+
+Firstly we can match against a sequence of a fixed length.
+
+```rebo-repl
+> let matchSeq(seq) =
+.   match seq
+.   | [] -> "empty"
+.   | [_] -> "one"
+.   | [_, _] -> "two"
+.   | [_, _, _] -> "three"
+.   | _ -> "lots"
+
+> matchSeq([])
+"empty"
+> matchSeq([1])
+"one"
+> matchSeq([1, 2])
+"two"
+> matchSeq([1, 2, 3])
+"three"
+> matchSeq([1, 2, 3, 4])
+"lots"
+```
+
+We can also, using literal matching, combine literal values with sequences.
+
+```rebo-repl
+> let matchSeq(seq) =
+.   match seq
+.   | [1, 2, 3] -> "one two three"
+.   | [1, 2, 3, 4] -> "one two three four"
+.   | _ -> "other"
+
+> matchSeq([1, 2, 3])
+"one two three"
+> matchSeq([1, 2, 3, 4])
+"one two three four"
+> matchSeq([1, 2, 3, 4, 5])
+"other"
+```
+
+We can also use literal interspersed with identifiers in the sequence.
+
+```rebo-repl
+> let matchSeq(seq) =
+.   match seq
+.   | [1, x, 3] -> "one " + str(x) + " three"
+.   | [1, x, 3, 4] -> "one " + str(x) + " three four"
+.   | _ -> "other"
+
+> matchSeq([1, 2, 3])
+"one 2 three"
+> matchSeq([1, "xxx", 3])
+"one \"xxx\" three"
+> matchSeq([1, "hello", 3, 4])
+"one \"hello\" three four"
+> matchSeq([1, 2, 3, 4, 5])
+"other"
+```
+
+We can also use the `...` operator to match against a sequence of a minimum length.
+
+```rebo-repl
+> let matchSeq(seq) =
+.   match seq
+.   | [1, 2, 3, 4, ...] -> "one two three four ..."
+.   | [1, 2, 3, ...] -> "one two three ..."
+.   | _ -> "other"
+
+> matchSeq([1, 2, 3])
+"one two three ..."
+> matchSeq([1, 2, 3, 4])
+"one two three four ..."
+> matchSeq([1, 2, 3, 4, 5])
+"one two three four ..."
+> matchSeq([1, 2, 3, 4, 5, 6])
+"one two three four ..."
+```
+
+The `...` operator can also be used to bind the rest of the sequence to a value.
+
+```rebo-repl
+> let matchSeq(seq) =
+.   match seq
+.   | [1, 2, 3, 4, ...stuff] -> stuff
+.   | [1, 2, 3, ...stuff] -> stuff
+.   | stuff -> stuff
+
+> matchSeq([1, 2, 3])
+[]
+> matchSeq([1, 2, 3, 4])
+[]
+> matchSeq([1, 2, 3, 3, 4])
+[3, 4]
+> matchSeq([1, 2, 3, 4, 5])
+[5]
+> matchSeq([1, 2, 3, 4, 5, 6])
+[5, 6]
+> matchSeq([1, 1, 2, 3])
+[1, 1, 2, 3]
+```
+
+Finally the `@` operator can be used to bind a matched sequence to a value.
+
+```rebo-repl
+> let matchSeq(seq) =
+.   match seq
+.   | [1, 2, ...] @ stuff -> stuff
+.   | _ -> []
+
+> matchSeq([1, 2])
+[1, 2]
+> matchSeq([1, 2, 3])
+[1, 2, 3]
+> matchSeq([4, 3, 2, 1])
+[]
+```

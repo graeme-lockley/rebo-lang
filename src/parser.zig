@@ -1004,6 +1004,63 @@ pub const Parser = struct {
                 v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalString = literalString }, .position = Errors.Position{ .start = token.start, .end = token.end } };
                 return v;
             },
+            Lexer.TokenKind.LBracket => {
+                const lbracket = try self.nextToken();
+
+                var es = std.ArrayList(*AST.Pattern).init(self.allocator);
+                defer {
+                    for (es.items) |item| {
+                        item.destroy(self.allocator);
+                    }
+                    es.deinit();
+                }
+
+                var restOfPatterns: ?[]u8 = null;
+                errdefer {
+                    if (restOfPatterns != null) {
+                        self.allocator.free(restOfPatterns.?);
+                    }
+                }
+
+                var id: ?[]u8 = null;
+                errdefer {
+                    if (id != null) {
+                        self.allocator.free(id.?);
+                    }
+                }
+
+                if (self.currentTokenKind() != Lexer.TokenKind.RBracket) {
+                    try es.append(try self.pattern());
+                    while (restOfPatterns == null and self.currentTokenKind() == Lexer.TokenKind.Comma) {
+                        try self.skipToken();
+
+                        if (self.currentTokenKind() == Lexer.TokenKind.DotDotDot) {
+                            try self.skipToken();
+                            if (self.currentTokenKind() == Lexer.TokenKind.Identifier) {
+                                restOfPatterns = try self.allocator.dupe(u8, self.lexer.currentLexeme());
+
+                                try self.skipToken();
+                            } else {
+                                restOfPatterns = try self.allocator.dupe(u8, "_");
+                            }
+                        } else {
+                            try es.append(try self.pattern());
+                        }
+                    }
+                }
+
+                const rbracket = try self.matchToken(Lexer.TokenKind.RBracket);
+
+                if (self.currentTokenKind() == Lexer.TokenKind.At) {
+                    try self.skipToken();
+                    id = try self.allocator.dupe(u8, self.lexer.currentLexeme());
+                    try self.matchSkipToken(Lexer.TokenKind.Identifier);
+                }
+
+                const v = try self.allocator.create(AST.Pattern);
+                v.* = AST.Pattern{ .kind = AST.PatternKind{ .sequence = AST.SequencePattern{ .patterns = try es.toOwnedSlice(), .restOfPatterns = restOfPatterns, .id = id } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
+                return v;
+            },
             else => {
                 {
                     var expected = try self.allocator.alloc(Lexer.TokenKind, 11);
