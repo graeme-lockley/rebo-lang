@@ -1,29 +1,57 @@
 Pattern matching is a wonderful way to write selection code in a concise descriptive manner.
 
-## Unit
-
 It is possible to match unit values.  This technique is useful when you have a function that returns a value but uses `()` to indicate a non-value.
 
 ```rebo-repl
-> let x = ()
-> match x
+> match ()
 . | () -> "unit"
 . | _ -> "not unit"
 "unit"
 
-> let x = 1
-> match x
+> match 1
 . | () -> "unit"
 . | _ -> "not unit"
 "not unit"
 ```
 
-## Integer
+Literal integer values can be matched as expected.
+
 ```rebo-repl
-> let x = 1
-> match x
+> match 1
 . | 0 -> "zero"
 . | 1 -> "one"
-. | _ -> "other"
+. | _ -> str(x)
 "one"
+
+> match 99
+. | 0 -> "zero"
+. | 1 -> "one"
+. | x -> str(x)
+"99"
+```
+
+Literal char values can be matched with the pattern matching supporting the 4 different char markups.
+
+```rebo-repl
+> let matchChar(c) =
+.   match c
+.   | 'a' -> "a"
+.   | '\n' -> "newline"
+.   | '\\' -> "backslash"
+.   | '\'' -> "single-quote"
+.   | '\x13' -> "linefeed"
+.   | _ -> "other"
+
+> matchChar('a')
+"a"
+> matchChar('b')
+"other"
+> matchChar('\n')
+"newline"
+> matchChar('\\')
+"backslash"
+> matchChar('\'')
+"single-quote"
+> matchChar('\x13')
+"linefeed"
 ```
