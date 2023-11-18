@@ -38,7 +38,7 @@ $ rebo repl
 
 ## Values
 
-The smallest building block in Rebo is called a **value**.  A value is a piece of data that can be manipulated by a program.  There are 10 of different types of values in Rebo: unit, boolean, char, integer, float, string, function, sequence, record types and files.
+The smallest building block in Rebo is called a **value**.  A value is a piece of data that can be manipulated by a program.  There are 10 of different types of values in Rebo: unit, boolean, char, integer, float, string, function, sequence, record types, files and sockets.
 
 Let's start by looking at the simplest value, the unit value.  The unit value is written as `()` and represents the absence of a value.  It is used in situations where a value is required but there is no value to provide.
 
