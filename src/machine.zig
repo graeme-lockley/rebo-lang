@@ -1145,8 +1145,10 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
             machine.memoryState.addToScope(p.kind.identifier, v) catch |err| return errorHandler(err);
             return true;
         },
+        .literalBool => return v.v == V.ValueValue.BoolKind and v.v.BoolKind == p.kind.literalBool,
         .literalChar => return v.v == V.ValueValue.CharKind and v.v.CharKind == p.kind.literalChar,
-        .literalInt => return v.v == V.ValueValue.IntKind and v.v.IntKind == p.kind.literalInt,
+        .literalFloat => return v.v == V.ValueValue.FloatKind and v.v.FloatKind == p.kind.literalFloat or v.v == V.ValueValue.IntKind and v.v.IntKind == @as(V.IntType, @intFromFloat(p.kind.literalFloat)),
+        .literalInt => return v.v == V.ValueValue.IntKind and v.v.IntKind == p.kind.literalInt or v.v == V.ValueValue.FloatKind and v.v.FloatKind == @as(V.FloatType, @floatFromInt(p.kind.literalInt)),
         .literalString => return v.v == V.ValueValue.StringKind and std.mem.eql(u8, v.v.StringKind, p.kind.literalString),
         .void => return v.v == V.ValueValue.VoidKind,
         else => false,

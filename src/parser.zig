@@ -665,13 +665,7 @@ pub const Parser = struct {
                 return v;
             },
             Lexer.TokenKind.LiteralFloat => {
-                const lexeme = self.lexer.currentLexeme();
-
-                const literalFloat = std.fmt.parseFloat(f64, lexeme) catch {
-                    const token = self.currentToken();
-                    self.replaceErr(try Errors.literalFloatOverflowError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
-                    return error.InterpreterError;
-                };
+                const literalFloat = try self.parseLiteralFloat(self.lexer.currentLexeme());
 
                 const v = try self.allocator.create(AST.Expression);
                 errdefer v.destroy(self.allocator);
@@ -774,6 +768,14 @@ pub const Parser = struct {
         } else {
             return std.fmt.parseInt(u8, lexeme[3 .. lexeme.len - 1], 10) catch 0;
         }
+    }
+
+    fn parseLiteralFloat(self: *Parser, lexeme: []const u8) !V.FloatType {
+        return std.fmt.parseFloat(f64, lexeme) catch {
+            const token = self.currentToken();
+            self.replaceErr(try Errors.literalFloatOverflowError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
+            return error.InterpreterError;
+        };
     }
 
     fn parseLiteralInt(self: *Parser, lexeme: []const u8) !V.IntType {
@@ -976,6 +978,14 @@ pub const Parser = struct {
 
                 const v = try self.allocator.create(AST.Pattern);
                 v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalChar = literalChar }, .position = Errors.Position{ .start = token.start, .end = token.end } };
+                return v;
+            },
+            Lexer.TokenKind.LiteralFloat => {
+                const literalFloat = try self.parseLiteralFloat(self.lexer.currentLexeme());
+                const token = try self.nextToken();
+
+                const v = try self.allocator.create(AST.Pattern);
+                v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalFloat = literalFloat }, .position = Errors.Position{ .start = token.start, .end = token.end } };
                 return v;
             },
             Lexer.TokenKind.LiteralInt => {

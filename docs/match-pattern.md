@@ -87,3 +87,45 @@ Like literal chars, literal string values can be matched with the pattern matchi
 > matchString("hello world")
 "greeting"
 ```
+
+For reasons of consistency, the pattern matching also supports matching literal boolean values and literal floats.
+
+```rebo-repl
+> let matchValue(v) =
+.   match v
+.   | true -> "true"
+.   | false -> "false"
+.   | 1.0 -> "one"
+.   | 2.0 -> "two"
+.   | _ -> "other"
+
+> matchValue(true)
+"true"
+> matchValue(false)
+"false"
+> matchValue(1.0)
+"one"
+> matchValue(2.0)
+"two"
+> matchValue(3.0)
+"other"
+```
+
+With pattern matching, int and float matching are interchangeable.
+
+```rebo-repl
+> let matchValue(v) =
+.   match v
+.   | 1 -> "one"
+.   | 2.0 -> "two"
+.   | _ -> "other"
+
+> matchValue(1)
+"one"
+> matchValue(1.0)
+"one"
+> matchValue(2)
+"two"
+> matchValue(2.0)
+"two"
+```
