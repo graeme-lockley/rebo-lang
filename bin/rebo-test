@@ -1,9 +1,9 @@
 #!env rebo
 
-let CLI = import("../lib/cli.rebo")
-let Std = import("../lib/std.rebo")
-let Str = import("../lib/str.rebo")
-let Test = import("../lib/test.rebo")
+let CLI = import("cli")
+let Std = import("std")
+let Str = import("str")
+let Test = import("test")
 
 let Markdown = import("./src/test-markdown.rebo")
 let Suite = import("./src/test-suite.rebo")

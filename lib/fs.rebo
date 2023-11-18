@@ -1,4 +1,4 @@
-let Std = import("./std.rebo")
+let Std = import("std")
 
 # The default options for the `files` function.  The `recursive?` option is 
 # whether or not to recursively search the directory.  The `predicate` option

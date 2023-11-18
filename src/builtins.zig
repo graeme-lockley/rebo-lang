@@ -285,12 +285,48 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
     try machine.memoryState.imports.addImport(name, result, ast);
 }
 
+fn indexOfLastLinear(comptime T: type, haystack: []const T, needle: T) ?usize {
+    var i: usize = haystack.len - 1;
+    while (true) : (i -= 1) {
+        if (haystack[i] == needle) return i;
+        if (i == 0) return null;
+    }
+}
+
+fn fexists(name: []const u8) bool {
+    std.fs.Dir.access(std.fs.cwd(), name, .{}) catch return false;
+    return true;
+}
+
 pub fn import(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     const v = machine.memoryState.getFromScope("file") orelse machine.memoryState.unitValue;
 
-    switch (v.?.v) {
-        V.ValueValue.StringKind => try importFile(machine, v.?.v.StringKind),
-        else => try reportExpectedTypeError(machine, if (argsAST.len > 0) argsAST[0].position else calleeAST.position, &[_]V.ValueKind{V.ValueValue.StringKind}, v.?.v),
+    if (v.?.v != V.ValueValue.StringKind) {
+        try reportExpectedTypeError(machine, if (argsAST.len > 0) argsAST[0].position else calleeAST.position, &[_]V.ValueKind{V.ValueValue.StringKind}, v.?.v);
+    }
+
+    const indexOfDot = indexOfLastLinear(u8, v.?.v.StringKind, '.');
+    const indexOfSlash = indexOfLastLinear(u8, v.?.v.StringKind, '/');
+    if (indexOfDot != null or indexOfSlash != null) {
+        try importFile(machine, v.?.v.StringKind);
+        return;
+    }
+
+    const exePath = std.fs.selfExePathAlloc(machine.memoryState.allocator) catch return;
+    defer machine.memoryState.allocator.free(exePath);
+
+    const exeDir = std.fs.path.dirname(exePath).?;
+
+    var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+    defer buffer.deinit();
+
+    try std.fmt.format(buffer.writer(), "{s}/../lib/{s}.rebo", .{ exeDir, v.?.v.StringKind });
+    if (fexists(buffer.items)) {
+        try importFile(machine, buffer.items);
+    } else {
+        buffer.clearAndFree();
+        try std.fmt.format(buffer.writer(), "{s}/../../lib/{s}.rebo", .{ exeDir, v.?.v.StringKind });
+        try importFile(machine, buffer.items);
     }
 }
 
