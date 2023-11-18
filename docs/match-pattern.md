@@ -55,3 +55,35 @@ Literal char values can be matched with the pattern matching supporting the 4 di
 > matchChar('\x13')
 "linefeed"
 ```
+
+Like literal chars, literal string values can be matched with the pattern matching supporting the 4 different string markups.
+
+```rebo-repl
+> let matchString(s) =
+.   match s
+.   | "a" -> "a"
+.   | "\n" -> "newline"
+.   | "\\" -> "backslash"
+.   | "'" -> "single-quote"
+.   | "\"" -> "double-quote"
+.   | "\x13;" -> "linefeed"
+.   | "hello world" -> "greeting"
+.   | _ -> "other"
+
+> matchString("a")
+"a"
+> matchString("b")
+"other"
+> matchString("\n")
+"newline"
+> matchString("\\")
+"backslash"
+> matchString("'")
+"single-quote"
+> matchString("\"")
+"double-quote"
+> matchString("\x13;")
+"linefeed"
+> matchString("hello world")
+"greeting"
+```

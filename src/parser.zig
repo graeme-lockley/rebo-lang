@@ -682,48 +682,15 @@ pub const Parser = struct {
                 return v;
             },
             Lexer.TokenKind.LiteralString => {
-                const lexeme = self.lexer.currentLexeme();
-                var buffer = std.ArrayList(u8).init(self.allocator);
-                defer buffer.deinit();
-
-                var i: usize = 1;
-
-                while (i < lexeme.len - 1) {
-                    const c = lexeme[i];
-
-                    if (c == '\\') {
-                        i += 1;
-
-                        switch (lexeme[i]) {
-                            'n' => try buffer.append('\n'),
-                            '\\' => try buffer.append('\\'),
-                            '"' => try buffer.append('"'),
-                            'x' => {
-                                i += 1;
-                                const start = i;
-
-                                while (lexeme[i] != ';') {
-                                    i += 1;
-                                }
-
-                                const c2 = std.fmt.parseInt(u8, lexeme[start..i], 10) catch 0;
-                                try std.fmt.format(buffer.writer(), "{c}", .{c2});
-                            },
-                            else => {},
-                        }
-                    } else {
-                        try buffer.append(c);
-                    }
-
-                    i += 1;
-                }
+                const text = try self.parseLiteralString(self.lexer.currentLexeme());
+                errdefer self.allocator.free(text);
 
                 const token = try self.nextToken();
 
                 const v = try self.allocator.create(AST.Expression);
                 errdefer v.destroy(self.allocator);
 
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalString = try buffer.toOwnedSlice() }, .position = Errors.Position{ .start = token.start, .end = token.end } };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalString = text }, .position = Errors.Position{ .start = token.start, .end = token.end } };
 
                 return v;
             },
@@ -815,6 +782,45 @@ pub const Parser = struct {
             self.replaceErr(try Errors.literalIntOverflowError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
             return error.InterpreterError;
         };
+    }
+
+    fn parseLiteralString(self: *Parser, lexeme: []const u8) ![]u8 {
+        var buffer = std.ArrayList(u8).init(self.allocator);
+        defer buffer.deinit();
+
+        var i: usize = 1;
+
+        while (i < lexeme.len - 1) {
+            const c = lexeme[i];
+
+            if (c == '\\') {
+                i += 1;
+
+                switch (lexeme[i]) {
+                    'n' => try buffer.append('\n'),
+                    '\\' => try buffer.append('\\'),
+                    '"' => try buffer.append('"'),
+                    'x' => {
+                        i += 1;
+                        const start = i;
+
+                        while (lexeme[i] != ';') {
+                            i += 1;
+                        }
+
+                        const c2 = std.fmt.parseInt(u8, lexeme[start..i], 10) catch 0;
+                        try std.fmt.format(buffer.writer(), "{c}", .{c2});
+                    },
+                    else => {},
+                }
+            } else {
+                try buffer.append(c);
+            }
+
+            i += 1;
+        }
+
+        return try buffer.toOwnedSlice();
     }
 
     fn literalListItem(self: *Parser) !AST.LiteralSequenceValue {
@@ -978,6 +984,14 @@ pub const Parser = struct {
 
                 const v = try self.allocator.create(AST.Pattern);
                 v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalInt = literalInt }, .position = Errors.Position{ .start = token.start, .end = token.end } };
+                return v;
+            },
+            Lexer.TokenKind.LiteralString => {
+                const literalString = try self.parseLiteralString(self.lexer.currentLexeme());
+                const token = try self.nextToken();
+
+                const v = try self.allocator.create(AST.Pattern);
+                v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalString = literalString }, .position = Errors.Position{ .start = token.start, .end = token.end } };
                 return v;
             },
             else => {

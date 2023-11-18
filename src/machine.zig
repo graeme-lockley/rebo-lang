@@ -1147,6 +1147,7 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
         },
         .literalChar => return v.v == V.ValueValue.CharKind and v.v.CharKind == p.kind.literalChar,
         .literalInt => return v.v == V.ValueValue.IntKind and v.v.IntKind == p.kind.literalInt,
+        .literalString => return v.v == V.ValueValue.StringKind and std.mem.eql(u8, v.v.StringKind, p.kind.literalString),
         .void => return v.v == V.ValueValue.VoidKind,
         else => false,
     };
