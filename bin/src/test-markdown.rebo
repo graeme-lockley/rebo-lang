@@ -1,6 +1,6 @@
-let FS = import("../../lib/fs.rebo")
-let Std = import("../../lib/std.rebo")
-let Str = import("../../lib/str.rebo")
+let FS = import("fs")
+let Std = import("std")
+let Str = import("str")
 
 let process(path, test, silent = false) {
    let formatCmdSegment(cmd) {

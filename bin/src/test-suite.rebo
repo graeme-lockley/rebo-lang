@@ -1,4 +1,4 @@
-let Str = import("../../lib/str.rebo")
+let Str = import("str")
 
 let process(name, test, silent = false) {
   let normalise(name) =
