@@ -43,6 +43,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] `[]` to access a char in a string
 - [X] `[start:end]` to access a slice of a string
 - [X] `+` concatenates two strings
+- [ ] `*` repeats a string
 - [ ] Move all the functions into the StringKind rather than having them lying all over the code base and forcing knowledge of the implementation
 
 ## Records
@@ -135,6 +136,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] println
 - [X] rebo value
     - [X] args
+    - [ ] exe
     - [X] env
 - [ ] string with two forms - one raw and the other literal.  The default is literal.
 - [X] typeof
