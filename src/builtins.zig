@@ -2,7 +2,8 @@ const std = @import("std");
 
 const AST = @import("./ast.zig");
 const Errors = @import("./errors.zig");
-const Machine = @import("./machine.zig").Machine;
+const M = @import("./machine.zig");
+const Machine = M.Machine;
 const MS = @import("./memory_state.zig");
 const Main = @import("./main.zig");
 const V = @import("./value.zig");
@@ -362,6 +363,67 @@ test "int" {
     try Main.expectExprEqual("int('\\\\')", "92");
     try Main.expectExprEqual("int('\\'')", "39");
     try Main.expectExprEqual("int('\\x13')", "13");
+}
+
+pub fn listen(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    const host = machine.memoryState.getFromScope("host") orelse machine.memoryState.unitValue;
+    const port = machine.memoryState.getFromScope("port") orelse machine.memoryState.unitValue;
+    const cb = machine.memoryState.getFromScope("cb") orelse machine.memoryState.unitValue;
+
+    if (host.?.v != V.ValueKind.StringKind) {
+        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.StringKind}, host.?.v);
+    }
+    if (port.?.v != V.ValueKind.IntKind) {
+        const position = if (argsAST.len > 1) argsAST[1].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.IntKind}, port.?.v);
+    }
+    if (cb.?.v != V.ValueKind.FunctionKind) {
+        const position = if (argsAST.len > 2) argsAST[2].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.FunctionKind}, cb.?.v);
+    }
+
+    var server = std.net.StreamServer.init(.{});
+    server.reuse_address = true;
+    defer server.deinit();
+
+    server.listen(std.net.Address.parseIp(host.?.v.StringKind, @intCast(port.?.v.IntKind)) catch |err| return osError(machine, "listen", err)) catch |err| {
+        osError(machine, "listen", err) catch {};
+        return;
+    };
+
+    while (true) {
+        var conn = server.accept() catch |err| {
+            osError(machine, "accept", err) catch {};
+            return;
+        };
+        const stream = conn.stream;
+
+        machine.memoryState.openScopeFrom(cb.?.v.FunctionKind.scope) catch |err| {
+            osError(machine, "openScope", err) catch {};
+            return;
+        };
+
+        errdefer machine.memoryState.restoreScope();
+
+        if (cb.?.v.FunctionKind.arguments.len > 0) {
+            try machine.memoryState.addToScope(cb.?.v.FunctionKind.arguments[0].name, try machine.memoryState.newStreamValue(stream));
+        }
+        var lp: u8 = 1;
+        while (lp < cb.?.v.FunctionKind.arguments.len) {
+            machine.memoryState.addToScope(cb.?.v.FunctionKind.arguments[lp].name, machine.memoryState.unitValue.?) catch |err| return osError(machine, "addToScope", err);
+            lp += 1;
+        }
+
+        if (M.evalExpr(machine, cb.?.v.FunctionKind.body)) {
+            std.debug.print("leaving...\n", .{});
+            machine.memoryState.restoreScope();
+            return;
+        } else {
+            _ = machine.pop();
+            machine.memoryState.restoreScope();
+        }
+    }
 }
 
 pub fn len(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
@@ -761,4 +823,27 @@ test "typeof" {
     try Main.expectExprEqual("typeof({})", "\"Record\"");
     try Main.expectExprEqual("typeof(())", "\"Unit\"");
     try Main.expectExprEqual("typeof()", "\"Unit\"");
+}
+
+pub fn write(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
+    const handle = machine.memoryState.getFromScope("handle") orelse machine.memoryState.unitValue;
+    const bytes = machine.memoryState.getFromScope("bytes") orelse machine.memoryState.unitValue;
+
+    if (handle.?.v != V.ValueKind.FileKind and handle.?.v != V.ValueKind.StreamKind) {
+        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{ V.ValueValue.FileKind, V.ValueValue.StreamKind }, handle.?.v);
+    }
+
+    if (bytes.?.v != V.ValueKind.StringKind) {
+        const position = if (argsAST.len > 1) argsAST[1].position else calleeAST.position;
+        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.StringKind}, bytes.?.v);
+    }
+    var bytesWritten: usize = 0;
+
+    if (handle.?.v == V.ValueKind.FileKind) {
+        bytesWritten = handle.?.v.FileKind.file.write(bytes.?.v.StringKind) catch |err| return osError(machine, "write", err);
+    } else {
+        bytesWritten = handle.?.v.StreamKind.stream.write(bytes.?.v.StringKind) catch |err| return osError(machine, "read", err);
+    }
+    try machine.memoryState.pushIntValue(@intCast(bytesWritten));
 }

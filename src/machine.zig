@@ -8,7 +8,7 @@ const MS = @import("./memory_state.zig");
 const Parser = @import("./parser.zig");
 const V = @import("./value.zig");
 
-fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
+pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
     switch (e.kind) {
         .assignment => return assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
         .binaryOp => return binaryOp(machine, e),
@@ -1230,6 +1230,16 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .name = "v",
         .default = null,
     }}, null, &Builtins.len);
+    try addBuiltin(&state, "listen", &[_]V.FunctionArgument{ V.FunctionArgument{
+        .name = "host",
+        .default = null,
+    }, V.FunctionArgument{
+        .name = "port",
+        .default = null,
+    }, V.FunctionArgument{
+        .name = "cb",
+        .default = null,
+    } }, null, &Builtins.listen);
     try addBuiltin(&state, "ls", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "path",
         .default = null,
@@ -1265,11 +1275,17 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .name = "literal",
         .default = null,
     } }, null, &Builtins.str);
-
     try addBuiltin(&state, "typeof", &[_]V.FunctionArgument{V.FunctionArgument{
         .name = "v",
         .default = null,
     }}, null, &Builtins.typeof);
+    try addBuiltin(&state, "write", &[_]V.FunctionArgument{ V.FunctionArgument{
+        .name = "handle",
+        .default = null,
+    }, V.FunctionArgument{
+        .name = "bytes",
+        .default = null,
+    } }, null, &Builtins.write);
 
     try addRebo(&state);
 
