@@ -234,7 +234,7 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
 
         return;
     };
-    errdefer AST.destroy(machine.memoryState.allocator, ast);
+    errdefer ast.destroy(machine.memoryState.allocator);
 
     try machine.memoryState.imports.addImport(name, null, ast);
 

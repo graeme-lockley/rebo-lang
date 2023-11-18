@@ -108,6 +108,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         },
         .literalString => machine.createStringValue(e.kind.literalString) catch |err| return errorHandler(err),
         .literalVoid => machine.createVoidValue() catch |err| return errorHandler(err),
+        .match => return match(machine, e),
         .notOp => {
             if (evalExpr(machine, e.kind.notOp.value)) return true;
 
@@ -1115,6 +1116,41 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
     return false;
 }
 
+fn match(machine: *Machine, e: *AST.Expression) bool {
+    if (evalExpr(machine, e.kind.match.value)) return true;
+
+    const value = machine.memoryState.pop();
+
+    for (e.kind.match.cases) |case| {
+        machine.memoryState.openScope() catch |err| return errorHandler(err);
+
+        const matched = matchPattern(machine, case.pattern, value);
+        if (matched) {
+            const result = evalExpr(machine, case.body);
+
+            machine.memoryState.restoreScope();
+            return result;
+        }
+        machine.memoryState.restoreScope();
+    }
+
+    machine.createVoidValue() catch |err| return errorHandler(err);
+
+    return false;
+}
+
+fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
+    return switch (p.kind) {
+        .identifier => {
+            machine.memoryState.addToScope(p.kind.identifier, v) catch |err| return errorHandler(err);
+            return true;
+        },
+        .literalInt => return v.v == V.ValueValue.IntKind and v.v.IntKind == p.kind.literalInt,
+        .void => return v.v == V.ValueValue.VoidKind,
+        else => false,
+    };
+}
+
 fn whilee(machine: *Machine, e: *AST.Expression) bool {
     while (true) {
         if (evalExpr(machine, e.kind.whilee.condition)) return true;
@@ -1359,7 +1395,7 @@ pub const Machine = struct {
 
     pub fn execute(self: *Machine, name: []const u8, buffer: []const u8) !void {
         const ast = try self.parse(name, buffer);
-        errdefer AST.destroy(self.memoryState.allocator, ast);
+        errdefer ast.destroy(self.memoryState.allocator);
 
         try self.eval(ast);
 

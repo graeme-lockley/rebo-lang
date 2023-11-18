@@ -383,7 +383,7 @@ pub const Imports = struct {
 
         while (iterator.next()) |entry| {
             self.allocator.free(entry.key_ptr.*);
-            AST.destroy(self.allocator, entry.value_ptr.*.ast);
+            entry.value_ptr.*.ast.destroy(self.allocator);
         }
         self.items.deinit();
     }

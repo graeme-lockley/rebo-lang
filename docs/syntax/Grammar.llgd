@@ -25,7 +25,7 @@ Pattern
     | LiteralInt
     | LiteralString
     | "[" [Pattern {"," Pattern} ["," "..." Identifier]] "]" ["@" Identifier]
-    | "{" [MapPattern {"," MapPattern}] "}" ["@" Identifier]
+    | "{" [MapPattern {"," MapPattern} ["," "..." Identifier]] "}" ["@" Identifier]
     | "true" 
     | "false"
     ;

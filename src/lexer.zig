@@ -11,6 +11,7 @@ const keywords = std.ComptimeStringMap(TokenKind, .{
     .{ "fn", TokenKind.Fn },
     .{ "if", TokenKind.If },
     .{ "let", TokenKind.Let },
+    .{ "match", TokenKind.Match },
     .{ "while", TokenKind.While },
 });
 
@@ -149,6 +150,7 @@ pub const Lexer = struct {
                     self.current = Token{ .kind = TokenKind.Bang, .start = tokenStart, .end = self.offset };
                 }
             },
+            '@' => self.setSymbolToken(TokenKind.At, tokenStart),
             '?' => self.setSymbolToken(TokenKind.Hook, tokenStart),
             '[' => self.setSymbolToken(TokenKind.LBracket, tokenStart),
             '{' => self.setSymbolToken(TokenKind.LCurly, tokenStart),
@@ -512,10 +514,12 @@ test "literal string" {
     try expectEqual(lexer.current.kind, TokenKind.EOS);
 }
 
-test "? + - * / % = == ! != <! <| < <= << >! > >= >> && || [ { ( , . ... : := ; -> | |> ] } )" {
+test "@ ? + - * / % = == ! != <! <| < <= << >! > >= >> && || [ { ( , . ... : := ; -> | |> ] } )" {
     var lexer = Lexer.init(std.heap.page_allocator);
-    try lexer.initBuffer(Errors.STREAM_SRC, " ? + - * / % = == ! != <! <| < <= << >! > >= >> && || [ { ( , . ... : := ; -> | |> ] } ) ");
+    try lexer.initBuffer(Errors.STREAM_SRC, " @ ? + - * / % = == ! != <! <| < <= << >! > >= >> && || [ { ( , . ... : := ; -> | |> ] } ) ");
 
+    try expectEqual(lexer.current.kind, TokenKind.At);
+    try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Hook);
     try lexer.next();
     try expectEqual(lexer.current.kind, TokenKind.Plus);

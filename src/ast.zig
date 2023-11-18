@@ -50,6 +50,10 @@ pub const Operator = enum {
 pub const Expression = struct {
     kind: ExpressionKind,
     position: Errors.Position,
+
+    pub fn destroy(self: *Expression, allocator: std.mem.Allocator) void {
+        destroyExpr(allocator, self);
+    }
 };
 
 pub const ExpressionKind = union(enum) {
@@ -72,6 +76,7 @@ pub const ExpressionKind = union(enum) {
     literalSequence: []LiteralSequenceValue,
     literalString: []u8,
     literalVoid: void,
+    match: MatchExpression,
     notOp: NotOpExpression,
     whilee: WhileExpression,
 };
@@ -98,7 +103,7 @@ pub const DeclarationExpression = struct {
 
     pub fn deinit(self: *DeclarationExpression, allocator: std.mem.Allocator) void {
         allocator.free(self.name);
-        destroy(allocator, self.value);
+        destroyExpr(allocator, self.value);
     }
 };
 
@@ -120,7 +125,7 @@ pub const Function = struct {
         if (self.restOfParams != null) {
             allocator.free(self.restOfParams.?);
         }
-        destroy(allocator, self.body);
+        destroyExpr(allocator, self.body);
     }
 };
 
@@ -132,7 +137,7 @@ pub const FunctionParam = struct {
         allocator.free(self.name);
 
         if (self.default != null) {
-            destroy(allocator, self.default.?);
+            destroyExpr(allocator, self.default.?);
         }
     }
 };
@@ -158,6 +163,22 @@ pub const LiteralSequenceValue = union(enum) {
     sequence: *Expression,
 };
 
+pub const MatchExpression = struct {
+    value: *Expression,
+    cases: []MatchCase,
+    elseCase: ?*Expression,
+};
+
+pub const MatchCase = struct {
+    pattern: *Pattern,
+    body: *Expression,
+
+    pub fn deinit(self: *MatchCase, allocator: std.mem.Allocator) void {
+        destroyPattern(allocator, self.pattern);
+        destroyExpr(allocator, self.body);
+    }
+};
+
 pub const NotOpExpression = struct {
     value: *Expression,
 };
@@ -175,31 +196,31 @@ pub const WhileExpression = struct {
     body: *Expression,
 };
 
-pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
+fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
     switch (expr.kind) {
         .assignment => {
-            destroy(allocator, expr.kind.assignment.lhs);
-            destroy(allocator, expr.kind.assignment.value);
+            destroyExpr(allocator, expr.kind.assignment.lhs);
+            destroyExpr(allocator, expr.kind.assignment.value);
         },
         .binaryOp => {
-            destroy(allocator, expr.kind.binaryOp.left);
-            destroy(allocator, expr.kind.binaryOp.right);
+            destroyExpr(allocator, expr.kind.binaryOp.left);
+            destroyExpr(allocator, expr.kind.binaryOp.right);
         },
         .call => {
-            destroy(allocator, expr.kind.call.callee);
+            destroyExpr(allocator, expr.kind.call.callee);
             for (expr.kind.call.args) |arg| {
-                destroy(allocator, arg);
+                destroyExpr(allocator, arg);
             }
             allocator.free(expr.kind.call.args);
         },
         .declaration => expr.kind.declaration.deinit(allocator),
         .dot => {
-            destroy(allocator, expr.kind.dot.record);
+            destroyExpr(allocator, expr.kind.dot.record);
             allocator.free(expr.kind.dot.field);
         },
         .exprs => {
             for (expr.kind.exprs) |v| {
-                destroy(allocator, v);
+                destroyExpr(allocator, v);
             }
             allocator.free(expr.kind.exprs);
         },
@@ -207,24 +228,24 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
         .ifte => {
             for (expr.kind.ifte) |v| {
                 if (v.condition != null) {
-                    destroy(allocator, v.condition.?);
+                    destroyExpr(allocator, v.condition.?);
                 }
-                destroy(allocator, v.then);
+                destroyExpr(allocator, v.then);
             }
             allocator.free(expr.kind.ifte);
         },
         .indexRange => {
-            destroy(allocator, expr.kind.indexRange.expr);
+            destroyExpr(allocator, expr.kind.indexRange.expr);
             if (expr.kind.indexRange.start != null) {
-                destroy(allocator, expr.kind.indexRange.start.?);
+                destroyExpr(allocator, expr.kind.indexRange.start.?);
             }
             if (expr.kind.indexRange.end != null) {
-                destroy(allocator, expr.kind.indexRange.end.?);
+                destroyExpr(allocator, expr.kind.indexRange.end.?);
             }
         },
         .indexValue => {
-            destroy(allocator, expr.kind.indexValue.expr);
-            destroy(allocator, expr.kind.indexValue.index);
+            destroyExpr(allocator, expr.kind.indexValue.expr);
+            destroyExpr(allocator, expr.kind.indexValue.index);
         },
         .literalBool, .literalChar, .literalFloat, .literalInt, .literalVoid => {},
         .literalFunction => expr.kind.literalFunction.deinit(allocator),
@@ -233,9 +254,9 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
                 switch (v) {
                     .value => {
                         allocator.free(v.value.key);
-                        destroy(allocator, v.value.value);
+                        destroyExpr(allocator, v.value.value);
                     },
-                    .record => destroy(allocator, v.record),
+                    .record => destroyExpr(allocator, v.record),
                 }
             }
             allocator.free(expr.kind.literalRecord);
@@ -243,19 +264,97 @@ pub fn destroy(allocator: std.mem.Allocator, expr: *Expression) void {
         .literalSequence => {
             for (expr.kind.literalSequence) |v| {
                 switch (v) {
-                    .value => destroy(allocator, v.value),
-                    .sequence => destroy(allocator, v.sequence),
+                    .value => destroyExpr(allocator, v.value),
+                    .sequence => destroyExpr(allocator, v.sequence),
                 }
             }
             allocator.free(expr.kind.literalSequence);
         },
         .literalString => allocator.free(expr.kind.literalString),
-        .notOp => destroy(allocator, expr.kind.notOp.value),
+        .match => {
+            destroyExpr(allocator, expr.kind.match.value);
+            for (expr.kind.match.cases) |*c| {
+                c.deinit(allocator);
+            }
+            allocator.free(expr.kind.match.cases);
+            if (expr.kind.match.elseCase != null) {
+                destroyExpr(allocator, expr.kind.match.elseCase.?);
+            }
+        },
+        .notOp => destroyExpr(allocator, expr.kind.notOp.value),
         .whilee => {
-            destroy(allocator, expr.kind.whilee.condition);
-            destroy(allocator, expr.kind.whilee.body);
+            destroyExpr(allocator, expr.kind.whilee.condition);
+            destroyExpr(allocator, expr.kind.whilee.body);
         },
     }
 
     allocator.destroy(expr);
+}
+
+pub const Pattern = struct {
+    kind: PatternKind,
+    position: Errors.Position,
+
+    pub fn destroy(self: *Pattern, allocator: std.mem.Allocator) void {
+        destroyPattern(allocator, self);
+    }
+};
+
+pub const PatternKind = union(enum) {
+    identifier: []u8,
+    list: ListPattern,
+    literalChar: u8,
+    literalBool: bool,
+    literalFloat: Value.FloatType,
+    literalInt: Value.IntType,
+    literalString: []u8,
+    map: MapPattern,
+    void: void,
+};
+
+pub const ListPattern = struct {
+    patterns: []*Pattern,
+    restOfPatterns: ?[]u8,
+    id: ?[]u8,
+};
+
+pub const MapPattern = struct { entries: []MapPatternEntry, id: ?[]u8 };
+
+pub const MapPatternEntry = struct {
+    key: []u8,
+    value: ?*Pattern,
+};
+
+fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
+    switch (pattern.kind) {
+        .identifier => allocator.free(pattern.kind.identifier),
+        .literalChar, .literalFloat, .literalInt, .literalBool, .void => {},
+        .literalString => allocator.free(pattern.kind.literalString),
+        .list => {
+            for (pattern.kind.list.patterns) |p| {
+                destroyPattern(allocator, p);
+            }
+            allocator.free(pattern.kind.list.patterns);
+            if (pattern.kind.list.restOfPatterns != null) {
+                allocator.free(pattern.kind.list.restOfPatterns.?);
+            }
+            if (pattern.kind.list.id != null) {
+                allocator.free(pattern.kind.list.id.?);
+            }
+        },
+        .map => {
+            for (pattern.kind.map.entries) |e| {
+                allocator.free(e.key);
+                if (e.value != null) {
+                    destroyPattern(allocator, e.value.?);
+                }
+            }
+            allocator.free(pattern.kind.map.entries);
+            if (pattern.kind.map.id != null) {
+                allocator.free(pattern.kind.map.id.?);
+            }
+        },
+    }
+
+    allocator.destroy(pattern);
 }
