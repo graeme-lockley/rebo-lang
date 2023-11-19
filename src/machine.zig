@@ -1173,6 +1173,10 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
                 }
             }
 
+            if (p.kind.record.id != null) {
+                machine.memoryState.addToScope(p.kind.record.id.?, v) catch |err| return errorHandler(err);
+            }
+
             return true;
         },
         .sequence => {

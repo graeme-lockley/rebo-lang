@@ -62,7 +62,7 @@ pub const Parser = struct {
 
                     const v = try self.allocator.create(AST.Expression);
 
-                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .idDeclaration = AST.LetIdExpression{ .name = name, .value = literalFn } }, .position = Errors.Position{ .start = nameToken.start, .end = literalFn.position.end } };
+                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .idDeclaration = AST.IdDeclarationExpression{ .name = name, .value = literalFn } }, .position = Errors.Position{ .start = nameToken.start, .end = literalFn.position.end } };
 
                     return v;
                 } else {
@@ -72,7 +72,7 @@ pub const Parser = struct {
                     errdefer value.destroy(self.allocator);
 
                     const v = try self.allocator.create(AST.Expression);
-                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .idDeclaration = AST.LetIdExpression{ .name = name, .value = value } }, .position = Errors.Position{ .start = letToken.start, .end = value.position.end } };
+                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .idDeclaration = AST.IdDeclarationExpression{ .name = name, .value = value } }, .position = Errors.Position{ .start = letToken.start, .end = value.position.end } };
                     return v;
                 }
             } else {
@@ -1096,8 +1096,17 @@ pub const Parser = struct {
                 }
                 const rcurly = try self.matchToken(Lexer.TokenKind.RCurly);
 
+                var id: ?[]u8 = null;
+                errdefer if (id != null) self.allocator.free(id.?);
+
+                if (self.currentTokenKind() == Lexer.TokenKind.At) {
+                    try self.skipToken();
+                    const alias = try self.matchToken(Lexer.TokenKind.Identifier);
+                    id = try self.allocator.dupe(u8, self.lexer.lexeme(alias));
+                }
+
                 const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .record = AST.RecordPattern{ .entries = try es.toOwnedSlice(), .id = null } }, .position = Errors.Position{ .start = lcurly.start, .end = rcurly.end } };
+                v.* = AST.Pattern{ .kind = AST.PatternKind{ .record = AST.RecordPattern{ .entries = try es.toOwnedSlice(), .id = id } }, .position = Errors.Position{ .start = lcurly.start, .end = rcurly.end } };
                 return v;
             },
             else => {

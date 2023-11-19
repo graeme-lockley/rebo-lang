@@ -62,7 +62,7 @@ pub const ExpressionKind = union(enum) {
     call: CallExpression,
     dot: DotExpression,
     exprs: []*Expression,
-    idDeclaration: LetIdExpression,
+    idDeclaration: IdDeclarationExpression,
     identifier: []u8,
     ifte: []IfCouple,
     indexRange: IndexRangeExpression,
@@ -98,11 +98,11 @@ pub const CallExpression = struct {
     args: []*Expression,
 };
 
-pub const LetIdExpression = struct {
+pub const IdDeclarationExpression = struct {
     name: []u8,
     value: *Expression,
 
-    pub fn deinit(self: *LetIdExpression, allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *IdDeclarationExpression, allocator: std.mem.Allocator) void {
         allocator.free(self.name);
         destroyExpr(allocator, self.value);
     }
