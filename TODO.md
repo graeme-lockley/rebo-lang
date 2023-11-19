@@ -14,7 +14,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 - [X] Let declaration
 - [X] Assignment without destructing
-- [ ] Assignment with destructing
+- [X] Assignment with destructing
 
 ## Functions
 
@@ -33,7 +33,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add support for `[start:end] = value` to update a slice of sequence
 - [ ] Add support for `[start:end] = ()` to remove a slice from a sequence
 - [X] `+` concatenates two sequences
-- [ ] Add support destructuring a sequence into variables
+- [X] Add support destructuring a sequence into variables
 - [X] Move all the functions into the SequenceKind rather than having them lying all over the code base and forcing knowledge of the implementation
 
 ## Strings
@@ -56,7 +56,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add support for `.field = value` to update a record
 - [X] Add support for `[] = value` to update a record's field
 - [ ] `+` concatenates two records
-- [ ] Add support for destructing a record into variables
+- [X] Add support for destructing a record into variables
 - [ ] Move all the functions into the RecordKind rather than having them lying all over the code base and forcing knowledge of the implementation
 
 ## Scope
@@ -107,7 +107,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 ## match
 
-- [ ] Add support for match expressions
+- [X] Add support for match expressions
 
 ## while
 
