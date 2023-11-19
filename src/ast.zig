@@ -307,7 +307,7 @@ pub const PatternKind = union(enum) {
     literalFloat: Value.FloatType,
     literalInt: Value.IntType,
     literalString: []u8,
-    map: MapPattern,
+    record: RecordPattern,
     sequence: SequencePattern,
     void: void,
 };
@@ -318,11 +318,36 @@ pub const SequencePattern = struct {
     id: ?[]u8,
 };
 
-pub const MapPattern = struct { entries: []MapPatternEntry, id: ?[]u8 };
+pub const RecordPattern = struct {
+    entries: []RecordPatternEntry,
+    id: ?[]u8,
 
-pub const MapPatternEntry = struct {
+    pub fn deinit(self: *RecordPattern, allocator: std.mem.Allocator) void {
+        for (self.items) |*item| {
+            item.deinit(allocator);
+        }
+        self.items.deinit();
+
+        if (self.id != null) {
+            allocator.free(self.id.?);
+        }
+    }
+};
+
+pub const RecordPatternEntry = struct {
     key: []u8,
-    value: ?*Pattern,
+    pattern: ?*Pattern,
+    id: ?[]u8,
+
+    pub fn deinit(self: *RecordPatternEntry, allocator: std.mem.Allocator) void {
+        allocator.free(self.key);
+        if (self.pattern != null) {
+            destroyPattern(allocator, self.pattern.?);
+        }
+        if (self.id != null) {
+            allocator.free(self.id.?);
+        }
+    }
 };
 
 fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
@@ -330,16 +355,19 @@ fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
         .identifier => allocator.free(pattern.kind.identifier),
         .literalChar, .literalFloat, .literalInt, .literalBool, .void => {},
         .literalString => allocator.free(pattern.kind.literalString),
-        .map => {
-            for (pattern.kind.map.entries) |e| {
+        .record => {
+            for (pattern.kind.record.entries) |e| {
                 allocator.free(e.key);
-                if (e.value != null) {
-                    destroyPattern(allocator, e.value.?);
+                if (e.pattern != null) {
+                    destroyPattern(allocator, e.pattern.?);
+                }
+                if (e.id != null) {
+                    allocator.free(e.id.?);
                 }
             }
-            allocator.free(pattern.kind.map.entries);
-            if (pattern.kind.map.id != null) {
-                allocator.free(pattern.kind.map.id.?);
+            allocator.free(pattern.kind.record.entries);
+            if (pattern.kind.record.id != null) {
+                allocator.free(pattern.kind.record.id.?);
             }
         },
         .sequence => {

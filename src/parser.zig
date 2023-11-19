@@ -926,7 +926,7 @@ pub const Parser = struct {
         }
     }
 
-    fn pattern(self: *Parser) !*AST.Pattern {
+    fn pattern(self: *Parser) Errors.err!*AST.Pattern {
         switch (self.currentTokenKind()) {
             Lexer.TokenKind.LParen => {
                 const lparen = try self.nextToken();
@@ -1061,6 +1061,30 @@ pub const Parser = struct {
                 v.* = AST.Pattern{ .kind = AST.PatternKind{ .sequence = AST.SequencePattern{ .patterns = try es.toOwnedSlice(), .restOfPatterns = restOfPatterns, .id = id } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
                 return v;
             },
+            Lexer.TokenKind.LCurly => {
+                const lcurly = try self.nextToken();
+
+                var es = std.ArrayList(AST.RecordPatternEntry).init(self.allocator);
+                defer {
+                    for (es.items) |*item| {
+                        item.deinit(self.allocator);
+                    }
+                    es.deinit();
+                }
+
+                if (self.currentTokenKind() == Lexer.TokenKind.Identifier) {
+                    try es.append(try self.recordPatternEntry());
+                    while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
+                        try self.skipToken();
+                        try es.append(try self.recordPatternEntry());
+                    }
+                }
+                const rcurly = try self.matchToken(Lexer.TokenKind.RCurly);
+
+                const v = try self.allocator.create(AST.Pattern);
+                v.* = AST.Pattern{ .kind = AST.PatternKind{ .record = AST.RecordPattern{ .entries = try es.toOwnedSlice(), .id = null } }, .position = Errors.Position{ .start = lcurly.start, .end = rcurly.end } };
+                return v;
+            },
             else => {
                 {
                     var expected = try self.allocator.alloc(Lexer.TokenKind, 11);
@@ -1087,19 +1111,29 @@ pub const Parser = struct {
     }
 
     fn recordPatternEntry(self: *Parser) !AST.RecordPatternEntry {
-        if (self.currentTokenKind() == Lexer.TokenKind.DotDotDot) {
+        const key = try self.matchToken(Lexer.TokenKind.Identifier);
+
+        const keyValue = try self.allocator.dupe(u8, self.lexer.lexeme(key));
+        errdefer self.allocator.free(keyValue);
+
+        var pttrn: ?*AST.Pattern = null;
+        errdefer if (pttrn != null) pttrn.?.destroy(self.allocator);
+
+        var id: ?[]u8 = null;
+        errdefer if (id != null) self.allocator.free(id.?);
+
+        if (self.currentTokenKind() == Lexer.TokenKind.Colon) {
             try self.skipToken();
-            const e = try self.pattern();
-            return AST.RecordPatternEntry{ .record = e };
-        } else {
-            const key = try self.matchToken(Lexer.TokenKind.Identifier);
-            try self.matchSkipToken(Lexer.TokenKind.Colon);
-            const value = try self.pattern();
-
-            const keyValue = try self.allocator.dupe(u8, self.lexer.lexeme(key));
-
-            return AST.RecordPatternEntry{ .value = .{ .key = keyValue, .value = value } };
+            pttrn = try self.pattern();
         }
+
+        if (self.currentTokenKind() == Lexer.TokenKind.At) {
+            try self.skipToken();
+            id = try self.allocator.dupe(u8, self.lexer.currentLexeme());
+            try self.matchSkipToken(Lexer.TokenKind.Identifier);
+        }
+
+        return AST.RecordPatternEntry{ .key = keyValue, .pattern = pttrn, .id = id };
     }
 
     fn currentToken(self: *Parser) Lexer.Token {

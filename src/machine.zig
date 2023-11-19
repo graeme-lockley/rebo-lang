@@ -1137,11 +1137,9 @@ fn match(machine: *Machine, e: *AST.Expression) bool {
         machine.memoryState.restoreScope();
     }
 
-    _ = machine.memoryState.pop();
+    machine.replaceErr(Errors.noMatchError(machine.memoryState.allocator, machine.src(), e.position) catch |err| return errorHandler(err));
 
-    machine.createVoidValue() catch |err| return errorHandler(err);
-
-    return false;
+    return true;
 }
 
 fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
@@ -1157,6 +1155,25 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
         .literalFloat => return v.v == V.ValueValue.FloatKind and v.v.FloatKind == p.kind.literalFloat or v.v == V.ValueValue.IntKind and v.v.IntKind == @as(V.IntType, @intFromFloat(p.kind.literalFloat)),
         .literalInt => return v.v == V.ValueValue.IntKind and v.v.IntKind == p.kind.literalInt or v.v == V.ValueValue.FloatKind and v.v.FloatKind == @as(V.FloatType, @floatFromInt(p.kind.literalInt)),
         .literalString => return v.v == V.ValueValue.StringKind and std.mem.eql(u8, v.v.StringKind, p.kind.literalString),
+        .record => {
+            if (v.v != V.ValueValue.RecordKind) return false;
+
+            const record = v.v.RecordKind;
+
+            for (p.kind.record.entries) |entry| {
+                const value = record.get(entry.key);
+
+                if (value == null) return false;
+
+                if (entry.pattern == null) {
+                    machine.memoryState.addToScope(if (entry.id == null) entry.key else entry.id.?, value.?) catch |err| return errorHandler(err);
+                } else if (entry.pattern != null and !matchPattern(machine, entry.pattern.?, value.?)) {
+                    return false;
+                }
+            }
+
+            return true;
+        },
         .sequence => {
             if (v.v != V.ValueValue.SequenceKind) return false;
 
@@ -1186,7 +1203,6 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
             return true;
         },
         .void => return v.v == V.ValueValue.VoidKind,
-        else => false,
     };
 }
 

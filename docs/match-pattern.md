@@ -250,3 +250,81 @@ Finally the `@` operator can be used to bind a matched sequence to a value.
 > matchSeq([4, 3, 2, 1])
 []
 ```
+
+Having worked through sequence pattern matching let's now take a look at record pattern matching.
+
+```rebo-repl
+> match {}
+. | {} -> "empty"
+. | _ -> "not empty"
+"empty"
+
+> match {a: 1}
+. | {} -> "empty"
+. | _ -> "not empty"
+"empty"
+```
+
+Okay the last example was a bit of a  surprise.  The reason for this is to see record pattern matching as not an attempt at being exhaustive but rather as a way to match against a record that has a particular fields.
+
+Using pattern matching is possible to bind values from the record.
+
+```rebo-repl
+> match {a: 1}
+. | {a} -> a
+. | _ -> 0
+1
+
+> match {a: 1, b: 2}
+. | {a, b} -> a + b
+. | _ -> 0
+3
+```
+
+This style of pattern matching is useful when you want to match against a record that has a particular field but you don't care about the value of the field.  Using the `@` operator it is possible to bind the field to a different name.
+
+```rebo-repl
+> match {a: 1, b: 2}
+. | {a @ xName, b @ yName} -> xName + yName
+. | _ -> 0
+3
+```
+
+It is also possible to match against a record that has a particular field and a particular value for that field.
+
+```rebo-repl
+> let matchRecord(r) =
+.   match r
+.   | {a: 2, b} -> b * 2
+.   | {a: 1, b} -> b * 3
+.   | {b} -> b * 4
+
+> matchRecord({a: 1, b: 2})
+6
+> matchRecord({a: 2, b: 2})
+4
+> matchRecord({a: 10, b: 2})
+8
+> matchRecord({b: 2})
+8
+```
+
+Let's bring it all together into a single example to show off record matching in all its wonder.
+
+```rebo-repl
+> let matchRecord(r) =
+.   match r
+.   | {a: {x, y}, b: [1, y']} -> x + 100 * (y + y')
+.   | {a: {x, y}, b: [x', y']} -> x + x' + 100 * (x' + y')
+.   | {a: {x, y}, b: [x', y'], c} -> x + x' + c * (x' + y')
+
+> matchRecord({a: {x: 1, y: 2}, b: [1, 2]})
+401
+> matchRecord({a: {x: 1, y: 2}, b: [2, 3]})
+503
+> matchRecord({a: {x: 1, y: 2}, b: [2, 3], c: 100})
+503
+```
+
+Note that should there be no match then an error is reported and your program halts.
+

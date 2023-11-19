@@ -115,6 +115,17 @@ pub const ExpectedTypeError = struct {
     }
 };
 
+pub const NoMatchError = struct {
+    pub fn deinit(self: NoMatchError) void {
+        _ = self;
+    }
+
+    pub fn append(self: NoMatchError, buffer: *std.ArrayList(u8)) !void {
+        _ = self;
+        try buffer.appendSlice("No Pattern Match");
+    }
+};
+
 pub const UnknownIdentifierError = struct {
     identifier: []u8,
 
@@ -239,6 +250,7 @@ pub const ErrorDetail = union(enum) {
     lexicalError: LexicalError,
     literalFloatOverflowError: LexicalError,
     literalIntOverflowError: LexicalError,
+    noMatchError: NoMatchError,
     parserError: ParserError,
     unknownIdentifierError: UnknownIdentifierError,
 
@@ -252,6 +264,7 @@ pub const ErrorDetail = union(enum) {
             .lexicalError => self.lexicalError.deinit(allocator),
             .literalFloatOverflowError => self.literalFloatOverflowError.deinit(allocator),
             .literalIntOverflowError => self.literalIntOverflowError.deinit(allocator),
+            .noMatchError => self.noMatchError.deinit(),
             .parserError => self.parserError.deinit(allocator),
             .unknownIdentifierError => self.unknownIdentifierError.deinit(allocator),
         }
@@ -267,6 +280,7 @@ pub const ErrorDetail = union(enum) {
             .lexicalError => try self.lexicalError.append(buffer, "Lexical Error"),
             .literalFloatOverflowError => try self.literalFloatOverflowError.append(buffer, "Literal Float Overflow Error"),
             .literalIntOverflowError => try self.literalIntOverflowError.append(buffer, "Literal Int Overflow Error"),
+            .noMatchError => try self.noMatchError.append(buffer),
             .parserError => try self.parserError.append(buffer),
             .unknownIdentifierError => try self.unknownIdentifierError.append(buffer),
         }
@@ -380,6 +394,14 @@ pub fn literalIntOverflowError(allocator: std.mem.Allocator, src: []const u8, po
     var result = try Error.init(allocator, ErrorDetail{ .literalIntOverflowError = .{
         .lexeme = try allocator.dupe(u8, lexeme),
     } });
+
+    try result.appendStackItem(src, position);
+
+    return result;
+}
+
+pub fn noMatchError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
+    var result = try Error.init(allocator, ErrorDetail{ .noMatchError = NoMatchError{} });
 
     try result.appendStackItem(src, position);
 
