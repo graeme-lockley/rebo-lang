@@ -1163,22 +1163,20 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
             const seq = v.v.SequenceKind;
 
             if (p.kind.sequence.restOfPatterns == null and seq.len() != p.kind.sequence.patterns.len) return false;
-            if (p.kind.sequence.restOfPatterns != null) {
-                if (seq.len() < p.kind.sequence.patterns.len) return false;
-
-                if (!std.mem.eql(u8, p.kind.sequence.restOfPatterns.?, "_")) {
-                    var newSeq = try V.SequenceValue.init(machine.memoryState.allocator);
-                    if (seq.len() > p.kind.sequence.patterns.len) {
-                        newSeq.appendSlice(seq.items()[p.kind.sequence.patterns.len..]) catch |err| return errorHandler(err);
-                    }
-                    machine.memoryState.addToScope(p.kind.sequence.restOfPatterns.?, machine.memoryState.newValue(V.ValueValue{ .SequenceKind = newSeq }) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
-                }
-            }
+            if (p.kind.sequence.restOfPatterns != null and seq.len() < p.kind.sequence.patterns.len) return false;
 
             var index: u8 = 0;
             while (index < p.kind.sequence.patterns.len) {
                 if (!matchPattern(machine, p.kind.sequence.patterns[index], seq.at(index))) return false;
                 index += 1;
+            }
+
+            if (p.kind.sequence.restOfPatterns != null and !std.mem.eql(u8, p.kind.sequence.restOfPatterns.?, "_")) {
+                var newSeq = try V.SequenceValue.init(machine.memoryState.allocator);
+                if (seq.len() > p.kind.sequence.patterns.len) {
+                    newSeq.appendSlice(seq.items()[p.kind.sequence.patterns.len..]) catch |err| return errorHandler(err);
+                }
+                machine.memoryState.addToScope(p.kind.sequence.restOfPatterns.?, machine.memoryState.newValue(V.ValueValue{ .SequenceKind = newSeq }) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
             }
 
             if (p.kind.sequence.id != null) {
