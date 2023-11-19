@@ -166,8 +166,9 @@ pub const Parser = struct {
                 try cases.append(try self.matchCase());
             }
 
+            const endPosition = cases.getLast().body.position.end;
             const v = try self.allocator.create(AST.Expression);
-            v.* = AST.Expression{ .kind = AST.ExpressionKind{ .match = AST.MatchExpression{ .value = value, .cases = try cases.toOwnedSlice(), .elseCase = null } }, .position = Errors.Position{ .start = matchTkn.start, .end = matchTkn.end } };
+            v.* = AST.Expression{ .kind = AST.ExpressionKind{ .match = AST.MatchExpression{ .value = value, .cases = try cases.toOwnedSlice(), .elseCase = null } }, .position = Errors.Position{ .start = matchTkn.start, .end = endPosition } };
             return v;
         } else if (self.currentTokenKind() == Lexer.TokenKind.While) {
             const whileToken = try self.nextToken();
