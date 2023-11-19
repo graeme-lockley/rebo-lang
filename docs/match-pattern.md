@@ -217,8 +217,10 @@ The `...` operator can also be used to bind the rest of the sequence to a value.
 .   match seq
 .   | [1, 2, 3, 4, ...stuff] -> stuff
 .   | [1, 2, 3, ...stuff] -> stuff
-.   | stuff -> stuff
+.   | stuff -> stuff |> Std.map(fn(a) a * 10)
 
+> matchSeq([1, 1, 3])
+[10, 10, 30]
 > matchSeq([1, 2, 3])
 []
 > matchSeq([1, 2, 3, 4])
@@ -230,7 +232,7 @@ The `...` operator can also be used to bind the rest of the sequence to a value.
 > matchSeq([1, 2, 3, 4, 5, 6])
 [5, 6]
 > matchSeq([1, 1, 2, 3])
-[1, 1, 2, 3]
+[10, 10, 20, 30]
 ```
 
 Finally the `@` operator can be used to bind a matched sequence to a value.
