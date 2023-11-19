@@ -13,9 +13,9 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         .assignment => return assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
         .binaryOp => return binaryOp(machine, e),
         .call => return call(machine, e, e.kind.call.callee, e.kind.call.args),
-        .declaration => return declaration(machine, e),
         .dot => return dot(machine, e),
         .exprs => return exprs(machine, e),
+        .idDeclaration => return declaration(machine, e),
         .identifier => return identifier(machine, e),
         .ifte => return ifte(machine, e),
         .indexRange => return indexRange(machine, e.kind.indexRange.expr, e.kind.indexRange.start, e.kind.indexRange.end),
@@ -120,6 +120,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
             machine.memoryState.pushBoolValue(!v.v.BoolKind) catch |err| return errorHandler(err);
         },
+        .patternDeclaration => return patternDeclaration(machine, e),
         .whilee => return whilee(machine, e),
     }
 
@@ -878,11 +879,11 @@ fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsA
 }
 
 fn declaration(machine: *Machine, e: *AST.Expression) bool {
-    if (evalExpr(machine, e.kind.declaration.value)) return true;
+    if (evalExpr(machine, e.kind.idDeclaration.value)) return true;
 
     const value: *V.Value = machine.memoryState.peek(0);
 
-    machine.memoryState.addToScope(e.kind.declaration.name, value) catch |err| return errorHandler(err);
+    machine.memoryState.addToScope(e.kind.idDeclaration.name, value) catch |err| return errorHandler(err);
 
     return false;
 }
@@ -1204,6 +1205,20 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
         },
         .void => return v.v == V.ValueValue.VoidKind,
     };
+}
+
+fn patternDeclaration(machine: *Machine, e: *AST.Expression) bool {
+    if (evalExpr(machine, e.kind.patternDeclaration.value)) return true;
+
+    const value: *V.Value = machine.memoryState.peek(0);
+
+    if (matchPattern(machine, e.kind.patternDeclaration.pattern, value)) {
+        return false;
+    }
+
+    machine.replaceErr(Errors.noMatchError(machine.memoryState.allocator, machine.src(), e.position) catch |err| return errorHandler(err));
+
+    return true;
 }
 
 fn whilee(machine: *Machine, e: *AST.Expression) bool {

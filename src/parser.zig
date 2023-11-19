@@ -50,27 +50,42 @@ pub const Parser = struct {
         if (self.currentTokenKind() == Lexer.TokenKind.Let) {
             const letToken = try self.nextToken();
 
-            const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
-            const name = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
-            errdefer self.allocator.free(name);
+            const nextNextToken = try self.peekNextToken();
+            if (self.currentTokenKind() == Lexer.TokenKind.Identifier and (nextNextToken == Lexer.TokenKind.Equal or nextNextToken == Lexer.TokenKind.LParen)) {
+                const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
+                const name = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
+                errdefer self.allocator.free(name);
 
-            if (self.currentTokenKind() == Lexer.TokenKind.LParen) {
-                var literalFn = try self.functionTail(letToken.start);
-                errdefer literalFn.destroy(self.allocator);
+                if (self.currentTokenKind() == Lexer.TokenKind.LParen) {
+                    var literalFn = try self.functionTail(letToken.start);
+                    errdefer literalFn.destroy(self.allocator);
 
-                const v = try self.allocator.create(AST.Expression);
+                    const v = try self.allocator.create(AST.Expression);
 
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .declaration = AST.DeclarationExpression{ .name = name, .value = literalFn } }, .position = Errors.Position{ .start = nameToken.start, .end = literalFn.position.end } };
+                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .idDeclaration = AST.LetIdExpression{ .name = name, .value = literalFn } }, .position = Errors.Position{ .start = nameToken.start, .end = literalFn.position.end } };
 
-                return v;
+                    return v;
+                } else {
+                    try self.matchSkipToken(Lexer.TokenKind.Equal);
+
+                    const value = try self.expression();
+                    errdefer value.destroy(self.allocator);
+
+                    const v = try self.allocator.create(AST.Expression);
+                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .idDeclaration = AST.LetIdExpression{ .name = name, .value = value } }, .position = Errors.Position{ .start = letToken.start, .end = value.position.end } };
+                    return v;
+                }
             } else {
+                const pttrn = try self.pattern();
+                errdefer pttrn.destroy(self.allocator);
+
                 try self.matchSkipToken(Lexer.TokenKind.Equal);
 
                 const value = try self.expression();
                 errdefer value.destroy(self.allocator);
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .declaration = AST.DeclarationExpression{ .name = name, .value = value } }, .position = Errors.Position{ .start = letToken.start, .end = value.position.end } };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .patternDeclaration = AST.PatternDeclarationExpression{ .pattern = pttrn, .value = value } }, .position = Errors.Position{ .start = letToken.start, .end = value.position.end } };
                 return v;
             }
         } else if (self.currentTokenKind() == Lexer.TokenKind.If) {

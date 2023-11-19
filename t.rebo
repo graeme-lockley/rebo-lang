@@ -1,0 +1,24 @@
+#!env rebo
+
+let cwrite(stream, content) {
+    let r = write(stream, content)    
+
+    if typeof(r) == "Int" -> println("Wrote ", r, " bytes: ", content)
+     | println("Error writing to stream: ", r)
+}
+
+let handler(stream, stuff) {
+    println("Accepted connection ", stream)
+    println("Stuff: ", stuff)
+
+    write(stream, "HTTP/1.1 200 OK\x13;\x10;")
+    write(stream, "Content-Type: text/plain\x13;\x10;")
+    write(stream, "Content-Length: 11\x13;\x10;")
+    write(stream, "\x13;\x10;")
+    write(stream, "Hello world")
+
+    close(stream)
+}
+
+println("Listening on 127.0.0.1:8000...")
+println(listen("127.0.0.1", 8000, handler))
