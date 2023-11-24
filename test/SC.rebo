@@ -17,7 +17,7 @@ let add(v = "") {
   let numbers =
     tokens |> map(int)
 
-  if any(numbers, negative?) -> filter(numbers, negative?)
+  if any(numbers, negative?) -> numbers |> filter(negative?)
    | numbers |> sumSmallNumbers()
 }
 
