@@ -9,7 +9,6 @@ let cwrite(stream, content) {
 
 let handler(stream, stuff) {
     println("Accepted connection ", stream)
-    println("Stuff: ", stuff)
 
     write(stream, "HTTP/1.1 200 OK\x13;\x10;")
     write(stream, "Content-Type: text/plain\x13;\x10;")
