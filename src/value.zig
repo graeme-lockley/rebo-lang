@@ -397,6 +397,12 @@ pub const SequenceValue = struct {
         try self.values.replaceRange(start, end - start, values);
     }
 
+    pub fn removeRange(self: *SequenceValue, start: usize, end: usize) !void {
+        const values = &[_]*Value{};
+
+        try self.values.replaceRange(start, end - start, values);
+    }
+
     pub fn len(self: *const SequenceValue) usize {
         return self.values.items.len;
     }

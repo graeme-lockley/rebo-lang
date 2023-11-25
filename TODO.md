@@ -31,7 +31,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add support for `[start:end]` to access a slice of sequence
 - [X] Add support for `[] = value` to update a sequence
 - [X] Add support for `[start:end] = value` to update a slice of sequence
-- [ ] Add support for `[start:end] = ()` to remove a slice from a sequence
+- [X] Add support for `[start:end] = ()` to remove a slice from a sequence
 - [X] `+` concatenates two sequences
 - [X] Add support destructuring a sequence into variables
 - [X] Move all the functions into the SequenceKind rather than having them lying all over the code base and forcing knowledge of the implementation

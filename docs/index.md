@@ -310,11 +310,24 @@ The `[]` operator can also be used to update a value in a sequence.
 > seq
 [10, 2, 3]
 
-> seq[0:2] := [100, 200, 300]
+> seq[1:2] := [100, 200, 300]
 [100, 200, 300]
 
 > seq
-[100, 200, 300, 3]
+[10, 100, 200, 300, 3]
+```
+
+The `[]` operator can also be used to remove values from a sequence when assigning `()` to the range.
+
+```rebo-repl
+> let seq = [1, 2, 3, 4, 5]
+[1, 2, 3, 4, 5]
+
+> seq[1:3] := ()
+()
+
+> seq
+[1, 4, 5]
 ```
 
 The operators `<<` and `>>` are used to append and prepend a value onto to a sequence.

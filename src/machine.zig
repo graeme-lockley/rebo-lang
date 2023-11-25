@@ -169,13 +169,14 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             if (evalExpr(machine, value)) return true;
             const v = machine.memoryState.peek(0);
 
-            if (v.v != V.ValueValue.SequenceKind) {
-                machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), lhs.kind.indexRange.expr.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, v.v) catch |err| return errorHandler(err));
+            if (v.v == V.ValueValue.SequenceKind) {
+                sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), v.v.SequenceKind.items()) catch |err| return errorHandler(err);
+            } else if (v.v == V.ValueValue.VoidKind) {
+                sequence.v.SequenceKind.removeRange(@intCast(start), @intCast(end)) catch |err| return errorHandler(err);
+            } else if (v.v != V.ValueValue.SequenceKind) {
+                machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), lhs.kind.indexRange.expr.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.VoidKind }, v.v) catch |err| return errorHandler(err));
                 return true;
             }
-
-            sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), v.v.SequenceKind.items()) catch |err| return errorHandler(err);
-
             machine.memoryState.popn(2);
             machine.memoryState.push(v) catch |err| return errorHandler(err);
         },
