@@ -57,7 +57,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add support for `[] = value` to update a record's field
 - [ ] `+` concatenates two records
 - [X] Add support for destructing a record into variables
-- [ ] Move all the functions into the RecordKind rather than having them lying all over the code base and forcing knowledge of the implementation
+- [X] Move all the functions into the RecordKind rather than having them lying all over the code base and forcing knowledge of the implementation
 
 ## Scope
 

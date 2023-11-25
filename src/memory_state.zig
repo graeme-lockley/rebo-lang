@@ -42,7 +42,7 @@ pub const MemoryState = struct {
     }
 
     pub fn newMapValue(self: *MemoryState) !*V.Value {
-        return try self.newValue(V.ValueValue{ .RecordKind = std.StringHashMap(*V.Value).init(self.allocator) });
+        return try self.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.allocator) });
     }
 
     pub fn pushEmptyMapValue(self: *MemoryState) !void {

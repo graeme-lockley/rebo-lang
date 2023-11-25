@@ -269,7 +269,7 @@ pub const ValueValue = union(ValueKind) {
     SequenceKind: SequenceValue,
     StreamKind: StreamValue,
     StringKind: []u8,
-    RecordKind: std.StringHashMap(*Value),
+    RecordKind: RecordValue,
     ScopeKind: ScopeValue,
     VoidKind: void,
 };
@@ -280,27 +280,51 @@ pub const BuiltinValue = struct {
     body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.err!void,
 };
 
-pub fn recordGet(record: *const std.StringHashMap(*Value), key: []const u8) ?*Value {
-    return record.get(key);
-}
+pub const RecordValue = struct {
+    items: std.StringHashMap(*Value),
 
-pub fn recordSet(allocator: std.mem.Allocator, record: *std.StringHashMap(*Value), key: []const u8, value: *Value) !void {
-    if (value.v == ValueKind.VoidKind) {
-        const old = record.fetchRemove(key);
+    pub fn init(allocator: std.mem.Allocator) RecordValue {
+        return RecordValue{ .items = std.StringHashMap(*Value).init(allocator) };
+    }
 
-        if (old != null) {
-            allocator.free(old.?.key);
-        }
-    } else {
-        const oldKey = record.getKey(key);
+    pub fn deinit(self: *RecordValue) void {
+        self.items.deinit();
+    }
 
-        if (oldKey == null) {
-            try record.put(try allocator.dupe(u8, key), value);
+    pub fn set(self: *RecordValue, allocator: std.mem.Allocator, key: []const u8, value: *Value) !void {
+        if (value.v == ValueKind.VoidKind) {
+            const old = self.items.fetchRemove(key);
+
+            if (old != null) {
+                allocator.free(old.?.key);
+            }
         } else {
-            try record.put(oldKey.?, value);
+            const oldKey = self.items.getKey(key);
+
+            if (oldKey == null) {
+                try self.items.put(try allocator.dupe(u8, key), value);
+            } else {
+                try self.items.put(oldKey.?, value);
+            }
         }
     }
-}
+
+    pub fn get(self: *const RecordValue, key: []const u8) ?*Value {
+        return self.items.get(key);
+    }
+
+    pub fn count(self: *const RecordValue) usize {
+        return self.items.count();
+    }
+
+    pub fn iterator(self: *const RecordValue) std.StringHashMap(*Value).Iterator {
+        return self.items.iterator();
+    }
+
+    pub fn keyIterator(self: *const RecordValue) std.StringHashMap(*Value).KeyIterator {
+        return self.items.keyIterator();
+    }
+};
 
 pub const FileValue = struct {
     isOpen: bool,

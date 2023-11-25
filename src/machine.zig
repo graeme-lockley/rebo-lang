@@ -63,7 +63,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                         if (evalExpr(machine, entry.value.value)) return true;
 
                         const value = machine.memoryState.pop();
-                        V.recordSet(machine.memoryState.allocator, &map.v.RecordKind, entry.value.key, value) catch |err| return errorHandler(err);
+                        map.v.RecordKind.set(machine.memoryState.allocator, entry.value.key, value) catch |err| return errorHandler(err);
                     },
                     .record => {
                         if (evalExpr(machine, entry.record)) return true;
@@ -76,7 +76,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
                         var iterator = value.v.RecordKind.iterator();
                         while (iterator.next()) |rv| {
-                            V.recordSet(machine.memoryState.allocator, &map.v.RecordKind, rv.key_ptr.*, rv.value_ptr.*) catch |err| return errorHandler(err);
+                            map.v.RecordKind.set(machine.memoryState.allocator, rv.key_ptr.*, rv.value_ptr.*) catch |err| return errorHandler(err);
                         }
                     },
                 }
@@ -147,7 +147,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             }
             if (evalExpr(machine, value)) return true;
 
-            V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, lhs.kind.dot.field, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+            record.v.RecordKind.set(machine.memoryState.allocator, lhs.kind.dot.field, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
 
             const v = machine.memoryState.pop();
             _ = machine.memoryState.pop();
@@ -202,7 +202,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
 
                 if (evalExpr(machine, value)) return true;
 
-                V.recordSet(machine.memoryState.allocator, &expr.v.RecordKind, index.v.StringKind, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+                expr.v.RecordKind.set(machine.memoryState.allocator, index.v.StringKind, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
             } else if (expr.v == V.ValueValue.SequenceKind) {
                 if (evalExpr(machine, indexA)) return true;
                 const index = machine.memoryState.peek(0);
@@ -1267,11 +1267,11 @@ fn addRebo(state: *MS.MemoryState) !void {
     var args = try std.process.argsAlloc(state.allocator);
     defer std.process.argsFree(state.allocator, args);
 
-    const value = try state.newValue(V.ValueValue{ .RecordKind = std.StringHashMap(*V.Value).init(state.allocator) });
+    const value = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
     try state.addToScope("rebo", value);
 
     const reboArgs = try state.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(state.allocator) });
-    try V.recordSet(state.allocator, &value.v.RecordKind, "args", reboArgs);
+    try value.v.RecordKind.set(state.allocator, "args", reboArgs);
 
     for (args) |arg| {
         try reboArgs.v.SequenceKind.append(try state.newStringValue(arg));
@@ -1279,12 +1279,12 @@ fn addRebo(state: *MS.MemoryState) !void {
 
     var env = try std.process.getEnvMap(state.allocator);
     defer env.deinit();
-    const reboEnv = try state.newValue(V.ValueValue{ .RecordKind = std.StringHashMap(*V.Value).init(state.allocator) });
-    try V.recordSet(state.allocator, &value.v.RecordKind, "env", reboEnv);
+    const reboEnv = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
+    try value.v.RecordKind.set(state.allocator, "env", reboEnv);
 
     var iterator = env.iterator();
     while (iterator.next()) |entry| {
-        try V.recordSet(state.allocator, &reboEnv.v.RecordKind, entry.key_ptr.*, try state.newStringValue(entry.value_ptr.*));
+        try value.v.RecordKind.set(state.allocator, entry.key_ptr.*, try state.newStringValue(entry.value_ptr.*));
     }
 }
 

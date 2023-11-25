@@ -58,8 +58,8 @@ pub fn eval(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expre
         try machine.memoryState.pushEmptyMapValue();
         const record = machine.memoryState.peek(0);
 
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newStringValue("EvalError"));
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "content", code.?);
+        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newStringValue("EvalError"));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "content", code.?);
 
         var err = machine.grabErr();
 
@@ -71,7 +71,7 @@ pub fn eval(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expre
 
             err.?.append(&buffer) catch {};
 
-            try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "message", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+            try record.v.RecordKind.set(machine.memoryState.allocator, "message", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
 
             err.?.deinit();
         }
@@ -107,10 +107,10 @@ pub fn gc(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Express
     try machine.memoryState.pushEmptyMapValue();
 
     const record = machine.memoryState.peek(0);
-    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "capacity", try machine.memoryState.newValue(V.ValueValue{ .IntKind = result.capacity }));
-    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "before", try machine.memoryState.newValue(V.ValueValue{ .IntKind = result.oldSize }));
-    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "after", try machine.memoryState.newValue(V.ValueValue{ .IntKind = result.newSize }));
-    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "duration", try machine.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(result.duration) }));
+    try record.v.RecordKind.set(machine.memoryState.allocator, "capacity", try machine.memoryState.newValue(V.ValueValue{ .IntKind = result.capacity }));
+    try record.v.RecordKind.set(machine.memoryState.allocator, "before", try machine.memoryState.newValue(V.ValueValue{ .IntKind = result.oldSize }));
+    try record.v.RecordKind.set(machine.memoryState.allocator, "after", try machine.memoryState.newValue(V.ValueValue{ .IntKind = result.newSize }));
+    try record.v.RecordKind.set(machine.memoryState.allocator, "duration", try machine.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(result.duration) }));
 }
 
 fn ffn(allocator: std.mem.Allocator, fromSourceName: ?[]const u8, fileName: []const u8) ![]u8 {
@@ -155,15 +155,15 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
         try machine.memoryState.pushEmptyMapValue();
 
         const record = machine.memoryState.peek(0);
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "FileError") }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "FileError") }));
 
         var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
         defer buffer.deinit();
 
         try std.fmt.format(buffer.writer(), "{}", .{err});
 
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, fileName) }));
 
         return;
     };
@@ -187,15 +187,15 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
         try machine.memoryState.pushEmptyMapValue();
 
         const record = machine.memoryState.peek(0);
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "FileError") }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "FileError") }));
 
         var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
         defer buffer.deinit();
 
         try std.fmt.format(buffer.writer(), "{}", .{err});
 
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
 
         return;
     };
@@ -210,18 +210,18 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
         try machine.memoryState.pushEmptyMapValue();
 
         const record = machine.memoryState.peek(0);
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "ExecuteError") }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "ExecuteError") }));
 
         var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
         defer buffer.deinit();
 
         try std.fmt.format(buffer.writer(), "{}", .{err});
 
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
         const __file = machine.memoryState.getFromScope("__FILE");
         if (__file != null) {
-            try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "__FILE", __file.?);
+            try record.v.RecordKind.set(machine.memoryState.allocator, "__FILE", __file.?);
         }
 
         var e = machine.grabErr();
@@ -242,18 +242,18 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
         try machine.memoryState.pushEmptyMapValue();
 
         const record = machine.memoryState.peek(0);
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "ExecuteError") }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "error", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, "ExecuteError") }));
 
         var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
         defer buffer.deinit();
 
         try std.fmt.format(buffer.writer(), "{}", .{err});
 
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try machine.memoryState.allocator.dupe(u8, name) }));
         const __file = machine.memoryState.getFromScope("__FILE");
         if (__file != null) {
-            try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "__FILE", __file.?);
+            try record.v.RecordKind.set(machine.memoryState.allocator, "__FILE", __file.?);
         }
 
         var e = machine.grabErr();
@@ -279,7 +279,7 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
         if (entryName.len > 0 and entryName[0] == '_') {
             continue;
         }
-        try V.recordSet(machine.memoryState.allocator, &result.v.RecordKind, entryName, entry.value_ptr.*);
+        try result.v.RecordKind.set(machine.memoryState.allocator, entryName, entry.value_ptr.*);
     }
 
     try machine.memoryState.imports.addImport(name, result, ast);
@@ -349,7 +349,7 @@ pub fn imports(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Ex
         // if you would like to see them then comment out the statement below.
         // const items: *V.Value = if (entry.value_ptr.*.items == null) try machine.memoryState.newValue(V.ValueValue{ .RecordKind = std.StringHashMap(*V.Value).init(machine.memoryState.allocator) }) else entry.value_ptr.*.items.?;
 
-        try V.recordSet(machine.memoryState.allocator, &result.v.RecordKind, entry.key_ptr.*, items);
+        try result.v.RecordKind.set(machine.memoryState.allocator, entry.key_ptr.*, items);
     }
 }
 
@@ -509,7 +509,7 @@ pub fn ls(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Express
         const record = try machine.memoryState.newMapValue();
         try result.v.SequenceKind.append(record);
 
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "name", try machine.memoryState.newStringValue(entry.name));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newStringValue(entry.name));
 
         const kind = switch (entry.kind) {
             std.fs.IterableDir.Entry.Kind.block_device => "block_device",
@@ -524,7 +524,7 @@ pub fn ls(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Express
             std.fs.IterableDir.Entry.Kind.unknown => "unknown",
             std.fs.IterableDir.Entry.Kind.whiteout => "whiteout",
         };
-        try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newStringValue(kind));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newStringValue(kind));
     }
 }
 
@@ -538,19 +538,19 @@ fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
     try machine.memoryState.pushEmptyMapValue();
 
     const record = machine.memoryState.peek(0);
-    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "error", try machine.memoryState.newStringValue("SystemError"));
-    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "operation", try machine.memoryState.newStringValue(operation));
+    try record.v.RecordKind.set(machine.memoryState.allocator, "error", try machine.memoryState.newStringValue("SystemError"));
+    try record.v.RecordKind.set(machine.memoryState.allocator, "operation", try machine.memoryState.newStringValue(operation));
 
     var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
     defer buffer.deinit();
 
     try std.fmt.format(buffer.writer(), "{}", .{err});
 
-    try V.recordSet(machine.memoryState.allocator, &record.v.RecordKind, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
+    try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newValue(V.ValueValue{ .StringKind = try buffer.toOwnedSlice() }));
 }
 
 fn booleanOption(options: *V.Value, name: []const u8, default: bool) bool {
-    const option = V.recordGet(&options.v.RecordKind, name);
+    const option = options.v.RecordKind.get(name);
 
     if (option == null or option.?.v != V.ValueKind.BoolKind) {
         return default;
