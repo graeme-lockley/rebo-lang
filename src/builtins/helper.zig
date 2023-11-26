@@ -1,0 +1,37 @@
+const std = @import("std");
+
+const AST = @import("./../ast.zig");
+const Errors = @import("./../errors.zig");
+const M = @import("./../machine.zig");
+const V = @import("./../value.zig");
+
+pub const Expression = AST.Expression;
+pub const Machine = M.Machine;
+pub const Value = V.Value;
+pub const ValueKind = V.ValueKind;
+pub const ValueValue = V.ValueValue;
+
+pub fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
+    try machine.memoryState.pushEmptyMapValue();
+
+    const record = machine.memoryState.peek(0);
+    try record.v.RecordKind.set(machine.memoryState.allocator, "error", try machine.memoryState.newStringValue("SystemError"));
+    try record.v.RecordKind.set(machine.memoryState.allocator, "operation", try machine.memoryState.newStringValue(operation));
+
+    var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+    defer buffer.deinit();
+
+    try std.fmt.format(buffer.writer(), "{}", .{err});
+
+    try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedStringValue(&buffer));
+}
+
+pub fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
+    machine.replaceErr(try Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), position, expected, v));
+    return Errors.err.InterpreterError;
+}
+
+pub fn reportPositionExpectedTypeError(machine: *Machine, position: usize, args: []*Expression, defaultPosition: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
+    const pos = if (args.len > position) args[position].position else defaultPosition;
+    try reportExpectedTypeError(machine, pos, expected, v);
+}

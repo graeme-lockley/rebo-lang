@@ -25,15 +25,13 @@ pub const Value = struct {
             .FunctionKind => self.v.FunctionKind.deinit(allocator),
             .SequenceKind => self.v.SequenceKind.deinit(),
             .StreamKind => self.v.StreamKind.deinit(),
-            .StringKind => allocator.free(self.v.StringKind),
+            .StringKind => StringValue.deinit(self.v.StringKind, allocator),
             .RecordKind => self.v.RecordKind.deinit(allocator),
             .ScopeKind => self.v.ScopeKind.deinit(allocator),
         }
     }
 
     pub fn appendValue(self: *const Value, buffer: *std.ArrayList(u8)) !void {
-        // std.debug.print("appending {}\n", .{self});
-
         switch (self.v) {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
             .BuiltinKind => {
@@ -434,6 +432,16 @@ pub const StreamValue = struct {
             self.stream.close();
             self.isOpen = false;
         }
+    }
+};
+
+pub const StringValue = struct {
+    pub fn init(allocator: std.mem.Allocator, value: []const u8) ![]u8 {
+        return try allocator.dupe(u8, value);
+    }
+
+    pub fn deinit(self: []u8, allocator: std.mem.Allocator) void {
+        allocator.free(self);
     }
 };
 

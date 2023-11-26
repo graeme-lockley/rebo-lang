@@ -855,25 +855,4 @@ test "typeof" {
     try Main.expectExprEqual("typeof()", "\"Unit\"");
 }
 
-pub fn write(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    const handle = machine.memoryState.getFromScope("handle") orelse machine.memoryState.unitValue;
-    const bytes = machine.memoryState.getFromScope("bytes") orelse machine.memoryState.unitValue;
-
-    if (handle.?.v != V.ValueKind.FileKind and handle.?.v != V.ValueKind.StreamKind) {
-        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{ V.ValueValue.FileKind, V.ValueValue.StreamKind }, handle.?.v);
-    }
-
-    if (bytes.?.v != V.ValueKind.StringKind) {
-        const position = if (argsAST.len > 1) argsAST[1].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.StringKind}, bytes.?.v);
-    }
-    var bytesWritten: usize = 0;
-
-    if (handle.?.v == V.ValueKind.FileKind) {
-        bytesWritten = handle.?.v.FileKind.file.write(bytes.?.v.StringKind) catch |err| return osError(machine, "write", err);
-    } else {
-        bytesWritten = handle.?.v.StreamKind.stream.write(bytes.?.v.StringKind) catch |err| return osError(machine, "read", err);
-    }
-    try machine.memoryState.pushIntValue(@intCast(bytesWritten));
-}
+pub const write = @import("./builtins/write.zig").write;
