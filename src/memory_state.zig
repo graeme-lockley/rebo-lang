@@ -78,11 +78,11 @@ pub const MemoryState = struct {
     }
 
     pub fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
-        return try self.newOwnedStringValue(try self.allocator.dupe(u8, v));
+        return try self.newValue(V.ValueValue{ .StringKind = try self.allocator.dupe(u8, v) });
     }
 
-    pub fn newOwnedStringValue(self: *MemoryState, v: []u8) !*V.Value {
-        return try self.newValue(V.ValueValue{ .StringKind = v });
+    pub fn newOwnedStringValue(self: *MemoryState, v: *std.ArrayList(u8)) !*V.Value {
+        return try self.newValue(V.ValueValue{ .StringKind = try v.toOwnedSlice() });
     }
 
     pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
