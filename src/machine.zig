@@ -90,7 +90,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 switch (v) {
                     .value => {
                         if (evalExpr(machine, v.value)) return true;
-                        seq.v.SequenceKind.append(machine.memoryState.pop()) catch |err| return errorHandler(err);
+                        seq.v.SequenceKind.appendItem(machine.memoryState.pop()) catch |err| return errorHandler(err);
                     },
                     .sequence => {
                         if (evalExpr(machine, v.sequence)) return true;
@@ -734,7 +734,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             const result = machine.memoryState.peek(0);
 
             result.v.SequenceKind.appendSlice(left.v.SequenceKind.items()) catch |err| return errorHandler(err);
-            result.v.SequenceKind.append(right) catch |err| return errorHandler(err);
+            result.v.SequenceKind.appendItem(right) catch |err| return errorHandler(err);
 
             machine.memoryState.popn(3);
             machine.memoryState.push(result) catch |err| return errorHandler(err);
@@ -750,7 +750,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                 return true;
             }
 
-            left.v.SequenceKind.append(right) catch |err| return errorHandler(err);
+            left.v.SequenceKind.appendItem(right) catch |err| return errorHandler(err);
 
             machine.memoryState.popn(1);
         },
@@ -768,7 +768,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
             const result = machine.memoryState.peek(0);
 
-            result.v.SequenceKind.append(left) catch |err| return errorHandler(err);
+            result.v.SequenceKind.appendItem(left) catch |err| return errorHandler(err);
             result.v.SequenceKind.appendSlice(right.v.SequenceKind.items()) catch |err| return errorHandler(err);
 
             machine.memoryState.popn(3);
@@ -785,7 +785,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                 return true;
             }
 
-            right.v.SequenceKind.prepend(left) catch |err| return errorHandler(err);
+            right.v.SequenceKind.prependItem(left) catch |err| return errorHandler(err);
 
             machine.memoryState.popn(2);
             machine.memoryState.push(right) catch |err| return errorHandler(err);
@@ -1275,7 +1275,7 @@ fn addRebo(state: *MS.MemoryState) !void {
     try value.v.RecordKind.set(state.allocator, "args", reboArgs);
 
     for (args) |arg| {
-        try reboArgs.v.SequenceKind.append(try state.newStringValue(arg));
+        try reboArgs.v.SequenceKind.appendItem(try state.newStringValue(arg));
     }
 
     var env = try std.process.getEnvMap(state.allocator);

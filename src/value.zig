@@ -22,20 +22,8 @@ pub const Value = struct {
         switch (self.v) {
             .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .VoidKind => {},
             .FileKind => self.v.FileKind.deinit(),
-            .FunctionKind => {
-                for (self.v.FunctionKind.arguments) |argument| {
-                    allocator.free(argument.name);
-                }
-                if (self.v.FunctionKind.restOfArguments != null) {
-                    allocator.free(self.v.FunctionKind.restOfArguments.?);
-                }
-                allocator.free(self.v.FunctionKind.arguments);
-
-                // This is a problem - an AST is part of a value and therefore needs to be under control of the garbage collector.
-                // At the moment, this is not possible as the AST is managed as general memory.
-                // AST.destroy(allocator, self.v.FunctionKind.body);
-            },
-            .SequenceKind => self.v.SequenceKind.destroy(),
+            .FunctionKind => self.v.FunctionKind.deinit(allocator),
+            .SequenceKind => self.v.SequenceKind.deinit(),
             .StreamKind => self.v.StreamKind.deinit(),
             .StringKind => allocator.free(self.v.StringKind),
             .RecordKind => {
@@ -354,6 +342,20 @@ pub const FunctionValue = struct {
     arguments: []FunctionArgument,
     restOfArguments: ?[]u8,
     body: *AST.Expression,
+
+    pub fn deinit(self: *FunctionValue, allocator: std.mem.Allocator) void {
+        for (self.arguments) |argument| {
+            allocator.free(argument.name);
+        }
+        if (self.restOfArguments != null) {
+            allocator.free(self.restOfArguments.?);
+        }
+        allocator.free(self.arguments);
+
+        // This is a problem - an AST is part of a value and therefore needs to be under control of the garbage collector.
+        // At the moment, this is not possible as the AST is managed as general memory.
+        // AST.destroy(allocator, self.v.FunctionKind.body);
+    }
 };
 
 pub const FunctionArgument = struct {
@@ -372,15 +374,15 @@ pub const SequenceValue = struct {
         return result;
     }
 
-    pub fn destroy(self: *SequenceValue) void {
+    pub fn deinit(self: *SequenceValue) void {
         self.values.deinit();
     }
 
-    pub fn append(self: *SequenceValue, value: *Value) !void {
+    pub fn appendItem(self: *SequenceValue, value: *Value) !void {
         try self.values.append(value);
     }
 
-    pub fn prepend(self: *SequenceValue, value: *Value) !void {
+    pub fn prependItem(self: *SequenceValue, value: *Value) !void {
         try self.values.insert(0, value);
     }
 

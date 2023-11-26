@@ -507,7 +507,7 @@ pub fn ls(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Express
         }
 
         const record = try machine.memoryState.newMapValue();
-        try result.v.SequenceKind.append(record);
+        try result.v.SequenceKind.appendItem(record);
 
         try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newStringValue(entry.name));
 
