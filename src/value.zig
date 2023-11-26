@@ -26,20 +26,8 @@ pub const Value = struct {
             .SequenceKind => self.v.SequenceKind.deinit(),
             .StreamKind => self.v.StreamKind.deinit(),
             .StringKind => allocator.free(self.v.StringKind),
-            .RecordKind => {
-                var iterator = self.v.RecordKind.keyIterator();
-                while (iterator.next()) |keyPtr| {
-                    allocator.free(keyPtr.*);
-                }
-                self.v.RecordKind.deinit();
-            },
-            .ScopeKind => {
-                var iterator = self.v.ScopeKind.values.keyIterator();
-                while (iterator.next()) |keyPtr| {
-                    allocator.free(keyPtr.*);
-                }
-                self.v.ScopeKind.values.deinit();
-            },
+            .RecordKind => self.v.RecordKind.deinit(allocator),
+            .ScopeKind => self.v.ScopeKind.deinit(allocator),
         }
     }
 
@@ -275,7 +263,11 @@ pub const RecordValue = struct {
         return RecordValue{ .items = std.StringHashMap(*Value).init(allocator) };
     }
 
-    pub fn deinit(self: *RecordValue) void {
+    pub fn deinit(self: *RecordValue, allocator: std.mem.Allocator) void {
+        var itrtr = self.keyIterator();
+        while (itrtr.next()) |keyPtr| {
+            allocator.free(keyPtr.*);
+        }
         self.items.deinit();
     }
 
@@ -448,6 +440,15 @@ pub const StreamValue = struct {
 pub const ScopeValue = struct {
     parent: ?*Value,
     values: std.StringHashMap(*Value),
+
+    pub fn deinit(self: *ScopeValue, allocator: std.mem.Allocator) void {
+        var iterator = self.values.keyIterator();
+        while (iterator.next()) |keyPtr| {
+            allocator.free(keyPtr.*);
+        }
+
+        self.values.deinit();
+    }
 };
 
 pub fn eq(a: *Value, b: *Value) bool {
