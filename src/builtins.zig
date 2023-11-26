@@ -13,20 +13,6 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
     return Errors.err.InterpreterError;
 }
 
-pub fn close(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    const handle = machine.memoryState.getFromScope("handle") orelse machine.memoryState.unitValue;
-
-    if (handle.?.v == V.ValueKind.FileKind) {
-        handle.?.v.FileKind.close();
-    } else if (handle.?.v == V.ValueKind.StreamKind) {
-        handle.?.v.StreamKind.close();
-    } else {
-        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.FileKind}, handle.?.v);
-    }
-    try machine.memoryState.pushUnitValue();
-}
-
 pub fn cwd(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;
@@ -855,4 +841,5 @@ test "typeof" {
     try Main.expectExprEqual("typeof()", "\"Unit\"");
 }
 
+pub const close = @import("./builtins/close.zig").close;
 pub const write = @import("./builtins/write.zig").write;
