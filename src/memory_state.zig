@@ -61,8 +61,12 @@ pub const MemoryState = struct {
         _ = try self.pushValue(V.ValueValue{ .FloatKind = v });
     }
 
+    pub fn newIntValue(self: *MemoryState, v: V.IntType) !*V.Value {
+        return try self.newValue(V.ValueValue{ .IntKind = v });
+    }
+
     pub fn pushIntValue(self: *MemoryState, v: V.IntType) !void {
-        _ = try self.pushValue(V.ValueValue{ .IntKind = v });
+        _ = try self.push(try self.newIntValue(v));
     }
 
     pub fn pushEmptySequenceValue(self: *MemoryState) !void {
@@ -74,7 +78,11 @@ pub const MemoryState = struct {
     }
 
     pub fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
-        return try self.newValue(V.ValueValue{ .StringKind = try self.allocator.dupe(u8, v) });
+        return try self.newOwnedStringValue(try self.allocator.dupe(u8, v));
+    }
+
+    pub fn newOwnedStringValue(self: *MemoryState, v: []u8) !*V.Value {
+        return try self.newValue(V.ValueValue{ .StringKind = v });
     }
 
     pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
