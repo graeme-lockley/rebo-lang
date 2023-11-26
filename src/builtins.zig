@@ -114,10 +114,6 @@ pub fn gc(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Express
 }
 
 fn ffn(allocator: std.mem.Allocator, fromSourceName: ?[]const u8, fileName: []const u8) ![]u8 {
-    if (std.fs.path.isAbsolute(fileName)) {
-        return try allocator.dupe(u8, fileName);
-    }
-
     if (fromSourceName == null) {
         var buffer = std.ArrayList(u8).init(allocator);
         defer buffer.deinit();
@@ -770,7 +766,6 @@ pub fn read(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expre
         } else {
             bytesRead = handle.?.v.StreamKind.stream.read(buffer) catch |err| return osError(machine, "read", err);
         }
-        // bytesRead = handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
 
         try machine.memoryState.push(try machine.memoryState.newStringValue(buffer[0..bytesRead]));
     } else if (bytes.?.v == V.ValueKind.VoidKind) {
@@ -784,7 +779,6 @@ pub fn read(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expre
         } else {
             bytesRead = handle.?.v.StreamKind.stream.read(buffer) catch |err| return osError(machine, "read", err);
         }
-        // bytesRead= handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
 
         try machine.memoryState.push(try machine.memoryState.newStringValue(buffer[0..bytesRead]));
     } else {
