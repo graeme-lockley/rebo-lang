@@ -249,7 +249,7 @@ pub fn importFile(machine: *Machine, fileName: []const u8) !void {
 
         try std.fmt.format(buffer.writer(), "{}", .{err});
 
-        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedValue(try buffer.toOwnedSlice()));
+        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
         try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newStringValue(name));
         const __file = machine.memoryState.getFromScope("__FILE");
         if (__file != null) {
