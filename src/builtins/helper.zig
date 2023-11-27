@@ -35,3 +35,17 @@ pub fn reportPositionExpectedTypeError(machine: *Machine, position: usize, args:
     const pos = if (args.len > position) args[position].position else defaultPosition;
     try reportExpectedTypeError(machine, pos, expected, v);
 }
+
+pub fn getArgument(machine: *Machine, calleeAST: *Expression, argsAST: []*Expression, name: []const u8, position: usize, expected: []const ValueKind) !*Value {
+    const value = machine.memoryState.getFromScope(name) orelse machine.memoryState.unitValue.?;
+
+    for (expected) |expctd| {
+        if (value.v == expctd) {
+            return value;
+        }
+    }
+
+    try reportPositionExpectedTypeError(machine, position, argsAST, calleeAST.position, expected, value.v);
+
+    return machine.memoryState.unitValue.?;
+}

@@ -2,15 +2,11 @@ const std = @import("std");
 const Helper = @import("./helper.zig");
 
 pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
-    const code = machine.memoryState.getFromScope("code") orelse machine.memoryState.unitValue;
-
-    if (code.?.v != Helper.ValueKind.StringKind) {
-        try Helper.reportPositionExpectedTypeError(machine, 0, argsAST, calleeAST.position, &[_]Helper.ValueKind{Helper.ValueValue.StringKind}, code.?.v);
-    }
+    const code = try Helper.getArgument(machine, calleeAST, argsAST, "code", 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
 
     const stackSize = machine.memoryState.stack.items.len;
 
-    machine.execute("eval", code.?.v.StringKind) catch |e| {
+    machine.execute("eval", code.v.StringKind) catch |e| {
         while (machine.memoryState.stack.items.len > stackSize) {
             _ = machine.memoryState.pop();
         }
@@ -19,7 +15,7 @@ pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []
         const record = machine.memoryState.peek(0);
 
         try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newStringValue("EvalError"));
-        try record.v.RecordKind.set(machine.memoryState.allocator, "content", code.?);
+        try record.v.RecordKind.set(machine.memoryState.allocator, "content", code);
 
         var err = machine.grabErr();
 
