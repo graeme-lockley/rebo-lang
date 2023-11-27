@@ -13,52 +13,6 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
     return Errors.err.InterpreterError;
 }
 
-pub fn eval(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    const code = machine.memoryState.getFromScope("code") orelse machine.memoryState.unitValue;
-
-    if (code.?.v != V.ValueKind.StringKind) {
-        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.StringKind}, code.?.v);
-    }
-
-    const stackSize = machine.memoryState.stack.items.len;
-
-    machine.execute("eval", code.?.v.StringKind) catch |e| {
-        while (machine.memoryState.stack.items.len > stackSize) {
-            _ = machine.memoryState.pop();
-        }
-
-        try machine.memoryState.pushEmptyMapValue();
-        const record = machine.memoryState.peek(0);
-
-        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newStringValue("EvalError"));
-        try record.v.RecordKind.set(machine.memoryState.allocator, "content", code.?);
-
-        var err = machine.grabErr();
-
-        if (err == null) {
-            std.debug.print("Error: {}\n", .{e});
-        } else {
-            var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
-            defer buffer.deinit();
-
-            err.?.append(&buffer) catch {};
-
-            try record.v.RecordKind.set(machine.memoryState.allocator, "message", try machine.memoryState.newOwnedStringValue(&buffer));
-
-            err.?.deinit();
-        }
-    };
-}
-
-test "eval" {
-    try Main.expectExprEqual("eval(\"\")", "()");
-
-    try Main.expectExprEqual("eval(\"1\")", "1");
-    try Main.expectExprEqual("eval(\"let x = 10; x + 1\")", "11");
-    try Main.expectExprEqual("eval(\"let add(a, b) a + b; add\")(1, 2)", "3");
-}
-
 pub fn exit(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;
@@ -830,4 +784,5 @@ test "typeof" {
 
 pub const cwd = @import("./builtins/cwd.zig").cwd;
 pub const close = @import("./builtins/close.zig").close;
+pub const eval = @import("./builtins/eval.zig").eval;
 pub const write = @import("./builtins/write.zig").write;
