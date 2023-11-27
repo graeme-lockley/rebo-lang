@@ -13,19 +13,6 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
     return Errors.err.InterpreterError;
 }
 
-pub fn cwd(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    _ = argsAST;
-    _ = calleeAST;
-    var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
-
-    const c = std.os.getcwd(&buf) catch {
-        try machine.memoryState.pushStringValue("./");
-        return;
-    };
-
-    try machine.memoryState.pushStringValue(c);
-}
-
 pub fn eval(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     const code = machine.memoryState.getFromScope("code") orelse machine.memoryState.unitValue;
 
@@ -841,5 +828,6 @@ test "typeof" {
     try Main.expectExprEqual("typeof()", "\"Unit\"");
 }
 
+pub const cwd = @import("./builtins/cwd.zig").cwd;
 pub const close = @import("./builtins/close.zig").close;
 pub const write = @import("./builtins/write.zig").write;
