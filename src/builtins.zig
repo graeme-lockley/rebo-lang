@@ -13,19 +13,6 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
     return Errors.err.InterpreterError;
 }
 
-pub fn exit(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    _ = argsAST;
-    _ = calleeAST;
-    const v = machine.memoryState.getFromScope("v") orelse machine.memoryState.unitValue;
-
-    if (v.?.v == V.ValueKind.IntKind) {
-        std.os.exit(@intCast(v.?.v.IntKind));
-    } else {
-        std.os.exit(0);
-    }
-    return;
-}
-
 pub fn gc(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;
@@ -784,5 +771,6 @@ test "typeof" {
 
 pub const cwd = @import("./builtins/cwd.zig").cwd;
 pub const close = @import("./builtins/close.zig").close;
+pub const exit = @import("./builtins/exit.zig").exit;
 pub const eval = @import("./builtins/eval.zig").eval;
 pub const write = @import("./builtins/write.zig").write;
