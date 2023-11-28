@@ -23,44 +23,6 @@ pub fn loadBinary(allocator: std.mem.Allocator, fileName: []const u8) ![]u8 {
     return buffer;
 }
 
-pub fn int(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    _ = calleeAST;
-    const v = machine.memoryState.getFromScope("value") orelse machine.memoryState.unitValue;
-    const d = machine.memoryState.getFromScope("default") orelse machine.memoryState.unitValue;
-    const b = machine.memoryState.getFromScope("base") orelse machine.memoryState.unitValue;
-
-    if (b != machine.memoryState.unitValue and b.?.v != V.ValueKind.IntKind) {
-        try reportExpectedTypeError(machine, argsAST[2].position, &[_]V.ValueKind{V.ValueValue.IntKind}, b.?.v);
-    }
-
-    if (v.?.v == V.ValueKind.StringKind) {
-        const literalInt = std.fmt.parseInt(i32, v.?.v.StringKind, @intCast(if (b == machine.memoryState.unitValue) 10 else b.?.v.IntKind)) catch {
-            try machine.memoryState.push(d.?);
-            return;
-        };
-        try machine.memoryState.pushIntValue(literalInt);
-    } else if (v.?.v == V.ValueKind.CharKind) {
-        try machine.memoryState.pushIntValue(@intCast(v.?.v.CharKind));
-    } else {
-        try reportExpectedTypeError(machine, argsAST[0].position, &[_]V.ValueKind{V.ValueValue.StringKind}, v.?.v);
-    }
-    return;
-}
-
-test "int" {
-    try Main.expectExprEqual("int(\"\")", "()");
-    try Main.expectExprEqual("int(\"123\")", "123");
-    try Main.expectExprEqual("int(\"123\", 0, 8)", "83");
-
-    try Main.expectExprEqual("int(\"xxx\", 0, 8)", "0");
-
-    try Main.expectExprEqual("int('1')", "49");
-    try Main.expectExprEqual("int('\\n')", "10");
-    try Main.expectExprEqual("int('\\\\')", "92");
-    try Main.expectExprEqual("int('\\'')", "39");
-    try Main.expectExprEqual("int('\\x13')", "13");
-}
-
 pub fn listen(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     const host = machine.memoryState.getFromScope("host") orelse machine.memoryState.unitValue;
     const port = machine.memoryState.getFromScope("port") orelse machine.memoryState.unitValue;
@@ -526,4 +488,5 @@ pub const eval = @import("./builtins/eval.zig").eval;
 pub const gc = @import("./builtins/gc.zig").gc;
 pub const import = @import("./builtins/import.zig").import;
 pub const imports = @import("./builtins/imports.zig").imports;
+pub const int = @import("./builtins/int.zig").int;
 pub const write = @import("./builtins/write.zig").write;
