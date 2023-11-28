@@ -4,6 +4,8 @@ const Errors = @import("./errors.zig");
 const Machine = @import("./machine.zig");
 const V = @import("./value.zig");
 
+const importFile = @import("./builtins/import.zig").importFile;
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -50,7 +52,7 @@ pub fn main() !void {
         var machine = try Machine.Machine.init(allocator);
         defer machine.deinit();
 
-        try Builtins.importFile(&machine, args[1]);
+        try importFile(&machine, args[1]);
 
         const executeTime = std.time.milliTimestamp();
         // try printResult(allocator, machine.topOfStack());
