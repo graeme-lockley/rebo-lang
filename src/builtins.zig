@@ -13,20 +13,6 @@ fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expecte
     return Errors.err.InterpreterError;
 }
 
-pub fn gc(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    _ = argsAST;
-    _ = calleeAST;
-    const result = MS.force_gc(&machine.memoryState);
-
-    try machine.memoryState.pushEmptyMapValue();
-
-    const record = machine.memoryState.peek(0);
-    try record.v.RecordKind.set(machine.memoryState.allocator, "capacity", try machine.memoryState.newIntValue(result.capacity));
-    try record.v.RecordKind.set(machine.memoryState.allocator, "before", try machine.memoryState.newIntValue(result.oldSize));
-    try record.v.RecordKind.set(machine.memoryState.allocator, "after", try machine.memoryState.newIntValue(result.newSize));
-    try record.v.RecordKind.set(machine.memoryState.allocator, "duration", try machine.memoryState.newIntValue(@intCast(result.duration)));
-}
-
 fn ffn(allocator: std.mem.Allocator, fromSourceName: ?[]const u8, fileName: []const u8) ![]u8 {
     if (fromSourceName == null) {
         var buffer = std.ArrayList(u8).init(allocator);
@@ -773,4 +759,5 @@ pub const cwd = @import("./builtins/cwd.zig").cwd;
 pub const close = @import("./builtins/close.zig").close;
 pub const exit = @import("./builtins/exit.zig").exit;
 pub const eval = @import("./builtins/eval.zig").eval;
+pub const gc = @import("./builtins/gc.zig").gc;
 pub const write = @import("./builtins/write.zig").write;
