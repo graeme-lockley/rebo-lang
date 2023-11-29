@@ -23,67 +23,6 @@ pub fn loadBinary(allocator: std.mem.Allocator, fileName: []const u8) ![]u8 {
     return buffer;
 }
 
-pub fn listen(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    const host = machine.memoryState.getFromScope("host") orelse machine.memoryState.unitValue;
-    const port = machine.memoryState.getFromScope("port") orelse machine.memoryState.unitValue;
-    const cb = machine.memoryState.getFromScope("cb") orelse machine.memoryState.unitValue;
-
-    if (host.?.v != V.ValueKind.StringKind) {
-        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.StringKind}, host.?.v);
-    }
-    if (port.?.v != V.ValueKind.IntKind) {
-        const position = if (argsAST.len > 1) argsAST[1].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.IntKind}, port.?.v);
-    }
-    if (cb.?.v != V.ValueKind.FunctionKind) {
-        const position = if (argsAST.len > 2) argsAST[2].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.FunctionKind}, cb.?.v);
-    }
-
-    var server = std.net.StreamServer.init(.{});
-    server.reuse_address = true;
-    defer server.deinit();
-
-    server.listen(std.net.Address.parseIp(host.?.v.StringKind, @intCast(port.?.v.IntKind)) catch |err| return osError(machine, "listen", err)) catch |err| {
-        osError(machine, "listen", err) catch {};
-        return;
-    };
-
-    while (true) {
-        var conn = server.accept() catch |err| {
-            osError(machine, "accept", err) catch {};
-            return;
-        };
-        const stream = conn.stream;
-
-        machine.memoryState.openScopeFrom(cb.?.v.FunctionKind.scope) catch |err| {
-            osError(machine, "openScope", err) catch {};
-            return;
-        };
-
-        errdefer machine.memoryState.restoreScope();
-
-        if (cb.?.v.FunctionKind.arguments.len > 0) {
-            try machine.memoryState.addToScope(cb.?.v.FunctionKind.arguments[0].name, try machine.memoryState.newStreamValue(stream));
-        }
-        var lp: u8 = 1;
-        while (lp < cb.?.v.FunctionKind.arguments.len) {
-            machine.memoryState.addToScope(cb.?.v.FunctionKind.arguments[lp].name, machine.memoryState.unitValue.?) catch |err| return osError(machine, "addToScope", err);
-            lp += 1;
-        }
-
-        if (M.evalExpr(machine, cb.?.v.FunctionKind.body)) {
-            std.debug.print("leaving...\n", .{});
-            machine.memoryState.restoreScope();
-            return;
-        } else {
-            _ = machine.pop();
-            machine.memoryState.restoreScope();
-        }
-    }
-}
-
 pub fn len(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     const v = machine.memoryState.getFromScope("v") orelse machine.memoryState.unitValue;
 
@@ -452,5 +391,6 @@ pub const gc = @import("./builtins/gc.zig").gc;
 pub const import = @import("./builtins/import.zig").import;
 pub const imports = @import("./builtins/imports.zig").imports;
 pub const int = @import("./builtins/int.zig").int;
+pub const listen = @import("./builtins/listen.zig").listen;
 pub const typeof = @import("./builtins/typeof.zig").typeof;
 pub const write = @import("./builtins/write.zig").write;

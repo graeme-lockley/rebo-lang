@@ -5,6 +5,7 @@ const Errors = @import("./../errors.zig");
 const M = @import("./../machine.zig");
 const V = @import("./../value.zig");
 
+pub const evalExpr = M.evalExpr;
 pub const Expression = AST.Expression;
 pub const Machine = M.Machine;
 pub const MemoryState = @import("./../memory_state.zig");
@@ -25,6 +26,10 @@ pub fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
     try std.fmt.format(buffer.writer(), "{}", .{err});
 
     try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedStringValue(&buffer));
+}
+
+pub fn silentOsError(machine: *Machine, operation: []const u8, err: anyerror) void {
+    osError(machine, operation, err) catch {};
 }
 
 pub fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
