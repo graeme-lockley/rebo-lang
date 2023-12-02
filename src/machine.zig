@@ -399,6 +399,20 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                     }
                 },
+                V.ValueValue.StringKind => {
+                    if (right.v == V.ValueValue.IntKind) {
+                        const mem = machine.memoryState.allocator.alloc(u8, left.v.StringKind.len * @as(usize, @intCast(right.v.IntKind))) catch |err| return errorHandler(err);
+
+                        for (0..@intCast(right.v.IntKind)) |index| {
+                            std.mem.copyForwards(u8, mem[index * left.v.StringKind.len ..], left.v.StringKind);
+                        }
+
+                        machine.memoryState.pushOwnedStringValue(mem) catch |err| return errorHandler(err);
+                    } else {
+                        machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src(), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                        return true;
+                    }
+                },
                 else => {
                     machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src(), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
                     return true;

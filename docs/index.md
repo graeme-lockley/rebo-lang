@@ -159,6 +159,22 @@ Like character, there are 4 special characters that can be used in a string lite
 "Hello"
 ```
 
+The `*` operator is used to repeat a string value.
+
+```rebo-repl
+> "" * 5
+""
+
+> "Hello " * 3
+"Hello Hello Hello "
+
+> len("x" * 100)
+100
+
+> len("x" * 0)
+0
+```
+
 ## Functions
 
 A function value is a piece of code that can be executed.  It is written as `fn(args) = expr` where `args` is a comma separated list of arguments each with an optional default value and `expr` is an expression.  The `=` character used in the definition of a function is optional.  Idiomatically it is used when the function body is a single expression.
