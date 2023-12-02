@@ -23,12 +23,6 @@ pub fn loadBinary(allocator: std.mem.Allocator, fileName: []const u8) ![]u8 {
     return buffer;
 }
 
-pub fn milliTimestamp(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    _ = argsAST;
-    _ = calleeAST;
-    try machine.memoryState.pushIntValue(@intCast(std.time.milliTimestamp()));
-}
-
 fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
     try machine.memoryState.pushEmptyMapValue();
 
@@ -256,6 +250,7 @@ pub const int = @import("./builtins/int.zig").int;
 pub const listen = @import("./builtins/listen.zig").listen;
 pub const len = @import("./builtins/len.zig").len;
 pub const ls = @import("./builtins/ls.zig").ls;
+pub const milliTimestamp = @import("./builtins/milliTimestamp.zig").milliTimestamp;
 pub const read = @import("./builtins/read.zig").read;
 pub const socket = @import("./builtins/socket.zig").socket;
 pub const str = @import("./builtins/str.zig").str;
