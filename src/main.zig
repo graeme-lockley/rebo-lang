@@ -62,7 +62,7 @@ pub fn main() !void {
 
 fn printResult(allocator: std.mem.Allocator, v: ?*V.Value) !void {
     if (v != null) {
-        const result = try v.?.toString(allocator);
+        const result = try v.?.toString(allocator, V.Style.Pretty);
         std.debug.print("Result: {s}\n", .{result});
         allocator.free(result);
     }
@@ -126,7 +126,7 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
             return error.TestingError;
         }
 
-        const result = try v.?.toString(allocator);
+        const result = try v.?.toString(allocator, V.Style.Pretty);
         defer allocator.free(result);
 
         if (!std.mem.eql(u8, result, expected)) {
@@ -145,7 +145,7 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         return error.TestingError;
     }
 
-    try nike(input);
+    // try nike(input);
 }
 
 fn expectError(input: []const u8) !void {
@@ -161,7 +161,7 @@ fn expectError(input: []const u8) !void {
         if (result != error.InterpreterError) {
             const v = machine.topOfStack();
 
-            const str = try v.?.toString(allocator);
+            const str = try v.?.toString(allocator, V.Style.Pretty);
             defer allocator.free(str);
 
             std.log.err("Expected error: got: '{s}'\n", .{str});

@@ -139,7 +139,7 @@ There is so much to do.  The following is my work list on this project.  I will 
     - [X] args
     - [ ] exe
     - [X] env
-- [ ] string with two forms - one raw and the other literal.  The default is literal.
+- [X] str with two forms - one raw and the other literal.  The default is literal.
 - [X] typeof
 
 # Library

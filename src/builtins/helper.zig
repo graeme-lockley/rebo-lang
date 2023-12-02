@@ -9,6 +9,7 @@ pub const evalExpr = M.evalExpr;
 pub const Expression = AST.Expression;
 pub const Machine = M.Machine;
 pub const MemoryState = @import("./../memory_state.zig");
+pub const Style = V.Style;
 pub const Value = V.Value;
 pub const ValueKind = V.ValueKind;
 pub const ValueValue = V.ValueValue;

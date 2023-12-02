@@ -12,6 +12,11 @@ pub const Colour = enum(u2) {
     White = 1,
 };
 
+pub const Style = enum(u2) {
+    Pretty = 0,
+    Raw = 1,
+};
+
 pub const Value = struct {
     colour: Colour,
     next: ?*Value,
@@ -31,7 +36,7 @@ pub const Value = struct {
         }
     }
 
-    pub fn appendValue(self: *const Value, buffer: *std.ArrayList(u8)) !void {
+    pub fn appendValue(self: *const Value, buffer: *std.ArrayList(u8), style: Style) !void {
         switch (self.v) {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
             .BuiltinKind => {
@@ -45,7 +50,7 @@ pub const Value = struct {
                     try buffer.appendSlice(argument.name);
                     if (argument.default != null) {
                         try buffer.appendSlice(" = ");
-                        try argument.default.?.appendValue(buffer);
+                        try argument.default.?.appendValue(buffer, style);
                     }
 
                     i += 1;
@@ -61,16 +66,19 @@ pub const Value = struct {
                 try buffer.append(')');
             },
             .CharKind => {
-                if (self.v.CharKind == 10) {
-                    try buffer.appendSlice("'\\n'");
-                } else if (self.v.CharKind == 39) {
-                    try buffer.appendSlice("'\\''");
-                } else if (self.v.CharKind == 92) {
-                    try buffer.appendSlice("'\\\\'");
-                } else if (self.v.CharKind < 32) {
-                    try std.fmt.format(buffer.writer(), "'\\x{d}'", .{self.v.CharKind});
-                } else {
-                    try std.fmt.format(buffer.writer(), "'{c}'", .{self.v.CharKind});
+                switch (style) {
+                    Style.Pretty => if (self.v.CharKind == 10) {
+                        try buffer.appendSlice("'\\n'");
+                    } else if (self.v.CharKind == 39) {
+                        try buffer.appendSlice("'\\''");
+                    } else if (self.v.CharKind == 92) {
+                        try buffer.appendSlice("'\\\\'");
+                    } else if (self.v.CharKind < 32) {
+                        try std.fmt.format(buffer.writer(), "'\\x{d}'", .{self.v.CharKind});
+                    } else {
+                        try std.fmt.format(buffer.writer(), "'{c}'", .{self.v.CharKind});
+                    },
+                    Style.Raw => try buffer.append(self.v.CharKind),
                 }
             },
             .FileKind => try std.fmt.format(buffer.writer(), "<file: {d} {s}>", .{ self.v.FileKind.file.handle, if (self.v.FileKind.isOpen) "open" else "closed" }),
@@ -86,7 +94,7 @@ pub const Value = struct {
                     try buffer.appendSlice(argument.name);
                     if (argument.default != null) {
                         try buffer.appendSlice(" = ");
-                        try argument.default.?.appendValue(buffer);
+                        try argument.default.?.appendValue(buffer, style);
                     }
 
                     i += 1;
@@ -116,7 +124,7 @@ pub const Value = struct {
 
                     try buffer.appendSlice(entry.key_ptr.*);
                     try buffer.appendSlice(": ");
-                    try entry.value_ptr.*.appendValue(buffer);
+                    try entry.value_ptr.*.appendValue(buffer, style);
                 }
                 try buffer.append('}');
             },
@@ -144,7 +152,7 @@ pub const Value = struct {
                         }
                         try buffer.appendSlice(entry.key_ptr.*);
                         try buffer.appendSlice(": ");
-                        try entry.value_ptr.*.appendValue(buffer);
+                        try entry.value_ptr.*.appendValue(buffer, style);
                     }
                     try buffer.append('}');
 
@@ -157,42 +165,54 @@ pub const Value = struct {
                 try buffer.append('>');
             },
             .SequenceKind => {
-                try buffer.append('[');
-                for (self.v.SequenceKind.items(), 0..) |v, i| {
-                    if (i != 0) {
-                        try buffer.appendSlice(", ");
-                    }
+                switch (style) {
+                    Style.Pretty => {
+                        try buffer.append('[');
+                        for (self.v.SequenceKind.items(), 0..) |v, i| {
+                            if (i != 0) {
+                                try buffer.appendSlice(", ");
+                            }
 
-                    try v.appendValue(buffer);
+                            try v.appendValue(buffer, style);
+                        }
+                        try buffer.append(']');
+                    },
+                    Style.Raw => for (self.v.SequenceKind.items()) |v| {
+                        try v.appendValue(buffer, style);
+                    },
                 }
-                try buffer.append(']');
             },
             .StringKind => {
-                try buffer.append('"');
-                for (self.v.StringKind) |c| {
-                    if (c == 10) {
-                        try buffer.appendSlice("\\n");
-                    } else if (c == 34) {
-                        try buffer.appendSlice("\\\"");
-                    } else if (c == 92) {
-                        try buffer.appendSlice("\\\\");
-                    } else if (c < 32) {
-                        try std.fmt.format(buffer.writer(), "\\x{d};", .{c});
-                    } else {
-                        try buffer.append(c);
-                    }
+                switch (style) {
+                    Style.Pretty => {
+                        try buffer.append('"');
+                        for (self.v.StringKind) |c| {
+                            if (c == 10) {
+                                try buffer.appendSlice("\\n");
+                            } else if (c == 34) {
+                                try buffer.appendSlice("\\\"");
+                            } else if (c == 92) {
+                                try buffer.appendSlice("\\\\");
+                            } else if (c < 32) {
+                                try std.fmt.format(buffer.writer(), "\\x{d};", .{c});
+                            } else {
+                                try buffer.append(c);
+                            }
+                        }
+                        try buffer.append('"');
+                    },
+                    Style.Raw => try buffer.appendSlice(self.v.StringKind),
                 }
-                try buffer.append('"');
             },
             .VoidKind => try buffer.appendSlice("()"),
         }
     }
 
-    pub fn toString(self: *Value, allocator: std.mem.Allocator) ![]u8 {
+    pub fn toString(self: *Value, allocator: std.mem.Allocator, style: Style) ![]u8 {
         var buffer = std.ArrayList(u8).init(allocator);
         defer buffer.deinit();
 
-        try self.appendValue(&buffer);
+        try self.appendValue(&buffer, style);
 
         return buffer.toOwnedSlice();
     }
