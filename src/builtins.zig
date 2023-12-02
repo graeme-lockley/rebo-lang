@@ -286,47 +286,6 @@ pub fn println(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Ex
     try machine.memoryState.pushUnitValue();
 }
 
-pub fn read(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    const handle = machine.memoryState.getFromScope("handle") orelse machine.memoryState.unitValue;
-    const bytes = machine.memoryState.getFromScope("bytes") orelse machine.memoryState.unitValue;
-
-    if (handle.?.v != V.ValueKind.FileKind and handle.?.v != V.ValueKind.StreamKind) {
-        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{ V.ValueValue.FileKind, V.ValueValue.StreamKind }, handle.?.v);
-    }
-
-    if (bytes.?.v == V.ValueKind.IntKind) {
-        const buffer = try machine.memoryState.allocator.alloc(u8, @intCast(bytes.?.v.IntKind));
-        defer machine.memoryState.allocator.free(buffer);
-
-        var bytesRead: usize = 0;
-
-        if (handle.?.v == V.ValueKind.FileKind) {
-            bytesRead = handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
-        } else {
-            bytesRead = handle.?.v.StreamKind.stream.read(buffer) catch |err| return osError(machine, "read", err);
-        }
-
-        try machine.memoryState.push(try machine.memoryState.newStringValue(buffer[0..bytesRead]));
-    } else if (bytes.?.v == V.ValueKind.VoidKind) {
-        const buffer = try machine.memoryState.allocator.alloc(u8, 4096);
-        defer machine.memoryState.allocator.free(buffer);
-
-        var bytesRead: usize = 0;
-
-        if (handle.?.v == V.ValueKind.FileKind) {
-            bytesRead = handle.?.v.FileKind.file.read(buffer) catch |err| return osError(machine, "read", err);
-        } else {
-            bytesRead = handle.?.v.StreamKind.stream.read(buffer) catch |err| return osError(machine, "read", err);
-        }
-
-        try machine.memoryState.push(try machine.memoryState.newStringValue(buffer[0..bytesRead]));
-    } else {
-        const position = if (argsAST.len > 1) argsAST[1].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.IntKind}, handle.?.v);
-    }
-}
-
 pub const cwd = @import("./builtins/cwd.zig").cwd;
 pub const close = @import("./builtins/close.zig").close;
 pub const exit = @import("./builtins/exit.zig").exit;
@@ -337,6 +296,7 @@ pub const imports = @import("./builtins/imports.zig").imports;
 pub const int = @import("./builtins/int.zig").int;
 pub const listen = @import("./builtins/listen.zig").listen;
 pub const len = @import("./builtins/len.zig").len;
+pub const read = @import("./builtins/read.zig").read;
 pub const socket = @import("./builtins/socket.zig").socket;
 pub const str = @import("./builtins/str.zig").str;
 pub const typeof = @import("./builtins/typeof.zig").typeof;
