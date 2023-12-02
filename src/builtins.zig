@@ -1,18 +1,5 @@
 const std = @import("std");
 
-const AST = @import("./ast.zig");
-const Errors = @import("./errors.zig");
-const M = @import("./machine.zig");
-const Machine = M.Machine;
-const MS = @import("./memory_state.zig");
-const Main = @import("./main.zig");
-const V = @import("./value.zig");
-
-fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
-    machine.replaceErr(try Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), position, expected, v));
-    return Errors.err.InterpreterError;
-}
-
 pub fn loadBinary(allocator: std.mem.Allocator, fileName: []const u8) ![]u8 {
     var file = try std.fs.cwd().openFile(fileName, .{});
     defer file.close();
@@ -21,21 +8,6 @@ pub fn loadBinary(allocator: std.mem.Allocator, fileName: []const u8) ![]u8 {
     const buffer: []u8 = try file.readToEndAlloc(allocator, fileSize);
 
     return buffer;
-}
-
-fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
-    try machine.memoryState.pushEmptyMapValue();
-
-    const record = machine.memoryState.peek(0);
-    try record.v.RecordKind.set(machine.memoryState.allocator, "error", try machine.memoryState.newStringValue("SystemError"));
-    try record.v.RecordKind.set(machine.memoryState.allocator, "operation", try machine.memoryState.newStringValue(operation));
-
-    var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
-    defer buffer.deinit();
-
-    try std.fmt.format(buffer.writer(), "{}", .{err});
-
-    try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedStringValue(&buffer));
 }
 
 pub const cwd = @import("./builtins/cwd.zig").cwd;
