@@ -30,29 +30,28 @@ It is super early so, for now, star the project or periodically check back for u
 The first 1,000 prime numbers:
 
 ```
-let { range } = import("std")
-let { println } = import("io")
+let { filter, range } = import("std")
 
-let prime?(n) = 
+let prime?(n) {
   let loop(i = 2) =
     if i * i > n -> true
      | n % i == 0 -> false
-     | testPrime(i + 1)
+     | loop(i + 1)
 
   if n < 2 -> false
    | loop()
+}
 
 let primes(n) =
   range(2, n)
     |> filter(prime?)
 
-println("The first 1000 prime numbers are: { primes(1000) }")
+println("The first 1000 prime numbers are: ", primes(1000))
 ```
 
 The following is the REST version of *hello world*.
 
 ```
-let Fmt = import("fmt")
 let HTTP = import("http")
 
 let server = HTTP.Server()
@@ -61,7 +60,7 @@ server.route("/hello/:name") <| fn(params) =
       if req.method
       | "GET" -> end({
             status: 200,
-            body: Fmt.format("Hello, { params.name ? "World" }!")
+            body: "Hello, " + params.name ? "World" + "!"
         })
       | _ -> end(HTTP.MethodNotAllowed)
 
