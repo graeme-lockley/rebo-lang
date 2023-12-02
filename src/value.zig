@@ -237,14 +237,14 @@ pub const ValueValue = union(ValueKind) {
     BuiltinKind: BuiltinValue,
     CharKind: u8,
     FileKind: FileValue,
+    FloatKind: FloatType,
     FunctionKind: FunctionValue,
     IntKind: IntType,
-    FloatKind: FloatType,
+    RecordKind: RecordValue,
+    ScopeKind: ScopeValue,
     SequenceKind: SequenceValue,
     StreamKind: StreamValue,
     StringKind: []u8,
-    RecordKind: RecordValue,
-    ScopeKind: ScopeValue,
     VoidKind: void,
 };
 
@@ -252,6 +252,55 @@ pub const BuiltinValue = struct {
     arguments: []const FunctionArgument,
     restOfArguments: ?[]const u8,
     body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.err!void,
+};
+
+pub const FileValue = struct {
+    isOpen: bool,
+    file: std.fs.File,
+
+    pub fn init(file: std.fs.File) FileValue {
+        return FileValue{
+            .isOpen = true,
+            .file = file,
+        };
+    }
+
+    pub fn deinit(self: *FileValue) void {
+        self.close();
+    }
+
+    pub fn close(self: *FileValue) void {
+        if (self.isOpen) {
+            self.file.close();
+            self.isOpen = false;
+        }
+    }
+};
+
+pub const FunctionValue = struct {
+    scope: ?*Value,
+    arguments: []FunctionArgument,
+    restOfArguments: ?[]u8,
+    body: *AST.Expression,
+
+    pub fn deinit(self: *FunctionValue, allocator: std.mem.Allocator) void {
+        for (self.arguments) |argument| {
+            allocator.free(argument.name);
+        }
+        if (self.restOfArguments != null) {
+            allocator.free(self.restOfArguments.?);
+        }
+        allocator.free(self.arguments);
+
+        // This is a problem - an AST is part of a value and therefore needs to be under control of the garbage collector.
+        // At the moment, this is not possible as the AST is managed as general memory.
+        // AST.destroy(allocator, self.v.FunctionKind.body);
+    }
+};
+
+pub const FunctionArgument = struct {
+    name: []const u8,
+    default: ?*Value,
 };
 
 pub const RecordValue = struct {
@@ -302,55 +351,6 @@ pub const RecordValue = struct {
     pub fn keyIterator(self: *const RecordValue) std.StringHashMap(*Value).KeyIterator {
         return self.items.keyIterator();
     }
-};
-
-pub const FileValue = struct {
-    isOpen: bool,
-    file: std.fs.File,
-
-    pub fn init(file: std.fs.File) FileValue {
-        return FileValue{
-            .isOpen = true,
-            .file = file,
-        };
-    }
-
-    pub fn deinit(self: *FileValue) void {
-        self.close();
-    }
-
-    pub fn close(self: *FileValue) void {
-        if (self.isOpen) {
-            self.file.close();
-            self.isOpen = false;
-        }
-    }
-};
-
-pub const FunctionValue = struct {
-    scope: ?*Value,
-    arguments: []FunctionArgument,
-    restOfArguments: ?[]u8,
-    body: *AST.Expression,
-
-    pub fn deinit(self: *FunctionValue, allocator: std.mem.Allocator) void {
-        for (self.arguments) |argument| {
-            allocator.free(argument.name);
-        }
-        if (self.restOfArguments != null) {
-            allocator.free(self.restOfArguments.?);
-        }
-        allocator.free(self.arguments);
-
-        // This is a problem - an AST is part of a value and therefore needs to be under control of the garbage collector.
-        // At the moment, this is not possible as the AST is managed as general memory.
-        // AST.destroy(allocator, self.v.FunctionKind.body);
-    }
-};
-
-pub const FunctionArgument = struct {
-    name: []const u8,
-    default: ?*Value,
 };
 
 pub const SequenceValue = struct {
