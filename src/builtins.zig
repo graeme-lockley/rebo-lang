@@ -18,6 +18,7 @@ pub const gc = @import("./builtins/gc.zig").gc;
 pub const import = @import("./builtins/import.zig").import;
 pub const imports = @import("./builtins/imports.zig").imports;
 pub const int = @import("./builtins/int.zig").int;
+pub const keys = @import("./builtins/keys.zig").keys;
 pub const listen = @import("./builtins/listen.zig").listen;
 pub const len = @import("./builtins/len.zig").len;
 pub const ls = @import("./builtins/ls.zig").ls;
