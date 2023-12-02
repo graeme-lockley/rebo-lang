@@ -23,31 +23,6 @@ pub fn loadBinary(allocator: std.mem.Allocator, fileName: []const u8) ![]u8 {
     return buffer;
 }
 
-pub fn len(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    const v = machine.memoryState.getFromScope("v") orelse machine.memoryState.unitValue;
-
-    switch (v.?.v) {
-        V.ValueValue.RecordKind => try machine.memoryState.pushIntValue(@intCast(v.?.v.RecordKind.count())),
-        V.ValueValue.SequenceKind => try machine.memoryState.pushIntValue(@intCast(v.?.v.SequenceKind.len())),
-        V.ValueValue.StringKind => try machine.memoryState.pushIntValue(@intCast(v.?.v.StringKind.len)),
-        else => try reportExpectedTypeError(machine, if (argsAST.len > 0) argsAST[0].position else calleeAST.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, v.?.v),
-    }
-}
-
-test "len" {
-    try Main.expectExprEqual("len({})", "0");
-    try Main.expectExprEqual("len({a: 1})", "1");
-    try Main.expectExprEqual("len({a: 1, b: 2, c: 3})", "3");
-
-    try Main.expectExprEqual("len([])", "0");
-    try Main.expectExprEqual("len([1])", "1");
-    try Main.expectExprEqual("len([1, 2, 3])", "3");
-
-    try Main.expectExprEqual("len(\"\")", "0");
-    try Main.expectExprEqual("len(\"x\")", "1");
-    try Main.expectExprEqual("len(\"hello\")", "5");
-}
-
 pub fn ls(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
     _ = argsAST;
     _ = calleeAST;
@@ -392,5 +367,6 @@ pub const import = @import("./builtins/import.zig").import;
 pub const imports = @import("./builtins/imports.zig").imports;
 pub const int = @import("./builtins/int.zig").int;
 pub const listen = @import("./builtins/listen.zig").listen;
+pub const len = @import("./builtins/len.zig").len;
 pub const typeof = @import("./builtins/typeof.zig").typeof;
 pub const write = @import("./builtins/write.zig").write;
