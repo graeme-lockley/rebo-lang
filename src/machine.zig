@@ -192,12 +192,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
                 const index = machine.memoryState.peek(0);
 
                 if (index.v != V.ValueValue.StringKind) {
-                    var expected = machine.memoryState.allocator.alloc(V.ValueKind, 1) catch |err| return errorHandler(err);
-                    errdefer machine.memoryState.allocator.free(expected);
-
-                    expected[0] = V.ValueValue.StringKind;
-
-                    machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, expected, index.v) catch |err| return errorHandler(err));
+                    machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v) catch |err| return errorHandler(err));
                     return true;
                 }
 
@@ -209,12 +204,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
                 const index = machine.memoryState.peek(0);
 
                 if (index.v != V.ValueValue.IntKind) {
-                    var expected = machine.memoryState.allocator.alloc(V.ValueKind, 1) catch |err| return errorHandler(err);
-                    errdefer machine.memoryState.allocator.free(expected);
-
-                    expected[0] = V.ValueValue.IntKind;
-
-                    machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, expected, index.v) catch |err| return errorHandler(err));
+                    machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v) catch |err| return errorHandler(err));
                     return true;
                 }
 
@@ -232,13 +222,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             } else {
                 machine.memoryState.popn(1);
 
-                var expected = machine.memoryState.allocator.alloc(V.ValueKind, 2) catch |err| return errorHandler(err);
-                errdefer machine.memoryState.allocator.free(expected);
-
-                expected[0] = V.ValueValue.RecordKind;
-                expected[1] = V.ValueValue.SequenceKind;
-
-                machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, expected, expr.v) catch |err| return errorHandler(err));
+                machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind }, expr.v) catch |err| return errorHandler(err));
                 return true;
             }
 
@@ -984,14 +968,7 @@ fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expressio
         machine.memoryState.pushOwnedStringValue(machine.memoryState.allocator.dupe(u8, str[@intCast(start)..@intCast(end)]) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
     } else {
         machine.memoryState.popn(1);
-
-        var expected = machine.memoryState.allocator.alloc(V.ValueKind, 2) catch |err| return errorHandler(err);
-        errdefer machine.memoryState.allocator.free(expected);
-
-        expected[0] = V.ValueValue.SequenceKind;
-        expected[1] = V.ValueValue.StringKind;
-
-        machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, expected, expr.v) catch |err| return errorHandler(err));
+        machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v) catch |err| return errorHandler(err));
         return true;
     }
 
@@ -1009,12 +986,7 @@ fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) !V.Int
         }
         const pointV = machine.memoryState.peek(0);
         if (pointV.v != V.ValueValue.IntKind) {
-            var expected = try machine.memoryState.allocator.alloc(V.ValueKind, 1);
-            errdefer machine.memoryState.allocator.free(expected);
-
-            expected[0] = V.ValueValue.IntKind;
-
-            machine.replaceErr(try Errors.expectedTypeError(machine.memoryState.allocator, machine.src(), point.?.position, expected, pointV.v));
+            machine.replaceErr(try Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), point.?.position, &[_]V.ValueKind{V.ValueValue.IntKind}, pointV.v));
             return error.InterpreterError;
         }
 
@@ -1035,12 +1007,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         const index = machine.memoryState.peek(0);
 
         if (index.v != V.ValueValue.StringKind) {
-            var expected = machine.memoryState.allocator.alloc(V.ValueKind, 1) catch |err| return errorHandler(err);
-            errdefer machine.memoryState.allocator.free(expected);
-
-            expected[0] = V.ValueValue.StringKind;
-
-            machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, expected, index.v) catch |err| return errorHandler(err));
+            machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v) catch |err| return errorHandler(err));
             return true;
         }
 
@@ -1058,12 +1025,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         const index = machine.memoryState.peek(0);
 
         if (index.v != V.ValueValue.IntKind) {
-            var expected = machine.memoryState.allocator.alloc(V.ValueKind, 1) catch |err| return errorHandler(err);
-            errdefer machine.memoryState.allocator.free(expected);
-
-            expected[0] = V.ValueValue.IntKind;
-
-            machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, expected, index.v) catch |err| return errorHandler(err));
+            machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v) catch |err| return errorHandler(err));
             return true;
         }
 
@@ -1082,12 +1044,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         const index = machine.memoryState.peek(0);
 
         if (index.v != V.ValueValue.IntKind) {
-            var expected = machine.memoryState.allocator.alloc(V.ValueKind, 1) catch |err| return errorHandler(err);
-            errdefer machine.memoryState.allocator.free(expected);
-
-            expected[0] = V.ValueValue.IntKind;
-
-            machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, expected, index.v) catch |err| return errorHandler(err));
+            machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v) catch |err| return errorHandler(err));
             return true;
         }
 
@@ -1103,15 +1060,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         }
     } else {
         machine.memoryState.popn(1);
-
-        var expected = machine.memoryState.allocator.alloc(V.ValueKind, 3) catch |err| return errorHandler(err);
-        errdefer machine.memoryState.allocator.free(expected);
-
-        expected[0] = V.ValueValue.RecordKind;
-        expected[1] = V.ValueValue.SequenceKind;
-        expected[2] = V.ValueValue.StringKind;
-
-        machine.replaceErr(Errors.expectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, expected, expr.v) catch |err| return errorHandler(err));
+        machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v) catch |err| return errorHandler(err));
         return true;
     }
 
