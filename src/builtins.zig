@@ -327,23 +327,6 @@ pub fn read(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expre
     }
 }
 
-pub fn socket(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    const name = machine.memoryState.getFromScope("name") orelse machine.memoryState.unitValue;
-    const port = machine.memoryState.getFromScope("port") orelse machine.memoryState.unitValue;
-
-    if (name.?.v != V.ValueKind.StringKind) {
-        const position = if (argsAST.len > 0) argsAST[0].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.StringKind}, name.?.v);
-    }
-    if (port.?.v != V.ValueKind.IntKind) {
-        const position = if (argsAST.len > 1) argsAST[1].position else calleeAST.position;
-        try reportExpectedTypeError(machine, position, &[_]V.ValueKind{V.ValueValue.IntKind}, port.?.v);
-    }
-
-    const stream = std.net.tcpConnectToHost(machine.memoryState.allocator, name.?.v.StringKind, @intCast(port.?.v.IntKind)) catch |err| return osError(machine, "socket", err);
-    try machine.memoryState.push(try machine.memoryState.newStreamValue(stream));
-}
-
 pub const cwd = @import("./builtins/cwd.zig").cwd;
 pub const close = @import("./builtins/close.zig").close;
 pub const exit = @import("./builtins/exit.zig").exit;
@@ -354,6 +337,7 @@ pub const imports = @import("./builtins/imports.zig").imports;
 pub const int = @import("./builtins/int.zig").int;
 pub const listen = @import("./builtins/listen.zig").listen;
 pub const len = @import("./builtins/len.zig").len;
+pub const socket = @import("./builtins/socket.zig").socket;
 pub const str = @import("./builtins/str.zig").str;
 pub const typeof = @import("./builtins/typeof.zig").typeof;
 pub const write = @import("./builtins/write.zig").write;
