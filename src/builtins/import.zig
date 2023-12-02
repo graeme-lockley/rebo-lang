@@ -49,6 +49,14 @@ fn processError(machine: *Helper.Machine, err: anyerror, nature: []const u8, nam
 
     try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedStringValue(&buffer));
     try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newStringValue(name));
+
+    var e = machine.grabErr();
+    if (e != null) {
+        buffer.clearAndFree();
+        e.?.append(&buffer) catch {};
+        try record.v.RecordKind.set(machine.memoryState.allocator, "detail", try machine.memoryState.newOwnedStringValue(&buffer));
+        e.?.deinit();
+    }
 }
 
 pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
@@ -77,7 +85,7 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
 
     try machine.memoryState.addToScope("__FILE", try machine.memoryState.newStringValue(name));
 
-    const ast = machine.parse(fileName, content) catch |err| return processError(machine, err, "ExecuteError", fileName);
+    const ast = machine.parse(fileName, content) catch |err| return processError(machine, err, "ParseError", fileName);
     errdefer ast.destroy(machine.memoryState.allocator);
 
     try machine.memoryState.imports.addImport(name, null, ast);
