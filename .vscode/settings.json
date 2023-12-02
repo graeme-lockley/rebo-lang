@@ -1,3 +1,4 @@
 {
-    "zig.initialSetupDone": false
+    "zig.initialSetupDone": true,
+    "zig.buildOnSave": true
 }
