@@ -344,20 +344,6 @@ pub fn socket(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Exp
     try machine.memoryState.push(try machine.memoryState.newStreamValue(stream));
 }
 
-pub fn str(machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) !void {
-    _ = calleeAST;
-    _ = argsAST;
-    const v = machine.memoryState.getFromScope("value") orelse machine.memoryState.unitValue;
-
-    try machine.memoryState.pushOwnedStringValue(try v.?.toString(machine.memoryState.allocator));
-
-    return;
-}
-
-test "str" {
-    try Main.expectExprEqual("str(1)", "\"1\"");
-}
-
 pub const cwd = @import("./builtins/cwd.zig").cwd;
 pub const close = @import("./builtins/close.zig").close;
 pub const exit = @import("./builtins/exit.zig").exit;
@@ -368,5 +354,6 @@ pub const imports = @import("./builtins/imports.zig").imports;
 pub const int = @import("./builtins/int.zig").int;
 pub const listen = @import("./builtins/listen.zig").listen;
 pub const len = @import("./builtins/len.zig").len;
+pub const str = @import("./builtins/str.zig").str;
 pub const typeof = @import("./builtins/typeof.zig").typeof;
 pub const write = @import("./builtins/write.zig").write;
