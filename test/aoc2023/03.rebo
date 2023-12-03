@@ -7,8 +7,6 @@ let lines(name) =
   Path.dir(__FILE) + name
     |> FS.lines()
 
-let calculate(name) = 0
-
 let digit?(c) = 
   int(c) >= int('0') && int(c) <= int('9')
 
@@ -40,14 +38,13 @@ let partAt(content, pos) =
 let move(pos, deltaX, deltaY) =
   { x: pos.x + deltaX, y: pos.y + deltaY }
 
-let relevantPart?(content, pos) {
+let relevantPart?(content, pos) =
   partAt(content, pos) 
     && (symbolAt(content, move(pos, -1, -1)) || symbolAt(content, move(pos, 0, -1)) || symbolAt(content, move(pos, 1, -1)) ||
         symbolAt(content, move(pos, -1, 1)) || symbolAt(content, move(pos, 0, 1)) || symbolAt(content, move(pos, 1, 1)) ||
         symbolAt(content, move(pos, -1, 0)) || symbolAt(content, move(pos, 1, 0)) ||
         relevantPart?(content, move(pos, 1, 0))
        )
-}
 
 let total(content) {
   let pos = { x: 0, y: 0 }
@@ -82,13 +79,12 @@ let gobblePartNo(line, pos, result) {
   let partNoStr = Str.takeWhile(line[pos:], digit?)
 
   result <! int(partNoStr)
-   line[0:pos] + "." * len(partNoStr) + line[pos + len(partNoStr):]
+  line[0:pos] + "." * len(partNoStr) + line[pos + len(partNoStr):]
 }
 
-let chomp(line, x, result) {
+let chomp(line, x, result) =
   if x >= 0 && x < len(line) && digit?(line[x]) -> gobblePartNo(line, x, result)
    | line
-}
 
 let chompLine(line, x, result) =
   line
