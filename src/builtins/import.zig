@@ -36,31 +36,31 @@ fn fullFileName(machine: *Helper.Machine, fileName: []const u8) ![]u8 {
 
 test "fullFileName" {}
 
-fn processError(machine: *Helper.Machine, err: anyerror, nature: []const u8, name: []const u8) !void {
-    try machine.memoryState.pushEmptyMapValue();
+// fn processError(machine: *Helper.Machine, err: anyerror, nature: []const u8, name: []const u8) !void {
+//     try machine.memoryState.pushEmptyMapValue();
 
-    const record = machine.memoryState.peek(0);
-    try record.v.RecordKind.set(machine.memoryState.allocator, "error", try machine.memoryState.newStringValue(nature));
+//     const record = machine.memoryState.peek(0);
+//     try record.v.RecordKind.set(machine.memoryState.allocator, "error", try machine.memoryState.newStringValue(nature));
 
-    var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
-    defer buffer.deinit();
+//     var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+//     defer buffer.deinit();
 
-    try std.fmt.format(buffer.writer(), "{}", .{err});
+//     try std.fmt.format(buffer.writer(), "{}", .{err});
 
-    try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedStringValue(&buffer));
-    try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newStringValue(name));
+//     try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedStringValue(&buffer));
+//     try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newStringValue(name));
 
-    var e = machine.grabErr();
-    if (e != null) {
-        buffer.clearAndFree();
-        e.?.append(&buffer) catch {};
-        try record.v.RecordKind.set(machine.memoryState.allocator, "detail", try machine.memoryState.newOwnedStringValue(&buffer));
-        e.?.deinit();
-    }
-}
+//     var e = machine.grabErr();
+//     if (e != null) {
+//         buffer.clearAndFree();
+//         e.?.append(&buffer) catch {};
+//         try record.v.RecordKind.set(machine.memoryState.allocator, "detail", try machine.memoryState.newOwnedStringValue(&buffer));
+//         e.?.deinit();
+//     }
+// }
 
 pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
-    const name = fullFileName(machine, fileName) catch |err| return processError(machine, err, "FileError", fileName);
+    const name = fullFileName(machine, fileName) catch |err| return Helper.fatalErrorHandler(machine, "FileError", err);
     defer machine.memoryState.allocator.free(name);
 
     const loadedImport = machine.memoryState.imports.find(name);
@@ -77,7 +77,7 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
 
     std.log.info("loading import {s}...", .{name});
 
-    const content = loadBinary(machine.memoryState.allocator, name) catch |err| return processError(machine, err, "FileError", fileName);
+    const content = loadBinary(machine.memoryState.allocator, name) catch |err| return Helper.fatalErrorHandler(machine, "FileError", err);
     defer machine.memoryState.allocator.free(content);
 
     try machine.memoryState.openScopeFrom(machine.memoryState.topScope());
@@ -85,12 +85,12 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
 
     try machine.memoryState.addToScope("__FILE", try machine.memoryState.newStringValue(name));
 
-    const ast = machine.parse(fileName, content) catch |err| return processError(machine, err, "ParseError", fileName);
+    const ast = machine.parse(fileName, content) catch |err| return Helper.fatalErrorHandler(machine, "ParseError", err);
     errdefer ast.destroy(machine.memoryState.allocator);
 
     try machine.memoryState.imports.addImport(name, null, ast);
 
-    machine.eval(ast) catch |err| return processError(machine, err, "ExecuteError", fileName);
+    machine.eval(ast) catch |err| return Helper.fatalErrorHandler(machine, "ExecuteError", err);
     _ = machine.memoryState.pop();
 
     try machine.memoryState.pushEmptyMapValue();

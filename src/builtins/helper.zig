@@ -33,6 +33,20 @@ pub fn silentOsError(machine: *Machine, operation: []const u8, err: anyerror) vo
     osError(machine, operation, err) catch {};
 }
 
+pub fn fatalErrorHandler(machine: *Machine, operation: []const u8, err: anyerror) void {
+    var e = machine.grabErr();
+    if (e == null) {
+        std.log.err("Error: {s}: {}\n", .{ operation, err });
+    } else {
+        std.log.err("Error: {s}: {}\n", .{ operation, err });
+        e.?.print() catch |err2| {
+            std.log.err("Error: {}: {}\n", .{ err, err2 });
+        };
+        e.?.deinit();
+    }
+    std.os.exit(1);
+}
+
 pub fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
     machine.replaceErr(try Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), position, expected, v));
     return Errors.err.InterpreterError;
