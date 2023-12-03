@@ -1,5 +1,3 @@
-#!env rebo
-
 let FS = import("fs")
 let Path = import("path")
 let Std = import("std")
