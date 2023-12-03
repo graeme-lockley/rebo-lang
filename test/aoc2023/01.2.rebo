@@ -1,0 +1,65 @@
+#!env rebo
+
+let FS = import("fs")
+let Std = import("std")
+let Str = import("str")
+
+let A011 = import("./01.1.rebo")
+
+let patterns = [
+  ["one", 1],
+  ["two", 2],
+  ["three", 3],
+  ["four", 4],
+  ["five", 5],
+  ["six", 6],
+  ["seven", 7],
+  ["eight", 8],
+  ["nine", 9],
+  ["0", 0],
+  ["1", 1],
+  ["2", 2],
+  ["3", 3],
+  ["4", 4],
+  ["5", 5],
+  ["6", 6],
+  ["7", 7],
+  ["8", 8],
+  ["9", 9]
+];
+
+let matchPattern(s) =
+  Std.find(patterns, fn(p) {
+    let [pattern, value] = p
+    Str.startsWith?(s, pattern)
+  })
+
+let extractNumbersLeft(s, idx) {
+  let m = matchPattern(s[idx:])
+
+  if m == () -> extractNumbersLeft(s, idx + 1)
+   | m[1]
+}
+
+let extractNumbersRight(s, idx) {
+  let m = matchPattern(s[idx:])
+
+  if m == () -> extractNumbersRight(s, idx - 1)
+   | m[1]
+}
+
+let extractNumbers(s) {
+  let left = extractNumbersLeft(s, 0)
+  let right = extractNumbersRight(s, len(s) - 1)
+
+  left * 10 + right
+} 
+
+let calculate(lines) =
+  lines
+    |> Std.map(extractNumbers)
+    |> A011.sum()
+
+let answer = 
+  A011.lines()
+    |> calculate()

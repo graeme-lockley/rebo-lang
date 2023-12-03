@@ -1,0 +1,23 @@
+let run(suite) {
+  _a01(suite.suite("AOC Day 1"));
+}
+
+let _a01(suite) {
+  let A011 = import("./01.1.rebo")
+  let A012 = import("./01.2.rebo")
+
+  let a012Lines = [
+    "two1nine",
+    "eightwothree",
+    "abcone2threexyz",
+    "xtwone3four",
+    "4nineeightseven2",
+    "zoneight234",
+    "7pqrstsixteen"
+  ]
+
+  suite.eq("1.answer", A011.answer, 55123)
+  suite.eq("2.test", A012.calculate(a012Lines), 281)
+  suite.eq("2.answer", A012.answer, 55260)
+}
+
