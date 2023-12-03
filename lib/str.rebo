@@ -10,6 +10,13 @@ let dropStart(s, n) =
 let dropEnd(s, n) =
   s[0:len(s) - n]
 
+let takeWhile(s, p) {
+  let i = 0
+  while i < len(s) && p(s[i]) -> i := i + 1
+
+  s[:i]
+}
+
 let whitespace?(c) = 
   int(c) <= 32
 
