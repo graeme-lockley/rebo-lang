@@ -1,10 +1,50 @@
 let Std = import("std")
 
 let run(suite) {
-  runRange(suite.suite("range"))
+  _firstIndexOf(suite.suite("lastIndexOf"))
+  _lastIndexOf(suite.suite("lastIndexOf"))
+  _range(suite.suite("range"))
 }
 
-let runRange(suite) {
+let _firstIndexOf(suite) {
+  let input = Std.range(1, 11)
+
+  "1..10, 1" |>
+    suite.eq(Std.firstIndexOf(input, 1), 0)
+
+  "1..10, 9" |>
+    suite.eq(Std.firstIndexOf(input, 10), 9)
+
+  "1..10, 5" |>
+    suite.eq(Std.firstIndexOf(input, 5), 4)
+
+  "1..10, 11" |>
+    suite.eq(Std.firstIndexOf(input, 11), ())
+
+  "hello world, l" |>
+    suite.eq(Std.firstIndexOf("hello world", 'l'), 2)  
+}
+
+let _lastIndexOf(suite) {
+  let input = Std.range(1, 11)
+
+  "1..10, 1" |>
+    suite.eq(Std.lastIndexOf(input, 1), 0)
+
+  "1..10, 9" |>
+    suite.eq(Std.lastIndexOf(input, 10), 9)
+
+  "1..10, 5" |>
+    suite.eq(Std.lastIndexOf(input, 5), 4)
+
+  "1..10, 11" |>
+    suite.eq(Std.lastIndexOf(input, 11), ())
+
+  "hello world, l" |>
+    suite.eq(Std.lastIndexOf("hello world", 'l'), 9)  
+}
+
+let _range(suite) {
   "10" |>
     suite.eq(Std.range(10), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 

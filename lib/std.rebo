@@ -227,7 +227,7 @@ let split(s, sep = " ") {
 
 # `join` concatenates the elements of `lst` into a single string using `sep` as
 # the separator.
-let join(lst, sep) {
+let join(lst, sep = "") {
   let result = ""
   let lp = 0
 
@@ -236,6 +236,36 @@ let join(lst, sep) {
       result := result + sep
 
     result := result + lst[lp]
+
+    lp := lp + 1
+  }
+
+  result
+}
+
+# `lastIndexOf` returns the index of the last occurrence of `item` in `xs` or
+# `()` if `item` is not found.
+let lastIndexOf(xs, item) {
+  let result = ()
+  let lp = len(xs) - 1
+
+  while result == () && lp >= 0 -> {
+    if xs[lp] == item -> result := lp
+
+    lp := lp - 1
+  }
+
+  result
+}
+
+# `firstIndexOf` returns the index of the last occurrence of `item` in `xs` or
+# `()` if `item` is not found.
+let firstIndexOf(xs, item) {
+  let result = ()
+  let lp = 0
+
+  while result == () && lp < len(xs) -> {
+    if xs[lp] == item -> result := lp
 
     lp := lp + 1
   }
