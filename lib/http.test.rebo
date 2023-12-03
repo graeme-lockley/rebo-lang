@@ -1,0 +1,13 @@
+let HTTP = import("http")
+
+let run(suite) {
+  _mimeForPath(suite.suite("mimeForPath"))
+}
+
+let _mimeForPath(suite) {
+  let tst(url, mimeType) =
+    url |> suite.eq(HTTP.mimeForPath(url), mimeType)
+
+  tst("/foo/bar/baz", "text/plain; charset=utf-8")
+  tst("/foo/bar/baz.jpeg", "image/jpeg")
+}
