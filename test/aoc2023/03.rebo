@@ -7,11 +7,8 @@ let lines(name) =
   Path.dir(__FILE) + name
     |> FS.lines()
 
-let digit?(c) = 
-  int(c) >= int('0') && int(c) <= int('9')
-
 let symbol?(c) =
-  c != '.' && !digit?(c)
+  c != '.' && !Str.digit?(c)
 
 let gear?(c) =
   c == '*'
@@ -33,7 +30,7 @@ let symbolAt(content, pos) =
   content |> itemAt?(pos, symbol?)
 
 let partAt(content, pos) =
-  content |> itemAt?(pos, digit?)
+  content |> itemAt?(pos, Str.digit?)
 
 let move(pos, deltaX, deltaY) =
   { x: pos.x + deltaX, y: pos.y + deltaY }
@@ -53,7 +50,7 @@ let total(content) {
   while pos.y < len(content) -> {
     while pos.x < len(content[pos.y]) -> {
       if relevantPart?(content, pos) -> {
-          let partNoStr = Str.takeWhile(content[pos.y][pos.x:], digit?)
+          let partNoStr = Str.takeWhile(content[pos.y][pos.x:], Str.digit?)
   
           total := total + int(partNoStr)
           pos := move(pos, len(partNoStr), 0)
@@ -74,16 +71,16 @@ let calculate1(name) =
 let content = lines("/03.test.data")
 
 let gobblePartNo(line, pos, result) {
-  while pos > 0 && digit?(line[pos - 1]) -> pos := pos - 1
+  while pos > 0 && Str.digit?(line[pos - 1]) -> pos := pos - 1
 
-  let partNoStr = Str.takeWhile(line[pos:], digit?)
+  let partNoStr = Str.takeWhile(line[pos:], Str.digit?)
 
   result <! int(partNoStr)
   line[0:pos] + "." * len(partNoStr) + line[pos + len(partNoStr):]
 }
 
 let chomp(line, x, result) =
-  if x >= 0 && x < len(line) && digit?(line[x]) -> gobblePartNo(line, x, result)
+  if x >= 0 && x < len(line) && Str.digit?(line[x]) -> gobblePartNo(line, x, result)
    | line
 
 let chompLine(line, x, result) =

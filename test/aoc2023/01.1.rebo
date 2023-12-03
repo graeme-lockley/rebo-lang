@@ -1,9 +1,7 @@
 let FS = import("fs")
 let Path = import("path")
 let Std = import("std")
-
-let digit?(c) = 
-  int(c) >= int('0') && int(c) <= int('9')
+let Str = import("str")
 
 let first(lst, p) =
   if len(lst) == 0 -> ()
@@ -16,8 +14,8 @@ let last(lst, p) =
    | last(lst[0:len(lst) - 1], p)
 
 let extractNumber(line) {
-  let a = first(line, digit?)
-  let b = last(line, digit?)
+  let a = first(line, Str.digit?)
+  let b = last(line, Str.digit?)
 
   int(str(a, false) + str(b, false))
 }
