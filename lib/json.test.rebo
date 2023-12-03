@@ -1,0 +1,25 @@
+let JSON = import("json")
+
+let run(suite) {
+  _escape(suite.suite("escape"))
+  _serialise(suite.suite("serialise"))
+}
+
+let _escape(suite) {
+  let _tst(src, expected) =
+    src |> suite.eq(JSON.escape(src), expected)
+
+  _tst("hello world", "hello world")
+  _tst("hello\nworld", "hello\\nworld")
+}
+
+let _serialise(suite) {
+  let _tst(src, expected) =
+    str(src) |> suite.eq(JSON.serialise(src), expected)
+
+  _tst(true, "true")
+  _tst('a', "\"a\"")
+  _tst(1.23, "1.23")
+  _tst([1, 2, 3], "[1, 2, 3]")
+  _tst({a: "hello", b: 2}, "{\"b\": 2, \"a\": \"hello\"}")
+}
