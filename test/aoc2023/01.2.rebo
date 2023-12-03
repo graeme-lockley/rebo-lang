@@ -53,11 +53,8 @@ let extractNumbers(s) {
   left * 10 + right
 } 
 
-let calculate(lines) =
-  lines
+let calculate(name) =
+  name
+    |> A011.lines()
     |> Std.map(extractNumbers)
     |> A011.sum()
-
-let answer = 
-  A011.lines()
-    |> calculate()

@@ -1,0 +1,130 @@
+let FS = import("fs")
+let Path = import("path")
+let Std = import("std")
+let Str = import("str")
+
+let lines(name) =
+  Path.dir(__FILE) + name
+    |> FS.lines()
+
+let calculate(name) = 0
+
+let digit?(c) = 
+  int(c) >= int('0') && int(c) <= int('9')
+
+let symbol?(c) =
+  c != '.' && !digit?(c)
+
+let gear?(c) =
+  c == '*'
+
+let itemAt(content, pos) =
+  if pos.x < 0 -> '.'
+   | pos.y < 0 -> '.'
+   | pos.y >= len(content) -> '.'
+   | pos.x >= len(content[pos.y]) -> '.'
+   | content[pos.y][pos.x]
+
+let itemAt?(content, pos, p) =
+  content |> itemAt(pos) |> p()
+
+let gearAt(content, pos) =
+  content |> itemAt?(pos, gear?)
+
+let symbolAt(content, pos) =
+  content |> itemAt?(pos, symbol?)
+
+let partAt(content, pos) =
+  content |> itemAt?(pos, digit?)
+
+let move(pos, deltaX, deltaY) =
+  { x: pos.x + deltaX, y: pos.y + deltaY }
+
+let relevantPart?(content, pos) {
+  partAt(content, pos) 
+    && (symbolAt(content, move(pos, -1, -1)) || symbolAt(content, move(pos, 0, -1)) || symbolAt(content, move(pos, 1, -1)) ||
+        symbolAt(content, move(pos, -1, 1)) || symbolAt(content, move(pos, 0, 1)) || symbolAt(content, move(pos, 1, 1)) ||
+        symbolAt(content, move(pos, -1, 0)) || symbolAt(content, move(pos, 1, 0)) ||
+        relevantPart?(content, move(pos, 1, 0))
+       )
+}
+
+let total(content) {
+  let pos = { x: 0, y: 0 }
+  let total = 0
+
+  while pos.y < len(content) -> {
+    while pos.x < len(content[pos.y]) -> {
+      if relevantPart?(content, pos) -> {
+          let partNoStr = Str.takeWhile(content[pos.y][pos.x:], digit?)
+  
+          total := total + int(partNoStr)
+          pos := move(pos, len(partNoStr), 0)
+        }
+      | pos := move(pos, 1, 0)
+    }
+
+    pos := { ...move(pos, 0, 1), x: 0 }
+  }
+
+  total
+}
+
+let calculate1(name) = 
+  lines(name)
+    |> total()
+
+let content = lines("/03.test.data")
+
+let gobblePartNo(line, pos, result) {
+  while pos > 0 && digit?(line[pos - 1]) -> pos := pos - 1
+
+  let partNoStr = Str.takeWhile(line[pos:], digit?)
+
+  result <! int(partNoStr)
+   line[0:pos] + "." * len(partNoStr) + line[pos + len(partNoStr):]
+}
+
+let chomp(line, x, result) {
+  if x >= 0 && x < len(line) && digit?(line[x]) -> gobblePartNo(line, x, result)
+   | line
+}
+
+let chompLine(line, x, result) =
+  line
+    |> chomp(x - 1, result)
+    |> chomp(x, result)
+    |> chomp(x + 1, result)
+
+let gearParts(content, pos) =
+  if gearAt(content, pos) -> {
+      let result = []
+
+      if pos.y > 0 -> chompLine(content[pos.y - 1], pos.x, result)
+      chompLine(content[pos.y], pos.x, result)
+      if pos.y < len(content) - 1 -> chompLine(content[pos.y + 1], pos.x, result)
+
+      result
+    }
+  | []
+
+let calculate2(name) {
+  let content = lines(name)
+
+  let pos = { x: 0, y: 0 }
+  let total = 0
+
+  while pos.y < len(content) -> {
+    while pos.x < len(content[pos.y]) -> {
+      let gears = gearParts(content, pos)
+
+      if len(gears) == 2 -> total := total + gears[0] * gears[1]
+
+      pos := move(pos, 1, 0)
+    }
+
+    pos := { ...move(pos, 0, 1), x: 0 }
+  }
+
+  total
+}

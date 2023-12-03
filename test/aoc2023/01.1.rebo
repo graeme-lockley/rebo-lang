@@ -25,11 +25,12 @@ let extractNumber(line) {
 let sum(lst) =
   lst |> Std.reduce(fn (a, b) a + b, 0) 
 
-let lines() =
-  Path.dir(__FILE) + "/01.data"
+let lines(name) =
+  Path.dir(__FILE) + name
     |> FS.lines()
 
-let answer = 
-  lines()
+let calculate(name) = 
+  name
+    |> lines()
     |> Std.map(extractNumber) 
     |> sum()
