@@ -10,12 +10,29 @@ let dropStart(s, n) =
 let dropEnd(s, n) =
   s[0:len(s) - n]
 
-let trim(s) {
+let whitespace?(c) = 
+  int(c) <= 32
+
+let trimRight(s, p = whitespace?) {
+  let j = len(s) - 1
+  while j >= 0 && p(s[j]) -> j := j - 1
+
+  s[:j+1]
+}
+
+let trimLeft(s, p = whitespace?) {
   let i = 0
-  while i < len(s) && int(s[i]) <= 32 -> i := i + 1
+  while i < len(s) && p(s[i]) -> i := i + 1
+
+  s[i:]
+}
+
+let trim(s, p = whitespace?) {
+  let i = 0
+  while i < len(s) && p(s[i]) -> i := i + 1
 
   let j = len(s) - 1
-  while j >= 0 && int(s[j]) <= 32 -> j := j - 1
+  while j >= 0 && p(s[j]) -> j := j - 1
 
   s[i:j+1]
 }
