@@ -1,0 +1,12 @@
+let Std = import("std")
+let Str = import("str")
+
+let _lastSlash(path) = 
+  Std.lastIndexOf(path, '/')
+
+let dir(path) {
+  let lastSlash = path |> Str.trimRight(fn(c) c == '/') |> _lastSlash()
+
+  if lastSlash == () -> "."
+   | path[0:lastSlash]
+}

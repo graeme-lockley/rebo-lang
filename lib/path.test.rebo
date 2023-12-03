@@ -1,0 +1,11 @@
+let Path = import("path")
+
+let run(suite) {
+  _dir(suite.suite("dir"))
+}
+
+let _dir(suite) {
+  suite.eq("/foo/bar", Path.dir("/foo/bar"), "/foo")
+  suite.eq("/foo/bar/", Path.dir("/foo/bar/"), "/foo")
+  suite.eq("bar.fred", Path.dir("bar.fred"), ".")
+}
