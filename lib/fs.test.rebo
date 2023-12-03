@@ -12,7 +12,7 @@ let run(suite) {
 let runFiles(suite) {
     "files" |> suite.eq(
        _path |> FS.files() |> len(), 
-       10
+       16
     )
 }
 
