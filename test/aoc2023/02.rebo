@@ -1,0 +1,80 @@
+#!env rebo
+
+let FS = import("fs")
+let Path = import("path")
+let Std = import("std")
+let Str = import("str")
+
+let limits = {
+  red: 12,
+  green: 13,
+  blue: 14
+}
+
+let lines(name) =
+  Path.dir(__FILE) + name
+    |> FS.lines()
+
+let parseScore(s) {
+  let items = s |> Std.split(',') |> Std.map(fn(s) Str.trim(s))
+
+  let result = {}
+  items |> Std.each(fn(item) {
+    let [seen, colour] = Std.split(item, ' ')
+    result[colour] := int(seen)
+  })
+
+  result
+}
+
+let parseGame(line) =
+  (line |> Std.split(':'))[1] |> Str.trim() |> Std.split(';') |> Std.map(parseScore)
+
+let validGame(game, limits) {
+  let result = true
+  game |> Std.each(fn(reveal) {
+    keys(limits) |> Std.each(fn(colour) {
+      let score = reveal[colour]
+
+      if score != () && score > limits[colour] -> result := false
+    })
+  })
+
+  result
+}
+
+let gameMinimum(game) {
+  let result = {red: 0, green: 0, blue: 0}
+  
+  game |> Std.each(fn(reveal) {
+    keys(reveal) |> Std.each(fn(colour) {
+      let score = reveal[colour]
+
+      if score != () && score > result[colour] -> result[colour] := score
+    })
+  })
+
+  result
+}
+
+let gamePower(minimumScore) =
+  minimumScore.red * minimumScore.green * minimumScore.blue
+
+let total(games) {
+  let total = 0
+  games |> Std.each(fn(game, idx) if game -> total := total + idx + 1)
+  total
+}
+
+let calculate1(name) =
+  lines(name) 
+    |> Std.map(parseGame) 
+    |> Std.map(fn(game) validGame(game, limits)) 
+    |> total()
+
+let calculate2(name) =
+  lines(name) 
+    |> Std.map(parseGame) 
+    |> Std.map(gameMinimum)
+    |> Std.map(gamePower)
+    |> Std.reduce(fn(a, b) a + b, 0)
