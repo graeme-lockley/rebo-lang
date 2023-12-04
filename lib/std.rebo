@@ -273,10 +273,10 @@ let firstIndexOf(xs, item) {
   result
 }
 
-# `find` returns the first element of `seq` that returns `true` when passed to
+# `findFirst` returns the first element of `seq` that returns `true` when passed to
 # the predicate function `p`. The predicate function receives arguments
 # (`element`, `index`).
-let find(seq, p) {
+let findFirst(seq, p) {
   let i = 0
   let len = len(seq)
   let result = ()
@@ -290,3 +290,22 @@ let find(seq, p) {
   result
 }
 
+# `findLast` returns the last element of `seq` that returns `true` when passed to
+# the predicate function `p`. The predicate function receives arguments
+# (`element`, `index`).
+let findLast(seq, p) {
+  let i = len(seq) - 1
+  let result = ()
+
+  while result == () && i >= 0 -> {
+    let x = seq[i]
+    if p(x, i) -> result := x
+     | i := i - 1
+  }
+
+  result
+}
+
+# `sum` returns the sum of all the elements in `xs`.
+let sum(xs) =
+  xs |> reduce(fn (a, b) a + b, 0) 

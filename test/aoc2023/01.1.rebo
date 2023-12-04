@@ -3,25 +3,12 @@ let Path = import("path")
 let Std = import("std")
 let Str = import("str")
 
-let first(lst, p) =
-  if len(lst) == 0 -> ()
-   | p(lst[0]) -> lst[0]
-   | first(lst[1:], p)
-
-let last(lst, p) =
-  if len(lst) == 0 -> ()
-   | p(lst[len(lst) - 1]) -> lst[len(lst) - 1]
-   | last(lst[0:len(lst) - 1], p)
-
 let extractNumber(line) {
-  let a = first(line, Str.digit?)
-  let b = last(line, Str.digit?)
+  let a = Std.findFirst(line, Str.digit?)
+  let b = Std.findLast(line, Str.digit?)
 
   int(str(a, false) + str(b, false))
 }
-
-let sum(lst) =
-  lst |> Std.reduce(fn (a, b) a + b, 0) 
 
 let lines(name) =
   Path.dir(__FILE) + name
@@ -31,4 +18,4 @@ let calculate(name) =
   name
     |> lines()
     |> Std.map(extractNumber) 
-    |> sum()
+    |> Std.sum()
