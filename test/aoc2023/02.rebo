@@ -5,11 +5,7 @@ let Path = import("path")
 let Std = import("std")
 let Str = import("str")
 
-let limits = {
-  red: 12,
-  green: 13,
-  blue: 14
-}
+let limits = { red: 12, green: 13, blue: 14 }
 
 let lines(name) =
   Path.dir(__FILE) + name
@@ -34,9 +30,9 @@ let validGame(game, limits) {
   let result = true
   game |> Std.each(fn(reveal) {
     keys(limits) |> Std.each(fn(colour) {
-      let score = reveal[colour]
+      let score = reveal[colour] ? 0
 
-      if score != () && score > limits[colour] -> result := false
+      if score > limits[colour] -> result := false
     })
   })
 
@@ -50,7 +46,7 @@ let gameMinimum(game) {
     keys(reveal) |> Std.each(fn(colour) {
       let score = reveal[colour]
 
-      if score != () && score > result[colour] -> result[colour] := score
+      if score > result[colour] -> result[colour] := score
     })
   })
 
@@ -77,4 +73,4 @@ let calculate2(name) =
     |> Std.map(parseGame) 
     |> Std.map(gameMinimum)
     |> Std.map(gamePower)
-    |> Std.reduce(fn(a, b) a + b, 0)
+    |> Std.sum()

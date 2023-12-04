@@ -68,19 +68,17 @@ let calculate1(name) =
   lines(name)
     |> total()
 
-let content = lines("/03.test.data")
+let gobblePartNo(line, x, result) {
+  while Str.digit?(line[x - 1] ? '.') -> x := x - 1
 
-let gobblePartNo(line, pos, result) {
-  while pos > 0 && Str.digit?(line[pos - 1]) -> pos := pos - 1
-
-  let partNoStr = Str.takeWhile(line[pos:], Str.digit?)
+  let partNoStr = Str.takeWhile(line[x:], Str.digit?)
 
   result <! int(partNoStr)
-  line[0:pos] + "." * len(partNoStr) + line[pos + len(partNoStr):]
+  line[0:x] + "." * len(partNoStr) + line[x + len(partNoStr):]
 }
 
 let chomp(line, x, result) =
-  if x >= 0 && x < len(line) && Str.digit?(line[x]) -> gobblePartNo(line, x, result)
+  if Str.digit?(line[x] ? '.') -> gobblePartNo(line, x, result)
    | line
 
 let chompLine(line, x, result) =
@@ -93,9 +91,9 @@ let gearParts(content, pos) =
   if gearAt(content, pos) -> {
       let result = []
 
-      if pos.y > 0 -> chompLine(content[pos.y - 1], pos.x, result)
+      chompLine(content[pos.y - 1] ? "", pos.x, result)
       chompLine(content[pos.y], pos.x, result)
-      if pos.y < len(content) - 1 -> chompLine(content[pos.y + 1], pos.x, result)
+      chompLine(content[pos.y + 1] ? "", pos.x, result)
 
       result
     }
