@@ -27,10 +27,7 @@ let patterns = [
 ];
 
 let matchPattern(s) =
-  Std.find(patterns, fn(p) {
-    let [pattern, value] = p
-    Str.startsWith?(s, pattern)
-  })
+  Std.findFirst(patterns, fn(p) Str.startsWith?(s, p[0]))
 
 let extractNumbersLeft(s, idx) {
   let m = matchPattern(s[idx:])
@@ -57,4 +54,4 @@ let calculate(name) =
   name
     |> A011.lines()
     |> Std.map(extractNumbers)
-    |> A011.sum()
+    |> Std.sum()
