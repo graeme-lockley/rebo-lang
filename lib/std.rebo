@@ -258,7 +258,7 @@ let lastIndexOf(xs, item) {
   result
 }
 
-# `firstIndexOf` returns the index of the last occurrence of `item` in `xs` or
+# `firstIndexOf` returns the index of the first occurrence of `item` in `xs` or
 # `()` if `item` is not found.
 let firstIndexOf(xs, item) {
   let result = ()
