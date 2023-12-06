@@ -1,0 +1,75 @@
+let FS = import("fs")
+let Path = import("path")
+let Std = import("std")
+let Str = import("str")
+
+let lines(name) =
+  Path.dir(__FILE) + name
+    |> FS.lines()
+
+let in(item, list) =
+  list
+    |> Std.any(fn (i) i == item)
+
+let parseContent(lines) =
+  lines 
+    |> Std.map(fn (line) (line |> Std.split(':')))
+    |> Std.map(fn (line) {
+        number: int(line[0][5:]),
+        winning: line[1][0:Std.firstIndexOf(line[1], '|')] |> Std.split(' ') |> Std.filter(fn(c) c != "") |> Std.map(fn(n) int(Str.trim(n))),
+        numbers: line[1][Std.firstIndexOf(line[1], '|') + 1 :] |> Std.split(' ') |> Std.filter(fn(c) c != "") |> Std.map(fn(n) int(Str.trim(n)))
+      })
+
+let score(n) =
+  if n == 0 -> 0
+   | n == 1 -> 1
+   | 2 * score(n - 1)
+
+let calculateScore(winning, numbers) =
+  numbers
+    |> Std.filter(fn (n) in(n, winning))
+    |> len()
+    |> score()
+
+let calculate1(name) =
+  name
+    |> lines()
+    |> parseContent()
+    |> Std.map(fn (line) calculateScore(line.winning, line.numbers))
+    |> Std.sum()
+
+let entries(record) =
+  record
+    |> keys()
+    |> Std.map(fn (key) record[key])
+
+let calculate2(name) {
+  let games = lines(name) |> parseContent()
+
+  let cards = {}
+  let lp = 0
+
+  while lp < len(games) -> {
+    let round = str(lp, false)
+
+    if cards[round] == () -> cards[round] := 1
+     | cards[round] := cards[round] + 1
+
+    let wins = 
+      games[lp].numbers 
+        |> Std.reduce(fn (acc, n) acc + (if in(n, games[lp].winning) -> 1 | 0), 0)
+    
+    let runner = 0
+    while runner < wins -> {
+      let i = str(lp + runner + 1)
+      if cards[i] == () -> cards[i] := cards[round]
+        | cards[i] := cards[round] + cards[i]
+
+      runner := runner + 1
+    }
+
+    lp := lp + 1
+  }
+
+  Std.sum(entries(cards))
+}
