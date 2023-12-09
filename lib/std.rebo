@@ -45,6 +45,22 @@ let any(xs = [], f = constant(false)) {
   found
 }
 
+# `all` returns `true` if all elements of the iterable `xs` return `true` when
+# passed to the predicate function `f`. The predicate function receives arguments
+# (`element`, `index`).
+let all(xs = [], f = constant(true)) {
+  let lp = 0
+  let found = true
+
+  while lp < len(xs) && found -> {
+    if !f(xs[lp], lp) -> found := false
+
+    lp := lp + 1
+  }
+
+  found
+}
+
 # `each` calls the given iterator function `f` for each element of the iterable
 # `xs`. The iterator function receives arguments (`element`, `index`).
 let each(xs, f) {
