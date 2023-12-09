@@ -5,6 +5,7 @@ let run(suite) {
   # _a04(suite.suite("AOC Day 4"))
   # _a05(suite.suite("AOC Day 5"))
   # _a06(suite.suite("AOC Day 6"))
+  # _a07(suite.suite("AOC Day 7"))
 }
 
 let _a01(suite) {
@@ -58,3 +59,11 @@ let _a06(suite) {
   suite.eq("1.answer", A06.calculate([45, 98, 83, 73], [295, 1734, 1278, 1210]), 1413720)
   suite.eq("2.answer", A06.calculate([45988373], [295173412781210]), 30565288)
 } 
+
+let _a07(suite) {
+  let A07 = import("./07.rebo")
+
+  suite.eq("test", A07.calculate1("/07.test.data"), 5905)
+  suite.eq("answer", A07.calculate1("/07.data"), 250577259)
+} 
+

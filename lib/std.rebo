@@ -309,3 +309,24 @@ let findLast(seq, p) {
 # `sum` returns the sum of all the elements in `xs`.
 let sum(xs) =
   xs |> reduce(fn (a, b) a + b, 0) 
+
+# `sort` returns a new sequence containing the elements of `seq` sorted in
+# ascending order. The optional `compare` function is used to compare elements.
+# The compare function receives arguments (`a`, `b`).
+let sort(seq, compare = fn(a, b) a < b) =
+  if len(seq) < 2 -> seq
+   | len(seq) == 2 -> { if compare(seq[0], seq[1]) -> seq | [seq[1], seq[0]] }
+   | {
+        let pivot = seq[0]
+        let left = []
+        let right = []
+
+        seq[1:] |> each(fn(i) if compare(i, pivot) -> left <! i | right <! i) ;
+
+        [...sort(left, compare), pivot, ...sort(right, compare)]
+     }
+
+# `values` returns a sequence containing the values of the record `rec`.
+let values(rec) =
+  keys(rec) |> map(fn (k) rec[k])
+

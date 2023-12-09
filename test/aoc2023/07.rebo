@@ -1,0 +1,67 @@
+#!env rebo
+
+let FS = import("fs")
+let Path = import("path")
+let Std = import("std")
+let Str = import("str")
+
+let order = "AKQT98765432J"
+
+let orderOf(card) =
+  order |> Std.firstIndexOf(card)
+
+let parseContent(name) =
+  Path.dir(__FILE) + name
+    |> FS.lines()
+    |> Std.map(fn (line) { hand: line[0:5], bid: int(line[6:]) })
+
+let frequences(hand) {
+   let freq = {}
+
+   hand |> Std.each(fn (card) {
+      freq[str(card, false)] := 1 + (freq[str(card, false)] ? 0)
+   })
+
+   let j = freq.J ? 0
+   freq.J := ()
+   
+   let result' = Std.values(freq) |> Std.sort(fn (a, b) a > b)
+   if len(result') == 0 -> result' := [5]
+    | result'[0] := result'[0] + j
+
+   result'
+}
+
+# Ranking:
+# 1 - five of a kind
+# 2 - four of a kind
+# 3 - full house
+# 4 - three of a kind
+# 5 - two pairs
+# 6 - one pair
+# 7 - high card
+let rankHand(hand) {
+  let freq = frequences(hand)
+
+  if len(freq) == 1 -> 1
+   | len(freq) == 2 -> { if freq[0] == 4 -> 2 | 3 }
+   | len(freq) == 3 -> { if freq[0] == 3 -> 4 | 5 }
+   | len(freq) == 4 -> 6
+   | 7
+}
+
+let orderHands(hand1, hand2) =
+  if len(hand1) == 0 -> true
+   | orderOf(hand1[0]) < orderOf(hand2[0]) -> true
+   | orderOf(hand1[0]) > orderOf(hand2[0]) -> false
+   | orderHands(hand1[1:], hand2[1:])
+
+
+let calculate1(name) =
+   parseContent(name)
+      |> Std.map(fn (rec) { rank: rankHand(rec.hand), ...rec })
+      |> Std.sort(fn(a, b)
+            if a.rank == b.rank -> orderHands(b.hand, a.hand)
+            | a.rank > b.rank
+         )
+      |> Std.reduce(fn (acc, rec, idx) acc + rec.bid * (idx + 1), 0)
