@@ -1,0 +1,28 @@
+let calculate(raceTimes, recordDistances) {
+  let totalWaysToWin = 1
+
+  let i = 0
+  while i < len(raceTimes) -> {
+    let raceTime = raceTimes[i]
+    let recordDistance = recordDistances[i]
+
+    let waysToWin = 0
+
+    let j = 1
+    while j <= raceTime -> {
+      let speed = j
+      let timeLeft = raceTime - j
+      let distance = speed * timeLeft
+
+      if distance > recordDistance -> waysToWin := waysToWin + 1
+
+      j := j + 1
+    }
+
+    totalWaysToWin := totalWaysToWin * waysToWin
+
+    i := i + 1
+  }
+
+  totalWaysToWin
+}

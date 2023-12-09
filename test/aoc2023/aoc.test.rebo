@@ -3,6 +3,8 @@ let run(suite) {
   _a02(suite.suite("AOC Day 2"))
   # _a03(suite.suite("AOC Day 3"))
   # _a04(suite.suite("AOC Day 4"))
+  # _a05(suite.suite("AOC Day 5"))
+  # _a06(suite.suite("AOC Day 6"))
 }
 
 let _a01(suite) {
@@ -39,4 +41,20 @@ let _a04(suite) {
   suite.eq("1.answer", A04.calculate1("/04.data"), 24848)
   suite.eq("2.test", A04.calculate2("/04.test.data"), 30)
   suite.eq("2.test", A04.calculate2("/04.data"), 7258152)
+} 
+
+let _a05(suite) {
+  let A05 = import("./05.rebo")
+
+  suite.eq("1.test", A05.calculate1("/05.test.data"), 35)
+  suite.eq("1.answer", A05.calculate1("/05.data"), 107430936)
+  suite.eq("2.test", A05.calculate2("/05.test.data"), 46)
+  # suite.eq("2.answer", A05.calculate2("/05.data"), 107430936)
+} 
+
+let _a06(suite) {
+  let A06 = import("./06.rebo")
+
+  suite.eq("1.answer", A06.calculate([45, 98, 83, 73], [295, 1734, 1278, 1210]), 1413720)
+  suite.eq("2.answer", A06.calculate([45988373], [295173412781210]), 30565288)
 } 
