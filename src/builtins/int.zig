@@ -9,7 +9,7 @@ pub fn int(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*
     switch (v.v) {
         Helper.ValueValue.CharKind => try machine.memoryState.pushIntValue(@intCast(v.v.CharKind)),
         Helper.ValueKind.StringKind => {
-            const literalInt = std.fmt.parseInt(i32, v.v.StringKind, @intCast(if (b == machine.memoryState.unitValue) 10 else b.v.IntKind)) catch {
+            const literalInt = std.fmt.parseInt(Helper.IntType, v.v.StringKind, @intCast(if (b == machine.memoryState.unitValue) 10 else b.v.IntKind)) catch {
                 try machine.memoryState.push(d);
                 return;
             };

@@ -795,7 +795,7 @@ pub const Parser = struct {
     }
 
     fn parseLiteralInt(self: *Parser, lexeme: []const u8) !V.IntType {
-        return std.fmt.parseInt(i32, lexeme, 10) catch {
+        return std.fmt.parseInt(V.IntType, lexeme, 10) catch {
             const token = self.currentToken();
             self.replaceErr(try Errors.literalIntOverflowError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
             return error.InterpreterError;
