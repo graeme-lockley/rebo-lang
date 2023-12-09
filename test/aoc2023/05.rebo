@@ -1,0 +1,133 @@
+#!env rebo
+
+let FS = import("fs")
+let Path = import("path")
+let Std = import("std")
+let Str = import("str")
+
+let lines(name) =
+  Path.dir(__FILE) + name
+    |> FS.lines()
+
+let parseContent(name) {
+  let content = lines(name)
+  let mappings = {}
+
+  let seeds = 
+    content[0][7:]
+      |> Std.split(' ')
+      |> Std.map(fn (c) Str.trim(c))
+      |> Std.map(int)
+  
+  let mapping = {}
+  let index = 2
+
+  while index < len(content) -> {
+    let mappingName = content[index][0:Std.firstIndexOf(content[index], ' ')]
+    let mapping = []
+    
+    index := index + 1
+
+    while index < len(content) && content[index] != "" -> {
+      let value = content[index] |> Str.trim() |> Std.split(' ') |> Std.map(int) 
+      mapping <! value
+      index := index + 1
+    }
+
+    mappings[mappingName] := mapping
+
+    index := index + 1
+  };
+
+  [seeds, mappings]
+}
+
+let map(n, mapping) {
+  let values = mapping |> Std.findFirst(fn(v) n >= v[1] && n < v[1] + v[2])
+
+  if values == () -> n
+    | values[0] + n - values[1]
+}
+
+
+let transform(seed, mappings) {
+  let xform(seed', name) =
+    seed' |> map(mappings[name])
+
+  seed
+    |> xform("seed-to-soil")
+    |> xform("soil-to-fertilizer")
+    |> xform("fertilizer-to-water")
+    |> xform("water-to-light")
+    |> xform("light-to-temperature")
+    |> xform("temperature-to-humidity")
+    |> xform("humidity-to-location")
+}
+
+let transform'(seeds, mappings) {
+  let xform(seeds', name) =
+    seeds' |> Std.map(fn (n) map(n, mappings, name))
+
+  seeds
+    |> xform("seed-to-soil")
+    |> xform("soil-to-fertilizer")
+    |> xform("fertilizer-to-water")
+    |> xform("water-to-light")
+    |> xform("light-to-temperature")
+    |> xform("temperature-to-humidity")
+    |> xform("humidity-to-location")
+}
+
+let min(lst) =
+  lst |> Std.reduce(fn (a, b) if a < b -> a | b, lst[0])
+
+let group(lst) =
+  if len(lst) == 0 -> []
+   | [[lst[0], lst[1]], ...group(lst[2:])] 
+
+let calculate1(name) {
+  let content = parseContent(name)
+
+  content[0] |> Std.map(fn (seed) transform(seed, content[1])) |> min()
+}
+
+let calculate2(name) {
+  let [seedRanges, mappings] = parseContent(name)
+
+  let seeds = group(seedRanges)
+  let minimum = seeds[0][0] |> transform(mappings)
+
+  let seedToSoil = mappings["seed-to-soil"]
+  let soilToFertilizer = mappings["soil-to-fertilizer"];
+  let fertilizerToWater = mappings["fertilizer-to-water"]
+  let waterToLight = mappings["water-to-light"]
+  let lightToTemperature = mappings["light-to-temperature"]
+  let temperatureToHumidity = mappings["temperature-to-humidity"]
+  let humidityToLocation = mappings["humidity-to-location"]
+
+  while len(seeds) > 0 -> {
+    println(seeds[0])
+    let lp = seeds[0][0]
+    let end = lp + seeds[0][1]
+    while lp < end -> {
+      if lp % 1000000 == 0 -> print(".")
+#      let seed = lp |> transform(mappings)
+
+      let seed = 
+        lp
+          |> map(seedToSoil)
+          |> map(soilToFertilizer)
+          |> map(fertilizerToWater)
+          |> map(waterToLight)
+          |> map(lightToTemperature)
+          |> map(temperatureToHumidity)
+          |> map(humidityToLocation)
+
+      if seed < minimum -> minimum := seed
+      lp := lp + 1
+    }
+    seeds := seeds[1:]
+  }
+
+  minimum
+}
