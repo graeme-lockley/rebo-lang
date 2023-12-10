@@ -1,0 +1,269 @@
+#!env rebo
+
+let FS = import("fs")
+let Path = import("path")
+let Std = import("std")
+let Str = import("str")
+
+let parseContent(name) =
+   Path.dir(__FILE) + name 
+      |> FS.lines() 
+
+let findAnimal(content) {
+   let x = 0
+   let y = 0
+   let found = false
+
+   while !found -> {
+      if content[y][x] == 'S' -> found := true
+       | { 
+            x := x + 1
+            if x == len(content[y]) -> {
+               x := 0
+               y := y + 1
+            }
+         } 
+   }
+
+   ; [x, y]
+}
+
+let starts(pos, content) {
+   let at(x, y) =
+      if x < 0 || y < 0 || y >= len(content) || x >= len(content[y]) -> '.'
+       | content[y][x]
+
+   let [x, y] = pos
+
+   let result = []
+
+   if "|F7" |> Std.contains(at(x, y - 1)) -> result <! [x, y - 1]
+   if "-7J" |> Std.contains(at(x + 1, y)) -> result <! [x + 1, y]
+   if "|LJ" |> Std.contains(at(x, y + 1)) -> result <! [x, y + 1]
+   if "-LF" |> Std.contains(at(x - 1, y)) -> result <! [x - 1, y]
+
+   result
+}
+
+let step(content, pos) {
+   let [x, y] = pos
+
+   if x < 0 || y < 0 || y >= len(content) || x >= len(content[y]) -> []
+    | {
+         match content[y][x]
+         | '|' -> [[x, y - 1], [x, y + 1]]
+         | '-' -> [[x - 1, y], [x + 1, y]]
+         | 'L' -> [[x, y - 1], [x + 1, y]]
+         | 'J' -> [[x - 1, y], [x, y - 1]]
+         | '7' -> [[x - 1, y], [x, y + 1]]
+         | 'F' -> [[x + 1, y], [x, y + 1]]
+         | _ -> []
+      }
+}
+
+let result(content) = {
+   let _start = findAnimal(content)
+   let _states = _start |> starts(content)
+
+   let _result = 
+      Std.range(0, len(content))
+         |> Std.map(fn (y) {
+            Std.range(0, len(content[y]))
+               |> Std.map(fn (x) ())
+         })
+
+   let _mark(pos, v) {
+      let [x, y] = pos
+
+      if _result[y][x] == () -> { _result[y][x] := v ; true }
+       | false
+   }
+
+   _mark(_start, 0)
+   _states |> Std.each(fn (pos) _mark(pos, 1))
+
+   let _iteration = 1
+   
+   let self = {
+      result: fn() _result,
+      iteration: fn() _iteration - 1,
+      tick: fn() {
+         let nextStates = []
+
+         _iteration := _iteration + 1
+         _states |> Std.each(fn (pos) {
+            step(content, pos) |> Std.each(fn (next) {
+               if _mark(next, _iteration) -> { 
+                  # println("marking ", str(next), " as ", _iteration, " from ", pos, " with ", content[pos[1]][pos[0]])
+                  nextStates <! next
+               }
+            })
+         })
+
+         _states := nextStates
+      },
+      finish?: fn() len(_states) == 0
+   }
+
+   self
+}
+
+let calculate1(name) {
+   let content = parseContent(name)
+   let r = result(content)
+   while !r.finish?() -> r.tick()
+   r.iteration()
+}
+
+let dump(world, content) {
+   world |> Std.each(fn (line, y) {
+      if (y < 10) -> print(" ")
+      if (y < 100) -> print(" ")
+      print(y, "  |")
+
+      line |> Std.each(fn (v, x) {
+         print(if v == () -> '*' | v == false -> '.' | content[y][x])
+      })
+      println()
+   })
+}
+
+let betweenUp = ["||", "7|", "J|", "|F", "7F", "JF", "|L", "7L", "JL"]
+let betweenSide = ["--", "-7", "-F", "L-", "L7", "LF", "J-", "J7", "JF"]
+
+let betweenUp?(content, world, x, y) =
+   if x < 0 || y < 0 || y >= len(content) || x + 1 >= len(content[y]) -> false
+    | world[y][x] != () && world[y][x + 1] != () -> Std.contains(betweenUp, content[y][x:x + 2])
+    | false
+
+let betweenSide?(content, world, x, y) =
+   if x < 0 || y < 0 || y + 1 >= len(content) || x >= len(content[y]) -> false
+    | world[y][x] != () && world[y + 1][x] != () -> {
+         let tiles = str(content[y][x], false) + str(content[y + 1][x], false)
+         Std.contains(betweenSide, tiles)
+      }
+    | false
+
+# - - - L L L J J J
+# - 7 F - 7 F - 7 F
+
+let poison(world, content, x, y) {
+   let maxY = len(content)
+   let maxX = len(content[0])
+
+   let positions = [[x, y]]
+
+   while len(positions) > 0 -> {
+      let next = []
+      positions |> Std.each(fn (pos) {
+         let [x, y] = pos
+
+         let append(x', y') {
+            if x' >= 0 && y' >= 0 && y' < maxY && x' < maxX -> next <! [x', y']
+         }
+
+         if y >= 0 && y < maxY && x >= 0 && x < maxX && world[y][x] == () -> {
+            world[y][x] := false
+
+            append(x - 1, y - 1)
+            append(x - 1, y)
+            append(x - 1, y + 1)
+            append(x, y + 1)
+            append(x + 1, y + 1)
+            append(x + 1, y)
+            append(x + 1, y - 1)
+            append(x, y - 1)
+            
+            let y' = y - 1
+            while betweenUp?(content, world, x, y') -> y' := y' - 1
+            if y' != y - 1 -> {
+               append(x, y')
+               append(x + 1, y')
+            }
+
+            y' := y - 1
+            while betweenUp?(content, world, x - 1, y') -> y' := y' - 1
+            if y' != y - 1 -> {
+               append(x - 1, y')
+               append(x, y')
+            }
+
+            y' := y + 1
+            while betweenUp?(content, world, x, y') -> y' := y' + 1
+            if y' != y + 1 -> {
+               append(x, y')
+               append(x + 1, y')
+            }
+
+            y' := y + 1
+            while betweenUp?(content, world, x - 1, y') -> y' := y' + 1
+            if y' != y + 1 -> {
+               append(x - 1, y')
+               append(x, y')
+            }
+
+            let x' = x - 1
+            while betweenSide?(content, world, x', y - 1) -> x' := x' - 1
+            if x' != x - 1 -> {
+               append(x', y)
+               append(x', y - 1)
+            }
+
+            x' := x + 1
+            while betweenSide?(content, world, x', y - 1) -> x' := x' + 1
+            if x' != x + 1 -> {
+               append(x', y)
+               append(x', y - 1)
+            }
+
+            x' := x - 1
+            while betweenSide?(content, world, x', y) -> x' := x' - 1
+            if x' != x - 1 -> {
+               append(x', y)
+               append(x', y + 1)
+            }
+
+            x' := x + 1
+            while betweenSide?(content, world, x', y) -> x' := x' + 1
+            if x' != x + 1 -> {
+               append(x', y)
+               append(x', y + 1)
+            }
+         }
+      })
+
+      positions := next
+   }
+}
+
+let calculate2(name) {
+   let content = parseContent(name)
+   let r = result(content)
+   while !r.finish?() -> r.tick()
+
+   let world = r.result()
+
+   # dump(world, content)
+
+   let maxY = len(content)
+   let maxX = len(content[0])
+
+   world |> Std.each(fn (line, y) {
+      line |> Std.each(fn (v, x) {
+         if x == 0 || y == 0 || x == maxX - 1 || y == maxY - 1 -> poison(world, content, x, y)  
+      })
+   })
+
+   # dump(world, content)
+   # println("")
+
+   let count = 0
+   world |> Std.each(fn (line, y) {
+      line |> Std.each(fn (v, x) {
+         if v == () -> count := count + 1
+      })
+   })
+
+   count
+}
+

@@ -8,6 +8,7 @@ let run(suite) {
   # _a07(suite.suite("AOC Day 7"))
   # _a08(suite.suite("AOC Day 8"))
   # _a09(suite.suite("AOC Day 9"))
+  # _a10(suite.suite("AOC Day 10"))
 }
 
 let _a01(suite) {
@@ -86,5 +87,22 @@ let _a09(suite) {
   suite.eq("1.answer", A09.calculate1("/09.data"), 1853145119)
   suite.eq("2.test", A09.calculate2("/09.test.data"), 2)
   suite.eq("2.answer", A09.calculate2("/09.data"), 923)
+} 
+
+let _a10(suite) {
+  let A10 = import("./10.rebo")
+
+  suite.eq("1.test.1", A10.calculate1("/10.test.1.data"), 8)
+  suite.eq("1.test.2", A10.calculate1("/10.test.2.data"), 23)
+  suite.eq("1.test.3", A10.calculate1("/10.test.3.data"), 70)
+  suite.eq("1.test.4", A10.calculate1("/10.test.4.data"), 80)
+  suite.eq("1.answer", A10.calculate1("/10.data"), 6882)
+
+  suite.eq("2.test.1", A10.calculate2("/10.test.1.data"), 1)
+  suite.eq("2.test.2", A10.calculate2("/10.test.2.data"), 4)
+  suite.eq("2.test.3", A10.calculate2("/10.test.3.data"), 8)
+  suite.eq("2.test.4", A10.calculate2("/10.test.4.data"), 10)
+  suite.eq("2.test.5", A10.calculate2("/10.test.5.data"), 4)
+  suite.eq("2.answer", A10.calculate2("/10.data"), 699)
 } 
 

@@ -306,6 +306,19 @@ let findFirst(seq, p) {
   result
 }
 
+let contains(seq, item) {
+  let result = false
+  let lp = 0
+
+  while !result && lp < len(seq) -> {
+    if seq[lp] == item -> result := true
+
+    lp := lp + 1
+  }
+
+  result
+}
+
 # `findLast` returns the last element of `seq` that returns `true` when passed to
 # the predicate function `p`. The predicate function receives arguments
 # (`element`, `index`).
