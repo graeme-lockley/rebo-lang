@@ -1,0 +1,77 @@
+#!env rebo
+
+let FS = import("fs")
+let Path = import("path")
+let Std = import("std")
+let Str = import("str")
+
+let parseContent(name) {
+  let lines = Path.dir(__FILE) + name |> FS.lines()
+
+   {  route: lines[0],
+      mapping: lines[2:]
+         |> Std.reduce(fn (acc, line) {
+               let acc' = {...acc}
+               acc'[line[0:3]] := {L: line[7:10], R: line[12:15]}
+               acc'
+            }, {})
+   }
+}
+
+let stepper1(content) {
+   let _current = "AAA"
+   let _index = 0
+
+   let self = {
+      step: fn() {
+         # println(_current, ' ', _index, ' ', content.route[_index % len(content.route)])
+         _current := content.mapping[_current][str(content.route[_index % len(content.route)], false)]
+         _index := _index + 1
+      },
+
+      finish?: fn() _current == "ZZZ",
+
+      index: fn() _index
+   }
+
+   self
+}
+
+let stepper2(content) {
+   let _current = keys(content.mapping) |> Std.filter(fn (k) k[2] == 'A')
+   let _index = 0
+
+   let self = {
+      step: fn() {
+         # println(_current, ' ', _index, ' ', content.route[_index % len(content.route)])
+         _current := _current |> Std.map(fn (s) content.mapping[s][str(content.route[_index % len(content.route)], false)])
+         _index := _index + 1
+
+         if _index % 1000000 == 0 -> println(_index, "...")
+      },
+
+      finish?: fn() _current |> Std.all(fn (s) s[2] == 'Z'),
+
+      index: fn() _index
+   }
+
+   self
+}
+
+let calculate1(name) {
+   let content = parseContent(name)
+   let visitor = stepper1(content)
+
+   while !visitor.finish?() -> visitor.step()
+
+   visitor.index()   
+}
+
+let calculate2(name) {
+   let content = parseContent(name)
+   let visitor = stepper2(content)
+
+   while !visitor.finish?() -> visitor.step()
+
+   visitor.index()   
+}
