@@ -208,8 +208,8 @@ let calculate2(name) {
 
    let world = r.result()
 
-   dump(world, content)
-   println("")
+   # dump(world, content)
+   # println("")
 
    let maxY = len(content)
    let maxX = len(content[0])
@@ -220,9 +220,9 @@ let calculate2(name) {
       })
    })
 
-   dump(world, content)
-   println("")
-   println("")
+   # dump(world, content)
+   # println("")
+   # println("")
 
    let count = 0
    world |> Std.each(fn (line, y) {

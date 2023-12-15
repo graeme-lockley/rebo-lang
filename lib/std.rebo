@@ -162,6 +162,12 @@ let map(xs, f) {
   result
 }
 
+# `map2d` applies the given mapping function `f` to each element of the 2d
+# sequence `xs` and returns a new sequence containing the results. The mapping
+# function receives arguments (`element`, `x`, `y`).
+let map2d(xs, f) =
+    xs |> map(fn (row, y) row |> map(fn (col, x) f(col, x, y)))
+
 # `reduce` applies the given reducer function `f` to each element of the iterable
 # `xs` and returns a single value. The reducer function receives arguments
 # (`accumulator`, `element`, `index`).
@@ -176,6 +182,12 @@ let reduce(xs, f, init = ()) {
 
   result
 }
+
+# `reduce2d` applies the given reducer function `f` to each element of the 2d
+# sequence `xs` and returns a single value. The reducer function receives arguments
+# (`accumulator`, `element`, `x`, `y`).
+let reduce2d(xs, f, acc) =
+    xs |> reduce(fn (acc, row, y) row |> reduce(fn (acc, col, x) f(acc, col, x, y), acc), acc)
 
 # `split` breaks a string up into a sequence of substrings using the given separator.
 # If no separator is given, the string is split on whitespace.
@@ -335,6 +347,14 @@ let findLast(seq, p) {
   result
 }
 
+# `max` returns the largest element in `xs`.
+let max(xs, compare = fn (a, b) a > b) =
+  xs |> reduce(fn (a, b) if compare(a, b) -> a | b, xs[0])
+
+# `min` returns the smallest element in `xs`.
+let min(xs, compare = fn (a, b) a < b) =
+  max(xs, compare)
+
 # `sum` returns the sum of all the elements in `xs`.
 let sum(xs) =
   xs |> reduce(fn (a, b) a + b, 0) 
@@ -359,11 +379,14 @@ let sort(seq, compare = fn(a, b) a < b) =
 let values(rec) =
   keys(rec) |> map(fn (k) rec[k])
 
-let max(xs) =
-  xs |> reduce(fn (a, b) if a > b -> a | b, xs[0])
-
-let min(xs) =
-  xs |> reduce(fn (a, b) if a < b -> a | b, xs[0])
-
+# `reverse` returns a new sequence containing the elements of `seq` in reverse
+# order.
 let reverse(xs) =
   xs |> reduce(fn (acc, b) [b, ...acc], [])
+
+# `count` returns the number of elements in `xs` that return `true` when passed
+# to the predicate function `p`. The predicate function receives the `element` 
+# as argument.
+let count(xs, p = constant(true)) = 
+    xs |> reduce(fn (acc, v) if p(v) -> acc + 1 | acc, 0)
+

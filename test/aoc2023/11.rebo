@@ -1,0 +1,61 @@
+#!env rebo
+
+let FS = import("fs")
+let Path = import("path")
+let Std = import("std")
+let Str = import("str")
+
+let parseContent(name) =
+   Path.dir(__FILE) + "/" + name 
+      |> FS.lines()
+      |> Std.reduce2d(fn (acc, cell, x, y) if cell == '.' -> acc | acc << [x, y], [])
+
+let expandUniverse(universe, expansionFactor) {
+    let expansionFactor' = expansionFactor - 1
+    let maxX = universe |> Std.map(fn (c) c[0]) |> Std.max()
+    let maxY = universe |> Std.map(fn (c) c[1]) |> Std.max()
+
+    let gapXs = Std.range(0, maxX) |> Std.filter(fn (x) !(universe |> Std.map(fn (c) c[0]) |> Std.contains(x)))
+    let gapYs = Std.range(0, maxY) |> Std.filter(fn (y) !(universe |> Std.map(fn (c) c[1]) |> Std.contains(y)))
+
+    let r = universe |> Std.map(fn (c) {
+        let xGaps = gapXs |> Std.count(fn (v) v < c[0])
+        let yGaps = gapYs |> Std.count(fn (v) v < c[1])
+
+        ; [c[0] + expansionFactor' * xGaps, c[1] + expansionFactor' * yGaps ]
+    })
+     r
+}
+
+let abs(v) =
+    if v < 0 -> 0 - v | v
+
+let distanceBetween(a, b) =
+    abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+let pairs(xs) {
+    let result = []
+
+    let outer = 0
+    while outer < len(xs) -> {
+        let inner = outer + 1
+        while inner < len(xs) -> {
+            result <! [xs[outer], xs[inner]]
+            inner := inner + 1
+        }
+        outer := outer + 1
+    }
+
+    result
+}
+
+let distances(universe) =
+    pairs(universe)
+        |> Std.map(fn (pair) distanceBetween(pair[0], pair[1]))
+
+let calculate(name, expansionFactor = 1) =
+    parseContent(name) 
+        |> expandUniverse(expansionFactor) 
+        |> distances() 
+        |> Std.sum()
+
