@@ -115,7 +115,7 @@ let calculate1(name) {
    r.iteration()
 }
 
-let dump(world, content) {
+let dump(world, content) =
    world |> Std.each(fn (line, y) {
       if (y < 10) -> print(" ")
       if (y < 100) -> print(" ")
@@ -126,30 +126,31 @@ let dump(world, content) {
       })
       println()
    })
-}
 
 let betweenUp = ["||", "7|", "J|", "|F", "7F", "JF", "|L", "7L", "JL"]
 let betweenSide = ["--", "-7", "-F", "L-", "L7", "LF", "J-", "J7", "JF"]
 
-let betweenUp?(content, world, x, y) =
-   if x < 0 || y < 0 || y >= len(content) || x + 1 >= len(content[y]) -> false
-    | world[y][x] != () && world[y][x + 1] != () -> Std.contains(betweenUp, content[y][x:x + 2])
-    | false
-
-let betweenSide?(content, world, x, y) =
-   if x < 0 || y < 0 || y + 1 >= len(content) || x >= len(content[y]) -> false
-    | world[y][x] != () && world[y + 1][x] != () -> {
-         let tiles = str(content[y][x], false) + str(content[y + 1][x], false)
-         Std.contains(betweenSide, tiles)
-      }
-    | false
-
 # - - - L L L J J J
 # - 7 F - 7 F - 7 F
+
+let deltas = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]]
 
 let poison(world, content, x, y) {
    let maxY = len(content)
    let maxX = len(content[0])
+
+   let betweenUp?(x, y) =
+      if x < 0 || y < 0 || y >= maxY || x + 1 >= maxX -> false
+       | world[y][x] != () && world[y][x + 1] != () -> Std.contains(betweenUp, content[y][x:x + 2])
+       | false
+
+   let betweenSide?(x, y) =
+      if x < 0 || y < 0 || y + 1 >= maxY || x >= maxX -> false
+       | world[y][x] != () && world[y + 1][x] != () -> {
+            let tiles = str(content[y][x], false) + str(content[y + 1][x], false)
+            Std.contains(betweenSide, tiles)
+         }
+       | false
 
    let positions = [[x, y]]
 
@@ -158,77 +159,41 @@ let poison(world, content, x, y) {
       positions |> Std.each(fn (pos) {
          let [x, y] = pos
 
-         let append(x', y') {
+         let append(x', y') =
             if x' >= 0 && y' >= 0 && y' < maxY && x' < maxX -> next <! [x', y']
+
+         let squeezeVertical(x, y, deltaY) {
+            let y' = y + deltaY
+            while betweenUp?(x, y') -> y' := y' + deltaY
+            if y' != y + deltaY -> {
+               append(x, y')
+               append(x + 1, y')
+            }
          }
 
-         if y >= 0 && y < maxY && x >= 0 && x < maxX && world[y][x] == () -> {
+         let squeezeHorizontal(x, y, deltaX) {
+            let x' = x + deltaX
+            while betweenSide?(x', y) -> x' := x' + deltaX
+            if x' != x + deltaX -> {
+               append(x', y)
+               append(x', y + 1)
+            }
+         }
+
+         if world[y][x] == () -> {
             world[y][x] := false
 
-            append(x - 1, y - 1)
-            append(x - 1, y)
-            append(x - 1, y + 1)
-            append(x, y + 1)
-            append(x + 1, y + 1)
-            append(x + 1, y)
-            append(x + 1, y - 1)
-            append(x, y - 1)
-            
-            let y' = y - 1
-            while betweenUp?(content, world, x, y') -> y' := y' - 1
-            if y' != y - 1 -> {
-               append(x, y')
-               append(x + 1, y')
-            }
+            deltas |> Std.each(fn (d) append(x + d[0], y + d[1]))
 
-            y' := y - 1
-            while betweenUp?(content, world, x - 1, y') -> y' := y' - 1
-            if y' != y - 1 -> {
-               append(x - 1, y')
-               append(x, y')
-            }
+            squeezeVertical(x - 1, y, -1)
+            squeezeVertical(x, y, -1)
+            squeezeVertical(x - 1, y, 1)
+            squeezeVertical(x, y, 1)
 
-            y' := y + 1
-            while betweenUp?(content, world, x, y') -> y' := y' + 1
-            if y' != y + 1 -> {
-               append(x, y')
-               append(x + 1, y')
-            }
-
-            y' := y + 1
-            while betweenUp?(content, world, x - 1, y') -> y' := y' + 1
-            if y' != y + 1 -> {
-               append(x - 1, y')
-               append(x, y')
-            }
-
-            let x' = x - 1
-            while betweenSide?(content, world, x', y - 1) -> x' := x' - 1
-            if x' != x - 1 -> {
-               append(x', y)
-               append(x', y - 1)
-            }
-
-            x' := x + 1
-            while betweenSide?(content, world, x', y - 1) -> x' := x' + 1
-            if x' != x + 1 -> {
-               append(x', y)
-               append(x', y - 1)
-            }
-
-            x' := x - 1
-            while betweenSide?(content, world, x', y) -> x' := x' - 1
-            if x' != x - 1 -> {
-               append(x', y)
-               append(x', y + 1)
-            }
-
-            x' := x + 1
-            while betweenSide?(content, world, x', y) -> x' := x' + 1
-            if x' != x + 1 -> {
-               append(x', y)
-               append(x', y + 1)
-            }
+            squeezeHorizontal(x, y - 1, -1)
+            squeezeHorizontal(x, y, -1)
+            squeezeHorizontal(x, y - 1, 1)
+            squeezeHorizontal(x, y, 1)
          }
       })
 
@@ -243,7 +208,8 @@ let calculate2(name) {
 
    let world = r.result()
 
-   # dump(world, content)
+   dump(world, content)
+   println("")
 
    let maxY = len(content)
    let maxX = len(content[0])
@@ -254,8 +220,9 @@ let calculate2(name) {
       })
    })
 
-   # dump(world, content)
-   # println("")
+   dump(world, content)
+   println("")
+   println("")
 
    let count = 0
    world |> Std.each(fn (line, y) {
