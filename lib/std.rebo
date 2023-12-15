@@ -359,3 +359,11 @@ let sort(seq, compare = fn(a, b) a < b) =
 let values(rec) =
   keys(rec) |> map(fn (k) rec[k])
 
+let max(xs) =
+  xs |> reduce(fn (a, b) if a > b -> a | b, xs[0])
+
+let min(xs) =
+  xs |> reduce(fn (a, b) if a < b -> a | b, xs[0])
+
+let reverse(xs) =
+  xs |> reduce(fn (acc, b) [b, ...acc], [])
