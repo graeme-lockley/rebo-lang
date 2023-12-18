@@ -1,34 +1,33 @@
 let { join, map } = import("std")
 
 let escape(text) {
-  let result = []
+   let result = []
 
-  let idx = 0
-  while idx < len(text) -> {
-    let char = text[idx]
+   let idx = 0
+   while idx < len(text) -> {
+      let char = text[idx]
 
-    match char 
-    | '\n' -> result <! "\\n"
-    | '\x9' -> result <! "\\t"
-    | '\x12' -> result <! "\\r"
-    | '\x13' -> result <! "\\f"
-    | '"' -> result <! "\\\""
-    | _ -> result <! char
+      match char 
+      | '\n' -> result <! "\\n"
+      | '\x9' -> result <! "\\t"
+      | '\x12' -> result <! "\\r"
+      | '\x13' -> result <! "\\f"
+      | '"' -> result <! "\\\""
+      | _ -> result <! char
 
-    idx := idx + 1
-  }
+      idx := idx + 1
+   }
 
-  str(result, false)   
+   str(result, false)   
 }
 
-let serialise(obj) {
-  match typeof(obj)
-  | "Bool" -> str(obj, false)
-  | "Char" -> "\"" + str(obj, false) + "\""
-  | "Float" -> str(obj, false)
-  | "Int" -> str(obj, false)
-  | "Sequence" -> "[" + (obj |> map(serialise) |> join(", ")) + "]"
-  | "String" -> "\"" + escape(obj) + "\""
-  | "Record" -> "{" + (obj |> keys() |> map(fn(key) "\"" + escape(key) + "\": " + serialise(obj[key])) |> join(", ")) + "}"
-  | _ -> "null"
-}
+let serialise(obj) =
+   match typeof(obj)
+   | "Bool" -> str(obj, false)
+   | "Char" -> "\"" + str(obj, false) + "\""
+   | "Float" -> str(obj, false)
+   | "Int" -> str(obj, false)
+   | "Sequence" -> "[" + (obj |> map(serialise) |> join(", ")) + "]"
+   | "String" -> "\"" + escape(obj) + "\""
+   | "Record" -> "{" + (obj |> keys() |> map(fn(key) "\"" + escape(key) + "\": " + serialise(obj[key])) |> join(", ")) + "}"
+   | _ -> "null"

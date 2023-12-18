@@ -1,44 +1,42 @@
 let { each, split } = import("std")
 
 let mimeTypes = {
-	blob: "application/octet-stream",
+   blob: "application/octet-stream",
 
-	css: "text/css; charset=utf-8",
-	html: "text/html; charset=utf-8",
-	js: "application/javascript; charset=utf-8",
-	json: "application/json; charset=utf-8",
-	md: "text/plain; charset=utf-8",
-	rebo: "text/plain; charset=utf-8",
-	txt: "text/plain; charset=utf-8",
+   css: "text/css; charset=utf-8",
+   html: "text/html; charset=utf-8",
+   js: "application/javascript; charset=utf-8",
+   json: "application/json; charset=utf-8",
+   md: "text/plain; charset=utf-8",
+   rebo: "text/plain; charset=utf-8",
+   txt: "text/plain; charset=utf-8",
 
-	jpg: "image/jpeg",
-	jpeg: "image/jpeg",
-	png: "image/png",
-	gif: "image/gif",
-	svg: "image/svg+xml",
-	webp: "image/webp",
+   jpg: "image/jpeg",
+   jpeg: "image/jpeg",
+   png: "image/png",
+   gif: "image/gif",
+   svg: "image/svg+xml",
+   webp: "image/webp",
 
-	pdf: "application/pdf",
-	zip: "application/zip"
+   pdf: "application/pdf",
+   zip: "application/zip"
 }
 
 let mimeForPath(path) {
-  let parts = path |> split('.')
-  let ext = parts[len(parts) - 1]
+   let parts = path |> split('.')
+   let ext = parts[len(parts) - 1]
   
-  mimeTypes[ext] ? mimeTypes.txt
+   mimeTypes[ext] ? mimeTypes.txt
 }
 
-let NotFound = {status: 404, body: "Not Found"}
-let MethodNotAllowed = {status: 405, body: "Method Not Allowed"}
+let NotFound = { status: 404, body: "Not Found" }
+let MethodNotAllowed = { status: 405, body: "Method Not Allowed" }
 
 let hdr(attrs) {
-  let header = {}
+   let header = {}
 
-  header["X-Served-By"] := "rebo/libhttp"
-  header["Content-Type"] := "text/plain; charset=utf-8"
+   header["X-Served-By"] := "rebo/libhttp"
+   header["Content-Type"] := "text/plain; charset=utf-8"
 
-  keys(attrs) |> each(fn (key) header[key] := attrs[key])
-  
-  header
+   { ...header, ...attrs }
 }
