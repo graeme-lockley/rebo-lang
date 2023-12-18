@@ -22,7 +22,7 @@ let expandUniverse(universe, expansionFactor) {
         let xGaps = gapXs |> Std.count(fn (v) v < c[0])
         let yGaps = gapYs |> Std.count(fn (v) v < c[1])
 
-        ; [c[0] + expansionFactor' * xGaps, c[1] + expansionFactor' * yGaps ]
+        ; [c[0] + expansionFactor' * xGaps, c[1] + expansionFactor' * yGaps]
     })
      r
 }
