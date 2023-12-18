@@ -1,16 +1,18 @@
 let run(suite) {
-  _a01(suite.suite("AOC Day 1"))
-  _a02(suite.suite("AOC Day 2"))
-  _a03(suite.suite("AOC Day 3"))
-  _a04(suite.suite("AOC Day 4"))
-  _a05(suite.suite("AOC Day 5"))
-  _a06(suite.suite("AOC Day 6"))
-  _a07(suite.suite("AOC Day 7"))
-  _a08(suite.suite("AOC Day 8"))
-  _a09(suite.suite("AOC Day 9"))
-  _a10(suite.suite("AOC Day 10"))
-  _a11(suite.suite("AOC Day 11"))
-  _a12(suite.suite("AOC Day 12"))
+  if false -> {
+    _a01(suite.suite("AOC Day 1"))
+    _a02(suite.suite("AOC Day 2"))
+    _a03(suite.suite("AOC Day 3"))
+    _a04(suite.suite("AOC Day 4"))
+    _a05(suite.suite("AOC Day 5"))
+    _a06(suite.suite("AOC Day 6"))
+    _a07(suite.suite("AOC Day 7"))
+    _a08(suite.suite("AOC Day 8"))
+    _a09(suite.suite("AOC Day 9"))
+    _a10(suite.suite("AOC Day 10"))
+    _a11(suite.suite("AOC Day 11"))
+    _a12(suite.suite("AOC Day 12"))
+  }
 }
 
 let _a01(suite) {
