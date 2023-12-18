@@ -1,15 +1,20 @@
+# `endsWith?` returns true if `s` ends with `suffix`.
 let endsWith?(s, suffix) = 
   s[len(s) - len(suffix):] == suffix
 
+# `startsWith` returns true if `s` starts with `prefix`.
 let startsWith?(s, prefix) = 
   s[0:len(prefix)] == prefix
 
+# `dropStart` returns `s` with the first `n` characters removed.
 let dropStart(s, n) = 
   s[n:]
 
+# `dropEnd` returns `s` with the last `n` characters removed.
 let dropEnd(s, n) =
   s[0:len(s) - n]
 
+# `takeWhile` returns the longest prefix of `s` that satisfies `p`.
 let takeWhile(s, p) {
   let i = 0
   while i < len(s) && p(s[i]) -> i := i + 1
@@ -17,12 +22,16 @@ let takeWhile(s, p) {
   s[:i]
 }
 
+# `whitespace?` returns true if `c` is a whitespace character.
 let whitespace?(c) = 
   int(c) <= 32
 
+# `isDigit` returns true if `c` is a digit.
 let digit?(c) = 
   int(c) >= 48 && int(c) <= 57
 
+# `trimRight` removes all trailing characters that satisfy `p`.
+# If `p` is not specified, it defaults to `whitespace?`.
 let trimRight(s, p = whitespace?) {
   let j = len(s) - 1
   while j >= 0 && p(s[j]) -> j := j - 1
@@ -30,6 +39,8 @@ let trimRight(s, p = whitespace?) {
   s[:j+1]
 }
 
+# `trimLeft` removes all leading characters that satisfy `p`.
+# If `p` is not specified, it defaults to `whitespace?`.
 let trimLeft(s, p = whitespace?) {
   let i = 0
   while i < len(s) && p(s[i]) -> i := i + 1
@@ -37,6 +48,8 @@ let trimLeft(s, p = whitespace?) {
   s[i:]
 }
 
+# `trim` removes all leading and trailing characters that satisfy `p`.
+# If `p` is not specified, it defaults to `whitespace?`.
 let trim(s, p = whitespace?) {
   let i = 0
   while i < len(s) && p(s[i]) -> i := i + 1
@@ -47,6 +60,7 @@ let trim(s, p = whitespace?) {
   s[i:j+1]
 }
 
+# `replace` replaces all occurrences of `from` with `to`.
 let replace(s, from, to) {
   let i = 0
   let result = ""
@@ -61,4 +75,18 @@ let replace(s, from, to) {
   }
 
   result
+}
+
+# `replaceFirst` replaces the first occurrence of `from` with `to`.
+let replaceFirst(s, from, to) {
+  let i = 0
+  let found = false
+
+  while !found && i < len(s) -> {
+    if s[i] == from -> found := true
+     | i := i + 1
+  }
+
+  if found -> s[0:i] + str(to, false) + s[i+1:]
+   | s
 }
