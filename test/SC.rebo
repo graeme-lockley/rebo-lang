@@ -1,4 +1,4 @@
-let {any, filter, map, reduce, split} = import("std")
+let {any, filter, map, split, sum} = import("std")
 
 let add(v = "") {
   let tokens = 
@@ -17,12 +17,12 @@ let add(v = "") {
   let numbers =
     tokens |> map(int)
 
-  if any(numbers, negative?) -> numbers |> filter(negative?)
-   | numbers |> sumSmallNumbers()
+  if any(numbers, _negative?) -> numbers |> filter(_negative?)
+   | numbers |> _sumSmallNumbers()
 }
 
-let negative?(n) = 
+let _negative?(n) = 
   n < 0
 
-let sumSmallNumbers(ns) =
-  ns |> filter(fn(n) n < 1000) |> reduce(fn(a, b) a + b, 0)
+let _sumSmallNumbers(ns) =
+  ns |> filter(fn (n) n < 1000) |> sum()
