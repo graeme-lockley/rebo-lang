@@ -2,3 +2,4 @@ bin/rebo
 bin/rebo-fast
 zig-cache/
 zig-out/
+zig-trace/
