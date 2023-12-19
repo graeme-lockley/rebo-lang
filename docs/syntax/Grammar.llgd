@@ -10,7 +10,8 @@ Expression
     | "if" ["|"] Expression "->" Expression {"|" Expression "->" Expression}
     | "while" Expression "->" Expression
     | "match" Expression ["|"] MatchCase {"|" MatchCase}
-    | Pipe [":=" Expression]
+    | "raise" Expression
+    | Catch [":=" Expression]
     ;
 
 MatchCase
@@ -32,6 +33,10 @@ Pattern
 
 MapPattern
     : Identifier [":" Pattern]
+    ;
+
+Catch
+    : Pipe ["catch" ["|"] MatchCase {"|" MatchCase}]
     ;
 
 Pipe
