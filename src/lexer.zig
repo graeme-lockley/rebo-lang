@@ -6,12 +6,14 @@ pub const TokenKind = @import("./token_kind.zig").TokenKind;
 pub const Token = struct { kind: TokenKind, start: usize, end: usize };
 
 const keywords = std.ComptimeStringMap(TokenKind, .{
-    .{ "true", TokenKind.LiteralBoolTrue },
+    .{ "catch", TokenKind.Catch },
     .{ "false", TokenKind.LiteralBoolFalse },
     .{ "fn", TokenKind.Fn },
     .{ "if", TokenKind.If },
     .{ "let", TokenKind.Let },
     .{ "match", TokenKind.Match },
+    .{ "raise", TokenKind.Raise },
+    .{ "true", TokenKind.LiteralBoolTrue },
     .{ "while", TokenKind.While },
 });
 

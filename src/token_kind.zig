@@ -11,10 +11,12 @@ pub const TokenKind = enum {
 
     Identifier,
 
+    Catch,
     Fn,
     If,
     Let,
     Match,
+    Raise,
     While,
 
     AmpersandAmpersand,
@@ -68,10 +70,12 @@ pub const TokenKind = enum {
 
             TokenKind.Identifier => return "identifier",
 
+            TokenKind.Catch => return "catch",
             TokenKind.Fn => return "fn",
             TokenKind.If => return "if",
             TokenKind.Let => return "let",
             TokenKind.Match => return "match",
+            TokenKind.Raise => return "raise",
             TokenKind.While => return "while",
 
             TokenKind.AmpersandAmpersand => return "'&&'",
