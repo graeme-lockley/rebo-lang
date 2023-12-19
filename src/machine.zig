@@ -173,10 +173,10 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
 
             if (v.v == V.ValueValue.SequenceKind) {
                 sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), v.v.SequenceKind.items()) catch |err| return errorHandler(err);
-            } else if (v.v == V.ValueValue.VoidKind) {
+            } else if (v.v == V.ValueValue.UnitKind) {
                 sequence.v.SequenceKind.removeRange(@intCast(start), @intCast(end)) catch |err| return errorHandler(err);
             } else if (v.v != V.ValueValue.SequenceKind) {
-                machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), lhs.kind.indexRange.expr.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.VoidKind }, v.v) catch |err| return errorHandler(err));
+                machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), lhs.kind.indexRange.expr.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, v.v) catch |err| return errorHandler(err));
                 return true;
             }
             machine.memoryState.popn(2);
@@ -795,7 +795,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
 
             const left = machine.memoryState.peek(0);
 
-            if (left.v == V.ValueValue.VoidKind) {
+            if (left.v == V.ValueValue.UnitKind) {
                 _ = machine.memoryState.pop();
 
                 if (evalExpr(machine, rightAST)) return true;
@@ -1205,7 +1205,7 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
 
             return true;
         },
-        .void => return v.v == V.ValueValue.VoidKind,
+        .void => return v.v == V.ValueValue.UnitKind,
     };
 }
 
@@ -1309,7 +1309,7 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
         .unitValue = null,
     };
 
-    state.unitValue = try state.newValue(V.ValueValue{ .VoidKind = void{} });
+    state.unitValue = try state.newValue(V.ValueValue{ .UnitKind = void{} });
 
     try state.openScope();
 

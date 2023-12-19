@@ -271,7 +271,7 @@ pub const Parser = struct {
 
                     lhs = rhs;
                 } else {
-                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, rhs.position, V.ValueKind.VoidKind));
+                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, rhs.position, V.ValueKind.UnitKind));
                     return error.InterpreterError;
                 }
             } else if (self.currentTokenKind() == Lexer.TokenKind.LessBar) {
@@ -291,7 +291,7 @@ pub const Parser = struct {
                     self.allocator.free(lhs.kind.call.args);
                     lhs.kind.call.args = args;
                 } else {
-                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, lhs.position, V.ValueKind.VoidKind));
+                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, lhs.position, V.ValueKind.UnitKind));
                     return error.InterpreterError;
                 }
             } else {

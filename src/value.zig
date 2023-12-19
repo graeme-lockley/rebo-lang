@@ -25,7 +25,7 @@ pub const Value = struct {
 
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         switch (self.v) {
-            .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .VoidKind => {},
+            .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .UnitKind => {},
             .FileKind => self.v.FileKind.deinit(),
             .FunctionKind => self.v.FunctionKind.deinit(allocator),
             .SequenceKind => self.v.SequenceKind.deinit(),
@@ -204,7 +204,7 @@ pub const Value = struct {
                     Style.Raw => try buffer.appendSlice(self.v.StringKind),
                 }
             },
-            .VoidKind => try buffer.appendSlice("()"),
+            .UnitKind => try buffer.appendSlice("()"),
         }
     }
 
@@ -231,7 +231,7 @@ pub const ValueKind = enum {
     StringKind,
     RecordKind,
     ScopeKind,
-    VoidKind,
+    UnitKind,
 
     pub fn toString(self: ValueKind) []const u8 {
         return switch (self) {
@@ -247,7 +247,7 @@ pub const ValueKind = enum {
             ValueKind.StringKind => "String",
             ValueKind.RecordKind => "Record",
             ValueKind.ScopeKind => "Scope",
-            ValueKind.VoidKind => "()",
+            ValueKind.UnitKind => "()",
         };
     }
 };
@@ -265,7 +265,7 @@ pub const ValueValue = union(ValueKind) {
     SequenceKind: SequenceValue,
     StreamKind: StreamValue,
     StringKind: []u8,
-    VoidKind: void,
+    UnitKind: void,
 };
 
 pub const BuiltinValue = struct {
@@ -339,7 +339,7 @@ pub const RecordValue = struct {
     }
 
     pub fn set(self: *RecordValue, allocator: std.mem.Allocator, key: []const u8, value: *Value) !void {
-        if (value.v == ValueKind.VoidKind) {
+        if (value.v == ValueKind.UnitKind) {
             const old = self.items.fetchRemove(key);
 
             if (old != null) {
@@ -560,7 +560,7 @@ pub fn eq(a: *Value, b: *Value) bool {
 
             return true;
         },
-        .VoidKind => return true,
+        .UnitKind => return true,
     }
 }
 

@@ -19,7 +19,7 @@ pub fn typeof(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: 
         Helper.ValueKind.StringKind => "String",
         Helper.ValueKind.RecordKind => "Record",
         Helper.ValueKind.ScopeKind => "Scope",
-        Helper.ValueKind.VoidKind => "Unit",
+        Helper.ValueKind.UnitKind => "Unit",
     };
     try machine.memoryState.pushStringValue(typeName);
 }
