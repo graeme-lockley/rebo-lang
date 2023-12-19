@@ -170,6 +170,14 @@ pub const Parser = struct {
             const v = try self.allocator.create(AST.Expression);
             v.* = AST.Expression{ .kind = AST.ExpressionKind{ .match = AST.MatchExpression{ .value = value, .cases = try cases.toOwnedSlice(), .elseCase = null } }, .position = Errors.Position{ .start = matchTkn.start, .end = endPosition } };
             return v;
+        } else if (self.currentTokenKind() == Lexer.TokenKind.Raise) {
+            const raiseToken = try self.nextToken();
+            const expr = try self.expression();
+            errdefer expr.destroy(self.allocator);
+
+            const v = try self.allocator.create(AST.Expression);
+            v.* = AST.Expression{ .kind = AST.ExpressionKind{ .raise = AST.RaiseExpression{ .expr = expr } }, .position = Errors.Position{ .start = raiseToken.start, .end = expr.position.end } };
+            return v;
         } else if (self.currentTokenKind() == Lexer.TokenKind.While) {
             const whileToken = try self.nextToken();
 
@@ -185,7 +193,7 @@ pub const Parser = struct {
             v.* = AST.Expression{ .kind = AST.ExpressionKind{ .whilee = AST.WhileExpression{ .condition = condition, .body = body } }, .position = Errors.Position{ .start = whileToken.start, .end = body.position.end } };
             return v;
         } else {
-            var lhs = try self.pipeExpr();
+            var lhs = try self.catchExpr();
             errdefer lhs.destroy(self.allocator);
 
             if (self.currentTokenKind() == Lexer.TokenKind.ColonEqual) {
@@ -202,6 +210,40 @@ pub const Parser = struct {
             }
 
             return lhs;
+        }
+    }
+
+    fn catchExpr(self: *Parser) Errors.err!*AST.Expression {
+        const expr = try self.pipeExpr();
+        errdefer expr.destroy(self.allocator);
+
+        if (self.currentTokenKind() == Lexer.TokenKind.Catch) {
+            try self.skipToken();
+
+            var cases = std.ArrayList(AST.MatchCase).init(self.allocator);
+            defer cases.deinit();
+            errdefer {
+                for (cases.items) |*item| {
+                    item.deinit(self.allocator);
+                }
+            }
+
+            if (self.currentTokenKind() == Lexer.TokenKind.Bar) {
+                try self.skipToken();
+            }
+            try cases.append(try self.matchCase());
+
+            while (self.currentTokenKind() == Lexer.TokenKind.Bar) {
+                try self.skipToken();
+                try cases.append(try self.matchCase());
+            }
+
+            const endPosition = cases.getLast().body.position.end;
+            const v = try self.allocator.create(AST.Expression);
+            v.* = AST.Expression{ .kind = AST.ExpressionKind{ .catche = AST.CatchExpression{ .value = expr, .cases = try cases.toOwnedSlice() } }, .position = Errors.Position{ .start = expr.position.start, .end = endPosition } };
+            return v;
+        } else {
+            return expr;
         }
     }
 
