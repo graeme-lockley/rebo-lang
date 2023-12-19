@@ -13,6 +13,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         .assignment => return assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
         .binaryOp => return binaryOp(machine, e),
         .call => return call(machine, e, e.kind.call.callee, e.kind.call.args),
+        .catche => unreachable,
         .dot => return dot(machine, e),
         .exprs => return exprs(machine, e),
         .idDeclaration => return declaration(machine, e),
@@ -121,6 +122,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             machine.memoryState.pushBoolValue(!v.v.BoolKind) catch |err| return errorHandler(err);
         },
         .patternDeclaration => return patternDeclaration(machine, e),
+        .raise => unreachable,
         .whilee => return whilee(machine, e),
     }
 

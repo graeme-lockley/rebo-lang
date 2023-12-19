@@ -60,6 +60,7 @@ pub const ExpressionKind = union(enum) {
     assignment: AssignmentExpression,
     binaryOp: BinaryOpExpression,
     call: CallExpression,
+    catche: CatchExpression,
     dot: DotExpression,
     exprs: []*Expression,
     idDeclaration: IdDeclarationExpression,
@@ -79,6 +80,7 @@ pub const ExpressionKind = union(enum) {
     match: MatchExpression,
     notOp: NotOpExpression,
     patternDeclaration: PatternDeclarationExpression,
+    raise: RaiseExpression,
     whilee: WhileExpression,
 };
 
@@ -106,6 +108,11 @@ pub const IdDeclarationExpression = struct {
         allocator.free(self.name);
         destroyExpr(allocator, self.value);
     }
+};
+
+pub const CatchExpression = struct {
+    value: *Expression,
+    cases: []MatchCase,
 };
 
 pub const DotExpression = struct {
@@ -184,6 +191,10 @@ pub const NotOpExpression = struct {
     value: *Expression,
 };
 
+pub const RaiseExpression = struct {
+    expr: *Expression,
+};
+
 pub const RecordEntry = union(enum) {
     value: struct {
         key: []u8,
@@ -223,6 +234,13 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
                 destroyExpr(allocator, arg);
             }
             allocator.free(expr.kind.call.args);
+        },
+        .catche => {
+            destroyExpr(allocator, expr.kind.catche.value);
+            for (expr.kind.catche.cases) |*c| {
+                c.deinit(allocator);
+            }
+            allocator.free(expr.kind.catche.cases);
         },
         .dot => {
             destroyExpr(allocator, expr.kind.dot.record);
@@ -294,6 +312,7 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
         },
         .notOp => destroyExpr(allocator, expr.kind.notOp.value),
         .patternDeclaration => expr.kind.patternDeclaration.deinit(allocator),
+        .raise => destroyExpr(allocator, expr.kind.raise.expr),
         .whilee => {
             destroyExpr(allocator, expr.kind.whilee.condition);
             destroyExpr(allocator, expr.kind.whilee.body);
