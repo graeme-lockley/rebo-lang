@@ -1,5 +1,6 @@
 bin/rebo
 bin/rebo-fast
+rebo/
 zig-cache/
 zig-out/
 zig-trace/
