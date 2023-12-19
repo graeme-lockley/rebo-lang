@@ -112,7 +112,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 ## try-catch
 
-- [ ] Add support for try-catch expressions
+- [X] Add support for try-catch expressions
 
 ## while
 

@@ -145,7 +145,7 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         return error.TestingError;
     }
 
-    // try nike(input);
+    try nike(input);
 }
 
 fn expectError(input: []const u8) !void {
@@ -538,4 +538,11 @@ test "not" {
     try expectExprEqual("!false", "true");
 
     try expectError("!()");
+}
+
+test "catch-raise" {
+    try expectExprEqual("0 catch \"Hello\" -> 1 | _ -> 2", "0");
+    try expectExprEqual("{ raise \"Hello\" } catch \"Hello\" -> 1 | _ -> 2", "1");
+    try expectExprEqual("{ raise \"Bye\" } catch \"Hello\" -> 1 | _ -> 2", "2");
+    try expectExprEqual("{{ raise \"Bye\" } catch \"Hello\" -> 1} catch \"Bye\" -> 2", "2");
 }

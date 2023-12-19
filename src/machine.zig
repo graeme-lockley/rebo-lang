@@ -13,7 +13,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         .assignment => return assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
         .binaryOp => return binaryOp(machine, e),
         .call => return call(machine, e, e.kind.call.callee, e.kind.call.args),
-        .catche => unreachable,
+        .catche => return catche(machine, e),
         .dot => return dot(machine, e),
         .exprs => return exprs(machine, e),
         .idDeclaration => return declaration(machine, e),
@@ -122,7 +122,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             machine.memoryState.pushBoolValue(!v.v.BoolKind) catch |err| return errorHandler(err);
         },
         .patternDeclaration => return patternDeclaration(machine, e),
-        .raise => unreachable,
+        .raise => return raise(machine, e),
         .whilee => return whilee(machine, e),
     }
 
@@ -879,6 +879,38 @@ fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsA
     return false;
 }
 
+fn catche(machine: *Machine, e: *AST.Expression) bool {
+    const sp = machine.memoryState.stack.items.len;
+    if (evalExpr(machine, e.kind.catche.value)) {
+        const value = machine.memoryState.peek(0);
+
+        for (e.kind.catche.cases) |case| {
+            machine.memoryState.openScope() catch |err| return errorHandler(err);
+
+            const matched = matchPattern(machine, case.pattern, value);
+            if (matched) {
+                const result = evalExpr(machine, case.body);
+
+                if (!result) {
+                    machine.eraseErr();
+                }
+
+                machine.memoryState.restoreScope();
+                const v = machine.memoryState.pop();
+                while (machine.memoryState.stack.items.len > sp) {
+                    _ = machine.memoryState.pop();
+                }
+                machine.memoryState.push(v) catch |err| return errorHandler(err);
+                return result;
+            }
+            machine.memoryState.restoreScope();
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
 fn declaration(machine: *Machine, e: *AST.Expression) bool {
     if (evalExpr(machine, e.kind.idDeclaration.value)) return true;
 
@@ -1187,6 +1219,14 @@ fn patternDeclaration(machine: *Machine, e: *AST.Expression) bool {
     }
 
     machine.replaceErr(Errors.noMatchError(machine.memoryState.allocator, machine.src(), e.position) catch |err| return errorHandler(err));
+
+    return true;
+}
+
+fn raise(machine: *Machine, e: *AST.Expression) bool {
+    if (evalExpr(machine, e.kind.raise.expr)) return true;
+
+    machine.replaceErr(Errors.userError(machine.memoryState.allocator, machine.src(), e.position) catch |err| return errorHandler(err));
 
     return true;
 }

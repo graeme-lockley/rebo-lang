@@ -138,6 +138,17 @@ pub const UnknownIdentifierError = struct {
     }
 };
 
+pub const UserError = struct {
+    pub fn deinit(self: UserError) void {
+        _ = self;
+    }
+
+    pub fn append(self: UserError, buffer: *std.ArrayList(u8)) !void {
+        _ = self;
+        try buffer.appendSlice("User Signal");
+    }
+};
+
 pub const StackItem = struct {
     src: []const u8,
     position: Position,
@@ -253,6 +264,7 @@ pub const ErrorDetail = union(enum) {
     noMatchError: NoMatchError,
     parserError: ParserError,
     unknownIdentifierError: UnknownIdentifierError,
+    userError: UserError,
 
     pub fn deinit(self: ErrorDetail, allocator: std.mem.Allocator) void {
         switch (self) {
@@ -267,6 +279,7 @@ pub const ErrorDetail = union(enum) {
             .noMatchError => self.noMatchError.deinit(),
             .parserError => self.parserError.deinit(allocator),
             .unknownIdentifierError => self.unknownIdentifierError.deinit(allocator),
+            .userError => self.userError.deinit(),
         }
     }
 
@@ -283,6 +296,7 @@ pub const ErrorDetail = union(enum) {
             .noMatchError => try self.noMatchError.append(buffer),
             .parserError => try self.parserError.append(buffer),
             .unknownIdentifierError => try self.unknownIdentifierError.append(buffer),
+            .userError => try self.userError.append(buffer),
         }
     }
 };
@@ -427,6 +441,14 @@ pub fn unknownIdentifierError(allocator: std.mem.Allocator, src: []const u8, pos
     var result = try Error.init(allocator, ErrorDetail{ .unknownIdentifierError = .{
         .identifier = try allocator.dupe(u8, identifier),
     } });
+
+    try result.appendStackItem(src, position);
+
+    return result;
+}
+
+pub fn userError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
+    var result = try Error.init(allocator, ErrorDetail{ .userError = .{} });
 
     try result.appendStackItem(src, position);
 
