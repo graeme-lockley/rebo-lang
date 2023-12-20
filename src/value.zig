@@ -30,7 +30,7 @@ pub const Value = struct {
             .FunctionKind => self.v.FunctionKind.deinit(allocator),
             .SequenceKind => self.v.SequenceKind.deinit(),
             .StreamKind => self.v.StreamKind.deinit(),
-            .OldStringKind => StringValue.deinit(self.v.OldStringKind, allocator),
+            .OldStringKind => OldStringValue.deinit(self.v.OldStringKind, allocator),
             .RecordKind => self.v.RecordKind.deinit(allocator),
             .ScopeKind => self.v.ScopeKind.deinit(allocator),
         }
@@ -455,7 +455,7 @@ pub const StreamValue = struct {
     }
 };
 
-pub const StringValue = struct {
+pub const OldStringValue = struct {
     pub fn init(allocator: std.mem.Allocator, value: []const u8) ![]u8 {
         return try allocator.dupe(u8, value);
     }
