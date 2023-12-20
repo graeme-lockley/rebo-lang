@@ -469,6 +469,13 @@ pub const ScopeValue = struct {
     parent: ?*Value,
     values: std.StringHashMap(*Value),
 
+    pub fn init(allocator: std.mem.Allocator, parent: ?*Value) ScopeValue {
+        return ScopeValue{
+            .parent = parent,
+            .values = std.StringHashMap(*Value).init(allocator),
+        };
+    }
+
     pub fn deinit(self: *ScopeValue, allocator: std.mem.Allocator) void {
         var iterator = self.values.keyIterator();
         while (iterator.next()) |keyPtr| {
@@ -476,6 +483,52 @@ pub const ScopeValue = struct {
         }
 
         self.values.deinit();
+    }
+
+    pub fn set(self: *ScopeValue, allocator: std.mem.Allocator, key: []const u8, value: *Value) !void {
+        const oldKey = self.values.getKey(key);
+
+        if (oldKey == null) {
+            try self.values.put(try allocator.dupe(u8, key), value);
+        } else {
+            try self.values.put(oldKey.?, value);
+        }
+    }
+
+    pub fn update(self: *ScopeValue, key: []const u8, value: *Value) !bool {
+        var runner: ?*ScopeValue = self;
+
+        while (true) {
+            const oldKey = runner.?.values.getKey(key);
+
+            if (oldKey == null) {
+                if (runner.?.parent == null) {
+                    return false;
+                } else {
+                    runner = &runner.?.parent.?.v.ScopeKind;
+                }
+            } else {
+                try runner.?.values.put(oldKey.?, value);
+
+                return true;
+            }
+        }
+    }
+
+    pub fn get(self: *const ScopeValue, key: []const u8) ?*Value {
+        var runner: ?*const ScopeValue = self;
+
+        while (true) {
+            const value = runner.?.values.get(key);
+
+            if (value != null) {
+                return value;
+            } else if (runner.?.parent == null) {
+                return null;
+            } else {
+                runner = &runner.?.parent.?.v.ScopeKind;
+            }
+        }
     }
 };
 

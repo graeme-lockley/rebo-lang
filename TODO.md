@@ -61,7 +61,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 
 ## Scope
 
-- [ ] Move all the functions into the ScopeKind rather than having them lying all over the code base and forcing knowledge of the implementation
+- [X] Move all the functions into the ScopeKind rather than having them lying all over the code base and forcing knowledge of the implementation
 
 # Operators
 

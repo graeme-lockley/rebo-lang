@@ -134,77 +134,34 @@ pub const MemoryState = struct {
     }
 
     pub fn openScope(self: *MemoryState) !void {
-        try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue{ .parent = self.scope(), .values = std.StringHashMap(*V.Value).init(self.allocator) } }));
+        try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, self.scope()) }));
     }
 
     pub fn openScopeFrom(self: *MemoryState, outerScope: ?*V.Value) !void {
-        try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue{ .parent = outerScope, .values = std.StringHashMap(*V.Value).init(self.allocator) } }));
+        try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, outerScope) }));
     }
 
     pub fn restoreScope(self: *MemoryState) void {
         _ = self.scopes.pop();
     }
 
-    pub fn addToScope(self: *MemoryState, name: []const u8, value: *V.Value) !void {
-        const s = self.scope().?;
-
-        const oldKey = s.v.ScopeKind.values.getKey(name);
-
-        if (oldKey == null) {
-            try s.v.ScopeKind.values.put(try self.allocator.dupe(u8, name), value);
-        } else {
-            try s.v.ScopeKind.values.put(oldKey.?, value);
-        }
+    pub inline fn addToScope(self: *MemoryState, name: []const u8, value: *V.Value) !void {
+        try self.scope().?.v.ScopeKind.set(self.allocator, name, value);
     }
 
-    pub fn addArrayValueToScope(self: *MemoryState, name: []const u8, values: []*V.Value) !void {
-        const s = self.scope().?;
-
-        const oldKey = s.v.ScopeKind.values.getKey(name);
+    pub inline fn addArrayValueToScope(self: *MemoryState, name: []const u8, values: []*V.Value) !void {
         const value = try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
         try value.v.SequenceKind.appendSlice(values);
 
-        if (oldKey == null) {
-            try s.v.ScopeKind.values.put(try self.allocator.dupe(u8, name), value);
-        } else {
-            try s.v.ScopeKind.values.put(oldKey.?, value);
-        }
+        try self.scope().?.v.ScopeKind.set(self.allocator, name, value);
     }
 
-    pub fn updateInScope(self: *MemoryState, name: []const u8, value: *V.Value) !bool {
-        var runner = self.scope();
-
-        while (runner != null) {
-            const oldKey = runner.?.v.ScopeKind.values.getKey(name);
-
-            if (oldKey == null) {
-                runner = runner.?.v.ScopeKind.parent;
-            } else {
-                try runner.?.v.ScopeKind.values.put(oldKey.?, value);
-
-                return true;
-            }
-        }
-        return false;
+    pub inline fn updateInScope(self: *MemoryState, name: []const u8, value: *V.Value) !bool {
+        return try self.scope().?.v.ScopeKind.update(name, value);
     }
 
-    pub fn getFromScope(self: *MemoryState, name: []const u8) ?*V.Value {
-        var runner: ?*V.Value = self.scope();
-
-        while (true) {
-            const value = runner.?.v.ScopeKind.values.get(name);
-
-            if (value != null) {
-                return value;
-            }
-
-            const parent = runner.?.v.ScopeKind.parent;
-            if (parent == null) {
-                return null;
-            }
-
-            runner = parent;
-        }
+    pub inline fn getFromScope(self: *MemoryState, name: []const u8) ?*V.Value {
+        return self.scope().?.v.ScopeKind.get(name);
     }
 
     pub fn reset(self: *MemoryState) !void {
