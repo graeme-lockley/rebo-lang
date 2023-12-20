@@ -2,14 +2,14 @@ const std = @import("std");
 const Helper = @import("./helper.zig");
 
 pub fn int(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
-    const v = try Helper.getArgument(machine, calleeAST, argsAST, "value", 0, &[_]Helper.ValueKind{ Helper.ValueValue.CharKind, Helper.ValueKind.OldStringKind });
+    const v = try Helper.getArgument(machine, calleeAST, argsAST, "value", 0, &[_]Helper.ValueKind{ Helper.ValueValue.CharKind, Helper.ValueKind.StringKind });
     const d = machine.memoryState.getFromScope("default") orelse machine.memoryState.unitValue.?;
     const b = try Helper.getArgument(machine, calleeAST, argsAST, "base", 2, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueKind.UnitKind });
 
     switch (v.v) {
         Helper.ValueValue.CharKind => try machine.memoryState.pushIntValue(@intCast(v.v.CharKind)),
-        Helper.ValueKind.OldStringKind => {
-            const literalInt = std.fmt.parseInt(Helper.IntType, v.v.OldStringKind, @intCast(if (b == machine.memoryState.unitValue) 10 else b.v.IntKind)) catch {
+        Helper.ValueKind.StringKind => {
+            const literalInt = std.fmt.parseInt(Helper.IntType, v.v.StringKind.slice(), @intCast(if (b == machine.memoryState.unitValue) 10 else b.v.IntKind)) catch {
                 try machine.memoryState.push(d);
                 return;
             };

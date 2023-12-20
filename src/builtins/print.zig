@@ -115,7 +115,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
             try stdout.print("]", .{});
         },
         .StreamKind => try stdout.print("stream: {d}", .{v.v.StreamKind.stream.handle}),
-        .OldStringKind => try stdout.print("{s}", .{v.v.OldStringKind}),
+        .StringKind => try stdout.print("{s}", .{v.v.StringKind.slice()}),
         .UnitKind => try stdout.print("()", .{}),
     }
 }

@@ -193,14 +193,14 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
                 if (evalExpr(machine, indexA)) return true;
                 const index = machine.memoryState.peek(0);
 
-                if (index.v != V.ValueValue.OldStringKind) {
-                    machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, &[_]V.ValueKind{V.ValueValue.OldStringKind}, index.v) catch |err| return errorHandler(err));
+                if (index.v != V.ValueValue.StringKind) {
+                    machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v) catch |err| return errorHandler(err));
                     return true;
                 }
 
                 if (evalExpr(machine, value)) return true;
 
-                expr.v.RecordKind.set(machine.memoryState.allocator, index.v.OldStringKind, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+                expr.v.RecordKind.set(machine.memoryState.allocator, index.v.StringKind.slice(), machine.memoryState.peek(0)) catch |err| return errorHandler(err);
             } else if (expr.v == V.ValueValue.SequenceKind) {
                 if (evalExpr(machine, indexA)) return true;
                 const index = machine.memoryState.peek(0);
@@ -303,12 +303,12 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                     }
                 },
-                V.ValueValue.OldStringKind => {
+                V.ValueValue.StringKind => {
                     switch (right.v) {
-                        V.ValueValue.OldStringKind => {
+                        V.ValueValue.StringKind => {
                             machine.memoryState.popn(2);
 
-                            const slices = [_][]u8{ left.v.OldStringKind, right.v.OldStringKind };
+                            const slices = [_][]const u8{ left.v.StringKind.slice(), right.v.StringKind.slice() };
                             machine.memoryState.pushOwnedStringValue(std.mem.concat(machine.memoryState.allocator, u8, &slices) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
                         },
                         else => {
@@ -401,12 +401,12 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                     }
                 },
-                V.ValueValue.OldStringKind => {
+                V.ValueValue.StringKind => {
                     if (right.v == V.ValueValue.IntKind) {
-                        const mem = machine.memoryState.allocator.alloc(u8, left.v.OldStringKind.len * @as(usize, @intCast(right.v.IntKind))) catch |err| return errorHandler(err);
+                        const mem = machine.memoryState.allocator.alloc(u8, left.v.StringKind.len() * @as(usize, @intCast(right.v.IntKind))) catch |err| return errorHandler(err);
 
                         for (0..@intCast(right.v.IntKind)) |index| {
-                            std.mem.copyForwards(u8, mem[index * left.v.OldStringKind.len ..], left.v.OldStringKind);
+                            std.mem.copyForwards(u8, mem[index * left.v.StringKind.len() ..], left.v.StringKind.slice());
                         }
 
                         machine.memoryState.pushOwnedStringValue(mem) catch |err| return errorHandler(err);
@@ -1007,8 +1007,8 @@ fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expressio
 
         machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
         machine.memoryState.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]) catch |err| return errorHandler(err);
-    } else if (expr.v == V.ValueValue.OldStringKind) {
-        const str = expr.v.OldStringKind;
+    } else if (expr.v == V.ValueValue.StringKind) {
+        const str = expr.v.StringKind.slice();
 
         const start: V.IntType = V.clamp(indexPoint(machine, startA, 0) catch |err| return errorHandler(err), 0, @intCast(str.len));
         const end: V.IntType = V.clamp(indexPoint(machine, endA, @intCast(str.len)) catch |err| return errorHandler(err), start, @intCast(str.len));
@@ -1016,7 +1016,7 @@ fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expressio
         machine.memoryState.pushOwnedStringValue(machine.memoryState.allocator.dupe(u8, str[@intCast(start)..@intCast(end)]) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
     } else {
         machine.memoryState.popn(1);
-        machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.OldStringKind }, expr.v) catch |err| return errorHandler(err));
+        machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v) catch |err| return errorHandler(err));
         return true;
     }
 
@@ -1054,14 +1054,14 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         if (evalExpr(machine, indexA)) return true;
         const index = machine.memoryState.peek(0);
 
-        if (index.v != V.ValueValue.OldStringKind) {
-            machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, &[_]V.ValueKind{V.ValueValue.OldStringKind}, index.v) catch |err| return errorHandler(err));
+        if (index.v != V.ValueValue.StringKind) {
+            machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v) catch |err| return errorHandler(err));
             return true;
         }
 
         machine.memoryState.popn(2);
 
-        const value = expr.v.RecordKind.get(index.v.OldStringKind);
+        const value = expr.v.RecordKind.get(index.v.StringKind.slice());
 
         if (value == null) {
             machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
@@ -1087,7 +1087,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         } else {
             machine.memoryState.push(seq.at(@intCast(idx))) catch |err| return errorHandler(err);
         }
-    } else if (expr.v == V.ValueValue.OldStringKind) {
+    } else if (expr.v == V.ValueValue.StringKind) {
         if (evalExpr(machine, indexA)) return true;
         const index = machine.memoryState.peek(0);
 
@@ -1098,7 +1098,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
 
         machine.memoryState.popn(2);
 
-        const str = expr.v.OldStringKind;
+        const str = expr.v.StringKind.slice();
         const idx = index.v.IntKind;
 
         if (idx < 0 or idx >= str.len) {
@@ -1108,7 +1108,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         }
     } else {
         machine.memoryState.popn(1);
-        machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.OldStringKind }, expr.v) catch |err| return errorHandler(err));
+        machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v) catch |err| return errorHandler(err));
         return true;
     }
 
@@ -1153,7 +1153,7 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
         .literalChar => return v.v == V.ValueValue.CharKind and v.v.CharKind == p.kind.literalChar,
         .literalFloat => return v.v == V.ValueValue.FloatKind and v.v.FloatKind == p.kind.literalFloat or v.v == V.ValueValue.IntKind and v.v.IntKind == @as(V.IntType, @intFromFloat(p.kind.literalFloat)),
         .literalInt => return v.v == V.ValueValue.IntKind and v.v.IntKind == p.kind.literalInt or v.v == V.ValueValue.FloatKind and v.v.FloatKind == @as(V.FloatType, @floatFromInt(p.kind.literalInt)),
-        .literalString => return v.v == V.ValueValue.OldStringKind and std.mem.eql(u8, v.v.OldStringKind, p.kind.literalString),
+        .literalString => return v.v == V.ValueValue.StringKind and std.mem.eql(u8, v.v.StringKind.slice(), p.kind.literalString),
         .record => {
             if (v.v != V.ValueValue.RecordKind) return false;
 
@@ -1523,8 +1523,8 @@ pub const Machine = struct {
 
         if (result == null) {
             return Errors.STREAM_SRC;
-        } else if (result.?.v == V.ValueValue.OldStringKind) {
-            return result.?.v.OldStringKind;
+        } else if (result.?.v == V.ValueValue.StringKind) {
+            return result.?.v.StringKind.slice();
         } else {
             return Errors.STREAM_SRC;
         }

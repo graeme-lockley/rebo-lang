@@ -16,7 +16,7 @@ pub fn typeof(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: 
         Helper.ValueKind.IntKind => "Int",
         Helper.ValueKind.SequenceKind => "Sequence",
         Helper.ValueKind.StreamKind => "Stream",
-        Helper.ValueKind.OldStringKind => "String",
+        Helper.ValueKind.StringKind => "String",
         Helper.ValueKind.RecordKind => "Record",
         Helper.ValueKind.ScopeKind => "Scope",
         Helper.ValueKind.UnitKind => "Unit",

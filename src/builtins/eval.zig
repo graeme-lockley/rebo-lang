@@ -2,11 +2,11 @@ const std = @import("std");
 const Helper = @import("./helper.zig");
 
 pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
-    const code = try Helper.getArgument(machine, calleeAST, argsAST, "code", 0, &[_]Helper.ValueKind{Helper.ValueValue.OldStringKind});
+    const code = try Helper.getArgument(machine, calleeAST, argsAST, "code", 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
 
     const stackSize = machine.memoryState.stack.items.len;
 
-    machine.execute("eval", code.v.OldStringKind) catch |e| {
+    machine.execute("eval", code.v.StringKind.slice()) catch |e| {
         while (machine.memoryState.stack.items.len > stackSize) {
             _ = machine.memoryState.pop();
         }
