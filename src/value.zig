@@ -164,45 +164,41 @@ pub const Value = struct {
                 }
                 try buffer.append('>');
             },
-            .SequenceKind => {
-                switch (style) {
-                    Style.Pretty => {
-                        try buffer.append('[');
-                        for (self.v.SequenceKind.items(), 0..) |v, i| {
-                            if (i != 0) {
-                                try buffer.appendSlice(", ");
-                            }
+            .SequenceKind => switch (style) {
+                Style.Pretty => {
+                    try buffer.append('[');
+                    for (self.v.SequenceKind.items(), 0..) |v, i| {
+                        if (i != 0) {
+                            try buffer.appendSlice(", ");
+                        }
 
-                            try v.appendValue(buffer, style);
-                        }
-                        try buffer.append(']');
-                    },
-                    Style.Raw => for (self.v.SequenceKind.items()) |v| {
                         try v.appendValue(buffer, style);
-                    },
-                }
+                    }
+                    try buffer.append(']');
+                },
+                Style.Raw => for (self.v.SequenceKind.items()) |v| {
+                    try v.appendValue(buffer, style);
+                },
             },
-            .StringKind => {
-                switch (style) {
-                    Style.Pretty => {
-                        try buffer.append('"');
-                        for (self.v.StringKind.slice()) |c| {
-                            if (c == 10) {
-                                try buffer.appendSlice("\\n");
-                            } else if (c == 34) {
-                                try buffer.appendSlice("\\\"");
-                            } else if (c == 92) {
-                                try buffer.appendSlice("\\\\");
-                            } else if (c < 32) {
-                                try std.fmt.format(buffer.writer(), "\\x{d};", .{c});
-                            } else {
-                                try buffer.append(c);
-                            }
+            .StringKind => switch (style) {
+                Style.Pretty => {
+                    try buffer.append('"');
+                    for (self.v.StringKind.slice()) |c| {
+                        if (c == 10) {
+                            try buffer.appendSlice("\\n");
+                        } else if (c == 34) {
+                            try buffer.appendSlice("\\\"");
+                        } else if (c == 92) {
+                            try buffer.appendSlice("\\\\");
+                        } else if (c < 32) {
+                            try std.fmt.format(buffer.writer(), "\\x{d};", .{c});
+                        } else {
+                            try buffer.append(c);
                         }
-                        try buffer.append('"');
-                    },
-                    Style.Raw => try buffer.appendSlice(self.v.StringKind.slice()),
-                }
+                    }
+                    try buffer.append('"');
+                },
+                Style.Raw => try buffer.appendSlice(self.v.StringKind.slice()),
             },
             .UnitKind => try buffer.appendSlice("()"),
         }
@@ -595,11 +591,7 @@ pub fn eq(a: *Value, b: *Value) bool {
         .StringKind => {
             if (a.v.StringKind.slice().len != b.v.StringKind.slice().len) return false;
 
-            for (a.v.StringKind.slice(), 0..) |c, i| {
-                if (c != b.v.StringKind.slice()[i]) return false;
-            }
-
-            return true;
+            return std.mem.eql(u8, a.v.StringKind.slice(), b.v.StringKind.slice());
         },
         .RecordKind => {
             if (a.v.RecordKind.count() != b.v.RecordKind.count()) return false;

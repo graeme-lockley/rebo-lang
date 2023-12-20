@@ -21,15 +21,9 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
         .ifte => return ifte(machine, e),
         .indexRange => return indexRange(machine, e.kind.indexRange.expr, e.kind.indexRange.start, e.kind.indexRange.end),
         .indexValue => return indexValue(machine, e.kind.indexValue.expr, e.kind.indexValue.index),
-        .literalBool => {
-            machine.createBoolValue(e.kind.literalBool) catch |err| return errorHandler(err);
-        },
-        .literalChar => {
-            machine.memoryState.pushCharValue(e.kind.literalChar) catch |err| return errorHandler(err);
-        },
-        .literalFloat => {
-            machine.memoryState.pushFloatValue(e.kind.literalFloat) catch |err| return errorHandler(err);
-        },
+        .literalBool => machine.createBoolValue(e.kind.literalBool) catch |err| return errorHandler(err),
+        .literalChar => machine.memoryState.pushCharValue(e.kind.literalChar) catch |err| return errorHandler(err),
+        .literalFloat => machine.memoryState.pushFloatValue(e.kind.literalFloat) catch |err| return errorHandler(err),
         .literalFunction => {
             var arguments = machine.memoryState.allocator.alloc(V.FunctionArgument, e.kind.literalFunction.params.len) catch |err| return errorHandler(err);
 
@@ -51,9 +45,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 }
             }
         },
-        .literalInt => {
-            machine.createIntValue(e.kind.literalInt) catch |err| return errorHandler(err);
-        },
+        .literalInt => machine.createIntValue(e.kind.literalInt) catch |err| return errorHandler(err),
         .literalRecord => {
             machine.memoryState.pushEmptyMapValue() catch |err| return errorHandler(err);
             var map = machine.topOfStack().?;
@@ -1013,7 +1005,7 @@ fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expressio
         const start: V.IntType = V.clamp(indexPoint(machine, startA, 0) catch |err| return errorHandler(err), 0, @intCast(str.len));
         const end: V.IntType = V.clamp(indexPoint(machine, endA, @intCast(str.len)) catch |err| return errorHandler(err), start, @intCast(str.len));
 
-        machine.memoryState.pushOwnedStringValue(machine.memoryState.allocator.dupe(u8, str[@intCast(start)..@intCast(end)]) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
+        machine.memoryState.pushStringValue(str[@intCast(start)..@intCast(end)]) catch |err| return errorHandler(err);
     } else {
         machine.memoryState.popn(1);
         machine.replaceErr(Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v) catch |err| return errorHandler(err));
@@ -1028,7 +1020,9 @@ fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expressio
 }
 
 fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) !V.IntType {
-    if (point != null) {
+    if (point == null) {
+        return def;
+    } else {
         if (evalExpr(machine, point.?)) {
             return error.InterpreterError;
         }
@@ -1041,8 +1035,6 @@ fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) !V.Int
         const v = pointV.v.IntKind;
         _ = machine.memoryState.pop();
         return v;
-    } else {
-        return def;
     }
 }
 
@@ -1521,13 +1513,7 @@ pub const Machine = struct {
     pub fn src(self: *Machine) []const u8 {
         const result = self.memoryState.getFromScope("__FILE");
 
-        if (result == null) {
-            return Errors.STREAM_SRC;
-        } else if (result.?.v == V.ValueValue.StringKind) {
-            return result.?.v.StringKind.slice();
-        } else {
-            return Errors.STREAM_SRC;
-        }
+        return if (result == null) Errors.STREAM_SRC else if (result.?.v == V.ValueValue.StringKind) result.?.v.StringKind.slice() else Errors.STREAM_SRC;
     }
 
     pub fn appendStackItem(self: *Machine, position: Errors.Position) !void {
