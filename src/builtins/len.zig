@@ -1,12 +1,12 @@
 const Helper = @import("./helper.zig");
 
 pub fn len(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
-    const v = try Helper.getArgument(machine, calleeAST, argsAST, "v", 0, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.SequenceKind, Helper.ValueValue.StringKind });
+    const v = try Helper.getArgument(machine, calleeAST, argsAST, "v", 0, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.SequenceKind, Helper.ValueValue.OldStringKind });
 
     switch (v.v) {
         Helper.ValueValue.RecordKind => try machine.memoryState.pushIntValue(@intCast(v.v.RecordKind.count())),
         Helper.ValueValue.SequenceKind => try machine.memoryState.pushIntValue(@intCast(v.v.SequenceKind.len())),
-        Helper.ValueValue.StringKind => try machine.memoryState.pushIntValue(@intCast(v.v.StringKind.len)),
+        Helper.ValueValue.OldStringKind => try machine.memoryState.pushIntValue(@intCast(v.v.OldStringKind.len)),
         else => unreachable,
     }
 }

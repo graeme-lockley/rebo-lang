@@ -30,7 +30,7 @@ pub const Value = struct {
             .FunctionKind => self.v.FunctionKind.deinit(allocator),
             .SequenceKind => self.v.SequenceKind.deinit(),
             .StreamKind => self.v.StreamKind.deinit(),
-            .StringKind => StringValue.deinit(self.v.StringKind, allocator),
+            .OldStringKind => StringValue.deinit(self.v.OldStringKind, allocator),
             .RecordKind => self.v.RecordKind.deinit(allocator),
             .ScopeKind => self.v.ScopeKind.deinit(allocator),
         }
@@ -182,11 +182,11 @@ pub const Value = struct {
                     },
                 }
             },
-            .StringKind => {
+            .OldStringKind => {
                 switch (style) {
                     Style.Pretty => {
                         try buffer.append('"');
-                        for (self.v.StringKind) |c| {
+                        for (self.v.OldStringKind) |c| {
                             if (c == 10) {
                                 try buffer.appendSlice("\\n");
                             } else if (c == 34) {
@@ -201,7 +201,7 @@ pub const Value = struct {
                         }
                         try buffer.append('"');
                     },
-                    Style.Raw => try buffer.appendSlice(self.v.StringKind),
+                    Style.Raw => try buffer.appendSlice(self.v.OldStringKind),
                 }
             },
             .UnitKind => try buffer.appendSlice("()"),
@@ -228,7 +228,7 @@ pub const ValueKind = enum {
     FloatKind,
     SequenceKind,
     StreamKind,
-    StringKind,
+    OldStringKind,
     RecordKind,
     ScopeKind,
     UnitKind,
@@ -244,7 +244,7 @@ pub const ValueKind = enum {
             ValueKind.IntKind => "Int",
             ValueKind.SequenceKind => "Sequence",
             ValueKind.StreamKind => "Stream",
-            ValueKind.StringKind => "String",
+            ValueKind.OldStringKind => "String",
             ValueKind.RecordKind => "Record",
             ValueKind.ScopeKind => "Scope",
             ValueKind.UnitKind => "()",
@@ -264,7 +264,7 @@ pub const ValueValue = union(ValueKind) {
     ScopeKind: ScopeValue,
     SequenceKind: SequenceValue,
     StreamKind: StreamValue,
-    StringKind: []u8,
+    OldStringKind: []u8,
     UnitKind: void,
 };
 
@@ -578,11 +578,11 @@ pub fn eq(a: *Value, b: *Value) bool {
             return true;
         },
         .StreamKind => return a.v.StreamKind.stream.handle == b.v.StreamKind.stream.handle,
-        .StringKind => {
-            if (a.v.StringKind.len != b.v.StringKind.len) return false;
+        .OldStringKind => {
+            if (a.v.OldStringKind.len != b.v.OldStringKind.len) return false;
 
-            for (a.v.StringKind, 0..) |c, i| {
-                if (c != b.v.StringKind[i]) return false;
+            for (a.v.OldStringKind, 0..) |c, i| {
+                if (c != b.v.OldStringKind[i]) return false;
             }
 
             return true;

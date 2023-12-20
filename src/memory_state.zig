@@ -78,11 +78,11 @@ pub const MemoryState = struct {
     }
 
     pub fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
-        return try self.newValue(V.ValueValue{ .StringKind = try self.allocator.dupe(u8, v) });
+        return try self.newValue(V.ValueValue{ .OldStringKind = try self.allocator.dupe(u8, v) });
     }
 
     pub fn newOwnedStringValue(self: *MemoryState, v: *std.ArrayList(u8)) !*V.Value {
-        return try self.newValue(V.ValueValue{ .StringKind = try v.toOwnedSlice() });
+        return try self.newValue(V.ValueValue{ .OldStringKind = try v.toOwnedSlice() });
     }
 
     pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
@@ -90,7 +90,7 @@ pub const MemoryState = struct {
     }
 
     pub fn pushOwnedStringValue(self: *MemoryState, v: []u8) !void {
-        _ = try self.pushValue(V.ValueValue{ .StringKind = v });
+        _ = try self.pushValue(V.ValueValue{ .OldStringKind = v });
     }
 
     pub fn pushUnitValue(self: *MemoryState) !void {
@@ -231,7 +231,7 @@ fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {
     v.colour = colour;
 
     switch (v.v) {
-        .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FileKind, .FloatKind, .StreamKind, .StringKind, .UnitKind => {},
+        .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FileKind, .FloatKind, .StreamKind, .OldStringKind, .UnitKind => {},
         .FunctionKind => {
             markValue(v.v.FunctionKind.scope, colour);
             for (v.v.FunctionKind.arguments) |argument| {

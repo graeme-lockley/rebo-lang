@@ -12,7 +12,7 @@ fn booleanOption(options: *Helper.Value, name: []const u8, default: bool) bool {
 }
 
 pub fn open(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
-    const path = (try Helper.getArgument(machine, calleeAST, argsAST, "path", 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind;
+    const path = (try Helper.getArgument(machine, calleeAST, argsAST, "path", 0, &[_]Helper.ValueKind{Helper.ValueValue.OldStringKind})).v.OldStringKind;
     const options = try Helper.getArgument(machine, calleeAST, argsAST, "options", 1, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.UnitKind });
 
     if (options.v == Helper.ValueKind.UnitKind) {

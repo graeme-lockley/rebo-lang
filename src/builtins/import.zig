@@ -31,7 +31,7 @@ test "ffn" {
 
 fn fullFileName(machine: *Helper.Machine, fileName: []const u8) ![]u8 {
     const fromSourceName = machine.memoryState.getFromScope("__FILE");
-    return try ffn(machine.memoryState.allocator, if (fromSourceName == null) null else fromSourceName.?.v.StringKind, fileName);
+    return try ffn(machine.memoryState.allocator, if (fromSourceName == null) null else fromSourceName.?.v.OldStringKind, fileName);
 }
 
 test "fullFileName" {}
@@ -124,7 +124,7 @@ fn fexists(name: []const u8) bool {
 }
 
 pub fn import(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
-    const v = (try Helper.getArgument(machine, calleeAST, argsAST, "file", 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind;
+    const v = (try Helper.getArgument(machine, calleeAST, argsAST, "file", 0, &[_]Helper.ValueKind{Helper.ValueValue.OldStringKind})).v.OldStringKind;
 
     const indexOfDot = indexOfLastLinear(u8, v, '.');
     const indexOfSlash = indexOfLastLinear(u8, v, '/');
