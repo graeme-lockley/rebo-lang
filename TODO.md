@@ -44,7 +44,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] `[start:end]` to access a slice of a string
 - [X] `+` concatenates two strings
 - [X] `*` repeats a string
-- [ ] Move all the functions into the StringKind rather than having them lying all over the code base and forcing knowledge of the implementation
+- [X] Move all the functions into the StringKind rather than having them lying all over the code base and forcing knowledge of the implementation
 
 ## Records
 
