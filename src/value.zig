@@ -3,6 +3,7 @@ const std = @import("std");
 const AST = @import("./ast.zig");
 const Errors = @import("./errors.zig");
 const Machine = @import("./machine.zig").Machine;
+const SP = @import("./string_pool.zig");
 
 pub const IntType = i64;
 pub const FloatType = f64;
@@ -30,7 +31,7 @@ pub const Value = struct {
             .FunctionKind => self.v.FunctionKind.deinit(allocator),
             .SequenceKind => self.v.SequenceKind.deinit(),
             .StreamKind => self.v.StreamKind.deinit(),
-            .StringKind => self.v.StringKind.deinit(allocator),
+            .StringKind => self.v.StringKind.deinit(),
             .RecordKind => self.v.RecordKind.deinit(allocator),
             .ScopeKind => self.v.ScopeKind.deinit(allocator),
         }
@@ -197,6 +198,9 @@ pub const Value = struct {
                         }
                     }
                     try buffer.append('"');
+                    // try buffer.appendSlice("(");
+                    // try std.fmt.format(buffer.writer(), "{d}", .{self.v.StringKind._value.count});
+                    // try buffer.appendSlice(")");
                 },
                 Style.Raw => try buffer.appendSlice(self.v.StringKind.slice()),
             },
@@ -451,27 +455,55 @@ pub const StreamValue = struct {
     }
 };
 
+// pub const StringValue = struct {
+//     value: []const u8,
+
+//     pub fn init(allocator: std.mem.Allocator, value: []const u8) !StringValue {
+//         return StringValue{ .value = try allocator.dupe(u8, value) };
+//     }
+
+//     pub fn initOwned(value: []u8) StringValue {
+//         return StringValue{ .value = value };
+//     }
+
+//     pub fn deinit(self: *StringValue, allocator: std.mem.Allocator) void {
+//         allocator.free(self.value);
+//     }
+
+//     pub inline fn slice(self: *const StringValue) []const u8 {
+//         return self.value;
+//     }
+
+//     pub inline fn len(self: *const StringValue) usize {
+//         return self.value.len;
+//     }
+// };
+
 pub const StringValue = struct {
-    value: []const u8,
+    _value: *SP.String,
 
-    pub fn init(allocator: std.mem.Allocator, value: []const u8) !StringValue {
-        return StringValue{ .value = try allocator.dupe(u8, value) };
+    pub fn init(sp: *SP.StringPool, value: []const u8) !StringValue {
+        return StringValue{ ._value = try sp.intern(value) };
     }
 
-    pub fn initOwned(value: []u8) StringValue {
-        return StringValue{ .value = value };
+    pub fn initOwned(sp: *SP.StringPool, value: []u8) !StringValue {
+        return StringValue{ ._value = try sp.internOwned(value) };
     }
 
-    pub fn deinit(self: *StringValue, allocator: std.mem.Allocator) void {
-        allocator.free(self.value);
+    pub fn deinit(self: *StringValue) void {
+        if (self._value.decRef()) {
+            const allocator = self._value.pool.allocator;
+            self._value.deinit();
+            allocator.destroy(self._value);
+        }
     }
 
     pub inline fn slice(self: *const StringValue) []const u8 {
-        return self.value;
+        return self._value.slice();
     }
 
     pub inline fn len(self: *const StringValue) usize {
-        return self.value.len;
+        return self._value.len();
     }
 };
 
@@ -588,11 +620,7 @@ pub fn eq(a: *Value, b: *Value) bool {
             return true;
         },
         .StreamKind => return a.v.StreamKind.stream.handle == b.v.StreamKind.stream.handle,
-        .StringKind => {
-            if (a.v.StringKind.slice().len != b.v.StringKind.slice().len) return false;
-
-            return std.mem.eql(u8, a.v.StringKind.slice(), b.v.StringKind.slice());
-        },
+        .StringKind => return a.v.StringKind._value == b.v.StringKind._value,
         .RecordKind => {
             if (a.v.RecordKind.count() != b.v.RecordKind.count()) return false;
 

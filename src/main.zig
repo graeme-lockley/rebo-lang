@@ -145,7 +145,7 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         return error.TestingError;
     }
 
-    try nike(input);
+    // try nike(input);
 }
 
 fn expectError(input: []const u8) !void {

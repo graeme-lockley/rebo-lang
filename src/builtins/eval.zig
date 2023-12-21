@@ -27,7 +27,7 @@ pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []
 
             err.?.append(&buffer) catch {};
 
-            try record.v.RecordKind.set(machine.memoryState.allocator, "message", try machine.memoryState.newOwnedStringValue(&buffer));
+            try record.v.RecordKind.set(machine.memoryState.allocator, "message", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
 
             err.?.deinit();
         }

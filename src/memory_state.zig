@@ -1,10 +1,13 @@
 const std = @import("std");
 
 pub const AST = @import("./ast.zig");
+pub const SP = @import("./string_pool.zig");
 pub const V = @import("./value.zig");
 
 pub const MemoryState = struct {
     allocator: std.mem.Allocator,
+
+    stringPool: *SP.StringPool,
     stack: std.ArrayList(*V.Value),
     colour: V.Colour,
     root: ?*V.Value,
@@ -13,6 +16,78 @@ pub const MemoryState = struct {
     scopes: std.ArrayList(*V.Value),
     imports: Imports,
     unitValue: ?*V.Value,
+
+    pub fn init(allocator: std.mem.Allocator) !MemoryState {
+        const stringPool = try allocator.create(SP.StringPool);
+        stringPool.* = SP.StringPool.init(allocator);
+
+        var state = MemoryState{
+            .allocator = allocator,
+            .stringPool = stringPool,
+            .stack = std.ArrayList(*V.Value).init(allocator),
+            .colour = V.Colour.White,
+            .root = null,
+            .memory_size = 0,
+            .memory_capacity = 1024 * 64,
+            .scopes = std.ArrayList(*V.Value).init(allocator),
+            .imports = Imports.init(allocator),
+            .unitValue = null,
+        };
+
+        state.unitValue = try state.newValue(V.ValueValue{ .UnitKind = void{} });
+
+        return state;
+    }
+
+    pub fn deinit(self: *MemoryState) void {
+        // Leave this code in - helpful to use when debugging memory leaks.
+        // The code following this comment block just nukes the allocated
+        // memory without consideration what is still in use.
+
+        var count: u32 = 0;
+        for (self.stack.items) |v| {
+            count += 1;
+            _ = v;
+        }
+
+        _ = force_gc(self);
+
+        var number_of_values: u32 = 0;
+        {
+            var runner: ?*V.Value = self.root;
+            while (runner != null) {
+                const next = runner.?.next;
+                number_of_values += 1;
+                runner = next;
+            }
+        }
+        std.log.info("gc: memory state stack length: {d} vs {d}: values: {d} vs {d}", .{ self.stack.items.len, count, self.memory_size, number_of_values });
+        self.unitValue = null;
+        self.scopes.deinit();
+        self.scopes = std.ArrayList(*V.Value).init(self.allocator);
+        self.stack.deinit();
+        self.stack = std.ArrayList(*V.Value).init(self.allocator);
+        self.imports.deinit();
+        self.imports = Imports.init(self.allocator);
+        _ = force_gc(self);
+
+        self.stack.deinit();
+        self.imports.deinit();
+
+        std.log.info("gc: memory state stack length: {d} vs {d}: values: {d} vs {d}", .{ self.stack.items.len, count, self.memory_size, number_of_values });
+
+        self.stringPool.deinit();
+        self.allocator.destroy(self.stringPool);
+
+        // self.stack.deinit();
+        // var runner: ?*V.Value = self.root;
+        // while (runner != null) {
+        //     const next = runner.?.next;
+        //     runner.?.deinit(self.allocator);
+        //     self.allocator.destroy(runner.?);
+        //     runner = next;
+        // }
+    }
 
     pub fn newValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
         const v = try self.allocator.create(V.Value);
@@ -78,11 +153,11 @@ pub const MemoryState = struct {
     }
 
     pub fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
-        return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.init(self.allocator, v) });
+        return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.init(self.stringPool, v) });
     }
 
-    pub fn newOwnedStringValue(self: *MemoryState, v: *std.ArrayList(u8)) !*V.Value {
-        return try self.newValue(V.ValueValue{ .StringKind = V.StringValue.initOwned(try v.toOwnedSlice()) });
+    pub fn newOwnedStringValue(self: *MemoryState, v: []u8) !*V.Value {
+        return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.initOwned(self.stringPool, v) });
     }
 
     pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
@@ -90,7 +165,7 @@ pub const MemoryState = struct {
     }
 
     pub fn pushOwnedStringValue(self: *MemoryState, v: []u8) !void {
-        _ = try self.pushValue(V.ValueValue{ .StringKind = V.StringValue.initOwned(v) });
+        _ = try self.push(try self.newOwnedStringValue(v));
     }
 
     pub fn pushUnitValue(self: *MemoryState) !void {
@@ -171,49 +246,6 @@ pub const MemoryState = struct {
 
         self.stack.deinit();
         self.stack = std.ArrayList(*V.Value).init(self.allocator);
-    }
-
-    pub fn deinit(self: *MemoryState) void {
-        // Leave this code in - helpful to use when debugging memory leaks.
-        // The code following this comment block just nukes the allocated
-        // memory without consideration what is still in use.
-
-        var count: u32 = 0;
-        for (self.stack.items) |v| {
-            count += 1;
-            _ = v;
-        }
-
-        _ = force_gc(self);
-        var number_of_values: u32 = 0;
-        {
-            var runner: ?*V.Value = self.root;
-            while (runner != null) {
-                const next = runner.?.next;
-                number_of_values += 1;
-                runner = next;
-            }
-        }
-        std.log.info("gc: memory state stack length: {d} vs {d}: values: {d} vs {d}", .{ self.stack.items.len, count, self.memory_size, number_of_values });
-        self.unitValue = null;
-        self.scopes.deinit();
-        self.scopes = std.ArrayList(*V.Value).init(self.allocator);
-        self.stack.deinit();
-        self.stack = std.ArrayList(*V.Value).init(self.allocator);
-        self.imports.deinit();
-        self.imports = Imports.init(self.allocator);
-        _ = force_gc(self);
-        self.stack.deinit();
-        self.imports.deinit();
-
-        // self.stack.deinit();
-        // var runner: ?*V.Value = self.root;
-        // while (runner != null) {
-        //     const next = runner.?.next;
-        //     runner.?.deinit(self.allocator);
-        //     self.allocator.destroy(runner.?);
-        //     runner = next;
-        // }
     }
 };
 
@@ -320,7 +352,7 @@ pub fn force_gc(state: *MemoryState) GCResult {
 }
 
 fn gc(state: *MemoryState) void {
-    const threshold_rate = 0.75;
+    const threshold_rate = 0.25;
 
     if (state.memory_size > state.memory_capacity) {
         // _ = force_gc(state);

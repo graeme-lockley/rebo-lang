@@ -1287,21 +1287,7 @@ fn addRebo(state: *MS.MemoryState) !void {
 }
 
 fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
-    const default_colour = V.Colour.White;
-
-    var state = MS.MemoryState{
-        .allocator = allocator,
-        .stack = std.ArrayList(*V.Value).init(allocator),
-        .colour = default_colour,
-        .root = null,
-        .memory_size = 0,
-        .memory_capacity = 1024 * 64,
-        .scopes = std.ArrayList(*V.Value).init(allocator),
-        .imports = MS.Imports.init(allocator),
-        .unitValue = null,
-    };
-
-    state.unitValue = try state.newValue(V.ValueValue{ .UnitKind = void{} });
+    var state = try MS.MemoryState.init(allocator);
 
     try state.openScope();
 

@@ -27,7 +27,7 @@ pub fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
 
     try std.fmt.format(buffer.writer(), "{}", .{err});
 
-    try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedStringValue(&buffer));
+    try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
 }
 
 pub fn silentOsError(machine: *Machine, operation: []const u8, err: anyerror) void {
