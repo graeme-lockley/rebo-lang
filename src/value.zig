@@ -26,7 +26,8 @@ pub const Value = struct {
 
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         switch (self.v) {
-            .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .UnitKind => {},
+            .BoolKind, .CharKind, .IntKind, .FloatKind, .UnitKind => {},
+            .BuiltinKind => self.v.BuiltinKind.deinit(allocator),
             .FileKind => self.v.FileKind.deinit(),
             .FunctionKind => self.v.FunctionKind.deinit(allocator),
             .SequenceKind => self.v.SequenceKind.deinit(),
@@ -272,6 +273,18 @@ pub const BuiltinValue = struct {
     arguments: []const FunctionArgument,
     restOfArguments: ?[]const u8,
     body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.err!void,
+
+    pub fn deinit(self: *BuiltinValue, allocator: std.mem.Allocator) void {
+        _ = allocator;
+        _ = self;
+        // for (self.arguments) |*argument| {
+        //     argument.deinit(allocator);
+        // }
+        // if (self.restOfArguments != null) {
+        //     allocator.free(self.restOfArguments.?);
+        // }
+        // allocator.free(self.arguments);
+    }
 };
 
 pub const FileValue = struct {
@@ -304,23 +317,23 @@ pub const FunctionValue = struct {
     body: *AST.Expression,
 
     pub fn deinit(self: *FunctionValue, allocator: std.mem.Allocator) void {
-        for (self.arguments) |argument| {
-            allocator.free(argument.name);
+        for (self.arguments) |*argument| {
+            argument.deinit(allocator);
         }
         if (self.restOfArguments != null) {
             allocator.free(self.restOfArguments.?);
         }
         allocator.free(self.arguments);
-
-        // This is a problem - an AST is part of a value and therefore needs to be under control of the garbage collector.
-        // At the moment, this is not possible as the AST is managed as general memory.
-        // AST.destroy(allocator, self.v.FunctionKind.body);
     }
 };
 
 pub const FunctionArgument = struct {
     name: []const u8,
     default: ?*Value,
+
+    pub fn deinit(self: *FunctionArgument, allocator: std.mem.Allocator) void {
+        allocator.free(self.name);
+    }
 };
 
 pub const RecordValue = struct {
