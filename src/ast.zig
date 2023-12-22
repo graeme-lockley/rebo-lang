@@ -118,7 +118,12 @@ pub const CatchExpression = struct {
 
 pub const DotExpression = struct {
     record: *Expression,
-    field: []u8,
+    field: *SP.String,
+
+    pub fn deinit(self: *DotExpression, allocator: std.mem.Allocator) void {
+        destroyExpr(allocator, self.record);
+        self.field.decRef();
+    }
 };
 
 pub const Function = struct {
@@ -243,10 +248,7 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
             }
             allocator.free(expr.kind.catche.cases);
         },
-        .dot => {
-            destroyExpr(allocator, expr.kind.dot.record);
-            allocator.free(expr.kind.dot.field);
-        },
+        .dot => expr.kind.dot.deinit(allocator),
         .exprs => {
             for (expr.kind.exprs) |v| {
                 destroyExpr(allocator, v);

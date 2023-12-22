@@ -593,7 +593,7 @@ pub const Parser = struct {
                 const field = try self.matchToken(Lexer.TokenKind.Identifier);
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .dot = AST.DotExpression{ .record = result, .field = try self.allocator.dupe(u8, self.lexer.lexeme(field)) } }, .position = Errors.Position{ .start = result.position.start, .end = field.end } };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .dot = AST.DotExpression{ .record = result, .field = try self.stringPool.intern(self.lexer.lexeme(field)) } }, .position = Errors.Position{ .start = result.position.start, .end = field.end } };
                 result = v;
             } else {
                 break;

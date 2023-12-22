@@ -141,7 +141,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             }
             if (evalExpr(machine, value)) return true;
 
-            record.v.RecordKind.set(machine.memoryState.allocator, lhs.kind.dot.field, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+            record.v.RecordKind.set(machine.memoryState.allocator, lhs.kind.dot.field.slice(), machine.memoryState.peek(0)) catch |err| return errorHandler(err);
 
             const v = machine.memoryState.pop();
             _ = machine.memoryState.pop();
@@ -923,7 +923,7 @@ fn dot(machine: *Machine, e: *AST.Expression) bool {
         return true;
     }
 
-    const value = record.v.RecordKind.get(e.kind.dot.field);
+    const value = record.v.RecordKind.get(e.kind.dot.field.slice());
 
     if (value == null) {
         machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
