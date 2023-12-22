@@ -4,16 +4,19 @@ const AST = @import("./ast.zig");
 const Errors = @import("./errors.zig");
 const Machine = @import("./machine.zig");
 const Lexer = @import("./lexer.zig");
+const SP = @import("./string_pool.zig");
 const V = @import("./value.zig");
 
 pub const Parser = struct {
     allocator: std.mem.Allocator,
+    stringPool: *SP.StringPool,
     lexer: Lexer.Lexer,
     err: ?Errors.Error,
 
-    pub fn init(allocator: std.mem.Allocator, lexer: Lexer.Lexer) Parser {
+    pub fn init(stringPool: *SP.StringPool, lexer: Lexer.Lexer) Parser {
         return Parser{
-            .allocator = allocator,
+            .allocator = stringPool.allocator,
+            .stringPool = stringPool,
             .lexer = lexer,
             .err = null,
         };
@@ -676,11 +679,10 @@ pub const Parser = struct {
                 }
             },
             Lexer.TokenKind.Identifier => {
-                const lexeme = try self.allocator.dupe(u8, self.lexer.currentLexeme());
-                errdefer self.allocator.free(lexeme);
+                const lexeme = self.lexer.currentLexeme();
 
                 const v = try self.allocator.create(AST.Expression);
-                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .identifier = lexeme }, .position = Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end } };
+                v.* = AST.Expression{ .kind = AST.ExpressionKind{ .identifier = try self.stringPool.intern(lexeme) }, .position = Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end } };
                 errdefer v.destroy(self.allocator);
 
                 try self.skipToken();

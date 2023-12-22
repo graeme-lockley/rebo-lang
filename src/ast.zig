@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const Errors = @import("./errors.zig");
+const SP = @import("./string_pool.zig");
 const Value = @import("./value.zig");
 
 pub const Operator = enum {
@@ -64,7 +65,7 @@ pub const ExpressionKind = union(enum) {
     dot: DotExpression,
     exprs: []*Expression,
     idDeclaration: IdDeclarationExpression,
-    identifier: []u8,
+    identifier: *SP.String,
     ifte: []IfCouple,
     indexRange: IndexRangeExpression,
     indexValue: IndexValueExpression,
@@ -253,7 +254,10 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
             allocator.free(expr.kind.exprs);
         },
         .idDeclaration => expr.kind.idDeclaration.deinit(allocator),
-        .identifier => allocator.free(expr.kind.identifier),
+        .identifier => if (expr.kind.identifier.decRef()) {
+            expr.kind.identifier.deinit();
+            allocator.destroy(expr.kind.identifier);
+        },
         .ifte => {
             for (expr.kind.ifte) |v| {
                 if (v.condition != null) {

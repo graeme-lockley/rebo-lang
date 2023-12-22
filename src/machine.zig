@@ -126,8 +126,8 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
         .identifier => {
             if (evalExpr(machine, value)) return true;
 
-            if (!(machine.memoryState.updateInScope(lhs.kind.identifier, machine.memoryState.peek(0)) catch |err| return errorHandler(err))) {
-                machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, machine.src(), lhs.position, lhs.kind.identifier) catch |err| return errorHandler(err));
+            if (!(machine.memoryState.updateInScope(lhs.kind.identifier.slice(), machine.memoryState.peek(0)) catch |err| return errorHandler(err))) {
+                machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, machine.src(), lhs.position, lhs.kind.identifier.slice()) catch |err| return errorHandler(err));
                 return true;
             }
         },
@@ -954,10 +954,10 @@ fn exprs(machine: *Machine, e: *AST.Expression) bool {
 }
 
 fn identifier(machine: *Machine, e: *AST.Expression) bool {
-    const result = machine.memoryState.getFromScope(e.kind.identifier);
+    const result = machine.memoryState.getFromScope(e.kind.identifier.slice());
 
     if (result == null) {
-        machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, machine.src(), e.position, e.kind.identifier) catch |err| return errorHandler(err));
+        machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, machine.src(), e.position, e.kind.identifier.slice()) catch |err| return errorHandler(err));
         return true;
     } else {
         machine.memoryState.push(result.?) catch |err| return errorHandler(err);
@@ -1444,7 +1444,7 @@ pub const Machine = struct {
             return err;
         };
 
-        var p = Parser.Parser.init(allocator, l);
+        var p = Parser.Parser.init(self.memoryState.stringPool, l);
 
         const ast = p.module() catch |err| {
             self.err = p.grabErr();
