@@ -102,11 +102,11 @@ pub const CallExpression = struct {
 };
 
 pub const IdDeclarationExpression = struct {
-    name: []u8,
+    name: *SP.String,
     value: *Expression,
 
     pub fn deinit(self: *IdDeclarationExpression, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
+        self.name.decRef();
         destroyExpr(allocator, self.value);
     }
 };

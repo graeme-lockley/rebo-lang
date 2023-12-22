@@ -56,7 +56,7 @@ pub const Parser = struct {
             const nextNextToken = try self.peekNextToken();
             if (self.currentTokenKind() == Lexer.TokenKind.Identifier and (nextNextToken == Lexer.TokenKind.Equal or nextNextToken == Lexer.TokenKind.LParen)) {
                 const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
-                const name = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
+                const name = self.lexer.lexeme(nameToken);
                 errdefer self.allocator.free(name);
 
                 if (self.currentTokenKind() == Lexer.TokenKind.LParen) {
@@ -65,7 +65,7 @@ pub const Parser = struct {
 
                     const v = try self.allocator.create(AST.Expression);
 
-                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .idDeclaration = AST.IdDeclarationExpression{ .name = name, .value = literalFn } }, .position = Errors.Position{ .start = nameToken.start, .end = literalFn.position.end } };
+                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .idDeclaration = AST.IdDeclarationExpression{ .name = try self.stringPool.intern(name), .value = literalFn } }, .position = Errors.Position{ .start = nameToken.start, .end = literalFn.position.end } };
 
                     return v;
                 } else {
@@ -75,7 +75,7 @@ pub const Parser = struct {
                     errdefer value.destroy(self.allocator);
 
                     const v = try self.allocator.create(AST.Expression);
-                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .idDeclaration = AST.IdDeclarationExpression{ .name = name, .value = value } }, .position = Errors.Position{ .start = letToken.start, .end = value.position.end } };
+                    v.* = AST.Expression{ .kind = AST.ExpressionKind{ .idDeclaration = AST.IdDeclarationExpression{ .name = try self.stringPool.intern(name), .value = value } }, .position = Errors.Position{ .start = letToken.start, .end = value.position.end } };
                     return v;
                 }
             } else {

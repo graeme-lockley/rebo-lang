@@ -908,7 +908,7 @@ fn declaration(machine: *Machine, e: *AST.Expression) bool {
 
     const value: *V.Value = machine.memoryState.peek(0);
 
-    machine.memoryState.addToScope(e.kind.idDeclaration.name, value) catch |err| return errorHandler(err);
+    machine.memoryState.addToScope(e.kind.idDeclaration.name.slice(), value) catch |err| return errorHandler(err);
 
     return false;
 }
