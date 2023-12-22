@@ -455,55 +455,31 @@ pub const StreamValue = struct {
     }
 };
 
-// pub const StringValue = struct {
-//     value: []const u8,
-
-//     pub fn init(allocator: std.mem.Allocator, value: []const u8) !StringValue {
-//         return StringValue{ .value = try allocator.dupe(u8, value) };
-//     }
-
-//     pub fn initOwned(value: []u8) StringValue {
-//         return StringValue{ .value = value };
-//     }
-
-//     pub fn deinit(self: *StringValue, allocator: std.mem.Allocator) void {
-//         allocator.free(self.value);
-//     }
-
-//     pub inline fn slice(self: *const StringValue) []const u8 {
-//         return self.value;
-//     }
-
-//     pub inline fn len(self: *const StringValue) usize {
-//         return self.value.len;
-//     }
-// };
-
 pub const StringValue = struct {
-    _value: *SP.String,
+    value: *SP.String,
 
     pub fn init(sp: *SP.StringPool, value: []const u8) !StringValue {
-        return StringValue{ ._value = try sp.intern(value) };
+        return StringValue{ .value = try sp.intern(value) };
     }
 
     pub fn initOwned(sp: *SP.StringPool, value: []u8) !StringValue {
-        return StringValue{ ._value = try sp.internOwned(value) };
+        return StringValue{ .value = try sp.internOwned(value) };
     }
 
     pub fn deinit(self: *StringValue) void {
-        if (self._value.decRef()) {
-            const allocator = self._value.pool.allocator;
-            self._value.deinit();
-            allocator.destroy(self._value);
+        if (self.value.decRef()) {
+            const allocator = self.value.pool.allocator;
+            self.value.deinit();
+            allocator.destroy(self.value);
         }
     }
 
     pub inline fn slice(self: *const StringValue) []const u8 {
-        return self._value.slice();
+        return self.value.slice();
     }
 
     pub inline fn len(self: *const StringValue) usize {
-        return self._value.len();
+        return self.value.len();
     }
 };
 
@@ -620,7 +596,7 @@ pub fn eq(a: *Value, b: *Value) bool {
             return true;
         },
         .StreamKind => return a.v.StreamKind.stream.handle == b.v.StreamKind.stream.handle,
-        .StringKind => return a.v.StringKind._value == b.v.StringKind._value,
+        .StringKind => return a.v.StringKind.value == b.v.StringKind.value,
         .RecordKind => {
             if (a.v.RecordKind.count() != b.v.RecordKind.count()) return false;
 

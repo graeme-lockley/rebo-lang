@@ -5,8 +5,6 @@ pub const StringPool = struct {
     items: std.StringHashMap(*String),
 
     pub fn init(allocator: std.mem.Allocator) StringPool {
-        std.log.info("string pool: init", .{});
-
         return StringPool{
             .allocator = allocator,
             .items = std.StringHashMap(*String).init(allocator),
@@ -14,7 +12,6 @@ pub const StringPool = struct {
     }
 
     pub fn deinit(self: *StringPool) void {
-        std.log.info("string pool: deinit", .{});
         if (self.items.count() > 0) {
             std.log.err("string pool: memory leak: {d} items in pool", .{self.items.count()});
         }
@@ -39,22 +36,18 @@ pub const StringPool = struct {
     }
 
     pub fn internOwned(self: *StringPool, data: []u8) !*String {
-        const r = self.intern(data);
-        self.allocator.free(data);
-        return r;
+        const s = self.items.get(data);
+        if (s == null) {
+            var string = try self.allocator.create(String);
+            string.* = String.init(self, data);
+            try self.items.put(string.data, string);
+            return string;
+        } else {
+            s.?.incRef();
+            self.allocator.free(data);
 
-        // const s = self.items.get(data);
-        // if (s == null) {
-        //     var string = try self.allocator.create(String);
-        //     string.* = String._init(self, data);
-        //     try self.items.put(string.data, string);
-        //     return string;
-        // } else {
-        //     s.?.incRef();
-        //     self.allocator.free(data);
-
-        //     return s.?;
-        // }
+            return s.?;
+        }
     }
 };
 
