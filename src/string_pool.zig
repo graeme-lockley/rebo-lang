@@ -84,6 +84,11 @@ pub const String = struct {
         }
     }
 
+    pub fn incRefR(this: *String) *String {
+        this.incRef();
+        return this;
+    }
+
     pub inline fn decRef(this: *String) void {
         if (this.count == 1) {
             const allocator = this.pool.allocator;
