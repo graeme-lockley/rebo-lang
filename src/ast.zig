@@ -367,7 +367,7 @@ pub const SequencePattern = struct {
 
 pub const RecordPattern = struct {
     entries: []RecordPatternEntry,
-    id: ?[]u8,
+    id: ?*SP.String,
 
     pub fn deinit(self: *RecordPattern, allocator: std.mem.Allocator) void {
         for (self.entries) |*e| {
@@ -376,23 +376,23 @@ pub const RecordPattern = struct {
         allocator.free(self.entries);
 
         if (self.id != null) {
-            allocator.free(self.id.?);
+            self.id.?.decRef();
         }
     }
 };
 
 pub const RecordPatternEntry = struct {
-    key: []u8,
+    key: *SP.String,
     pattern: ?*Pattern,
-    id: ?[]u8,
+    id: ?*SP.String,
 
     pub fn deinit(self: *RecordPatternEntry, allocator: std.mem.Allocator) void {
-        allocator.free(self.key);
+        self.key.decRef();
         if (self.pattern != null) {
             destroyPattern(allocator, self.pattern.?);
         }
         if (self.id != null) {
-            allocator.free(self.id.?);
+            self.id.?.decRef();
         }
     }
 };

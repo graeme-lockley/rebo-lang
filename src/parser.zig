@@ -1138,13 +1138,13 @@ pub const Parser = struct {
                 }
                 const rcurly = try self.matchToken(Lexer.TokenKind.RCurly);
 
-                var id: ?[]u8 = null;
-                errdefer if (id != null) self.allocator.free(id.?);
+                var id: ?*SP.String = null;
+                errdefer if (id != null) id.?.decRef();
 
                 if (self.currentTokenKind() == Lexer.TokenKind.At) {
                     try self.skipToken();
                     const alias = try self.matchToken(Lexer.TokenKind.Identifier);
-                    id = try self.allocator.dupe(u8, self.lexer.lexeme(alias));
+                    id = try self.stringPool.intern(self.lexer.lexeme(alias));
                 }
 
                 const v = try self.allocator.create(AST.Pattern);
@@ -1179,14 +1179,14 @@ pub const Parser = struct {
     fn recordPatternEntry(self: *Parser) !AST.RecordPatternEntry {
         const key = try self.matchToken(Lexer.TokenKind.Identifier);
 
-        const keyValue = try self.allocator.dupe(u8, self.lexer.lexeme(key));
-        errdefer self.allocator.free(keyValue);
+        const keyValue = try self.stringPool.intern(self.lexer.lexeme(key));
+        errdefer keyValue.decRef();
 
         var pttrn: ?*AST.Pattern = null;
         errdefer if (pttrn != null) pttrn.?.destroy(self.allocator);
 
-        var id: ?[]u8 = null;
-        errdefer if (id != null) self.allocator.free(id.?);
+        var id: ?*SP.String = null;
+        errdefer if (id != null) id.?.decRef();
 
         if (self.currentTokenKind() == Lexer.TokenKind.Colon) {
             try self.skipToken();
@@ -1195,7 +1195,7 @@ pub const Parser = struct {
 
         if (self.currentTokenKind() == Lexer.TokenKind.At) {
             try self.skipToken();
-            id = try self.allocator.dupe(u8, self.lexer.currentLexeme());
+            id = try self.stringPool.intern(self.lexer.currentLexeme());
             try self.matchSkipToken(Lexer.TokenKind.Identifier);
         }
 

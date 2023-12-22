@@ -1152,19 +1152,19 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
             const record = v.v.RecordKind;
 
             for (p.kind.record.entries) |entry| {
-                const value = record.get(entry.key);
+                const value = record.get(entry.key.slice());
 
                 if (value == null) return false;
 
                 if (entry.pattern == null) {
-                    machine.memoryState.addToScope(if (entry.id == null) entry.key else entry.id.?, value.?) catch |err| return errorHandler(err);
+                    machine.memoryState.addToScope(if (entry.id == null) entry.key.slice() else entry.id.?.slice(), value.?) catch |err| return errorHandler(err);
                 } else if (entry.pattern != null and !matchPattern(machine, entry.pattern.?, value.?)) {
                     return false;
                 }
             }
 
             if (p.kind.record.id != null) {
-                machine.memoryState.addToScope(p.kind.record.id.?, v) catch |err| return errorHandler(err);
+                machine.memoryState.addToScope(p.kind.record.id.?.slice(), v) catch |err| return errorHandler(err);
             }
 
             return true;
