@@ -76,7 +76,7 @@ pub const ExpressionKind = union(enum) {
     literalFloat: Value.FloatType,
     literalRecord: []RecordEntry,
     literalSequence: []LiteralSequenceValue,
-    literalString: []u8,
+    literalString: *SP.String,
     literalVoid: void,
     match: MatchExpression,
     notOp: NotOpExpression,
@@ -302,7 +302,7 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
             }
             allocator.free(expr.kind.literalSequence);
         },
-        .literalString => allocator.free(expr.kind.literalString),
+        .literalString => expr.kind.literalString.decRef(),
         .match => {
             destroyExpr(allocator, expr.kind.match.value);
             for (expr.kind.match.cases) |*c| {
@@ -340,7 +340,7 @@ pub const PatternKind = union(enum) {
     literalBool: bool,
     literalFloat: Value.FloatType,
     literalInt: Value.IntType,
-    literalString: []u8,
+    literalString: *SP.String,
     record: RecordPattern,
     sequence: SequencePattern,
     void: void,
@@ -401,7 +401,7 @@ fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
     switch (pattern.kind) {
         .identifier => pattern.kind.identifier.decRef(),
         .literalChar, .literalFloat, .literalInt, .literalBool, .void => {},
-        .literalString => allocator.free(pattern.kind.literalString),
+        .literalString => pattern.kind.literalString.decRef(),
         .record => pattern.kind.record.deinit(allocator),
         .sequence => pattern.kind.sequence.deinit(allocator),
     }

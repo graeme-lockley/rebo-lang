@@ -737,7 +737,7 @@ pub const Parser = struct {
             },
             Lexer.TokenKind.LiteralString => {
                 const text = try self.parseLiteralString(self.lexer.currentLexeme());
-                errdefer self.allocator.free(text);
+                errdefer text.decRef();
 
                 const token = try self.nextToken();
 
@@ -846,7 +846,7 @@ pub const Parser = struct {
         };
     }
 
-    fn parseLiteralString(self: *Parser, lexeme: []const u8) ![]u8 {
+    fn parseLiteralString(self: *Parser, lexeme: []const u8) !*SP.String {
         var buffer = std.ArrayList(u8).init(self.allocator);
         defer buffer.deinit();
 
@@ -882,7 +882,7 @@ pub const Parser = struct {
             i += 1;
         }
 
-        return try buffer.toOwnedSlice();
+        return try self.stringPool.internOwned(try buffer.toOwnedSlice());
     }
 
     fn literalListItem(self: *Parser) !AST.LiteralSequenceValue {
@@ -1055,6 +1055,7 @@ pub const Parser = struct {
             },
             Lexer.TokenKind.LiteralString => {
                 const literalString = try self.parseLiteralString(self.lexer.currentLexeme());
+                errdefer literalString.decRef();
                 const token = try self.nextToken();
 
                 const v = try self.allocator.create(AST.Pattern);

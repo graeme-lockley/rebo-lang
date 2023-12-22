@@ -6,6 +6,7 @@ const Errors = @import("./errors.zig");
 const Lexer = @import("./lexer.zig");
 const MS = @import("./memory_state.zig");
 const Parser = @import("./parser.zig");
+const SP = @import("./string_pool.zig");
 const V = @import("./value.zig");
 
 pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
@@ -99,7 +100,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                 }
             }
         },
-        .literalString => machine.createStringValue(e.kind.literalString) catch |err| return errorHandler(err),
+        .literalString => machine.memoryState.pushStringPoolValue(e.kind.literalString) catch |err| return errorHandler(err),
         .literalVoid => machine.createVoidValue() catch |err| return errorHandler(err),
         .match => return match(machine, e),
         .notOp => {
@@ -1145,7 +1146,7 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
         .literalChar => return v.v == V.ValueValue.CharKind and v.v.CharKind == p.kind.literalChar,
         .literalFloat => return v.v == V.ValueValue.FloatKind and v.v.FloatKind == p.kind.literalFloat or v.v == V.ValueValue.IntKind and v.v.IntKind == @as(V.IntType, @intFromFloat(p.kind.literalFloat)),
         .literalInt => return v.v == V.ValueValue.IntKind and v.v.IntKind == p.kind.literalInt or v.v == V.ValueValue.FloatKind and v.v.FloatKind == @as(V.FloatType, @floatFromInt(p.kind.literalInt)),
-        .literalString => return v.v == V.ValueValue.StringKind and std.mem.eql(u8, v.v.StringKind.slice(), p.kind.literalString),
+        .literalString => return v.v == V.ValueValue.StringKind and std.mem.eql(u8, v.v.StringKind.slice(), p.kind.literalString.slice()),
         .record => {
             if (v.v != V.ValueValue.RecordKind) return false;
 
@@ -1418,10 +1419,6 @@ pub const Machine = struct {
 
     pub fn createIntValue(self: *Machine, v: V.IntType) !void {
         try self.memoryState.pushIntValue(v);
-    }
-
-    pub fn createStringValue(self: *Machine, v: []const u8) !void {
-        try self.memoryState.pushStringValue(v);
     }
 
     pub fn createSequenceValue(self: *Machine, size: usize) !void {

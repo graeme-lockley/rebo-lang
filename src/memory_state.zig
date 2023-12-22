@@ -160,6 +160,10 @@ pub const MemoryState = struct {
         return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.initOwned(self.stringPool, v) });
     }
 
+    pub fn pushStringPoolValue(self: *MemoryState, v: *SP.String) !void {
+        _ = try self.push(try self.newValue(V.ValueValue{ .StringKind = V.StringValue.initPool(v) }));
+    }
+
     pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
         _ = try self.push(try self.newStringValue(v));
     }

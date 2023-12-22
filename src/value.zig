@@ -466,6 +466,11 @@ pub const StringValue = struct {
         return StringValue{ .value = try sp.internOwned(value) };
     }
 
+    pub fn initPool(value: *SP.String) StringValue {
+        value.incRef();
+        return StringValue{ .value = value };
+    }
+
     pub fn deinit(self: *StringValue) void {
         self.value.decRef();
     }
