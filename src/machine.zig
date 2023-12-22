@@ -802,18 +802,25 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
 }
 
 fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) bool {
-    const sp = machine.memoryState.stack.items.len;
-
     if (evalExpr(machine, calleeAST)) return true;
 
     const callee = machine.memoryState.peek(0);
 
-    if (callee.v != V.ValueValue.FunctionKind and callee.v != V.ValueValue.BuiltinKind) {
-        machine.replaceErr(Errors.functionValueExpectedError(machine.memoryState.allocator, machine.src(), calleeAST.position, callee.v) catch |err| return errorHandler(err));
-        return true;
+    switch (callee.v) {
+        V.ValueValue.FunctionKind => return callFn(machine, e, calleeAST, argsAST, callee),
+        V.ValueValue.BuiltinKind => return callBuiltin(machine, e, calleeAST, argsAST, callee),
+        else => {
+            machine.replaceErr(Errors.functionValueExpectedError(machine.memoryState.allocator, machine.src(), calleeAST.position, callee.v) catch |err| return errorHandler(err));
+            return true;
+        },
     }
-    const args = if (callee.v == V.ValueValue.FunctionKind) callee.v.FunctionKind.arguments else callee.v.BuiltinKind.arguments;
-    const restOfArgs = if (callee.v == V.ValueValue.FunctionKind) callee.v.FunctionKind.restOfArguments else callee.v.BuiltinKind.restOfArguments;
+}
+
+fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) bool {
+    const sp = machine.memoryState.stack.items.len - 1;
+
+    const args = callee.v.FunctionKind.arguments;
+    const restOfArgs = callee.v.FunctionKind.restOfArguments;
 
     var index: u8 = 0;
     while (index < argsAST.len) {
@@ -830,11 +837,7 @@ fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsA
         index += 1;
     }
 
-    if (callee.v == V.ValueValue.FunctionKind) {
-        machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope) catch |err| return errorHandler(err);
-    } else {
-        machine.memoryState.openScope() catch |err| return errorHandler(err);
-    }
+    machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope) catch |err| return errorHandler(err);
     errdefer machine.memoryState.restoreScope();
 
     var lp: u8 = 0;
@@ -849,19 +852,62 @@ fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsA
     }
 
     machine.memoryState.popn(index);
-    if (callee.v == V.ValueValue.FunctionKind) {
-        if (evalExpr(machine, callee.v.FunctionKind.body)) {
-            machine.memoryState.restoreScope();
-            machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end }) catch |err| return errorHandler(err);
-            return true;
-        }
-    } else {
-        callee.v.BuiltinKind.body(machine, calleeAST, argsAST) catch |err| {
-            machine.memoryState.restoreScope();
-            machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end }) catch |err2| return errorHandler(err2);
-            return errorHandler(err);
-        };
+    if (evalExpr(machine, callee.v.FunctionKind.body)) {
+        machine.memoryState.restoreScope();
+        machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end }) catch |err| return errorHandler(err);
+        return true;
     }
+
+    const result = machine.memoryState.pop();
+    _ = machine.memoryState.pop();
+    machine.memoryState.push(result) catch |err| return errorHandler(err);
+
+    machine.memoryState.restoreScope();
+
+    return false;
+}
+
+fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) bool {
+    const sp = machine.memoryState.stack.items.len - 1;
+
+    const args = callee.v.BuiltinKind.arguments;
+    const restOfArgs = callee.v.BuiltinKind.restOfArguments;
+
+    var index: u8 = 0;
+    while (index < argsAST.len) {
+        if (evalExpr(machine, argsAST[index])) return true;
+        index += 1;
+    }
+
+    while (index < args.len) {
+        if (args[index].default == null) {
+            machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
+        } else {
+            machine.memoryState.push(args[index].default.?) catch |err| return errorHandler(err);
+        }
+        index += 1;
+    }
+
+    machine.memoryState.openScope() catch |err| return errorHandler(err);
+    errdefer machine.memoryState.restoreScope();
+
+    var lp: u8 = 0;
+    while (lp < args.len) {
+        machine.memoryState.addToScope(args[lp].name, machine.memoryState.stack.items[sp + lp + 1]) catch |err| return errorHandler(err);
+        lp += 1;
+    }
+
+    if (restOfArgs != null) {
+        const rest = machine.memoryState.stack.items[sp + lp + 1 ..];
+        machine.memoryState.addArrayValueToScope(restOfArgs.?, rest) catch |err| return errorHandler(err);
+    }
+
+    machine.memoryState.popn(index);
+    callee.v.BuiltinKind.body(machine, calleeAST, argsAST) catch |err| {
+        machine.memoryState.restoreScope();
+        machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end }) catch |err2| return errorHandler(err2);
+        return errorHandler(err);
+    };
 
     const result = machine.memoryState.pop();
     _ = machine.memoryState.pop();
