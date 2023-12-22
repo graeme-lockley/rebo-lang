@@ -72,7 +72,7 @@ pub const String = struct {
         }
     }
 
-    pub fn slice(this: *const String) []const u8 {
+    pub inline fn slice(this: *const String) []const u8 {
         return this.data;
     }
 
@@ -84,18 +84,19 @@ pub const String = struct {
         }
     }
 
-    pub fn decRef(this: *String) bool {
+    pub inline fn decRef(this: *String) void {
         if (this.count == 1) {
-            return true;
-        }
+            const allocator = this.pool.allocator;
+            this.deinit();
+            allocator.destroy(this);
 
-        if (this.count != 0) {
+            return;
+        } else if (this.count != 0) {
             this.count -= 1;
         }
-        return false;
     }
 
-    pub fn len(this: *const String) usize {
+    pub inline fn len(this: *const String) usize {
         return this.data.len;
     }
 };

@@ -254,10 +254,7 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
             allocator.free(expr.kind.exprs);
         },
         .idDeclaration => expr.kind.idDeclaration.deinit(allocator),
-        .identifier => if (expr.kind.identifier.decRef()) {
-            expr.kind.identifier.deinit();
-            allocator.destroy(expr.kind.identifier);
-        },
+        .identifier => expr.kind.identifier.decRef(),
         .ifte => {
             for (expr.kind.ifte) |v| {
                 if (v.condition != null) {

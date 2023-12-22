@@ -467,11 +467,7 @@ pub const StringValue = struct {
     }
 
     pub fn deinit(self: *StringValue) void {
-        if (self.value.decRef()) {
-            const allocator = self.value.pool.allocator;
-            self.value.deinit();
-            allocator.destroy(self.value);
-        }
+        self.value.decRef();
     }
 
     pub inline fn slice(self: *const StringValue) []const u8 {
