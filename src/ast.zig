@@ -335,7 +335,7 @@ pub const Pattern = struct {
 };
 
 pub const PatternKind = union(enum) {
-    identifier: []u8,
+    identifier: *SP.String,
     literalChar: u8,
     literalBool: bool,
     literalFloat: Value.FloatType,
@@ -350,6 +350,19 @@ pub const SequencePattern = struct {
     patterns: []*Pattern,
     restOfPatterns: ?[]u8,
     id: ?[]u8,
+
+    pub fn deinit(self: *SequencePattern, allocator: std.mem.Allocator) void {
+        for (self.patterns) |p| {
+            destroyPattern(allocator, p);
+        }
+        allocator.free(self.patterns);
+        if (self.restOfPatterns != null) {
+            allocator.free(self.restOfPatterns.?);
+        }
+        if (self.id != null) {
+            allocator.free(self.id.?);
+        }
+    }
 };
 
 pub const RecordPattern = struct {
@@ -386,7 +399,7 @@ pub const RecordPatternEntry = struct {
 
 fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
     switch (pattern.kind) {
-        .identifier => allocator.free(pattern.kind.identifier),
+        .identifier => pattern.kind.identifier.decRef(),
         .literalChar, .literalFloat, .literalInt, .literalBool, .void => {},
         .literalString => allocator.free(pattern.kind.literalString),
         .record => {
@@ -404,18 +417,7 @@ fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
                 allocator.free(pattern.kind.record.id.?);
             }
         },
-        .sequence => {
-            for (pattern.kind.sequence.patterns) |p| {
-                destroyPattern(allocator, p);
-            }
-            allocator.free(pattern.kind.sequence.patterns);
-            if (pattern.kind.sequence.restOfPatterns != null) {
-                allocator.free(pattern.kind.sequence.restOfPatterns.?);
-            }
-            if (pattern.kind.sequence.id != null) {
-                allocator.free(pattern.kind.sequence.id.?);
-            }
-        },
+        .sequence => pattern.kind.sequence.deinit(allocator),
     }
 
     allocator.destroy(pattern);

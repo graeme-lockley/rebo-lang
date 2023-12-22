@@ -1005,11 +1005,10 @@ pub const Parser = struct {
                 return e;
             },
             Lexer.TokenKind.Identifier => {
-                const lexeme = try self.allocator.dupe(u8, self.lexer.currentLexeme());
-                errdefer self.allocator.free(lexeme);
+                const lexeme = self.lexer.currentLexeme();
 
                 const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .identifier = lexeme }, .position = Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end } };
+                v.* = AST.Pattern{ .kind = AST.PatternKind{ .identifier = try self.stringPool.intern(lexeme) }, .position = Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end } };
                 errdefer v.destroy(self.allocator);
 
                 try self.skipToken();

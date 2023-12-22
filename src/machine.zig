@@ -1136,8 +1136,8 @@ fn match(machine: *Machine, e: *AST.Expression) bool {
 fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
     return switch (p.kind) {
         .identifier => {
-            if (!std.mem.eql(u8, p.kind.identifier, "_")) {
-                machine.memoryState.addToScope(p.kind.identifier, v) catch |err| return errorHandler(err);
+            if (!std.mem.eql(u8, p.kind.identifier.slice(), "_")) {
+                machine.memoryState.addToScope(p.kind.identifier.slice(), v) catch |err| return errorHandler(err);
             }
             return true;
         },
