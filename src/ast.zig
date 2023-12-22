@@ -128,7 +128,7 @@ pub const DotExpression = struct {
 
 pub const Function = struct {
     params: []FunctionParam,
-    restOfParams: ?[]u8,
+    restOfParams: ?*SP.String,
     body: *Expression,
 
     pub fn deinit(self: *Function, allocator: std.mem.Allocator) void {
@@ -137,18 +137,18 @@ pub const Function = struct {
         }
         allocator.free(self.params);
         if (self.restOfParams != null) {
-            allocator.free(self.restOfParams.?);
+            self.restOfParams.?.decRef();
         }
         destroyExpr(allocator, self.body);
     }
 };
 
 pub const FunctionParam = struct {
-    name: []u8,
+    name: *SP.String,
     default: ?*Expression,
 
     pub fn deinit(self: *FunctionParam, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
+        self.name.decRef();
 
         if (self.default != null) {
             destroyExpr(allocator, self.default.?);

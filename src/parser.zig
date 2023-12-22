@@ -896,10 +896,10 @@ pub const Parser = struct {
     }
 
     fn functionTail(self: *Parser, start: usize) !*AST.Expression {
-        var restOfParams: ?[]u8 = null;
+        var restOfParams: ?*SP.String = null;
         errdefer {
             if (restOfParams != null) {
-                self.allocator.free(restOfParams.?);
+                restOfParams.?.decRef();
             }
         }
         var params = try self.parameters(&restOfParams);
@@ -922,7 +922,7 @@ pub const Parser = struct {
         return v;
     }
 
-    fn parameters(self: *Parser, restOfParams: *?[]u8) ![]AST.FunctionParam {
+    fn parameters(self: *Parser, restOfParams: *?*SP.String) ![]AST.FunctionParam {
         var params = std.ArrayList(AST.FunctionParam).init(self.allocator);
         defer params.deinit();
         errdefer for (params.items) |*param| {
@@ -934,7 +934,7 @@ pub const Parser = struct {
         if (self.currentTokenKind() == Lexer.TokenKind.DotDotDot) {
             try self.skipToken();
             const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
-            restOfParams.* = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
+            restOfParams.* = try self.stringPool.intern(self.lexer.lexeme(nameToken));
         } else if (self.currentTokenKind() != Lexer.TokenKind.RParen) {
             try params.append(try self.parameter());
             while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
@@ -943,7 +943,7 @@ pub const Parser = struct {
                 if (self.currentTokenKind() == Lexer.TokenKind.DotDotDot) {
                     try self.skipToken();
                     const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
-                    restOfParams.* = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
+                    restOfParams.* = try self.stringPool.intern(self.lexer.lexeme(nameToken));
                     break;
                 }
                 try params.append(try self.parameter());
@@ -957,8 +957,8 @@ pub const Parser = struct {
 
     fn parameter(self: *Parser) !AST.FunctionParam {
         const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
-        const name = try self.allocator.dupe(u8, self.lexer.lexeme(nameToken));
-        errdefer self.allocator.free(name);
+        const name = try self.stringPool.intern(self.lexer.lexeme(nameToken));
+        errdefer name.decRef();
 
         if (self.currentTokenKind() == Lexer.TokenKind.Equal) {
             try self.skipToken();

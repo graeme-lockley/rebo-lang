@@ -29,13 +29,13 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             var arguments = machine.memoryState.allocator.alloc(V.FunctionArgument, e.kind.literalFunction.params.len) catch |err| return errorHandler(err);
 
             for (e.kind.literalFunction.params, 0..) |param, index| {
-                arguments[index] = V.FunctionArgument{ .name = machine.memoryState.allocator.dupe(u8, param.name) catch |err| return errorHandler(err), .default = null };
+                arguments[index] = V.FunctionArgument{ .name = machine.memoryState.allocator.dupe(u8, param.name.slice()) catch |err| return errorHandler(err), .default = null };
             }
 
             _ = machine.memoryState.pushValue(V.ValueValue{ .FunctionKind = V.FunctionValue{
                 .scope = machine.memoryState.scope(),
                 .arguments = arguments,
-                .restOfArguments = if (e.kind.literalFunction.restOfParams == null) null else machine.memoryState.allocator.dupe(u8, e.kind.literalFunction.restOfParams.?) catch |err| return errorHandler(err),
+                .restOfArguments = if (e.kind.literalFunction.restOfParams == null) null else machine.memoryState.allocator.dupe(u8, e.kind.literalFunction.restOfParams.?.slice()) catch |err| return errorHandler(err),
                 .body = e.kind.literalFunction.body,
             } }) catch |err| return errorHandler(err);
 
