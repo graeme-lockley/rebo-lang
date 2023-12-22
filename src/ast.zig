@@ -203,7 +203,7 @@ pub const RaiseExpression = struct {
 
 pub const RecordEntry = union(enum) {
     value: struct {
-        key: []u8,
+        key: *SP.String,
         value: *Expression,
     },
     record: *Expression,
@@ -285,7 +285,7 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
             for (expr.kind.literalRecord) |v| {
                 switch (v) {
                     .value => {
-                        allocator.free(v.value.key);
+                        v.value.key.decRef();
                         destroyExpr(allocator, v.value.value);
                     },
                     .record => destroyExpr(allocator, v.record),

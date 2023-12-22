@@ -56,7 +56,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                         if (evalExpr(machine, entry.value.value)) return true;
 
                         const value = machine.memoryState.pop();
-                        map.v.RecordKind.set(machine.memoryState.allocator, entry.value.key, value) catch |err| return errorHandler(err);
+                        map.v.RecordKind.set(machine.memoryState.allocator, entry.value.key.slice(), value) catch |err| return errorHandler(err);
                     },
                     .record => {
                         if (evalExpr(machine, entry.record)) return true;

@@ -632,7 +632,7 @@ pub const Parser = struct {
                         for (es.items) |item| {
                             switch (item) {
                                 .value => {
-                                    self.allocator.free(item.value.key);
+                                    item.value.key.decRef();
                                     item.value.value.destroy(self.allocator);
                                 },
                                 .record => item.record.destroy(self.allocator),
@@ -980,9 +980,7 @@ pub const Parser = struct {
             try self.matchSkipToken(Lexer.TokenKind.Colon);
             const value = try self.expression();
 
-            const keyValue = try self.allocator.dupe(u8, self.lexer.lexeme(key));
-
-            return AST.RecordEntry{ .value = .{ .key = keyValue, .value = value } };
+            return AST.RecordEntry{ .value = .{ .key = try self.stringPool.intern(self.lexer.lexeme(key)), .value = value } };
         }
     }
 
