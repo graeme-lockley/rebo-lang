@@ -1072,17 +1072,17 @@ pub const Parser = struct {
                     es.deinit();
                 }
 
-                var restOfPatterns: ?[]u8 = null;
+                var restOfPatterns: ?*SP.String = null;
                 errdefer {
                     if (restOfPatterns != null) {
-                        self.allocator.free(restOfPatterns.?);
+                        restOfPatterns.?.decRef();
                     }
                 }
 
-                var id: ?[]u8 = null;
+                var id: ?*SP.String = null;
                 errdefer {
                     if (id != null) {
-                        self.allocator.free(id.?);
+                        id.?.decRef();
                     }
                 }
 
@@ -1094,11 +1094,11 @@ pub const Parser = struct {
                         if (self.currentTokenKind() == Lexer.TokenKind.DotDotDot) {
                             try self.skipToken();
                             if (self.currentTokenKind() == Lexer.TokenKind.Identifier) {
-                                restOfPatterns = try self.allocator.dupe(u8, self.lexer.currentLexeme());
+                                restOfPatterns = try self.stringPool.intern(self.lexer.currentLexeme());
 
                                 try self.skipToken();
                             } else {
-                                restOfPatterns = try self.allocator.dupe(u8, "_");
+                                restOfPatterns = try self.stringPool.intern("_");
                             }
                         } else {
                             try es.append(try self.pattern());
@@ -1110,7 +1110,7 @@ pub const Parser = struct {
 
                 if (self.currentTokenKind() == Lexer.TokenKind.At) {
                     try self.skipToken();
-                    id = try self.allocator.dupe(u8, self.lexer.currentLexeme());
+                    id = try self.stringPool.intern(self.lexer.currentLexeme());
                     try self.matchSkipToken(Lexer.TokenKind.Identifier);
                 }
 

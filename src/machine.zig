@@ -1183,16 +1183,16 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
                 index += 1;
             }
 
-            if (p.kind.sequence.restOfPatterns != null and !std.mem.eql(u8, p.kind.sequence.restOfPatterns.?, "_")) {
+            if (p.kind.sequence.restOfPatterns != null and !std.mem.eql(u8, p.kind.sequence.restOfPatterns.?.slice(), "_")) {
                 var newSeq = try V.SequenceValue.init(machine.memoryState.allocator);
                 if (seq.len() > p.kind.sequence.patterns.len) {
                     newSeq.appendSlice(seq.items()[p.kind.sequence.patterns.len..]) catch |err| return errorHandler(err);
                 }
-                machine.memoryState.addToScope(p.kind.sequence.restOfPatterns.?, machine.memoryState.newValue(V.ValueValue{ .SequenceKind = newSeq }) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
+                machine.memoryState.addToScope(p.kind.sequence.restOfPatterns.?.slice(), machine.memoryState.newValue(V.ValueValue{ .SequenceKind = newSeq }) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
             }
 
             if (p.kind.sequence.id != null) {
-                machine.memoryState.addToScope(p.kind.sequence.id.?, v) catch |err| return errorHandler(err);
+                machine.memoryState.addToScope(p.kind.sequence.id.?.slice(), v) catch |err| return errorHandler(err);
             }
 
             return true;

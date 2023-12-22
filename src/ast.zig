@@ -348,8 +348,8 @@ pub const PatternKind = union(enum) {
 
 pub const SequencePattern = struct {
     patterns: []*Pattern,
-    restOfPatterns: ?[]u8,
-    id: ?[]u8,
+    restOfPatterns: ?*SP.String,
+    id: ?*SP.String,
 
     pub fn deinit(self: *SequencePattern, allocator: std.mem.Allocator) void {
         for (self.patterns) |p| {
@@ -357,10 +357,10 @@ pub const SequencePattern = struct {
         }
         allocator.free(self.patterns);
         if (self.restOfPatterns != null) {
-            allocator.free(self.restOfPatterns.?);
+            self.restOfPatterns.?.decRef();
         }
         if (self.id != null) {
-            allocator.free(self.id.?);
+            self.id.?.decRef();
         }
     }
 };
