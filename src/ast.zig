@@ -370,10 +370,10 @@ pub const RecordPattern = struct {
     id: ?[]u8,
 
     pub fn deinit(self: *RecordPattern, allocator: std.mem.Allocator) void {
-        for (self.items) |*item| {
-            item.deinit(allocator);
+        for (self.entries) |*e| {
+            e.deinit(allocator);
         }
-        self.items.deinit();
+        allocator.free(self.entries);
 
         if (self.id != null) {
             allocator.free(self.id.?);
@@ -402,21 +402,7 @@ fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
         .identifier => pattern.kind.identifier.decRef(),
         .literalChar, .literalFloat, .literalInt, .literalBool, .void => {},
         .literalString => allocator.free(pattern.kind.literalString),
-        .record => {
-            for (pattern.kind.record.entries) |e| {
-                allocator.free(e.key);
-                if (e.pattern != null) {
-                    destroyPattern(allocator, e.pattern.?);
-                }
-                if (e.id != null) {
-                    allocator.free(e.id.?);
-                }
-            }
-            allocator.free(pattern.kind.record.entries);
-            if (pattern.kind.record.id != null) {
-                allocator.free(pattern.kind.record.id.?);
-            }
-        },
+        .record => pattern.kind.record.deinit(allocator),
         .sequence => pattern.kind.sequence.deinit(allocator),
     }
 
