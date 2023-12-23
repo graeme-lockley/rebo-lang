@@ -49,7 +49,7 @@ pub fn fatalErrorHandler(machine: *Machine, operation: []const u8, err: anyerror
 }
 
 pub fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
-    machine.replaceErr(try Errors.reportExpectedTypeError(machine.memoryState.allocator, machine.src(), position, expected, v));
+    machine.replaceErr(try Errors.reportExpectedTypeError(machine.memoryState.allocator, try machine.src(), position, expected, v));
     return Errors.err.InterpreterError;
 }
 
