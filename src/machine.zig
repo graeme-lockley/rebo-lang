@@ -29,13 +29,13 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
             var arguments = machine.memoryState.allocator.alloc(V.FunctionArgument, e.kind.literalFunction.params.len) catch |err| return errorHandler(err);
 
             for (e.kind.literalFunction.params, 0..) |param, index| {
-                arguments[index] = V.FunctionArgument{ .name = machine.memoryState.allocator.dupe(u8, param.name.slice()) catch |err| return errorHandler(err), .default = null };
+                arguments[index] = V.FunctionArgument{ .name = param.name.incRefR(), .default = null };
             }
 
             _ = machine.memoryState.pushValue(V.ValueValue{ .FunctionKind = V.FunctionValue{
                 .scope = machine.memoryState.scope(),
                 .arguments = arguments,
-                .restOfArguments = if (e.kind.literalFunction.restOfParams == null) null else machine.memoryState.allocator.dupe(u8, e.kind.literalFunction.restOfParams.?.slice()) catch |err| return errorHandler(err),
+                .restOfArguments = if (e.kind.literalFunction.restOfParams == null) null else e.kind.literalFunction.restOfParams.?.incRefR(),
                 .body = e.kind.literalFunction.body,
             } }) catch |err| return errorHandler(err);
 
@@ -842,13 +842,13 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
 
     var lp: u8 = 0;
     while (lp < args.len) {
-        machine.memoryState.addToScope(args[lp].name, machine.memoryState.stack.items[sp + lp + 1]) catch |err| return errorHandler(err);
+        machine.memoryState.addToScope(args[lp].name.slice(), machine.memoryState.stack.items[sp + lp + 1]) catch |err| return errorHandler(err);
         lp += 1;
     }
 
     if (restOfArgs != null) {
         const rest = machine.memoryState.stack.items[sp + lp + 1 ..];
-        machine.memoryState.addArrayValueToScope(restOfArgs.?, rest) catch |err| return errorHandler(err);
+        machine.memoryState.addArrayValueToScope(restOfArgs.?.slice(), rest) catch |err| return errorHandler(err);
     }
 
     machine.memoryState.popn(index);

@@ -15,7 +15,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
                     try stdout.print(", ", .{});
                 }
 
-                try stdout.print("{s}", .{argument.name});
+                try stdout.print("{s}", .{argument.name.slice()});
                 if (argument.default != null) {
                     try stdout.print(" = ", .{});
                     try printValue(stdout, argument.default.?);
@@ -26,7 +26,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
                     try stdout.print(", ", .{});
                 }
 
-                try stdout.print("...{s}", .{v.v.FunctionKind.restOfArguments.?});
+                try stdout.print("...{s}", .{v.v.FunctionKind.restOfArguments.?.slice()});
             }
             try stdout.print(")", .{});
         },

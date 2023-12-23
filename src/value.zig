@@ -67,7 +67,7 @@ pub const Value = struct {
                         try buffer.appendSlice(", ");
                     }
 
-                    try buffer.appendSlice(argument.name);
+                    try buffer.appendSlice(argument.name.slice());
                     if (argument.default != null) {
                         try buffer.appendSlice(" = ");
                         try argument.default.?.appendValue(buffer, style);
@@ -81,7 +81,7 @@ pub const Value = struct {
                     }
 
                     try buffer.appendSlice("...");
-                    try buffer.appendSlice(self.v.FunctionKind.restOfArguments.?);
+                    try buffer.appendSlice(self.v.FunctionKind.restOfArguments.?.slice());
                 }
                 try buffer.append(')');
             },
@@ -273,26 +273,26 @@ pub const FileValue = struct {
 pub const FunctionValue = struct {
     scope: ?*Value,
     arguments: []FunctionArgument,
-    restOfArguments: ?[]u8,
+    restOfArguments: ?*SP.String,
     body: *AST.Expression,
 
     pub fn deinit(self: *FunctionValue, allocator: std.mem.Allocator) void {
         for (self.arguments) |*argument| {
-            argument.deinit(allocator);
+            argument.deinit();
         }
         if (self.restOfArguments != null) {
-            allocator.free(self.restOfArguments.?);
+            self.restOfArguments.?.decRef();
         }
         allocator.free(self.arguments);
     }
 };
 
 pub const FunctionArgument = struct {
-    name: []const u8,
+    name: *SP.String,
     default: ?*Value,
 
-    pub fn deinit(self: *FunctionArgument, allocator: std.mem.Allocator) void {
-        allocator.free(self.name);
+    pub fn deinit(self: *FunctionArgument) void {
+        self.name.decRef();
     }
 };
 
