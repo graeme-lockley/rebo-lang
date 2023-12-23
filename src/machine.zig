@@ -838,7 +838,7 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
     }
 
     machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope) catch |err| return errorHandler(err);
-    errdefer machine.memoryState.restoreScope();
+    defer machine.memoryState.restoreScope();
 
     var lp: u8 = 0;
     while (lp < args.len) {
@@ -861,8 +861,6 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
     const result = machine.memoryState.pop();
     _ = machine.memoryState.pop();
     machine.memoryState.push(result) catch |err| return errorHandler(err);
-
-    machine.memoryState.restoreScope();
 
     return false;
 }
