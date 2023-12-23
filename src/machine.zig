@@ -1263,13 +1263,9 @@ fn whilee(machine: *Machine, e: *AST.Expression) bool {
 fn addBuiltin(
     state: *MS.MemoryState,
     name: []const u8,
-    arguments: []const V.FunctionArgument,
-    restOfArguments: ?[]const u8,
     body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*V.Value) Errors.err!void,
 ) !void {
     var vv = V.ValueValue{ .BuiltinKind = .{
-        .arguments = arguments,
-        .restOfArguments = restOfArguments,
         .body = body,
     } };
 
@@ -1308,99 +1304,27 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
 
     try state.openScope();
 
-    try addBuiltin(&state, "close", &[_]V.FunctionArgument{V.FunctionArgument{
-        .name = "handle",
-        .default = null,
-    }}, null, &Builtins.close);
-    try addBuiltin(&state, "cwd", &[0]V.FunctionArgument{}, null, &Builtins.cwd);
-    try addBuiltin(&state, "eval", &[_]V.FunctionArgument{V.FunctionArgument{
-        .name = "code",
-        .default = null,
-    }}, null, &Builtins.eval);
-    try addBuiltin(&state, "exit", &[_]V.FunctionArgument{V.FunctionArgument{
-        .name = "v",
-        .default = null,
-    }}, null, &Builtins.exit);
-    try addBuiltin(&state, "gc", &[0]V.FunctionArgument{}, null, &Builtins.gc);
-    try addBuiltin(&state, "import", &[_]V.FunctionArgument{V.FunctionArgument{
-        .name = "file",
-        .default = null,
-    }}, null, &Builtins.import);
-    try addBuiltin(&state, "imports", &[0]V.FunctionArgument{}, null, &Builtins.imports);
-    try addBuiltin(&state, "int", &[_]V.FunctionArgument{ V.FunctionArgument{
-        .name = "value",
-        .default = null,
-    }, V.FunctionArgument{
-        .name = "default",
-        .default = null,
-    }, V.FunctionArgument{
-        .name = "base",
-        .default = null,
-    } }, null, &Builtins.int);
-    try addBuiltin(&state, "keys", &[_]V.FunctionArgument{V.FunctionArgument{
-        .name = "v",
-        .default = null,
-    }}, null, &Builtins.keys);
-    try addBuiltin(&state, "len", &[_]V.FunctionArgument{V.FunctionArgument{
-        .name = "v",
-        .default = null,
-    }}, null, &Builtins.len);
-    try addBuiltin(&state, "listen", &[_]V.FunctionArgument{ V.FunctionArgument{
-        .name = "host",
-        .default = null,
-    }, V.FunctionArgument{
-        .name = "port",
-        .default = null,
-    }, V.FunctionArgument{
-        .name = "cb",
-        .default = null,
-    } }, null, &Builtins.listen);
-    try addBuiltin(&state, "ls", &[_]V.FunctionArgument{V.FunctionArgument{
-        .name = "path",
-        .default = null,
-    }}, null, &Builtins.ls);
-    try addBuiltin(&state, "milliTimestamp", &[0]V.FunctionArgument{}, null, &Builtins.milliTimestamp);
-    try addBuiltin(&state, "open", &[_]V.FunctionArgument{ V.FunctionArgument{
-        .name = "path",
-        .default = null,
-    }, V.FunctionArgument{
-        .name = "options",
-        .default = null,
-    } }, null, &Builtins.open);
-    try addBuiltin(&state, "print", &[_]V.FunctionArgument{}, "vs", &Builtins.print);
-    try addBuiltin(&state, "println", &[_]V.FunctionArgument{}, "vs", &Builtins.println);
-    try addBuiltin(&state, "read", &[_]V.FunctionArgument{ V.FunctionArgument{
-        .name = "handle",
-        .default = null,
-    }, V.FunctionArgument{
-        .name = "bytes",
-        .default = null,
-    } }, null, &Builtins.read);
-    try addBuiltin(&state, "socket", &[_]V.FunctionArgument{ V.FunctionArgument{
-        .name = "name",
-        .default = null,
-    }, V.FunctionArgument{
-        .name = "port",
-        .default = null,
-    } }, null, &Builtins.socket);
-    try addBuiltin(&state, "str", &[_]V.FunctionArgument{ V.FunctionArgument{
-        .name = "value",
-        .default = null,
-    }, V.FunctionArgument{
-        .name = "literal",
-        .default = null,
-    } }, null, &Builtins.str);
-    try addBuiltin(&state, "typeof", &[_]V.FunctionArgument{V.FunctionArgument{
-        .name = "v",
-        .default = null,
-    }}, null, &Builtins.typeof);
-    try addBuiltin(&state, "write", &[_]V.FunctionArgument{ V.FunctionArgument{
-        .name = "handle",
-        .default = null,
-    }, V.FunctionArgument{
-        .name = "bytes",
-        .default = null,
-    } }, null, &Builtins.write);
+    try addBuiltin(&state, "close", &Builtins.close);
+    try addBuiltin(&state, "cwd", &Builtins.cwd);
+    try addBuiltin(&state, "eval", &Builtins.eval);
+    try addBuiltin(&state, "exit", &Builtins.exit);
+    try addBuiltin(&state, "gc", &Builtins.gc);
+    try addBuiltin(&state, "import", &Builtins.import);
+    try addBuiltin(&state, "imports", &Builtins.imports);
+    try addBuiltin(&state, "int", &Builtins.int);
+    try addBuiltin(&state, "keys", &Builtins.keys);
+    try addBuiltin(&state, "len", &Builtins.len);
+    try addBuiltin(&state, "listen", &Builtins.listen);
+    try addBuiltin(&state, "ls", &Builtins.ls);
+    try addBuiltin(&state, "milliTimestamp", &Builtins.milliTimestamp);
+    try addBuiltin(&state, "open", &Builtins.open);
+    try addBuiltin(&state, "print", &Builtins.print);
+    try addBuiltin(&state, "println", &Builtins.println);
+    try addBuiltin(&state, "read", &Builtins.read);
+    try addBuiltin(&state, "socket", &Builtins.socket);
+    try addBuiltin(&state, "str", &Builtins.str);
+    try addBuiltin(&state, "typeof", &Builtins.typeof);
+    try addBuiltin(&state, "write", &Builtins.write);
 
     try addRebo(&state);
 

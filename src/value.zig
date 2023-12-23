@@ -41,32 +41,7 @@ pub const Value = struct {
     pub fn appendValue(self: *const Value, buffer: *std.ArrayList(u8), style: Style) !void {
         switch (self.v) {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
-            .BuiltinKind => {
-                try buffer.appendSlice("bfn(");
-                var i: usize = 0;
-                for (self.v.BuiltinKind.arguments) |argument| {
-                    if (i != 0) {
-                        try buffer.appendSlice(", ");
-                    }
-
-                    try buffer.appendSlice(argument.name);
-                    if (argument.default != null) {
-                        try buffer.appendSlice(" = ");
-                        try argument.default.?.appendValue(buffer, style);
-                    }
-
-                    i += 1;
-                }
-                if (self.v.BuiltinKind.restOfArguments != null) {
-                    if (i != 0) {
-                        try buffer.appendSlice(", ");
-                    }
-
-                    try buffer.appendSlice("...");
-                    try buffer.appendSlice(self.v.BuiltinKind.restOfArguments.?);
-                }
-                try buffer.append(')');
-            },
+            .BuiltinKind => try buffer.appendSlice("fn(...)"),
             .CharKind => {
                 switch (style) {
                     Style.Pretty => if (self.v.CharKind == 10) {
@@ -270,8 +245,6 @@ pub const ValueValue = union(ValueKind) {
 };
 
 pub const BuiltinValue = struct {
-    arguments: []const FunctionArgument,
-    restOfArguments: ?[]const u8,
     body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*Value) Errors.err!void,
 
     pub fn deinit(self: *BuiltinValue, allocator: std.mem.Allocator) void {
