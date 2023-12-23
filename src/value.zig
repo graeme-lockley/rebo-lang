@@ -98,7 +98,7 @@ pub const Value = struct {
                         try buffer.appendSlice(", ");
                     }
 
-                    try buffer.appendSlice(entry.key_ptr.*);
+                    try buffer.appendSlice(entry.key_ptr.*.slice());
                     try buffer.appendSlice(": ");
                     try entry.value_ptr.*.appendValue(buffer, style);
                 }
@@ -297,51 +297,67 @@ pub const FunctionArgument = struct {
 };
 
 pub const RecordValue = struct {
-    items: std.StringHashMap(*Value),
+    items: std.AutoHashMap(*SP.String, *Value),
 
     pub fn init(allocator: std.mem.Allocator) RecordValue {
-        return RecordValue{ .items = std.StringHashMap(*Value).init(allocator) };
+        return RecordValue{ .items = std.AutoHashMap(*SP.String, *Value).init(allocator) };
     }
 
     pub fn deinit(self: *RecordValue, allocator: std.mem.Allocator) void {
+        _ = allocator;
         var itrtr = self.keyIterator();
         while (itrtr.next()) |keyPtr| {
-            allocator.free(keyPtr.*);
+            keyPtr.*.decRef();
         }
         self.items.deinit();
     }
 
-    pub fn set(self: *RecordValue, allocator: std.mem.Allocator, key: []const u8, value: *Value) !void {
+    pub fn set(self: *RecordValue, allocator: std.mem.Allocator, key: *SP.String, value: *Value) !void {
+        _ = allocator;
         if (value.v == ValueKind.UnitKind) {
             const old = self.items.fetchRemove(key);
 
             if (old != null) {
-                allocator.free(old.?.key);
+                old.?.key.decRef();
             }
         } else {
             const oldKey = self.items.getKey(key);
 
             if (oldKey == null) {
-                try self.items.put(try allocator.dupe(u8, key), value);
+                try self.items.put(key.incRefR(), value);
             } else {
                 try self.items.put(oldKey.?, value);
             }
         }
     }
 
-    pub fn get(self: *const RecordValue, key: []const u8) ?*Value {
+    pub fn setU8(self: *RecordValue, stringPool: *SP.StringPool, key: []const u8, value: *Value) !void {
+        const spKey = try stringPool.intern(key);
+        defer spKey.decRef();
+
+        return self.set(stringPool.allocator, spKey, value);
+    }
+
+    pub fn get(self: *const RecordValue, key: *SP.String) ?*Value {
         return self.items.get(key);
+    }
+
+    pub fn getU8(self: *const RecordValue, stringPool: *SP.StringPool, key: []const u8) !?*Value {
+        const spKey = try stringPool.intern(key);
+        defer spKey.decRef();
+
+        return self.items.get(spKey);
     }
 
     pub fn count(self: *const RecordValue) usize {
         return self.items.count();
     }
 
-    pub fn iterator(self: *const RecordValue) std.StringHashMap(*Value).Iterator {
+    pub fn iterator(self: *const RecordValue) std.AutoHashMap(*SP.String, *Value).Iterator {
         return self.items.iterator();
     }
 
-    pub fn keyIterator(self: *const RecordValue) std.StringHashMap(*Value).KeyIterator {
+    pub fn keyIterator(self: *const RecordValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
         return self.items.keyIterator();
     }
 };
@@ -440,8 +456,7 @@ pub const StringValue = struct {
     }
 
     pub fn initPool(value: *SP.String) StringValue {
-        value.incRef();
-        return StringValue{ .value = value };
+        return StringValue{ .value = value.incRefR() };
     }
 
     pub fn deinit(self: *StringValue) void {

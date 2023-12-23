@@ -10,6 +10,7 @@ pub const Expression = AST.Expression;
 pub const IntType = V.IntType;
 pub const Machine = M.Machine;
 pub const MemoryState = @import("./../memory_state.zig");
+pub const StringPool = @import("./../string_pool.zig").StringPool;
 pub const Style = V.Style;
 pub const Value = V.Value;
 pub const ValueKind = V.ValueKind;
@@ -19,15 +20,15 @@ pub fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
     try machine.memoryState.pushEmptyMapValue();
 
     const record = machine.memoryState.peek(0);
-    try record.v.RecordKind.set(machine.memoryState.allocator, "error", try machine.memoryState.newStringValue("SystemError"));
-    try record.v.RecordKind.set(machine.memoryState.allocator, "operation", try machine.memoryState.newStringValue(operation));
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "error", try machine.memoryState.newStringValue("SystemError"));
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "operation", try machine.memoryState.newStringValue(operation));
 
     var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
     defer buffer.deinit();
 
     try std.fmt.format(buffer.writer(), "{}", .{err});
 
-    try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
 }
 
 pub fn silentOsError(machine: *Machine, operation: []const u8, err: anyerror) void {

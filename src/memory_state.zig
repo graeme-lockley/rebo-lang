@@ -152,6 +152,10 @@ pub const MemoryState = struct {
         return try self.newValue(V.ValueValue{ .StreamKind = V.StreamValue.init(v) });
     }
 
+    pub inline fn newStringPoolValue(self: *MemoryState, v: *SP.String) !*V.Value {
+        return try self.newValue(V.ValueValue{ .StringKind = V.StringValue.initPool(v) });
+    }
+
     pub inline fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
         return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.init(self.stringPool, v) });
     }

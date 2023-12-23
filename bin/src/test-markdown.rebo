@@ -26,17 +26,18 @@ let process(path, test, silent = false) {
             }
 
             cmd := cmd + " ; " + cmdSegment
-            let result = str(eval(cmd))
+            let result = eval(cmd)
 
             let expected = ""
             while lp < len(code) && !Str.startsWith?(code[lp], ">") -> {
-               expected := expected + "\n" + Str.trim(code[lp])
+               expected := Str.trim(expected + "\n" + code[lp])
                lp := lp + 1
             }
-
-            expected := Str.trim(expected)
-
-            if len(expected) > 0 -> suite.eq(formatCmdSegment(cmdSegment), result, expected, cmd)
+            
+            if len(expected) > 0 -> {
+               if typeof(result) == "Function" -> suite.eq(formatCmdSegment(cmdSegment), str(result), expected, cmd)
+                | suite.eq(formatCmdSegment(cmdSegment), result, eval(expected), cmd)
+            }
          } | {
             println("Error: ", path, ": ", startLine + lp, ": ", code[lp], " needed to start with '>'")
             exit(1)

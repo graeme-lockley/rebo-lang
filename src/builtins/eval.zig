@@ -17,8 +17,8 @@ pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []
         try machine.memoryState.pushEmptyMapValue();
         const record = machine.memoryState.peek(0);
 
-        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newStringValue("EvalError"));
-        try record.v.RecordKind.set(machine.memoryState.allocator, "content", code);
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue("EvalError"));
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "content", code);
 
         var err = machine.grabErr();
 
@@ -30,7 +30,7 @@ pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []
 
             err.?.append(&buffer) catch {};
 
-            try record.v.RecordKind.set(machine.memoryState.allocator, "message", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
+            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "message", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
 
             err.?.deinit();
         }

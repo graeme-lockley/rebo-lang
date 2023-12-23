@@ -43,7 +43,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
                     try stdout.print(", ", .{});
                 }
 
-                try stdout.print("{s}: ", .{entry.key_ptr.*});
+                try stdout.print("{s}: ", .{entry.key_ptr.*.slice()});
                 try printValue(stdout, entry.value_ptr.*);
             }
             try stdout.print("{s}", .{"}"});

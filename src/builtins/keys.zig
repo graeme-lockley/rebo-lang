@@ -10,7 +10,7 @@ pub fn keys(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []
 
     var iterator = v.v.RecordKind.keyIterator();
     while (iterator.next()) |item| {
-        try seq.v.SequenceKind.appendItem(try machine.memoryState.newStringValue(item.*));
+        try seq.v.SequenceKind.appendItem(try machine.memoryState.newStringPoolValue(item.*));
     }
 }
 
@@ -18,5 +18,6 @@ test "int" {
     const Main = @import("./../main.zig");
 
     try Main.expectExprEqual("keys({})", "[]");
-    try Main.expectExprEqual("keys({a: 1, b: 2})", "[\"b\", \"a\"]");
+    try Main.expectExprEqual("keys({a: 1})", "[\"a\"]");
+    try Main.expectExprEqual("len(keys({a: 1, b: 2}))", "2");
 }

@@ -16,6 +16,6 @@ pub fn imports(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST:
         // if you would like to see them then comment out the statement below.
         // const items: *V.Value = if (entry.value_ptr.*.items == null) try machine.memoryState.newValue(V.ValueValue{ .RecordKind = std.StringHashMap(*V.Value).init(machine.memoryState.allocator) }) else entry.value_ptr.*.items.?;
 
-        try result.v.RecordKind.set(machine.memoryState.allocator, entry.key_ptr.*, items);
+        try result.v.RecordKind.setU8(machine.memoryState.stringPool, entry.key_ptr.*, items);
     }
 }

@@ -57,7 +57,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                         if (evalExpr(machine, entry.value.value)) return true;
 
                         const value = machine.memoryState.pop();
-                        map.v.RecordKind.set(machine.memoryState.allocator, entry.value.key.slice(), value) catch |err| return errorHandler(err);
+                        map.v.RecordKind.set(machine.memoryState.allocator, entry.value.key, value) catch |err| return errorHandler(err);
                     },
                     .record => {
                         if (evalExpr(machine, entry.record)) return true;
@@ -142,7 +142,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             }
             if (evalExpr(machine, value)) return true;
 
-            record.v.RecordKind.set(machine.memoryState.allocator, lhs.kind.dot.field.slice(), machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+            record.v.RecordKind.set(machine.memoryState.allocator, lhs.kind.dot.field, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
 
             const v = machine.memoryState.pop();
             _ = machine.memoryState.pop();
@@ -193,7 +193,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
 
                 if (evalExpr(machine, value)) return true;
 
-                expr.v.RecordKind.set(machine.memoryState.allocator, index.v.StringKind.slice(), machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+                expr.v.RecordKind.set(machine.memoryState.allocator, index.v.StringKind.value, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
             } else if (expr.v == V.ValueValue.SequenceKind) {
                 if (evalExpr(machine, indexA)) return true;
                 const index = machine.memoryState.peek(0);
@@ -940,7 +940,7 @@ fn dot(machine: *Machine, e: *AST.Expression) bool {
         return true;
     }
 
-    const value = record.v.RecordKind.get(e.kind.dot.field.slice());
+    const value = record.v.RecordKind.get(e.kind.dot.field);
 
     if (value == null) {
         machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
@@ -1070,7 +1070,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
 
         machine.memoryState.popn(2);
 
-        const value = expr.v.RecordKind.get(index.v.StringKind.slice());
+        const value = expr.v.RecordKind.get(index.v.StringKind.value);
 
         if (value == null) {
             machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
@@ -1169,7 +1169,7 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
             const record = v.v.RecordKind;
 
             for (p.kind.record.entries) |entry| {
-                const value = record.get(entry.key.slice());
+                const value = record.get(entry.key);
 
                 if (value == null) return false;
 
@@ -1282,7 +1282,7 @@ fn addRebo(state: *MS.MemoryState) !void {
     try state.addU8ToScope("rebo", value);
 
     const reboArgs = try state.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(state.allocator) });
-    try value.v.RecordKind.set(state.allocator, "args", reboArgs);
+    try value.v.RecordKind.setU8(state.stringPool, "args", reboArgs);
 
     for (args) |arg| {
         try reboArgs.v.SequenceKind.appendItem(try state.newStringValue(arg));
@@ -1291,11 +1291,11 @@ fn addRebo(state: *MS.MemoryState) !void {
     var env = try std.process.getEnvMap(state.allocator);
     defer env.deinit();
     const reboEnv = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
-    try value.v.RecordKind.set(state.allocator, "env", reboEnv);
+    try value.v.RecordKind.setU8(state.stringPool, "env", reboEnv);
 
     var iterator = env.iterator();
     while (iterator.next()) |entry| {
-        try value.v.RecordKind.set(state.allocator, entry.key_ptr.*, try state.newStringValue(entry.value_ptr.*));
+        try value.v.RecordKind.setU8(state.stringPool, entry.key_ptr.*, try state.newStringValue(entry.value_ptr.*));
     }
 }
 

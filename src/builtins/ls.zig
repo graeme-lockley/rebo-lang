@@ -21,7 +21,7 @@ pub fn ls(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*H
         const record = try machine.memoryState.newMapValue();
         try result.v.SequenceKind.appendItem(record);
 
-        try record.v.RecordKind.set(machine.memoryState.allocator, "name", try machine.memoryState.newStringValue(entry.name));
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "name", try machine.memoryState.newStringValue(entry.name));
 
         const kind = switch (entry.kind) {
             std.fs.IterableDir.Entry.Kind.block_device => "block_device",
@@ -36,6 +36,6 @@ pub fn ls(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*H
             std.fs.IterableDir.Entry.Kind.unknown => "unknown",
             std.fs.IterableDir.Entry.Kind.whiteout => "whiteout",
         };
-        try record.v.RecordKind.set(machine.memoryState.allocator, "kind", try machine.memoryState.newStringValue(kind));
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue(kind));
     }
 }

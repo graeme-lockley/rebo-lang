@@ -1,8 +1,8 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-fn booleanOption(options: *Helper.Value, name: []const u8, default: bool) bool {
-    const option = options.v.RecordKind.get(name);
+fn booleanOption(stringPool: *Helper.StringPool, options: *Helper.Value, name: []const u8, default: bool) !bool {
+    const option = try options.v.RecordKind.getU8(stringPool, name);
 
     if (option == null or option.?.v != Helper.ValueKind.BoolKind) {
         return default;
@@ -20,11 +20,11 @@ pub fn open(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []
         return;
     }
 
-    const readF = booleanOption(options, "read", false);
-    const writeF = booleanOption(options, "write", false);
-    const appendF = booleanOption(options, "append", false);
-    const truncateF = booleanOption(options, "truncate", false);
-    const createF = booleanOption(options, "create", false);
+    const readF = try booleanOption(machine.memoryState.stringPool, options, "read", false);
+    const writeF = try booleanOption(machine.memoryState.stringPool, options, "write", false);
+    const appendF = try booleanOption(machine.memoryState.stringPool, options, "append", false);
+    const truncateF = try booleanOption(machine.memoryState.stringPool, options, "truncate", false);
+    const createF = try booleanOption(machine.memoryState.stringPool, options, "create", false);
 
     if (createF) {
         try machine.memoryState.push(try machine.memoryState.newFileValue(std.fs.cwd().createFile(path, .{ .read = readF, .truncate = truncateF, .exclusive = true }) catch |err| return Helper.osError(machine, "open", err)));
