@@ -49,6 +49,10 @@ pub const StringPool = struct {
             return s.?;
         }
     }
+
+    pub fn count(self: *const StringPool) usize {
+        return self.items.count();
+    }
 };
 
 pub const String = struct {

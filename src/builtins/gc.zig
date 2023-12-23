@@ -9,6 +9,7 @@ pub fn gc(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*H
     try machine.memoryState.pushEmptyMapValue();
 
     const record = machine.memoryState.peek(0);
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "stringpool", try machine.memoryState.newIntValue(@intCast((machine.memoryState.stringPool.count()))));
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "capacity", try machine.memoryState.newIntValue(result.capacity));
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "before", try machine.memoryState.newIntValue(result.oldSize));
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "after", try machine.memoryState.newIntValue(result.newSize));
