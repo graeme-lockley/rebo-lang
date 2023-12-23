@@ -26,8 +26,7 @@ pub const Value = struct {
 
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         switch (self.v) {
-            .BoolKind, .CharKind, .IntKind, .FloatKind, .UnitKind => {},
-            .BuiltinKind => self.v.BuiltinKind.deinit(allocator),
+            .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .UnitKind => {},
             .FileKind => self.v.FileKind.deinit(),
             .FunctionKind => self.v.FunctionKind.deinit(allocator),
             .SequenceKind => self.v.SequenceKind.deinit(),
@@ -246,18 +245,6 @@ pub const ValueValue = union(ValueKind) {
 
 pub const BuiltinValue = struct {
     body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*Value) Errors.err!void,
-
-    pub fn deinit(self: *BuiltinValue, allocator: std.mem.Allocator) void {
-        _ = allocator;
-        _ = self;
-        // for (self.arguments) |*argument| {
-        //     argument.deinit(allocator);
-        // }
-        // if (self.restOfArguments != null) {
-        //     allocator.free(self.restOfArguments.?);
-        // }
-        // allocator.free(self.arguments);
-    }
 };
 
 pub const FileValue = struct {
