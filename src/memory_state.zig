@@ -229,21 +229,21 @@ pub const MemoryState = struct {
     }
 
     pub inline fn addToScope(self: *MemoryState, name: *SP.String, value: *V.Value) !void {
-        try self.scope().?.v.ScopeKind.set(self.allocator, name, value);
+        try self.scope().?.v.ScopeKind.set(name, value);
     }
 
     pub inline fn addU8ToScope(self: *MemoryState, name: []const u8, value: *V.Value) !void {
         const spName = try self.stringPool.intern(name);
         defer spName.decRef();
 
-        try self.scope().?.v.ScopeKind.set(self.allocator, spName, value);
+        try self.scope().?.v.ScopeKind.set(spName, value);
     }
 
     pub inline fn addArrayValueToScope(self: *MemoryState, name: *SP.String, values: []*V.Value) !void {
         const value = try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
         try value.v.SequenceKind.appendSlice(values);
 
-        try self.scope().?.v.ScopeKind.set(self.allocator, name, value);
+        try self.scope().?.v.ScopeKind.set(name, value);
     }
 
     pub inline fn updateInScope(self: *MemoryState, name: *SP.String, value: *V.Value) !bool {

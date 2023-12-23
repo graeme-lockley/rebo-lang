@@ -57,7 +57,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
                         if (evalExpr(machine, entry.value.value)) return true;
 
                         const value = machine.memoryState.pop();
-                        map.v.RecordKind.set(machine.memoryState.allocator, entry.value.key, value) catch |err| return errorHandler(err);
+                        map.v.RecordKind.set(entry.value.key, value) catch |err| return errorHandler(err);
                     },
                     .record => {
                         if (evalExpr(machine, entry.record)) return true;
@@ -70,7 +70,7 @@ pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
 
                         var iterator = value.v.RecordKind.iterator();
                         while (iterator.next()) |rv| {
-                            map.v.RecordKind.set(machine.memoryState.allocator, rv.key_ptr.*, rv.value_ptr.*) catch |err| return errorHandler(err);
+                            map.v.RecordKind.set(rv.key_ptr.*, rv.value_ptr.*) catch |err| return errorHandler(err);
                         }
                     },
                 }
@@ -142,7 +142,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             }
             if (evalExpr(machine, value)) return true;
 
-            record.v.RecordKind.set(machine.memoryState.allocator, lhs.kind.dot.field, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+            record.v.RecordKind.set(lhs.kind.dot.field, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
 
             const v = machine.memoryState.pop();
             _ = machine.memoryState.pop();
@@ -193,7 +193,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
 
                 if (evalExpr(machine, value)) return true;
 
-                expr.v.RecordKind.set(machine.memoryState.allocator, index.v.StringKind.value, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+                expr.v.RecordKind.set(index.v.StringKind.value, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
             } else if (expr.v == V.ValueValue.SequenceKind) {
                 if (evalExpr(machine, indexA)) return true;
                 const index = machine.memoryState.peek(0);

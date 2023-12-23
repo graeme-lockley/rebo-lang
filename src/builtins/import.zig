@@ -81,7 +81,7 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
         if (entryName.startsWith("_")) {
             continue;
         }
-        try result.v.RecordKind.set(machine.memoryState.allocator, entryName, entry.value_ptr.*);
+        try result.v.RecordKind.set(entryName, entry.value_ptr.*);
     }
 
     try machine.memoryState.imports.addImport(name, result, ast);

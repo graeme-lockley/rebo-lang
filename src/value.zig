@@ -32,7 +32,7 @@ pub const Value = struct {
             .SequenceKind => self.v.SequenceKind.deinit(),
             .StreamKind => self.v.StreamKind.deinit(),
             .StringKind => self.v.StringKind.deinit(),
-            .RecordKind => self.v.RecordKind.deinit(allocator),
+            .RecordKind => self.v.RecordKind.deinit(),
             .ScopeKind => self.v.ScopeKind.deinit(),
         }
     }
@@ -303,8 +303,7 @@ pub const RecordValue = struct {
         return RecordValue{ .items = std.AutoHashMap(*SP.String, *Value).init(allocator) };
     }
 
-    pub fn deinit(self: *RecordValue, allocator: std.mem.Allocator) void {
-        _ = allocator;
+    pub fn deinit(self: *RecordValue) void {
         var itrtr = self.keyIterator();
         while (itrtr.next()) |keyPtr| {
             keyPtr.*.decRef();
@@ -312,8 +311,7 @@ pub const RecordValue = struct {
         self.items.deinit();
     }
 
-    pub fn set(self: *RecordValue, allocator: std.mem.Allocator, key: *SP.String, value: *Value) !void {
-        _ = allocator;
+    pub fn set(self: *RecordValue, key: *SP.String, value: *Value) !void {
         if (value.v == ValueKind.UnitKind) {
             const old = self.items.fetchRemove(key);
 
@@ -335,7 +333,7 @@ pub const RecordValue = struct {
         const spKey = try stringPool.intern(key);
         defer spKey.decRef();
 
-        return self.set(stringPool.allocator, spKey, value);
+        return self.set(spKey, value);
     }
 
     pub fn get(self: *const RecordValue, key: *SP.String) ?*Value {
@@ -492,8 +490,7 @@ pub const ScopeValue = struct {
         self.values.deinit();
     }
 
-    pub fn set(self: *ScopeValue, allocator: std.mem.Allocator, key: *SP.String, value: *Value) !void {
-        _ = allocator;
+    pub fn set(self: *ScopeValue, key: *SP.String, value: *Value) !void {
         const oldKey = self.values.getKey(key);
 
         if (oldKey == null) {
