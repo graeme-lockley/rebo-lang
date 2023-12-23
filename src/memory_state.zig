@@ -4,6 +4,10 @@ pub const AST = @import("./ast.zig");
 pub const SP = @import("./string_pool.zig");
 pub const V = @import("./value.zig");
 
+const MAINTAIN_FREE_CHAIN = false;
+const INITIAL_HEAP_SIZE = 1024 * 64;
+const HEAP_GROW_THRESHOLD = 0.25;
+
 pub const MemoryState = struct {
     allocator: std.mem.Allocator,
 
@@ -11,6 +15,7 @@ pub const MemoryState = struct {
     stack: std.ArrayList(*V.Value),
     colour: V.Colour,
     root: ?*V.Value,
+    free: ?*V.Value,
     memory_size: u32,
     memory_capacity: u32,
     scopes: std.ArrayList(*V.Value),
@@ -27,8 +32,9 @@ pub const MemoryState = struct {
             .stack = std.ArrayList(*V.Value).init(allocator),
             .colour = V.Colour.White,
             .root = null,
+            .free = null,
             .memory_size = 0,
-            .memory_capacity = 1024 * 64,
+            .memory_capacity = INITIAL_HEAP_SIZE,
             .scopes = std.ArrayList(*V.Value).init(allocator),
             .imports = Imports.init(allocator),
             .unitValue = null,
@@ -40,10 +46,6 @@ pub const MemoryState = struct {
     }
 
     pub fn deinit(self: *MemoryState) void {
-        // Leave this code in - helpful to use when debugging memory leaks.
-        // The code following this comment block just nukes the allocated
-        // memory without consideration what is still in use.
-
         var count: u32 = 0;
         for (self.stack.items) |v| {
             count += 1;
@@ -70,6 +72,9 @@ pub const MemoryState = struct {
         self.imports.deinit();
         self.imports = Imports.init(self.allocator);
         _ = force_gc(self);
+        if (MAINTAIN_FREE_CHAIN) {
+            self.destroyFreeList();
+        }
 
         self.stack.deinit();
         self.imports.deinit();
@@ -78,19 +83,20 @@ pub const MemoryState = struct {
 
         self.stringPool.deinit();
         self.allocator.destroy(self.stringPool);
+    }
 
-        // self.stack.deinit();
-        // var runner: ?*V.Value = self.root;
-        // while (runner != null) {
-        //     const next = runner.?.next;
-        //     runner.?.deinit(self.allocator);
-        //     self.allocator.destroy(runner.?);
-        //     runner = next;
-        // }
+    fn destroyFreeList(self: *MemoryState) void {
+        var runner: ?*V.Value = self.free;
+        while (runner != null) {
+            const next = runner.?.next;
+            self.allocator.destroy(runner.?);
+            runner = next;
+        }
+        self.free = null;
     }
 
     pub inline fn newValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
-        const v = try self.allocator.create(V.Value);
+        const v = if (self.free == null) try self.allocator.create(V.Value) else self.nextFreeValue();
         self.memory_size += 1;
 
         v.colour = self.colour;
@@ -98,6 +104,13 @@ pub const MemoryState = struct {
         v.next = self.root;
 
         self.root = v;
+
+        return v;
+    }
+
+    fn nextFreeValue(self: *MemoryState) *V.Value {
+        const v: *V.Value = self.free.?;
+        self.free = v.next;
 
         return v;
     }
@@ -331,7 +344,14 @@ fn sweep(state: *MemoryState, colour: V.Colour) void {
             // std.debug.print("sweep: freeing {}\n", .{runner.*.?.v});
             const next = runner.*.?.next;
             runner.*.?.deinit(state.allocator);
-            state.allocator.destroy(runner.*.?);
+
+            if (MAINTAIN_FREE_CHAIN) {
+                runner.*.?.next = state.free;
+                state.free = runner.*.?;
+            } else {
+                state.allocator.destroy(runner.*.?);
+            }
+
             state.memory_size -= 1;
             runner.* = next;
         } else {
@@ -374,14 +394,12 @@ pub fn force_gc(state: *MemoryState) GCResult {
 }
 
 fn gc(state: *MemoryState) void {
-    const threshold_rate = 0.25;
-
     if (state.memory_size > state.memory_capacity) {
         // _ = force_gc(state);
         const gcResult = force_gc(state);
         std.log.info("gc: time={d}ms, nodes freed={d}, heap size: {d}", .{ gcResult.duration, gcResult.oldSize - gcResult.newSize, gcResult.newSize });
 
-        if (@as(f32, @floatFromInt(state.memory_size)) / @as(f32, @floatFromInt(state.memory_capacity)) > threshold_rate) {
+        if (@as(f32, @floatFromInt(state.memory_size)) / @as(f32, @floatFromInt(state.memory_capacity)) > HEAP_GROW_THRESHOLD) {
             state.memory_capacity *= 2;
             std.log.info("gc: double heap capacity to {}", .{state.memory_capacity});
         }
