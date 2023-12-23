@@ -120,37 +120,30 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
     }
 }
 
-fn printSequence(stdout: std.fs.File.Writer, vs: *Helper.Value) !void {
-    switch (vs.v) {
-        Helper.ValueKind.SequenceKind => {
-            for (vs.v.SequenceKind.items()) |v| {
-                try printValue(stdout, v);
-            }
-        },
-        else => try printValue(stdout, vs),
+fn printSequence(stdout: std.fs.File.Writer, vs: []*Helper.Value) !void {
+    for (vs) |v| {
+        try printValue(stdout, v);
     }
 }
 
-pub fn print(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
+pub fn print(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
     _ = argsAST;
     _ = calleeAST;
-    const vs = machine.memoryState.getFromScope("vs") orelse machine.memoryState.unitValue.?;
 
     const stdout = std.io.getStdOut().writer();
 
-    printSequence(stdout, vs) catch {};
+    printSequence(stdout, args) catch {};
 
     try machine.memoryState.pushUnitValue();
 }
 
-pub fn println(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
+pub fn println(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
     _ = argsAST;
     _ = calleeAST;
-    const vs = machine.memoryState.getFromScope("vs") orelse machine.memoryState.unitValue.?;
 
     const stdout = std.io.getStdOut().writer();
 
-    printSequence(stdout, vs) catch {};
+    printSequence(stdout, args) catch {};
     stdout.print("\n", .{}) catch {};
 
     try machine.memoryState.pushUnitValue();

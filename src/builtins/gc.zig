@@ -1,6 +1,7 @@
 const Helper = @import("./helper.zig");
 
-pub fn gc(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
+pub fn gc(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
+    _ = args;
     _ = argsAST;
     _ = calleeAST;
     const result = Helper.MemoryState.force_gc(&machine.memoryState);

@@ -1,10 +1,10 @@
 const Helper = @import("./helper.zig");
 
-pub fn typeof(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
+pub fn typeof(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
     _ = argsAST;
     _ = calleeAST;
 
-    const v = machine.memoryState.getFromScope("v") orelse machine.memoryState.unitValue.?;
+    const v = if (args.len > 0) args[0] else machine.memoryState.unitValue.?;
 
     const typeName = switch (v.v) {
         Helper.ValueKind.BoolKind => "Bool",

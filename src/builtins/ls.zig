@@ -1,8 +1,8 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn ls(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
-    const v = try Helper.getArgument(machine, calleeAST, argsAST, "path", 0, &[_]Helper.ValueKind{ Helper.ValueValue.StringKind, Helper.ValueValue.UnitKind });
+pub fn ls(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
+    const v = try Helper.getArgument(machine, calleeAST, argsAST, args, 0, &[_]Helper.ValueKind{ Helper.ValueValue.StringKind, Helper.ValueValue.UnitKind });
 
     const path = if (v.v == Helper.ValueKind.StringKind) v.v.StringKind.slice() else "./";
     try machine.memoryState.pushEmptySequenceValue();

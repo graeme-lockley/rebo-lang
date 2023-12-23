@@ -868,52 +868,24 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
 }
 
 fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) bool {
-    const sp = machine.memoryState.stack.items.len - 1;
-
-    const args = callee.v.BuiltinKind.arguments;
-    const restOfArgs = callee.v.BuiltinKind.restOfArguments;
+    var buffer = std.ArrayList(*V.Value).init(machine.memoryState.allocator);
+    defer buffer.deinit();
 
     var index: u8 = 0;
     while (index < argsAST.len) {
         if (evalExpr(machine, argsAST[index])) return true;
+        buffer.append(machine.memoryState.peek(0)) catch |err| return errorHandler(err);
         index += 1;
     }
 
-    while (index < args.len) {
-        if (args[index].default == null) {
-            machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
-        } else {
-            machine.memoryState.push(args[index].default.?) catch |err| return errorHandler(err);
-        }
-        index += 1;
-    }
-
-    machine.memoryState.openScope() catch |err| return errorHandler(err);
-    errdefer machine.memoryState.restoreScope();
-
-    var lp: u8 = 0;
-    while (lp < args.len) {
-        machine.memoryState.addToScope(args[lp].name, machine.memoryState.stack.items[sp + lp + 1]) catch |err| return errorHandler(err);
-        lp += 1;
-    }
-
-    if (restOfArgs != null) {
-        const rest = machine.memoryState.stack.items[sp + lp + 1 ..];
-        machine.memoryState.addArrayValueToScope(restOfArgs.?, rest) catch |err| return errorHandler(err);
-    }
-
-    machine.memoryState.popn(index);
-    callee.v.BuiltinKind.body(machine, calleeAST, argsAST) catch |err| {
-        machine.memoryState.restoreScope();
+    callee.v.BuiltinKind.body(machine, calleeAST, argsAST, buffer.items) catch |err| {
         machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end }) catch |err2| return errorHandler(err2);
         return errorHandler(err);
     };
 
     const result = machine.memoryState.pop();
-    _ = machine.memoryState.pop();
+    machine.memoryState.popn(index + 1);
     machine.memoryState.push(result) catch |err| return errorHandler(err);
-
-    machine.memoryState.restoreScope();
 
     return false;
 }
@@ -1295,7 +1267,7 @@ fn addBuiltin(
     name: []const u8,
     arguments: []const V.FunctionArgument,
     restOfArguments: ?[]const u8,
-    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.err!void,
+    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*V.Value) Errors.err!void,
 ) !void {
     var vv = V.ValueValue{ .BuiltinKind = .{
         .arguments = arguments,

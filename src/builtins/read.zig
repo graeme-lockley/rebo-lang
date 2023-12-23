@@ -4,9 +4,9 @@ fn bytesToRead(arg: ?*Helper.Value) usize {
     return if (arg == null) 4096 else @intCast(arg.?.v.IntKind);
 }
 
-pub fn read(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
-    const handle = try Helper.getArgument(machine, calleeAST, argsAST, "handle", 0, &[_]Helper.ValueKind{ Helper.ValueValue.FileKind, Helper.ValueValue.StreamKind });
-    const bytes = bytesToRead(try Helper.getArgument(machine, calleeAST, argsAST, "bytes", 1, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueValue.UnitKind }));
+pub fn read(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
+    const handle = try Helper.getArgument(machine, calleeAST, argsAST, args, 0, &[_]Helper.ValueKind{ Helper.ValueValue.FileKind, Helper.ValueValue.StreamKind });
+    const bytes = bytesToRead(try Helper.getArgument(machine, calleeAST, argsAST, args, 1, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueValue.UnitKind }));
 
     const buffer = try machine.memoryState.allocator.alloc(u8, @intCast(bytes));
     defer machine.memoryState.allocator.free(buffer);

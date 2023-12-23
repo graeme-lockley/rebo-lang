@@ -1,9 +1,9 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn str(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
-    const v = machine.memoryState.getFromScope("value") orelse machine.memoryState.unitValue.?;
-    const s = try Helper.getArgument(machine, calleeAST, argsAST, "literal", 1, &[_]Helper.ValueKind{ Helper.ValueValue.BoolKind, Helper.ValueValue.UnitKind });
+pub fn str(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
+    const v = if (args.len > 0) args[0] else machine.memoryState.unitValue.?;
+    const s = try Helper.getArgument(machine, calleeAST, argsAST, args, 1, &[_]Helper.ValueKind{ Helper.ValueValue.BoolKind, Helper.ValueValue.UnitKind });
 
     const style = if (s.v == Helper.ValueValue.UnitKind or s.v.BoolKind) Helper.Style.Pretty else Helper.Style.Raw;
 

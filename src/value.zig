@@ -272,7 +272,7 @@ pub const ValueValue = union(ValueKind) {
 pub const BuiltinValue = struct {
     arguments: []const FunctionArgument,
     restOfArguments: ?[]const u8,
-    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.err!void,
+    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*Value) Errors.err!void,
 
     pub fn deinit(self: *BuiltinValue, allocator: std.mem.Allocator) void {
         _ = allocator;

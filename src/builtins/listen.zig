@@ -1,10 +1,10 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn listen(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression) !void {
-    const host = (try Helper.getArgument(machine, calleeAST, argsAST, "host", 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
-    const port = (try Helper.getArgument(machine, calleeAST, argsAST, "port", 1, &[_]Helper.ValueKind{Helper.ValueValue.IntKind})).v.IntKind;
-    const cb = (try Helper.getArgument(machine, calleeAST, argsAST, "cb", 2, &[_]Helper.ValueKind{Helper.ValueValue.FunctionKind})).v.FunctionKind;
+pub fn listen(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
+    const host = (try Helper.getArgument(machine, calleeAST, argsAST, args, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
+    const port = (try Helper.getArgument(machine, calleeAST, argsAST, args, 1, &[_]Helper.ValueKind{Helper.ValueValue.IntKind})).v.IntKind;
+    const cb = (try Helper.getArgument(machine, calleeAST, argsAST, args, 2, &[_]Helper.ValueKind{Helper.ValueValue.FunctionKind})).v.FunctionKind;
 
     var server = std.net.StreamServer.init(.{});
     server.reuse_address = true;
