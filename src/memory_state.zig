@@ -89,7 +89,7 @@ pub const MemoryState = struct {
         // }
     }
 
-    pub fn newValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
+    pub inline fn newValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
         const v = try self.allocator.create(V.Value);
         self.memory_size += 1;
 
@@ -102,7 +102,7 @@ pub const MemoryState = struct {
         return v;
     }
 
-    pub fn pushValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
+    pub inline fn pushValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
         const v = try self.newValue(vv);
 
         try self.stack.append(v);
@@ -112,83 +112,83 @@ pub const MemoryState = struct {
         return v;
     }
 
-    pub fn pushBoolValue(self: *MemoryState, b: bool) !void {
+    pub inline fn pushBoolValue(self: *MemoryState, b: bool) !void {
         _ = try self.pushValue(V.ValueValue{ .BoolKind = b });
     }
 
-    pub fn newMapValue(self: *MemoryState) !*V.Value {
+    pub inline fn newMapValue(self: *MemoryState) !*V.Value {
         return try self.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.allocator) });
     }
 
-    pub fn pushEmptyMapValue(self: *MemoryState) !void {
+    pub inline fn pushEmptyMapValue(self: *MemoryState) !void {
         try self.push(try self.newMapValue());
     }
 
-    pub fn pushCharValue(self: *MemoryState, v: u8) !void {
+    pub inline fn pushCharValue(self: *MemoryState, v: u8) !void {
         _ = try self.pushValue(V.ValueValue{ .CharKind = v });
     }
 
-    pub fn newFileValue(self: *MemoryState, file: std.fs.File) !*V.Value {
+    pub inline fn newFileValue(self: *MemoryState, file: std.fs.File) !*V.Value {
         return try self.newValue(V.ValueValue{ .FileKind = V.FileValue.init(file) });
     }
 
-    pub fn pushFloatValue(self: *MemoryState, v: V.FloatType) !void {
+    pub inline fn pushFloatValue(self: *MemoryState, v: V.FloatType) !void {
         _ = try self.pushValue(V.ValueValue{ .FloatKind = v });
     }
 
-    pub fn newIntValue(self: *MemoryState, v: V.IntType) !*V.Value {
+    pub inline fn newIntValue(self: *MemoryState, v: V.IntType) !*V.Value {
         return try self.newValue(V.ValueValue{ .IntKind = v });
     }
 
-    pub fn pushIntValue(self: *MemoryState, v: V.IntType) !void {
+    pub inline fn pushIntValue(self: *MemoryState, v: V.IntType) !void {
         _ = try self.push(try self.newIntValue(v));
     }
 
-    pub fn pushEmptySequenceValue(self: *MemoryState) !void {
+    pub inline fn pushEmptySequenceValue(self: *MemoryState) !void {
         _ = try self.pushValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
     }
 
-    pub fn newStreamValue(self: *MemoryState, v: std.net.Stream) !*V.Value {
+    pub inline fn newStreamValue(self: *MemoryState, v: std.net.Stream) !*V.Value {
         return try self.newValue(V.ValueValue{ .StreamKind = V.StreamValue.init(v) });
     }
 
-    pub fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
+    pub inline fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
         return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.init(self.stringPool, v) });
     }
 
-    pub fn newOwnedStringValue(self: *MemoryState, v: []u8) !*V.Value {
+    pub inline fn newOwnedStringValue(self: *MemoryState, v: []u8) !*V.Value {
         return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.initOwned(self.stringPool, v) });
     }
 
-    pub fn pushStringPoolValue(self: *MemoryState, v: *SP.String) !void {
+    pub inline fn pushStringPoolValue(self: *MemoryState, v: *SP.String) !void {
         _ = try self.push(try self.newValue(V.ValueValue{ .StringKind = V.StringValue.initPool(v) }));
     }
 
-    pub fn pushStringValue(self: *MemoryState, v: []const u8) !void {
+    pub inline fn pushStringValue(self: *MemoryState, v: []const u8) !void {
         _ = try self.push(try self.newStringValue(v));
     }
 
-    pub fn pushOwnedStringValue(self: *MemoryState, v: []u8) !void {
+    pub inline fn pushOwnedStringValue(self: *MemoryState, v: []u8) !void {
         _ = try self.push(try self.newOwnedStringValue(v));
     }
 
-    pub fn pushUnitValue(self: *MemoryState) !void {
+    pub inline fn pushUnitValue(self: *MemoryState) !void {
         _ = try self.push(self.unitValue.?);
     }
 
-    pub fn pop(self: *MemoryState) *V.Value {
+    pub inline fn pop(self: *MemoryState) *V.Value {
         return self.stack.pop();
     }
 
-    pub fn popn(self: *MemoryState, n: u32) void {
+    pub inline fn popn(self: *MemoryState, n: u32) void {
         self.stack.items.len -= n;
     }
 
-    pub fn push(self: *MemoryState, v: *V.Value) !void {
+    pub inline fn push(self: *MemoryState, v: *V.Value) !void {
         try self.stack.append(v);
     }
 
-    pub fn peek(self: *MemoryState, n: u32) *V.Value {
+    pub inline fn peek(self: *MemoryState, n: u32) *V.Value {
         return self.stack.items[self.stack.items.len - n - 1];
     }
 
