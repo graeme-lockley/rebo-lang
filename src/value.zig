@@ -33,7 +33,7 @@ pub const Value = struct {
             .StreamKind => self.v.StreamKind.deinit(),
             .StringKind => self.v.StringKind.deinit(),
             .RecordKind => self.v.RecordKind.deinit(allocator),
-            .ScopeKind => self.v.ScopeKind.deinit(allocator),
+            .ScopeKind => self.v.ScopeKind.deinit(),
         }
     }
 
@@ -126,7 +126,7 @@ pub const Value = struct {
                         } else {
                             try buffer.appendSlice(", ");
                         }
-                        try buffer.appendSlice(entry.key_ptr.*);
+                        try buffer.appendSlice(entry.key_ptr.*.slice());
                         try buffer.appendSlice(": ");
                         try entry.value_ptr.*.appendValue(buffer, style);
                     }
@@ -459,35 +459,36 @@ pub const StringValue = struct {
 
 pub const ScopeValue = struct {
     parent: ?*Value,
-    values: std.StringHashMap(*Value),
+    values: std.AutoHashMap(*SP.String, *Value),
 
     pub fn init(allocator: std.mem.Allocator, parent: ?*Value) ScopeValue {
         return ScopeValue{
             .parent = parent,
-            .values = std.StringHashMap(*Value).init(allocator),
+            .values = std.AutoHashMap(*SP.String, *Value).init(allocator),
         };
     }
 
-    pub fn deinit(self: *ScopeValue, allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *ScopeValue) void {
         var iterator = self.values.keyIterator();
         while (iterator.next()) |keyPtr| {
-            allocator.free(keyPtr.*);
+            keyPtr.*.decRef();
         }
 
         self.values.deinit();
     }
 
-    pub fn set(self: *ScopeValue, allocator: std.mem.Allocator, key: []const u8, value: *Value) !void {
+    pub fn set(self: *ScopeValue, allocator: std.mem.Allocator, key: *SP.String, value: *Value) !void {
+        _ = allocator;
         const oldKey = self.values.getKey(key);
 
         if (oldKey == null) {
-            try self.values.put(try allocator.dupe(u8, key), value);
+            try self.values.put(key.incRefR(), value);
         } else {
             try self.values.put(oldKey.?, value);
         }
     }
 
-    pub fn update(self: *ScopeValue, key: []const u8, value: *Value) !bool {
+    pub fn update(self: *ScopeValue, key: *SP.String, value: *Value) !bool {
         var runner: ?*ScopeValue = self;
 
         while (true) {
@@ -507,7 +508,7 @@ pub const ScopeValue = struct {
         }
     }
 
-    pub fn get(self: *const ScopeValue, key: []const u8) ?*Value {
+    pub fn get(self: *const ScopeValue, key: *SP.String) ?*Value {
         var runner: ?*const ScopeValue = self;
 
         while (true) {

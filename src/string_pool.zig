@@ -104,4 +104,8 @@ pub const String = struct {
     pub inline fn len(this: *const String) usize {
         return this.data.len;
     }
+
+    pub inline fn startsWith(this: *const String, prefix: []const u8) bool {
+        return this.data.len >= prefix.len and std.mem.eql(u8, this.data[0..prefix.len], prefix);
+    }
 };

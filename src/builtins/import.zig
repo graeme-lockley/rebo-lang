@@ -78,10 +78,10 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
     while (iterator.next()) |entry| {
         const entryName = entry.key_ptr.*;
 
-        if (entryName.len > 0 and entryName[0] == '_') {
+        if (entryName.startsWith("_")) {
             continue;
         }
-        try result.v.RecordKind.set(machine.memoryState.allocator, entryName, entry.value_ptr.*);
+        try result.v.RecordKind.set(machine.memoryState.allocator, entryName.slice(), entry.value_ptr.*);
     }
 
     try machine.memoryState.imports.addImport(name, result, ast);
