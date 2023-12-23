@@ -127,7 +127,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
         .identifier => {
             if (evalExpr(machine, value)) return true;
 
-            if (!(machine.memoryState.updateInScope(lhs.kind.identifier.slice(), machine.memoryState.peek(0)) catch |err| return errorHandler(err))) {
+            if (!(machine.memoryState.updateInScope(lhs.kind.identifier, machine.memoryState.peek(0)) catch |err| return errorHandler(err))) {
                 machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, try machine.src(), lhs.position, lhs.kind.identifier.slice()) catch |err| return errorHandler(err));
                 return true;
             }
@@ -842,13 +842,13 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
 
     var lp: u8 = 0;
     while (lp < args.len) {
-        machine.memoryState.addToScope(args[lp].name.slice(), machine.memoryState.stack.items[sp + lp + 1]) catch |err| return errorHandler(err);
+        machine.memoryState.addToScope(args[lp].name, machine.memoryState.stack.items[sp + lp + 1]) catch |err| return errorHandler(err);
         lp += 1;
     }
 
     if (restOfArgs != null) {
         const rest = machine.memoryState.stack.items[sp + lp + 1 ..];
-        machine.memoryState.addArrayValueToScope(restOfArgs.?.slice(), rest) catch |err| return errorHandler(err);
+        machine.memoryState.addArrayValueToScope(restOfArgs.?, rest) catch |err| return errorHandler(err);
     }
 
     machine.memoryState.popn(index);
@@ -925,7 +925,7 @@ fn declaration(machine: *Machine, e: *AST.Expression) bool {
 
     const value: *V.Value = machine.memoryState.peek(0);
 
-    machine.memoryState.addToScope(e.kind.idDeclaration.name.slice(), value) catch |err| return errorHandler(err);
+    machine.memoryState.addToScope(e.kind.idDeclaration.name, value) catch |err| return errorHandler(err);
 
     return false;
 }
@@ -971,7 +971,7 @@ fn exprs(machine: *Machine, e: *AST.Expression) bool {
 }
 
 fn identifier(machine: *Machine, e: *AST.Expression) bool {
-    const result = machine.memoryState.getFromScope(e.kind.identifier.slice());
+    const result = machine.memoryState.getFromScope(e.kind.identifier);
 
     if (result == null) {
         machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, try machine.src(), e.position, e.kind.identifier.slice()) catch |err| return errorHandler(err));
@@ -1154,7 +1154,7 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
     return switch (p.kind) {
         .identifier => {
             if (!std.mem.eql(u8, p.kind.identifier.slice(), "_")) {
-                machine.memoryState.addToScope(p.kind.identifier.slice(), v) catch |err| return errorHandler(err);
+                machine.memoryState.addToScope(p.kind.identifier, v) catch |err| return errorHandler(err);
             }
             return true;
         },
@@ -1174,14 +1174,14 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
                 if (value == null) return false;
 
                 if (entry.pattern == null) {
-                    machine.memoryState.addToScope(if (entry.id == null) entry.key.slice() else entry.id.?.slice(), value.?) catch |err| return errorHandler(err);
+                    machine.memoryState.addToScope(if (entry.id == null) entry.key else entry.id.?, value.?) catch |err| return errorHandler(err);
                 } else if (entry.pattern != null and !matchPattern(machine, entry.pattern.?, value.?)) {
                     return false;
                 }
             }
 
             if (p.kind.record.id != null) {
-                machine.memoryState.addToScope(p.kind.record.id.?.slice(), v) catch |err| return errorHandler(err);
+                machine.memoryState.addToScope(p.kind.record.id.?, v) catch |err| return errorHandler(err);
             }
 
             return true;
@@ -1205,11 +1205,11 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
                 if (seq.len() > p.kind.sequence.patterns.len) {
                     newSeq.appendSlice(seq.items()[p.kind.sequence.patterns.len..]) catch |err| return errorHandler(err);
                 }
-                machine.memoryState.addToScope(p.kind.sequence.restOfPatterns.?.slice(), machine.memoryState.newValue(V.ValueValue{ .SequenceKind = newSeq }) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
+                machine.memoryState.addToScope(p.kind.sequence.restOfPatterns.?, machine.memoryState.newValue(V.ValueValue{ .SequenceKind = newSeq }) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
             }
 
             if (p.kind.sequence.id != null) {
-                machine.memoryState.addToScope(p.kind.sequence.id.?.slice(), v) catch |err| return errorHandler(err);
+                machine.memoryState.addToScope(p.kind.sequence.id.?, v) catch |err| return errorHandler(err);
             }
 
             return true;
@@ -1271,7 +1271,7 @@ fn addBuiltin(
 
     const value = try state.newValue(vv);
 
-    try state.addToScope(name, value);
+    try state.addU8ToScope(name, value);
 }
 
 fn addRebo(state: *MS.MemoryState) !void {
@@ -1279,7 +1279,7 @@ fn addRebo(state: *MS.MemoryState) !void {
     defer std.process.argsFree(state.allocator, args);
 
     const value = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
-    try state.addToScope("rebo", value);
+    try state.addU8ToScope("rebo", value);
 
     const reboArgs = try state.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(state.allocator) });
     try value.v.RecordKind.set(state.allocator, "args", reboArgs);
@@ -1434,7 +1434,7 @@ pub const Machine = struct {
     }
 
     pub fn src(self: *Machine) ![]const u8 {
-        const result = self.memoryState.getFromScope("__FILE");
+        const result = try self.memoryState.getU8FromScope("__FILE");
 
         return if (result == null) Errors.STREAM_SRC else if (result.?.v == V.ValueValue.StringKind) result.?.v.StringKind.slice() else Errors.STREAM_SRC;
     }

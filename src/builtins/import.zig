@@ -30,7 +30,7 @@ test "ffn" {
 }
 
 fn fullFileName(machine: *Helper.Machine, fileName: []const u8) ![]u8 {
-    const fromSourceName = machine.memoryState.getFromScope("__FILE");
+    const fromSourceName = try machine.memoryState.getU8FromScope("__FILE");
     return try ffn(machine.memoryState.allocator, if (fromSourceName == null) null else fromSourceName.?.v.StringKind.slice(), fileName);
 }
 
@@ -60,7 +60,7 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
     try machine.memoryState.openScopeFrom(machine.memoryState.topScope());
     defer machine.memoryState.restoreScope();
 
-    try machine.memoryState.addToScope("__FILE", try machine.memoryState.newStringValue(name));
+    try machine.memoryState.addU8ToScope("__FILE", try machine.memoryState.newStringValue(name));
 
     const ast = machine.parse(fileName, content) catch |err| return Helper.fatalErrorHandler(machine, "ParseError", err);
     errdefer ast.destroy(machine.memoryState.allocator);

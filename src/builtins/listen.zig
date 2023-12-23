@@ -21,11 +21,11 @@ pub fn listen(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: 
         errdefer machine.memoryState.restoreScope();
 
         if (cb.arguments.len > 0) {
-            try machine.memoryState.addToScope(cb.arguments[0].name.slice(), try machine.memoryState.newStreamValue(stream));
+            try machine.memoryState.addToScope(cb.arguments[0].name, try machine.memoryState.newStreamValue(stream));
         }
         var lp: u8 = 1;
         while (lp < cb.arguments.len) {
-            machine.memoryState.addToScope(cb.arguments[lp].name.slice(), machine.memoryState.unitValue.?) catch |err| return Helper.osError(machine, "addToScope", err);
+            machine.memoryState.addToScope(cb.arguments[lp].name, machine.memoryState.unitValue.?) catch |err| return Helper.osError(machine, "addToScope", err);
             lp += 1;
         }
 

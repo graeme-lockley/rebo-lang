@@ -224,22 +224,30 @@ pub const MemoryState = struct {
         _ = self.scopes.pop();
     }
 
-    pub inline fn addToScope(self: *MemoryState, name: []const u8, value: *V.Value) !void {
+    pub inline fn addToScope(self: *MemoryState, name: *SP.String, value: *V.Value) !void {
+        try self.scope().?.v.ScopeKind.set(self.allocator, name.slice(), value);
+    }
+
+    pub inline fn addU8ToScope(self: *MemoryState, name: []const u8, value: *V.Value) !void {
         try self.scope().?.v.ScopeKind.set(self.allocator, name, value);
     }
 
-    pub inline fn addArrayValueToScope(self: *MemoryState, name: []const u8, values: []*V.Value) !void {
+    pub inline fn addArrayValueToScope(self: *MemoryState, name: *SP.String, values: []*V.Value) !void {
         const value = try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
         try value.v.SequenceKind.appendSlice(values);
 
-        try self.scope().?.v.ScopeKind.set(self.allocator, name, value);
+        try self.scope().?.v.ScopeKind.set(self.allocator, name.slice(), value);
     }
 
-    pub inline fn updateInScope(self: *MemoryState, name: []const u8, value: *V.Value) !bool {
-        return try self.scope().?.v.ScopeKind.update(name, value);
+    pub inline fn updateInScope(self: *MemoryState, name: *SP.String, value: *V.Value) !bool {
+        return try self.scope().?.v.ScopeKind.update(name.slice(), value);
     }
 
-    pub inline fn getFromScope(self: *MemoryState, name: []const u8) ?*V.Value {
+    pub inline fn getFromScope(self: *MemoryState, name: *SP.String) ?*V.Value {
+        return self.scope().?.v.ScopeKind.get(name.slice());
+    }
+
+    pub inline fn getU8FromScope(self: *MemoryState, name: []const u8) !?*V.Value {
         return self.scope().?.v.ScopeKind.get(name);
     }
 
