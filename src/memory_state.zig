@@ -18,9 +18,12 @@ pub const MemoryState = struct {
     free: ?*V.Value,
     memory_size: u32,
     memory_capacity: u32,
+    allocations: u64,
     scopes: std.ArrayList(*V.Value),
     imports: Imports,
     unitValue: ?*V.Value,
+    trueValue: ?*V.Value,
+    falseValue: ?*V.Value,
 
     pub fn init(allocator: std.mem.Allocator) !MemoryState {
         const stringPool = try allocator.create(SP.StringPool);
@@ -35,12 +38,17 @@ pub const MemoryState = struct {
             .free = null,
             .memory_size = 0,
             .memory_capacity = INITIAL_HEAP_SIZE,
+            .allocations = 0,
             .scopes = std.ArrayList(*V.Value).init(allocator),
             .imports = Imports.init(allocator),
             .unitValue = null,
+            .trueValue = null,
+            .falseValue = null,
         };
 
         state.unitValue = try state.newValue(V.ValueValue{ .UnitKind = void{} });
+        state.trueValue = try state.newValue(V.ValueValue{ .BoolKind = true });
+        state.falseValue = try state.newValue(V.ValueValue{ .BoolKind = false });
 
         return state;
     }
@@ -52,7 +60,7 @@ pub const MemoryState = struct {
 
         // var number_of_values: u32 = 0;
         // {
-        //     var runner: ?*V.Value = self.root;
+        //     var runner: ?*V.Value = self.root;1
         //     while (runner != null) {
         //         const next = runner.?.next;
         //         number_of_values += 1;
@@ -60,8 +68,11 @@ pub const MemoryState = struct {
         //     }
         // }
         // std.log.info("gc: memory state stack length: {d} vs {d}: values: {d} vs {d}", .{ self.stack.items.len, count, self.memory_size, number_of_values });
+        // 361571 vs 272164
         std.log.info("gc: memory state stack length: {d} vs {d}, values: {d}, stringpool: {d}", .{ self.stack.items.len, count, self.memory_size, self.stringPool.count() });
         self.unitValue = null;
+        self.trueValue = null;
+        self.falseValue = null;
         self.scopes.deinit();
         self.scopes = std.ArrayList(*V.Value).init(self.allocator);
         self.stack.deinit();
@@ -96,6 +107,7 @@ pub const MemoryState = struct {
     pub inline fn newValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
         const v = if (self.free == null) try self.allocator.create(V.Value) else self.nextFreeValue();
         self.memory_size += 1;
+        self.allocations += 1;
 
         v.colour = self.colour;
         v.v = vv;
@@ -124,7 +136,15 @@ pub const MemoryState = struct {
     }
 
     pub inline fn pushBoolValue(self: *MemoryState, b: bool) !void {
-        _ = try self.pushValue(V.ValueValue{ .BoolKind = b });
+        if (b and self.trueValue != null) {
+            _ = try self.push(self.trueValue.?);
+            return;
+        } else if (!b and self.falseValue != null) {
+            _ = try self.push(self.falseValue.?);
+            return;
+        } else {
+            _ = try self.pushValue(V.ValueValue{ .BoolKind = b });
+        }
     }
 
     pub inline fn newMapValue(self: *MemoryState) !*V.Value {
@@ -374,6 +394,12 @@ pub fn force_gc(state: *MemoryState) GCResult {
     state.imports.mark(new_colour);
     if (state.unitValue != null) {
         markValue(state.unitValue.?, new_colour);
+    }
+    if (state.trueValue != null) {
+        markValue(state.trueValue.?, new_colour);
+    }
+    if (state.falseValue != null) {
+        markValue(state.falseValue.?, new_colour);
     }
 
     for (state.scopes.items) |value| {
