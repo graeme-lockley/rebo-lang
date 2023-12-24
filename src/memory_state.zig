@@ -46,24 +46,21 @@ pub const MemoryState = struct {
     }
 
     pub fn deinit(self: *MemoryState) void {
-        var count: u32 = 0;
-        for (self.stack.items) |v| {
-            count += 1;
-            _ = v;
-        }
+        var count = self.stack.items.len;
 
         _ = force_gc(self);
 
-        var number_of_values: u32 = 0;
-        {
-            var runner: ?*V.Value = self.root;
-            while (runner != null) {
-                const next = runner.?.next;
-                number_of_values += 1;
-                runner = next;
-            }
-        }
-        std.log.info("gc: memory state stack length: {d} vs {d}: values: {d} vs {d}", .{ self.stack.items.len, count, self.memory_size, number_of_values });
+        // var number_of_values: u32 = 0;
+        // {
+        //     var runner: ?*V.Value = self.root;
+        //     while (runner != null) {
+        //         const next = runner.?.next;
+        //         number_of_values += 1;
+        //         runner = next;
+        //     }
+        // }
+        // std.log.info("gc: memory state stack length: {d} vs {d}: values: {d} vs {d}", .{ self.stack.items.len, count, self.memory_size, number_of_values });
+        std.log.info("gc: memory state stack length: {d} vs {d}, values: {d}, stringpool: {d}", .{ self.stack.items.len, count, self.memory_size, self.stringPool.count() });
         self.unitValue = null;
         self.scopes.deinit();
         self.scopes = std.ArrayList(*V.Value).init(self.allocator);
@@ -72,6 +69,7 @@ pub const MemoryState = struct {
         self.imports.deinit();
         self.imports = Imports.init(self.allocator);
         _ = force_gc(self);
+
         if (MAINTAIN_FREE_CHAIN) {
             self.destroyFreeList();
         }
@@ -79,7 +77,7 @@ pub const MemoryState = struct {
         self.stack.deinit();
         self.imports.deinit();
 
-        std.log.info("gc: memory state stack length: {d} vs {d}: values: {d} vs {d}", .{ self.stack.items.len, count, self.memory_size, number_of_values });
+        std.log.info("gc: memory state stack length: {d} vs {d}, values: {d}, stringpool: {d}", .{ self.stack.items.len, count, self.memory_size, self.stringPool.count() });
 
         self.stringPool.deinit();
         self.allocator.destroy(self.stringPool);
