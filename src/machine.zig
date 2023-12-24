@@ -1295,7 +1295,7 @@ fn addRebo(state: *MS.MemoryState) !void {
 
     var iterator = env.iterator();
     while (iterator.next()) |entry| {
-        try value.v.RecordKind.setU8(state.stringPool, entry.key_ptr.*, try state.newStringValue(entry.value_ptr.*));
+        try reboEnv.v.RecordKind.setU8(state.stringPool, entry.key_ptr.*, try state.newStringValue(entry.value_ptr.*));
     }
 }
 
