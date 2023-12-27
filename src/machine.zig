@@ -853,7 +853,6 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
 
     machine.memoryState.popn(index);
     if (evalExpr(machine, callee.v.FunctionKind.body)) {
-        machine.memoryState.restoreScope();
         machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end }) catch |err| return errorHandler(err);
         return true;
     }
