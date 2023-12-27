@@ -253,50 +253,50 @@ pub const Error = struct {
 };
 
 pub const ErrorDetail = union(enum) {
-    divideByZero: DivideByZeroError,
-    expectedTypeError: ExpectedTypeError,
-    incompatibleOperandTypesError: IncompatibleOperandTypesError,
-    indexOutOfRangeError: IndexOutOfRangeError,
-    invalidLHSError: InvalidLHSError,
-    lexicalError: LexicalError,
-    literalFloatOverflowError: LexicalError,
-    literalIntOverflowError: LexicalError,
-    noMatchError: NoMatchError,
-    parserError: ParserError,
-    unknownIdentifierError: UnknownIdentifierError,
-    userError: UserError,
+    DivideByZeroKind: DivideByZeroError,
+    ExpectedTypeKind: ExpectedTypeError,
+    IncompatibleOperandTypesKind: IncompatibleOperandTypesError,
+    IndexOutOfRangeKind: IndexOutOfRangeError,
+    InvalidLHSErrorKind: InvalidLHSError,
+    LexicalKind: LexicalError,
+    LiteralFloatOverflowKind: LexicalError,
+    LiteralIntOverflowKind: LexicalError,
+    NoMatchKind: NoMatchError,
+    ParserKind: ParserError,
+    UnknownIdentifierKind: UnknownIdentifierError,
+    UserKind: UserError,
 
     pub fn deinit(self: ErrorDetail, allocator: std.mem.Allocator) void {
         switch (self) {
-            .divideByZero => self.divideByZero.deinit(),
-            .expectedTypeError => self.expectedTypeError.deinit(allocator),
-            .incompatibleOperandTypesError => self.incompatibleOperandTypesError.deinit(),
-            .indexOutOfRangeError => self.indexOutOfRangeError.deinit(),
-            .invalidLHSError => self.invalidLHSError.deinit(),
-            .lexicalError => self.lexicalError.deinit(allocator),
-            .literalFloatOverflowError => self.literalFloatOverflowError.deinit(allocator),
-            .literalIntOverflowError => self.literalIntOverflowError.deinit(allocator),
-            .noMatchError => self.noMatchError.deinit(),
-            .parserError => self.parserError.deinit(allocator),
-            .unknownIdentifierError => self.unknownIdentifierError.deinit(allocator),
-            .userError => self.userError.deinit(),
+            .DivideByZeroKind => self.DivideByZeroKind.deinit(),
+            .ExpectedTypeKind => self.ExpectedTypeKind.deinit(allocator),
+            .IncompatibleOperandTypesKind => self.IncompatibleOperandTypesKind.deinit(),
+            .IndexOutOfRangeKind => self.IndexOutOfRangeKind.deinit(),
+            .InvalidLHSErrorKind => self.InvalidLHSErrorKind.deinit(),
+            .LexicalKind => self.LexicalKind.deinit(allocator),
+            .LiteralFloatOverflowKind => self.LiteralFloatOverflowKind.deinit(allocator),
+            .LiteralIntOverflowKind => self.LiteralIntOverflowKind.deinit(allocator),
+            .NoMatchKind => self.NoMatchKind.deinit(),
+            .ParserKind => self.ParserKind.deinit(allocator),
+            .UnknownIdentifierKind => self.UnknownIdentifierKind.deinit(allocator),
+            .UserKind => self.UserKind.deinit(),
         }
     }
 
     pub fn append(self: ErrorDetail, buffer: *std.ArrayList(u8)) !void {
         switch (self) {
-            .divideByZero => try self.divideByZero.append(buffer),
-            .expectedTypeError => try self.expectedTypeError.append(buffer),
-            .incompatibleOperandTypesError => try self.incompatibleOperandTypesError.append(buffer),
-            .indexOutOfRangeError => try self.indexOutOfRangeError.append(buffer),
-            .invalidLHSError => try self.invalidLHSError.append(buffer),
-            .lexicalError => try self.lexicalError.append(buffer, "Lexical Error"),
-            .literalFloatOverflowError => try self.literalFloatOverflowError.append(buffer, "Literal Float Overflow Error"),
-            .literalIntOverflowError => try self.literalIntOverflowError.append(buffer, "Literal Int Overflow Error"),
-            .noMatchError => try self.noMatchError.append(buffer),
-            .parserError => try self.parserError.append(buffer),
-            .unknownIdentifierError => try self.unknownIdentifierError.append(buffer),
-            .userError => try self.userError.append(buffer),
+            .DivideByZeroKind => try self.DivideByZeroKind.append(buffer),
+            .ExpectedTypeKind => try self.ExpectedTypeKind.append(buffer),
+            .IncompatibleOperandTypesKind => try self.IncompatibleOperandTypesKind.append(buffer),
+            .IndexOutOfRangeKind => try self.IndexOutOfRangeKind.append(buffer),
+            .InvalidLHSErrorKind => try self.InvalidLHSErrorKind.append(buffer),
+            .LexicalKind => try self.LexicalKind.append(buffer, "Lexical Error"),
+            .LiteralFloatOverflowKind => try self.LiteralFloatOverflowKind.append(buffer, "Literal Float Overflow Error"),
+            .LiteralIntOverflowKind => try self.LiteralIntOverflowKind.append(buffer, "Literal Int Overflow Error"),
+            .NoMatchKind => try self.NoMatchKind.append(buffer),
+            .ParserKind => try self.ParserKind.append(buffer),
+            .UnknownIdentifierKind => try self.UnknownIdentifierKind.append(buffer),
+            .UserKind => try self.UserKind.append(buffer),
         }
     }
 };
@@ -306,7 +306,7 @@ pub fn boolValueExpectedError(allocator: std.mem.Allocator, position: Position, 
 }
 
 pub fn divideByZeroError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .divideByZero = .{} });
+    var result = try Error.init(allocator, ErrorDetail{ .DivideByZeroKind = .{} });
 
     try result.appendStackItem(src, position);
 
@@ -334,7 +334,7 @@ pub fn reportExpectedTypeError(allocator: std.mem.Allocator, src: []const u8, po
 }
 
 pub fn expectedTypeError(allocator: std.mem.Allocator, src: []const u8, position: Position, expected: []ValueKind, found: ValueKind) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .expectedTypeError = .{ .expected = expected, .found = found } });
+    var result = try Error.init(allocator, ErrorDetail{ .ExpectedTypeKind = .{ .expected = expected, .found = found } });
 
     try result.appendStackItem(src, position);
 
@@ -353,7 +353,7 @@ pub fn incompatibleOperandTypesError(
     left: ValueKind,
     right: ValueKind,
 ) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .incompatibleOperandTypesError = .{
+    var result = try Error.init(allocator, ErrorDetail{ .IncompatibleOperandTypesKind = .{
         .op = op,
         .left = left,
         .right = right,
@@ -365,7 +365,7 @@ pub fn incompatibleOperandTypesError(
 }
 
 pub fn invalidLHSError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .invalidLHSError = .{} });
+    var result = try Error.init(allocator, ErrorDetail{ .InvalidLHSErrorKind = .{} });
 
     try result.appendStackItem(src, position);
 
@@ -373,7 +373,7 @@ pub fn invalidLHSError(allocator: std.mem.Allocator, src: []const u8, position: 
 }
 
 pub fn indexOutOfRangeError(allocator: std.mem.Allocator, src: []const u8, position: Position, idx: Value.IntType, lower: Value.IntType, upper: Value.IntType) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .indexOutOfRangeError = .{
+    var result = try Error.init(allocator, ErrorDetail{ .IndexOutOfRangeKind = .{
         .idx = idx,
         .lower = lower,
         .upper = upper,
@@ -385,7 +385,7 @@ pub fn indexOutOfRangeError(allocator: std.mem.Allocator, src: []const u8, posit
 }
 
 pub fn lexicalError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .lexicalError = .{
+    var result = try Error.init(allocator, ErrorDetail{ .LexicalKind = .{
         .lexeme = try allocator.dupe(u8, lexeme),
     } });
 
@@ -395,7 +395,7 @@ pub fn lexicalError(allocator: std.mem.Allocator, src: []const u8, position: Pos
 }
 
 pub fn literalFloatOverflowError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .literalFloatOverflowError = .{
+    var result = try Error.init(allocator, ErrorDetail{ .LiteralFloatOverflowKind = .{
         .lexeme = try allocator.dupe(u8, lexeme),
     } });
 
@@ -405,7 +405,7 @@ pub fn literalFloatOverflowError(allocator: std.mem.Allocator, src: []const u8, 
 }
 
 pub fn literalIntOverflowError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .literalIntOverflowError = .{
+    var result = try Error.init(allocator, ErrorDetail{ .LiteralIntOverflowKind = .{
         .lexeme = try allocator.dupe(u8, lexeme),
     } });
 
@@ -415,7 +415,7 @@ pub fn literalIntOverflowError(allocator: std.mem.Allocator, src: []const u8, po
 }
 
 pub fn noMatchError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .noMatchError = NoMatchError{} });
+    var result = try Error.init(allocator, ErrorDetail{ .NoMatchKind = NoMatchError{} });
 
     try result.appendStackItem(src, position);
 
@@ -423,7 +423,7 @@ pub fn noMatchError(allocator: std.mem.Allocator, src: []const u8, position: Pos
 }
 
 pub fn parserError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8, expected: []const TokenKind) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .parserError = .{
+    var result = try Error.init(allocator, ErrorDetail{ .ParserKind = .{
         .lexeme = try allocator.dupe(u8, lexeme),
         .expected = expected,
     } });
@@ -438,7 +438,7 @@ pub fn recordValueExpectedError(allocator: std.mem.Allocator, src: []const u8, p
 }
 
 pub fn unknownIdentifierError(allocator: std.mem.Allocator, src: []const u8, position: Position, identifier: []const u8) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .unknownIdentifierError = .{
+    var result = try Error.init(allocator, ErrorDetail{ .UnknownIdentifierKind = .{
         .identifier = try allocator.dupe(u8, identifier),
     } });
 
@@ -448,7 +448,7 @@ pub fn unknownIdentifierError(allocator: std.mem.Allocator, src: []const u8, pos
 }
 
 pub fn userError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .userError = .{} });
+    var result = try Error.init(allocator, ErrorDetail{ .UserKind = .{} });
 
     try result.appendStackItem(src, position);
 
