@@ -305,10 +305,6 @@ pub const ErrorDetail = union(ErrorKind) {
     }
 };
 
-pub fn boolValueExpectedError(allocator: std.mem.Allocator, position: Position, found: ValueKind) !Error {
-    return expectedATypeError(allocator, position, ValueKind.BoolKind, found);
-}
-
 pub fn expectedATypeError(allocator: std.mem.Allocator, src: []const u8, position: Position, expected: ValueKind, found: ValueKind) !Error {
     var exp = try allocator.alloc(ValueKind, 1);
     errdefer allocator.free(exp);
