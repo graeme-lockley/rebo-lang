@@ -37,3 +37,11 @@ Idiomatically, rather than returning a string as the exception message, we retur
 
 In the last example I change all of the file names in the stack to `foo.rebo` as the actual name is fully qualified and will differ from system to system depending on where this file is located.
 
+There are some standard errors that are raised in the runtime system.  These errors are layed out through code examples.
+
+```rebo-repl
+> let divide(x, y) = x / y
+
+> divide(10, 0) catch { kind: "DivideByZero" } -> ()
+()
+```

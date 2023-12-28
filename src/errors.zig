@@ -14,17 +14,6 @@ pub const Position = struct {
     end: usize,
 };
 
-pub const DivideByZeroError = struct {
-    pub fn deinit(self: DivideByZeroError) void {
-        _ = self;
-    }
-
-    pub fn append(self: DivideByZeroError, buffer: *std.ArrayList(u8)) !void {
-        _ = self;
-        try buffer.appendSlice("Divide By Zero");
-    }
-};
-
 pub const IncompatibleOperandTypesError = struct {
     op: AST.Operator,
     left: ValueKind,
@@ -257,7 +246,6 @@ pub const Error = struct {
 };
 
 pub const ErrorKind = enum {
-    DivideByZeroKind,
     ExpectedTypeKind,
     IncompatibleOperandTypesKind,
     IndexOutOfRangeKind,
@@ -272,7 +260,6 @@ pub const ErrorKind = enum {
 };
 
 pub const ErrorDetail = union(ErrorKind) {
-    DivideByZeroKind: DivideByZeroError,
     ExpectedTypeKind: ExpectedTypeError,
     IncompatibleOperandTypesKind: IncompatibleOperandTypesError,
     IndexOutOfRangeKind: IndexOutOfRangeError,
@@ -287,7 +274,6 @@ pub const ErrorDetail = union(ErrorKind) {
 
     pub fn deinit(self: ErrorDetail, allocator: std.mem.Allocator) void {
         switch (self) {
-            .DivideByZeroKind => self.DivideByZeroKind.deinit(),
             .ExpectedTypeKind => self.ExpectedTypeKind.deinit(allocator),
             .IncompatibleOperandTypesKind => self.IncompatibleOperandTypesKind.deinit(),
             .IndexOutOfRangeKind => self.IndexOutOfRangeKind.deinit(),
@@ -304,7 +290,6 @@ pub const ErrorDetail = union(ErrorKind) {
 
     pub fn append(self: ErrorDetail, buffer: *std.ArrayList(u8)) !void {
         switch (self) {
-            .DivideByZeroKind => try self.DivideByZeroKind.append(buffer),
             .ExpectedTypeKind => try self.ExpectedTypeKind.append(buffer),
             .IncompatibleOperandTypesKind => try self.IncompatibleOperandTypesKind.append(buffer),
             .IndexOutOfRangeKind => try self.IndexOutOfRangeKind.append(buffer),
@@ -322,14 +307,6 @@ pub const ErrorDetail = union(ErrorKind) {
 
 pub fn boolValueExpectedError(allocator: std.mem.Allocator, position: Position, found: ValueKind) !Error {
     return expectedATypeError(allocator, position, ValueKind.BoolKind, found);
-}
-
-pub fn divideByZeroError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .DivideByZeroKind = .{} });
-
-    try result.appendStackItem(src, position);
-
-    return result;
 }
 
 pub fn expectedATypeError(allocator: std.mem.Allocator, src: []const u8, position: Position, expected: ValueKind, found: ValueKind) !Error {

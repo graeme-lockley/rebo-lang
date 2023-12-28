@@ -426,7 +426,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             if (right.v.IntKind == 0) {
-                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
+                                _ = raiseNamedUserError(machine, "DivideByZero") catch |err| return errorHandler(err);
+                                machine.replaceErr(Errors.userError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
 
                                 return true;
                             }
@@ -434,7 +435,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                         V.ValueValue.FloatKind => {
                             if (right.v.FloatKind == 0.0) {
-                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
+                                _ = raiseNamedUserError(machine, "DivideByZero") catch |err| return errorHandler(err);
+                                machine.replaceErr(Errors.userError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
 
                                 return true;
                             }
@@ -450,7 +452,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             if (right.v.IntKind == 0) {
-                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
+                                _ = raiseNamedUserError(machine, "DivideByZero") catch |err| return errorHandler(err);
+                                machine.replaceErr(Errors.userError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
 
                                 return true;
                             }
@@ -458,7 +461,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                         V.ValueValue.FloatKind => {
                             if (right.v.FloatKind == 0.0) {
-                                machine.replaceErr(Errors.divideByZeroError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
+                                _ = raiseNamedUserError(machine, "DivideByZero") catch |err| return errorHandler(err);
+                                machine.replaceErr(Errors.userError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
 
                                 return true;
                             }
@@ -1229,6 +1233,15 @@ fn patternDeclaration(machine: *Machine, e: *AST.Expression) bool {
     machine.replaceErr(Errors.noMatchError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
 
     return true;
+}
+
+fn raiseNamedUserError(machine: *Machine, name: []const u8) !*V.Value {
+    try machine.memoryState.pushEmptyMapValue();
+    const record = machine.memoryState.peek(0);
+
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue(name));
+
+    return record;
 }
 
 fn raise(machine: *Machine, e: *AST.Expression) bool {
