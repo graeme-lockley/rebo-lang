@@ -426,8 +426,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             if (right.v.IntKind == 0) {
-                                _ = raiseNamedUserError(machine, "DivideByZero") catch |err| return errorHandler(err);
-                                machine.replaceErr(Errors.userError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
+                                _ = raiseNamedUserError(machine, "DivideByZero", e.position) catch |err| return errorHandler(err);
 
                                 return true;
                             }
@@ -435,8 +434,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                         V.ValueValue.FloatKind => {
                             if (right.v.FloatKind == 0.0) {
-                                _ = raiseNamedUserError(machine, "DivideByZero") catch |err| return errorHandler(err);
-                                machine.replaceErr(Errors.userError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
+                                _ = raiseNamedUserError(machine, "DivideByZero", e.position) catch |err| return errorHandler(err);
 
                                 return true;
                             }
@@ -452,8 +450,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             if (right.v.IntKind == 0) {
-                                _ = raiseNamedUserError(machine, "DivideByZero") catch |err| return errorHandler(err);
-                                machine.replaceErr(Errors.userError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
+                                _ = raiseNamedUserError(machine, "DivideByZero", e.position) catch |err| return errorHandler(err);
 
                                 return true;
                             }
@@ -461,8 +458,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                         V.ValueValue.FloatKind => {
                             if (right.v.FloatKind == 0.0) {
-                                _ = raiseNamedUserError(machine, "DivideByZero") catch |err| return errorHandler(err);
-                                machine.replaceErr(Errors.userError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
+                                _ = raiseNamedUserError(machine, "DivideByZero", e.position) catch |err| return errorHandler(err);
 
                                 return true;
                             }
@@ -1235,15 +1231,6 @@ fn patternDeclaration(machine: *Machine, e: *AST.Expression) bool {
     return true;
 }
 
-fn raiseNamedUserError(machine: *Machine, name: []const u8) !*V.Value {
-    try machine.memoryState.pushEmptyMapValue();
-    const record = machine.memoryState.peek(0);
-
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue(name));
-
-    return record;
-}
-
 fn raise(machine: *Machine, e: *AST.Expression) bool {
     if (evalExpr(machine, e.kind.raise.expr)) return true;
 
@@ -1495,6 +1482,17 @@ pub const Machine = struct {
         }
     }
 };
+
+fn raiseNamedUserError(machine: *Machine, name: []const u8, position: Errors.Position) !*V.Value {
+    try machine.memoryState.pushEmptyMapValue();
+    const record = machine.memoryState.peek(0);
+
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue(name));
+
+    machine.replaceErr(Errors.userError(machine.memoryState.allocator, machine.src() catch return record, position) catch return record);
+
+    return record;
+}
 
 fn errorHandler(err: anyerror) bool {
     std.debug.print("Error: {}\n", .{err});
