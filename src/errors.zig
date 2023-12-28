@@ -252,7 +252,22 @@ pub const Error = struct {
     }
 };
 
-pub const ErrorDetail = union(enum) {
+pub const ErrorKind = enum {
+    DivideByZeroKind,
+    ExpectedTypeKind,
+    IncompatibleOperandTypesKind,
+    IndexOutOfRangeKind,
+    InvalidLHSErrorKind,
+    LexicalKind,
+    LiteralFloatOverflowKind,
+    LiteralIntOverflowKind,
+    NoMatchKind,
+    ParserKind,
+    UnknownIdentifierKind,
+    UserKind,
+};
+
+pub const ErrorDetail = union(ErrorKind) {
     DivideByZeroKind: DivideByZeroError,
     ExpectedTypeKind: ExpectedTypeError,
     IncompatibleOperandTypesKind: IncompatibleOperandTypesError,
