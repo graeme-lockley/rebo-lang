@@ -1440,7 +1440,45 @@ pub const Machine = struct {
 
     pub fn appendStackItem(self: *Machine, position: Errors.Position) !void {
         if (self.err != null) {
-            try self.err.?.appendStackItem(try self.src(), position);
+            if (self.err.?.detail == Errors.ErrorKind.UserKind) {
+                const v = self.memoryState.peek(0);
+
+                if (v.v == V.ValueValue.RecordKind) {
+                    var record = v.v.RecordKind;
+
+                    var stack = try record.getU8(self.memoryState.stringPool, "stack");
+                    if (stack == null) {
+                        stack = try self.memoryState.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.memoryState.allocator) });
+                        try record.setU8(self.memoryState.stringPool, "stack", stack.?);
+                    }
+                    if (stack.?.v != V.ValueValue.SequenceKind) {
+                        return;
+                    }
+
+                    const locationRange = try Errors.locationFromOffsets(self.memoryState.allocator, try self.src(), position);
+
+                    const positionRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
+                    try stack.?.v.SequenceKind.appendItem(positionRecord);
+
+                    const fromRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
+                    try positionRecord.v.RecordKind.setU8(self.memoryState.stringPool, "from", fromRecord);
+
+                    try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "line", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(locationRange.from.line) }));
+                    try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "column", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(locationRange.from.column) }));
+                    try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "offset", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.start) }));
+
+                    const toRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
+                    try positionRecord.v.RecordKind.setU8(self.memoryState.stringPool, "to", toRecord);
+
+                    try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "line", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(locationRange.to.line) }));
+                    try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "column", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(locationRange.to.column) }));
+                    try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "offset", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.end) }));
+
+                    try positionRecord.v.RecordKind.setU8(self.memoryState.stringPool, "file", try self.memoryState.newStringValue(try self.src()));
+                }
+            } else {
+                try self.err.?.appendStackItem(try self.src(), position);
+            }
         }
     }
 };

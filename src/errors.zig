@@ -149,40 +149,44 @@ pub const UserError = struct {
     }
 };
 
+pub fn locationFromOffsets(allocator: std.mem.Allocator, src: []const u8, position: Position) !LocationRange {
+    const content = try Builtin.loadBinary(allocator, src);
+    defer allocator.free(content);
+
+    var line: usize = 1;
+    var column: usize = 1;
+
+    var from = Location{ .line = 0, .column = 0 };
+    var to = Location{ .line = 0, .column = 0 };
+
+    for (content, 0..) |c, i| {
+        if (i == position.start) {
+            from = Location{ .line = line, .column = column };
+        }
+        if (i == position.end - 1) {
+            to = Location{ .line = line, .column = column };
+        }
+        if (i >= position.start and i >= position.end) {
+            break;
+        }
+
+        if (c == '\n') {
+            line += 1;
+            column = 1;
+        } else {
+            column += 1;
+        }
+    }
+
+    return LocationRange{ .from = from, .to = to };
+}
+
 pub const StackItem = struct {
     src: []const u8,
     position: Position,
 
     pub fn location(self: StackItem, allocator: std.mem.Allocator) !LocationRange {
-        const content = try Builtin.loadBinary(allocator, self.src);
-        defer allocator.free(content);
-
-        var line: usize = 1;
-        var column: usize = 1;
-
-        var from = Location{ .line = 0, .column = 0 };
-        var to = Location{ .line = 0, .column = 0 };
-
-        for (content, 0..) |c, i| {
-            if (i == self.position.start) {
-                from = Location{ .line = line, .column = column };
-            }
-            if (i == self.position.end - 1) {
-                to = Location{ .line = line, .column = column };
-            }
-            if (i >= self.position.start and i >= self.position.end) {
-                break;
-            }
-
-            if (c == '\n') {
-                line += 1;
-                column = 1;
-            } else {
-                column += 1;
-            }
-        }
-
-        return LocationRange{ .from = from, .to = to };
+        return try locationFromOffsets(allocator, self.src, self.position);
     }
 };
 

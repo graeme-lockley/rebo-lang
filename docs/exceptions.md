@@ -17,7 +17,7 @@ Firstly let's take a look at a simple example of an exception being raised and c
 
 In the above example we define a function `head` which takes a list and returns the first element of the list.  If the list is empty we raise an exception with the message "EmptyList".  We then call the function with an empty list and catch the exception.  The catch block is executed and the result of the catch block is returned.  In this case we return `()`.
 
-Idiomatically, rather than returning a string as the exception message, we would return a record with the field `kind` for the exception message.  This allows the caller to pattern match on the exception and for the runtime system to populate the stack trace as a field called `stack`.  
+Idiomatically, rather than returning a string as the exception message, we return a record with the field `kind` for the exception message.  This allows the caller to pattern match on the exception and for the runtime system to populate the stack trace as a field called `stack`.  
 
 ```rebo-repl
 > let head(lst) =
@@ -30,11 +30,10 @@ Idiomatically, rather than returning a string as the exception message, we would
 
 > head([1, 2, 3]) catch _ -> ()
 1
+
+> head([]) catch { kind: "EmptyList", stack } -> stack |> Std.map(fn (x) { ...x, file: "foo.rebo" })
+[ { from: {line: 7, offset: 162, column: 19}, to: {line: 7, offset: 170, column: 26}, file: "foo.rebo" } ]
 ```
 
-This is the next assertion to add
+In the last example I change all of the file names in the stack to `foo.rebo` as the actual name is fully qualified and will differ from system to system depending on where this file is located.
 
-```
-> head([]) catch { kind: "EmptyList", stack } -> stack
-()
-```
