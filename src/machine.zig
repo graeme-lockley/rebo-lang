@@ -1145,7 +1145,8 @@ fn match(machine: *Machine, e: *AST.Expression) bool {
         machine.memoryState.restoreScope();
     }
 
-    machine.replaceErr(Errors.noMatchError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
+    _ = raiseMatchError(machine, e.position, value) catch |err| return errorHandler(err);
+    // machine.replaceErr(Errors.noMatchError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
 
     return true;
 }
@@ -1227,8 +1228,9 @@ fn patternDeclaration(machine: *Machine, e: *AST.Expression) bool {
         return false;
     }
 
-    machine.replaceErr(Errors.noMatchError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
+    _ = raiseMatchError(machine, e.position, value) catch |err| return errorHandler(err);
 
+    // machine.replaceErr(Errors.noMatchError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
     return true;
 }
 
@@ -1556,6 +1558,14 @@ fn raiseIndexOutOfRangeError(machine: *Machine, position: Errors.Position, index
     try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "index", try machine.memoryState.newIntValue(index));
     try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "lower", try machine.memoryState.newIntValue(0));
     try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "upper", try machine.memoryState.newIntValue(len));
+}
+
+fn raiseMatchError(machine: *Machine, position: Errors.Position, value: *V.Value) !*V.Value {
+    const rec = try raiseNamedUserError(machine, "MatchError", position);
+
+    try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "value", value);
+
+    return rec;
 }
 
 fn raiseNamedUserError(machine: *Machine, name: []const u8, position: ?Errors.Position) !*V.Value {

@@ -65,17 +65,6 @@ pub const ExpectedTypeError = struct {
     }
 };
 
-pub const NoMatchError = struct {
-    pub fn deinit(self: NoMatchError) void {
-        _ = self;
-    }
-
-    pub fn append(self: NoMatchError, buffer: *std.ArrayList(u8)) !void {
-        _ = self;
-        try buffer.appendSlice("No Pattern Match");
-    }
-};
-
 pub const UserError = struct {
     pub fn deinit(self: UserError) void {
         _ = self;
@@ -201,7 +190,6 @@ pub const ErrorKind = enum {
     LexicalKind,
     LiteralFloatOverflowKind,
     LiteralIntOverflowKind,
-    NoMatchKind,
     ParserKind,
     UserKind,
 };
@@ -211,7 +199,6 @@ pub const ErrorDetail = union(ErrorKind) {
     LexicalKind: LexicalError,
     LiteralFloatOverflowKind: LexicalError,
     LiteralIntOverflowKind: LexicalError,
-    NoMatchKind: NoMatchError,
     ParserKind: ParserError,
     UserKind: UserError,
 
@@ -221,7 +208,6 @@ pub const ErrorDetail = union(ErrorKind) {
             .LexicalKind => self.LexicalKind.deinit(allocator),
             .LiteralFloatOverflowKind => self.LiteralFloatOverflowKind.deinit(allocator),
             .LiteralIntOverflowKind => self.LiteralIntOverflowKind.deinit(allocator),
-            .NoMatchKind => self.NoMatchKind.deinit(),
             .ParserKind => self.ParserKind.deinit(allocator),
             .UserKind => self.UserKind.deinit(),
         }
@@ -233,7 +219,6 @@ pub const ErrorDetail = union(ErrorKind) {
             .LexicalKind => try self.LexicalKind.append(buffer, "Lexical Error"),
             .LiteralFloatOverflowKind => try self.LiteralFloatOverflowKind.append(buffer, "Literal Float Overflow Error"),
             .LiteralIntOverflowKind => try self.LiteralIntOverflowKind.append(buffer, "Literal Int Overflow Error"),
-            .NoMatchKind => try self.NoMatchKind.append(buffer),
             .ParserKind => try self.ParserKind.append(buffer),
             .UserKind => try self.UserKind.append(buffer),
         }
@@ -296,14 +281,6 @@ pub fn literalIntOverflowError(allocator: std.mem.Allocator, src: []const u8, po
     var result = try Error.init(allocator, ErrorDetail{ .LiteralIntOverflowKind = .{
         .lexeme = try allocator.dupe(u8, lexeme),
     } });
-
-    try result.appendStackItem(src, position);
-
-    return result;
-}
-
-pub fn noMatchError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .NoMatchKind = NoMatchError{} });
 
     try result.appendStackItem(src, position);
 

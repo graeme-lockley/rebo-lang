@@ -107,6 +107,18 @@ This error is raised when an integer point literal is too large to be represente
 { kind: "LiteralIntOverflowError", value: "10000000000000000000000000", content: "1 + 10000000000000000000000000", stack: [] }
 ```
 
+## MatchError
+
+This error is raised when a match expression fails to match any of the patterns.
+
+```rebo-repl
+> (match 10 | 0 -> 0) catch { kind: "MatchError" } @ err -> {...err, stack: []}
+{ kind: "MatchError", value: 10, stack: [] }
+
+> (let [a, b] = 10) catch { kind: "MatchError" } @ err -> {...err, stack: []}
+{ kind: "MatchError", value: 10, stack: [] }
+```
+
 ## SyntaxError
 
 This error is raised when the parser encounters a syntactic error.  This example of error is a little strange in that the expression is enclosed into an `eval` call.  This is because the parser, once it encounters an error, stops parsing and returns the error.
