@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const AST = @import("./../ast.zig");
-const Errors = @import("./../errors.zig");
+pub const Errors = @import("./../errors.zig");
 const M = @import("./../machine.zig");
 const V = @import("./../value.zig");
 

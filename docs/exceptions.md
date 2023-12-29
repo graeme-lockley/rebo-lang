@@ -39,9 +39,22 @@ In the last example I change all of the file names in the stack to `foo.rebo` as
 
 There are some standard errors that are raised in the runtime system.  These errors are layed out through code examples.
 
+## DivideByZero
+
+This error is raised when an attempt is made to divide by zero.
+
 ```rebo-repl
 > let divide(x, y) = x / y
 
 > divide(10, 0) catch { kind: "DivideByZero" } -> ()
+()
+```
+
+## SyntaxError
+
+This error is raised when the parser encounters a syntactic error.  This example of error is a little strange in that the expression is enclosed into an `eval` call.  This is because the parser, once it encounters an error, stops parsing and returns the error.
+
+```rebo-repl
+> eval("(10 /)") catch { kind: "SyntaxError" } -> ()
 ()
 ```

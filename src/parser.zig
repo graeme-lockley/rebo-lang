@@ -275,7 +275,7 @@ pub const Parser = struct {
                     lhs = rhs;
                 } else {
                     self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, rhs.position, V.ValueKind.UnitKind));
-                    return error.InterpreterError;
+                    return error.SyntaxError;
                 }
             } else if (self.currentTokenKind() == Lexer.TokenKind.LessBar) {
                 try self.skipToken();
@@ -295,7 +295,7 @@ pub const Parser = struct {
                     lhs.kind.call.args = args;
                 } else {
                     self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, lhs.position, V.ValueKind.UnitKind));
-                    return error.InterpreterError;
+                    return error.SyntaxError;
                 }
             } else {
                 break;
@@ -810,7 +810,7 @@ pub const Parser = struct {
                     self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
                 }
 
-                return error.InterpreterError;
+                return error.SyntaxError;
             },
         }
     }
@@ -834,7 +834,7 @@ pub const Parser = struct {
         return std.fmt.parseFloat(f64, lexeme) catch {
             const token = self.currentToken();
             self.replaceErr(try Errors.literalFloatOverflowError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
-            return error.InterpreterError;
+            return error.SyntaxError;
         };
     }
 
@@ -842,7 +842,7 @@ pub const Parser = struct {
         return std.fmt.parseInt(V.IntType, lexeme, 10) catch {
             const token = self.currentToken();
             self.replaceErr(try Errors.literalIntOverflowError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
-            return error.InterpreterError;
+            return error.SyntaxError;
         };
     }
 
@@ -1172,7 +1172,7 @@ pub const Parser = struct {
                     self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
                 }
 
-                return error.InterpreterError;
+                return error.SyntaxError;
             },
         }
     }
@@ -1243,7 +1243,7 @@ pub const Parser = struct {
                 self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, self.currentTokenLexeme(), expected));
             }
 
-            return error.InterpreterError;
+            return error.SyntaxError;
         }
 
         return self.nextToken();

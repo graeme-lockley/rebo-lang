@@ -162,17 +162,17 @@ fn expectError(input: []const u8) !void {
         var machine = try Machine.Machine.init(allocator);
         defer machine.deinit();
 
-        const result = machine.execute(Errors.STREAM_SRC, input);
+        machine.execute(Errors.STREAM_SRC, input) catch {
+            return;
+        };
 
-        if (result != error.InterpreterError) {
-            const v = machine.topOfStack();
+        const v = machine.topOfStack();
 
-            const str = try v.?.toString(allocator, V.Style.Pretty);
-            defer allocator.free(str);
+        const str = try v.?.toString(allocator, V.Style.Pretty);
+        defer allocator.free(str);
 
-            std.log.err("Expected error: got: '{s}'\n", .{str});
-            return error.TestingError;
-        }
+        std.log.err("Expected error: got: '{s}'\n", .{str});
+        return error.TestingError;
     }
 
     var err = gpa.deinit();

@@ -10,30 +10,33 @@ pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []
     defer machine.memoryState.restoreScope();
 
     machine.execute("eval", code.v.StringKind.slice()) catch |e| {
-        while (machine.memoryState.stack.items.len > stackSize) {
-            _ = machine.memoryState.pop();
+        if (machine.err == null or machine.err.?.detail != Helper.Errors.ErrorKind.UserKind) {
+            while (machine.memoryState.stack.items.len > stackSize) {
+                _ = machine.memoryState.pop();
+            }
+
+            try machine.memoryState.pushEmptyMapValue();
+            const record = machine.memoryState.peek(0);
+
+            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue("EvalError"));
+            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "content", code);
+
+            var err = machine.grabErr();
+            if (err == null) {
+                std.debug.print("Error: {}\n", .{e});
+            } else {
+                var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+                defer buffer.deinit();
+
+                err.?.append(&buffer) catch {};
+
+                try record.v.RecordKind.setU8(machine.memoryState.stringPool, "message", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
+
+                err.?.deinit();
+            }
         }
 
-        try machine.memoryState.pushEmptyMapValue();
-        const record = machine.memoryState.peek(0);
-
-        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue("EvalError"));
-        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "content", code);
-
-        var err = machine.grabErr();
-
-        if (err == null) {
-            std.debug.print("Error: {}\n", .{e});
-        } else {
-            var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
-            defer buffer.deinit();
-
-            err.?.append(&buffer) catch {};
-
-            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "message", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
-
-            err.?.deinit();
-        }
+        return Helper.Errors.err.InterpreterError;
     };
 }
 

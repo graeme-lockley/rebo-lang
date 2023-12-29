@@ -5,7 +5,7 @@ const Builtin = @import("./builtins.zig");
 const TokenKind = @import("./token_kind.zig").TokenKind;
 const Value = @import("./value.zig");
 const ValueKind = @import("./value.zig").ValueKind;
-pub const err = error{ InterpreterError, OutOfMemory, NotYetImplemented };
+pub const err = error{ InterpreterError, SyntaxError, OutOfMemory, NotYetImplemented };
 
 pub const STREAM_SRC = "repl";
 
@@ -439,10 +439,12 @@ pub fn unknownIdentifierError(allocator: std.mem.Allocator, src: []const u8, pos
     return result;
 }
 
-pub fn userError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
+pub fn userError(allocator: std.mem.Allocator, src: []const u8, position: ?Position) !Error {
     var result = try Error.init(allocator, ErrorDetail{ .UserKind = .{} });
 
-    try result.appendStackItem(src, position);
+    if (position != null) {
+        try result.appendStackItem(src, position.?);
+    }
 
     return result;
 }

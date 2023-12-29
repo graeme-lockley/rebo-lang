@@ -175,8 +175,12 @@ pub const MemoryState = struct {
         _ = try self.push(try self.newIntValue(v));
     }
 
+    pub inline fn newEmptySequenceValue(self: *MemoryState) !*V.Value {
+        return try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
+    }
+
     pub inline fn pushEmptySequenceValue(self: *MemoryState) !void {
-        _ = try self.pushValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
+        _ = try self.push(try self.newEmptySequenceValue());
     }
 
     pub inline fn newStreamValue(self: *MemoryState, v: std.net.Stream) !*V.Value {
