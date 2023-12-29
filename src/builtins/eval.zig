@@ -19,7 +19,6 @@ pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []
             const record = machine.memoryState.peek(0);
 
             try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue("EvalError"));
-            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "content", code);
 
             var err = machine.grabErr();
             if (err == null) {
@@ -34,6 +33,9 @@ pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []
 
                 err.?.deinit();
             }
+        } else {
+            const record = machine.topOfStack().?;
+            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "content", code);
         }
 
         return Helper.Errors.err.InterpreterError;
