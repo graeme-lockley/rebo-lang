@@ -260,7 +260,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) + right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -276,7 +276,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushFloatValue(left.v.FloatKind + right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -292,7 +292,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.push(seq) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -306,13 +306,13 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushOwnedStringValue(std.mem.concat(machine.memoryState.allocator, u8, &slices) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
                 },
                 else => {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                    _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                     return true;
                 },
             }
@@ -334,7 +334,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) - right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -348,13 +348,13 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushFloatValue(left.v.FloatKind - right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
                 },
                 else => {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                    _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                     return true;
                 },
             }
@@ -376,7 +376,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) * right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -390,7 +390,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushFloatValue(left.v.FloatKind * right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -405,12 +405,12 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
 
                         machine.memoryState.pushOwnedStringValue(mem) catch |err| return errorHandler(err);
                     } else {
-                        machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                        _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                         return true;
                     }
                 },
                 else => {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                    _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                     return true;
                 },
             }
@@ -442,7 +442,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) / right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -466,13 +466,13 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushFloatValue(left.v.FloatKind / right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
                 },
                 else => {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                    _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                     return true;
                 },
             }
@@ -485,8 +485,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             const left = machine.pop();
 
             if (left.v != V.ValueValue.IntKind or right.v != V.ValueValue.IntKind) {
-                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
-
+                _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                 return true;
             }
             machine.memoryState.pushIntValue(@mod(left.v.IntKind, right.v.IntKind)) catch |err| return errorHandler(err);
@@ -508,7 +507,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) < right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -522,13 +521,13 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushBoolValue(left.v.FloatKind < right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
                 },
                 else => {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                    _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                     return true;
                 },
             }
@@ -550,7 +549,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) <= right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -564,13 +563,13 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushBoolValue(left.v.FloatKind <= right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
                 },
                 else => {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                    _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                     return true;
                 },
             }
@@ -592,7 +591,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) > right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -606,13 +605,13 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushBoolValue(left.v.FloatKind > right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
                 },
                 else => {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                    _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                     return true;
                 },
             }
@@ -634,7 +633,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) >= right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
@@ -648,13 +647,13 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.pushBoolValue(left.v.FloatKind >= right.v.FloatKind) catch |err| return errorHandler(err);
                         },
                         else => {
-                            machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                            _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                             return true;
                         },
                     }
                 },
                 else => {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                    _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                     return true;
                 },
             }
@@ -682,7 +681,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
 
             const left = machine.memoryState.peek(0);
             if (left.v != V.ValueValue.BoolKind) {
-                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, V.ValueValue.BoolKind) catch |err| return errorHandler(err));
+                _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, V.ValueKind.BoolKind) catch |err| return errorHandler(err);
                 return true;
             } else if (left.v.BoolKind) {
                 _ = machine.pop();
@@ -690,7 +689,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                 const right = machine.memoryState.peek(0);
 
                 if (right.v != V.ValueValue.BoolKind) {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, V.ValueValue.BoolKind, right.v) catch |err| return errorHandler(err));
+                    _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                     return true;
                 }
             }
@@ -700,7 +699,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
 
             const left = machine.memoryState.peek(0);
             if (left.v != V.ValueValue.BoolKind) {
-                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, V.ValueValue.BoolKind) catch |err| return errorHandler(err));
+                _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, V.ValueKind.BoolKind) catch |err| return errorHandler(err);
                 return true;
             } else if (!left.v.BoolKind) {
                 _ = machine.pop();
@@ -708,7 +707,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                 const right = machine.memoryState.peek(0);
 
                 if (right.v != V.ValueValue.BoolKind) {
-                    machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, V.ValueValue.BoolKind, right.v) catch |err| return errorHandler(err));
+                    _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                     return true;
                 }
             }
@@ -720,7 +719,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             const right = machine.memoryState.peek(0);
 
             if (left.v != V.ValueValue.SequenceKind) {
-                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                 return true;
             }
 
@@ -740,7 +739,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             const right = machine.memoryState.peek(0);
 
             if (left.v != V.ValueValue.SequenceKind) {
-                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                 return true;
             }
 
@@ -755,7 +754,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             const right = machine.memoryState.peek(0);
 
             if (right.v != V.ValueValue.SequenceKind) {
-                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                 return true;
             }
 
@@ -775,7 +774,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             const right = machine.memoryState.peek(0);
 
             if (right.v != V.ValueValue.SequenceKind) {
-                machine.replaceErr(Errors.incompatibleOperandTypesError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err));
+                _ = raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
                 return true;
             }
 
@@ -1547,6 +1546,16 @@ pub const Machine = struct {
         }
     }
 };
+
+fn raiseIncompatibleOperandTypesError(machine: *Machine, position: Errors.Position, op: AST.Operator, left: V.ValueKind, right: V.ValueKind) !*V.Value {
+    const rec = try raiseNamedUserError(machine, "IncompatibleOperandTypesError", position);
+
+    try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "op", try machine.memoryState.newStringValue(op.toString()));
+    try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "left", try machine.memoryState.newStringValue(left.toString()));
+    try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "right", try machine.memoryState.newStringValue(right.toString()));
+
+    return rec;
+}
 
 fn raiseNamedUserError(machine: *Machine, name: []const u8, position: ?Errors.Position) !*V.Value {
     try machine.memoryState.pushEmptyMapValue();

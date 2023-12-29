@@ -46,8 +46,8 @@ This error is raised when an attempt is made to divide by zero.
 ```rebo-repl
 > let divide(x, y) = x / y
 
-> divide(10, 0) catch { kind: "DivideByZeroError" } -> ()
-()
+> divide(10, 0) catch { kind: "DivideByZeroError" } @ err -> {...err, stack: []}
+{ kind: "DivideByZeroError", stack: [] }
 
 > divide(10.0, 0) catch { kind: "DivideByZeroError" } -> ()
 ()
@@ -59,13 +59,22 @@ This error is raised when an attempt is made to divide by zero.
 ()
 ```
 
+## IncompatibleOperandTypesError
+
+This error is raised when an attempt is made to perform an operation on operands of incompatible types.
+
+```rebo-repl
+> (10 + "hello") catch { kind: "IncompatibleOperandTypesError" } @ err -> {...err, stack: []}
+{ kind: "IncompatibleOperandTypesError", op: "+", left: "Int", right: "String", stack: [] }
+```
+
 ## InvalidLHSError
 
 This error is raised when an attempt is made to assign to a value that is not a variable.
 
 ```rebo-repl
-> (10 := 11) catch { kind: "InvalidLHSError" } -> ()
-()
+> (10 := 11) catch { kind: "InvalidLHSError" } @ err -> {...err, stack: []}
+{ kind: "InvalidLHSError", stack: [] }
 ```
 
 ## LexicalError
@@ -73,8 +82,8 @@ This error is raised when an attempt is made to assign to a value that is not a 
 This error is raised when the scanner encounters a lexical error.  This example of error is a little strange in that the expression is enclosed into an `eval` call.  This is because the scanner, once it encounters an error, stops scanning and returns the error.
 
 ```rebo-repl
-> eval("10 / ^") catch { kind: "LexicalError" } -> ()
-()
+> eval("10 / ^") catch { kind: "LexicalError" } @ err -> {...err, stack: []}
+{ kind: "LexicalError", found: "", content: "10 / ^", stack: [] }
 ```
 
 ## SyntaxError
@@ -82,8 +91,8 @@ This error is raised when the scanner encounters a lexical error.  This example 
 This error is raised when the parser encounters a syntactic error.  This example of error is a little strange in that the expression is enclosed into an `eval` call.  This is because the parser, once it encounters an error, stops parsing and returns the error.
 
 ```rebo-repl
-> eval("(10 /)") catch { kind: "SyntaxError" } -> ()
-()
+> eval("(10 /)") catch { kind: "SyntaxError" } @ err -> {...err, stack: []}
+{ kind: "SyntaxError", found: ")", expected: ["'['", "'{'", "identifier", "'('", "false", "true", "literal char", "literal float", "literal int", "literal string", "fn"], content: "(10 /)", stack: [] }
 ```
 
 ## UnknownIdentifierError
@@ -91,6 +100,6 @@ This error is raised when the parser encounters a syntactic error.  This example
 This error is raised when the interpreter encounters an unknown identifier.
 
 ```rebo-repl
-> x catch { kind: "UnknownIdentifierError" } @ err-> err.identifier
-"x"
+> x catch { kind: "UnknownIdentifierError" } @ err-> {...err, stack: []}
+{ kind: "UnknownIdentifierError", identifier: "x", stack: [] }
 ```
