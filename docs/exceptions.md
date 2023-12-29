@@ -57,4 +57,7 @@ This error is raised when the parser encounters a syntactic error.  This example
 ```rebo-repl
 > eval("(10 /)") catch { kind: "SyntaxError" } -> ()
 ()
+
+> 10 /
+()
 ```

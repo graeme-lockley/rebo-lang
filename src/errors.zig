@@ -138,8 +138,8 @@ pub const UserError = struct {
     }
 };
 
-pub fn locationFromOffsets(allocator: std.mem.Allocator, src: []const u8, position: Position) !LocationRange {
-    const content = try Builtin.loadBinary(allocator, src);
+pub fn locationFromOffsets(allocator: std.mem.Allocator, src: []const u8, position: Position) !?LocationRange {
+    const content = Builtin.loadBinary(allocator, src) catch return null;
     defer allocator.free(content);
 
     var line: usize = 1;
@@ -174,7 +174,7 @@ pub const StackItem = struct {
     src: []const u8,
     position: Position,
 
-    pub fn location(self: StackItem, allocator: std.mem.Allocator) !LocationRange {
+    pub fn location(self: StackItem, allocator: std.mem.Allocator) !?LocationRange {
         return try locationFromOffsets(allocator, self.src, self.position);
     }
 };
@@ -217,12 +217,14 @@ pub const Error = struct {
             }
 
             const locationRange = try item.location(self.allocator);
-            if (item.position.start == item.position.end or item.position.start == item.position.end - 1) {
-                try std.fmt.format(buffer.writer(), "\n  at {s}: {d}:{d}", .{ item.src, locationRange.from.line, locationRange.from.column });
-            } else if (locationRange.from.line == locationRange.to.line) {
-                try std.fmt.format(buffer.writer(), "\n  at {s}: {d},{d}-{d}", .{ item.src, locationRange.from.line, locationRange.from.column, locationRange.to.column });
+            if (locationRange == null) {
+                try std.fmt.format(buffer.writer(), "\n  at {s}: {d}:{d}", .{ item.src, item.position.start, item.position.end });
+            } else if (item.position.start == item.position.end or item.position.start == item.position.end - 1) {
+                try std.fmt.format(buffer.writer(), "\n  at {s}: {d}:{d}", .{ item.src, locationRange.?.from.line, locationRange.?.from.column });
+            } else if (locationRange.?.from.line == locationRange.?.to.line) {
+                try std.fmt.format(buffer.writer(), "\n  at {s}: {d},{d}-{d}", .{ item.src, locationRange.?.from.line, locationRange.?.from.column, locationRange.?.to.column });
             } else {
-                try std.fmt.format(buffer.writer(), "\n  at {s}: {d},{d}-{d},{d}", .{ item.src, locationRange.from.line, locationRange.from.column, locationRange.to.line, locationRange.to.column });
+                try std.fmt.format(buffer.writer(), "\n  at {s}: {d},{d}-{d},{d}", .{ item.src, locationRange.?.from.line, locationRange.?.from.column, locationRange.?.to.line, locationRange.?.to.column });
             }
         }
     }
