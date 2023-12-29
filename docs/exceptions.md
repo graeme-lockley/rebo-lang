@@ -39,14 +39,23 @@ In the last example I change all of the file names in the stack to `foo.rebo` as
 
 There are some standard errors that are raised in the runtime system.  These errors are layed out through code examples.
 
-## DivideByZero
+## DivideByZeroError
 
 This error is raised when an attempt is made to divide by zero.
 
 ```rebo-repl
 > let divide(x, y) = x / y
 
-> divide(10, 0) catch { kind: "DivideByZero" } -> ()
+> divide(10, 0) catch { kind: "DivideByZeroError" } -> ()
+()
+
+> divide(10.0, 0) catch { kind: "DivideByZeroError" } -> ()
+()
+
+> divide(10, 0.0) catch { kind: "DivideByZeroError" } -> ()
+()
+
+> divide(10.0, 0.0) catch { kind: "DivideByZeroError" } -> ()
 ()
 ```
 

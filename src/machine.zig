@@ -427,7 +427,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             if (right.v.IntKind == 0) {
-                                _ = raiseNamedUserError(machine, "DivideByZero", e.position) catch |err| return errorHandler(err);
+                                _ = raiseNamedUserError(machine, "DivideByZeroError", e.position) catch |err| return errorHandler(err);
 
                                 return true;
                             }
@@ -435,7 +435,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                         V.ValueValue.FloatKind => {
                             if (right.v.FloatKind == 0.0) {
-                                _ = raiseNamedUserError(machine, "DivideByZero", e.position) catch |err| return errorHandler(err);
+                                _ = raiseNamedUserError(machine, "DivideByZeroError", e.position) catch |err| return errorHandler(err);
 
                                 return true;
                             }
@@ -451,7 +451,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             if (right.v.IntKind == 0) {
-                                _ = raiseNamedUserError(machine, "DivideByZero", e.position) catch |err| return errorHandler(err);
+                                _ = raiseNamedUserError(machine, "DivideByZeroError", e.position) catch |err| return errorHandler(err);
 
                                 return true;
                             }
@@ -459,7 +459,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                         },
                         V.ValueValue.FloatKind => {
                             if (right.v.FloatKind == 0.0) {
-                                _ = raiseNamedUserError(machine, "DivideByZero", e.position) catch |err| return errorHandler(err);
+                                _ = raiseNamedUserError(machine, "DivideByZeroError", e.position) catch |err| return errorHandler(err);
 
                                 return true;
                             }
