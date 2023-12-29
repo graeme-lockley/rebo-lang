@@ -50,6 +50,15 @@ This error is raised when an attempt is made to divide by zero.
 ()
 ```
 
+## InvalidLHSError
+
+This error is raised when an attempt is made to assign to a value that is not a variable.
+
+```rebo-repl
+> (10 := 11) catch { kind: "InvalidLHSError" } -> ()
+()
+```
+
 ## LexicalError
 
 This error is raised when the scanner encounters a lexical error.  This example of error is a little strange in that the expression is enclosed into an `eval` call.  This is because the scanner, once it encounters an error, stops scanning and returns the error.

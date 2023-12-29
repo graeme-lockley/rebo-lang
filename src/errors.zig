@@ -42,17 +42,6 @@ pub const IndexOutOfRangeError = struct {
     }
 };
 
-pub const InvalidLHSError = struct {
-    pub fn deinit(self: InvalidLHSError) void {
-        _ = self;
-    }
-
-    pub fn append(self: InvalidLHSError, buffer: *std.ArrayList(u8)) !void {
-        _ = self;
-        try buffer.appendSlice("Invalid Left on Assignment");
-    }
-};
-
 pub const LexicalError = struct {
     lexeme: []u8,
 
@@ -239,7 +228,6 @@ pub const ErrorKind = enum {
     ExpectedTypeKind,
     IncompatibleOperandTypesKind,
     IndexOutOfRangeKind,
-    InvalidLHSErrorKind,
     LexicalKind,
     LiteralFloatOverflowKind,
     LiteralIntOverflowKind,
@@ -252,7 +240,6 @@ pub const ErrorDetail = union(ErrorKind) {
     ExpectedTypeKind: ExpectedTypeError,
     IncompatibleOperandTypesKind: IncompatibleOperandTypesError,
     IndexOutOfRangeKind: IndexOutOfRangeError,
-    InvalidLHSErrorKind: InvalidLHSError,
     LexicalKind: LexicalError,
     LiteralFloatOverflowKind: LexicalError,
     LiteralIntOverflowKind: LexicalError,
@@ -265,7 +252,6 @@ pub const ErrorDetail = union(ErrorKind) {
             .ExpectedTypeKind => self.ExpectedTypeKind.deinit(allocator),
             .IncompatibleOperandTypesKind => self.IncompatibleOperandTypesKind.deinit(),
             .IndexOutOfRangeKind => self.IndexOutOfRangeKind.deinit(),
-            .InvalidLHSErrorKind => self.InvalidLHSErrorKind.deinit(),
             .LexicalKind => self.LexicalKind.deinit(allocator),
             .LiteralFloatOverflowKind => self.LiteralFloatOverflowKind.deinit(allocator),
             .LiteralIntOverflowKind => self.LiteralIntOverflowKind.deinit(allocator),
@@ -280,7 +266,6 @@ pub const ErrorDetail = union(ErrorKind) {
             .ExpectedTypeKind => try self.ExpectedTypeKind.append(buffer),
             .IncompatibleOperandTypesKind => try self.IncompatibleOperandTypesKind.append(buffer),
             .IndexOutOfRangeKind => try self.IndexOutOfRangeKind.append(buffer),
-            .InvalidLHSErrorKind => try self.InvalidLHSErrorKind.append(buffer),
             .LexicalKind => try self.LexicalKind.append(buffer, "Lexical Error"),
             .LiteralFloatOverflowKind => try self.LiteralFloatOverflowKind.append(buffer, "Literal Float Overflow Error"),
             .LiteralIntOverflowKind => try self.LiteralIntOverflowKind.append(buffer, "Literal Int Overflow Error"),
@@ -336,14 +321,6 @@ pub fn incompatibleOperandTypesError(
         .left = left,
         .right = right,
     } });
-
-    try result.appendStackItem(src, position);
-
-    return result;
-}
-
-pub fn invalidLHSError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .InvalidLHSErrorKind = .{} });
 
     try result.appendStackItem(src, position);
 

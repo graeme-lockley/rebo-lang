@@ -227,7 +227,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             machine.memoryState.push(v) catch |err| return errorHandler(err);
         },
         else => {
-            machine.replaceErr(Errors.invalidLHSError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), lhs.position) catch |err| return errorHandler(err));
+            _ = raiseNamedUserError(machine, "InvalidLHSError", lhs.position) catch |err| return errorHandler(err);
             return true;
         },
     }
