@@ -14,20 +14,6 @@ pub const Position = struct {
     end: usize,
 };
 
-pub const IndexOutOfRangeError = struct {
-    idx: Value.IntType,
-    lower: Value.IntType,
-    upper: Value.IntType,
-
-    pub fn deinit(self: IndexOutOfRangeError) void {
-        _ = self;
-    }
-
-    pub fn append(self: IndexOutOfRangeError, buffer: *std.ArrayList(u8)) !void {
-        try std.fmt.format(buffer.writer(), "Index Out Of Range: {d} is out of range [{d}..{d})", .{ self.idx, self.lower, self.upper });
-    }
-};
-
 pub const LexicalError = struct {
     lexeme: []u8,
 
@@ -212,7 +198,6 @@ pub const Error = struct {
 
 pub const ErrorKind = enum {
     ExpectedTypeKind,
-    IndexOutOfRangeKind,
     LexicalKind,
     LiteralFloatOverflowKind,
     LiteralIntOverflowKind,
@@ -223,7 +208,6 @@ pub const ErrorKind = enum {
 
 pub const ErrorDetail = union(ErrorKind) {
     ExpectedTypeKind: ExpectedTypeError,
-    IndexOutOfRangeKind: IndexOutOfRangeError,
     LexicalKind: LexicalError,
     LiteralFloatOverflowKind: LexicalError,
     LiteralIntOverflowKind: LexicalError,
@@ -234,7 +218,6 @@ pub const ErrorDetail = union(ErrorKind) {
     pub fn deinit(self: ErrorDetail, allocator: std.mem.Allocator) void {
         switch (self) {
             .ExpectedTypeKind => self.ExpectedTypeKind.deinit(allocator),
-            .IndexOutOfRangeKind => self.IndexOutOfRangeKind.deinit(),
             .LexicalKind => self.LexicalKind.deinit(allocator),
             .LiteralFloatOverflowKind => self.LiteralFloatOverflowKind.deinit(allocator),
             .LiteralIntOverflowKind => self.LiteralIntOverflowKind.deinit(allocator),
@@ -247,7 +230,6 @@ pub const ErrorDetail = union(ErrorKind) {
     pub fn append(self: ErrorDetail, buffer: *std.ArrayList(u8)) !void {
         switch (self) {
             .ExpectedTypeKind => try self.ExpectedTypeKind.append(buffer),
-            .IndexOutOfRangeKind => try self.IndexOutOfRangeKind.append(buffer),
             .LexicalKind => try self.LexicalKind.append(buffer, "Lexical Error"),
             .LiteralFloatOverflowKind => try self.LiteralFloatOverflowKind.append(buffer, "Literal Float Overflow Error"),
             .LiteralIntOverflowKind => try self.LiteralIntOverflowKind.append(buffer, "Literal Int Overflow Error"),
@@ -289,18 +271,6 @@ pub fn expectedTypeError(allocator: std.mem.Allocator, src: []const u8, position
 pub fn functionValueExpectedError(allocator: std.mem.Allocator, src: []const u8, position: Position, found: ValueKind) !Error {
     return expectedATypeError(allocator, src, position, ValueKind.FunctionKind, found);
 }
-
-// pub fn indexOutOfRangeError(allocator: std.mem.Allocator, src: []const u8, position: Position, idx: Value.IntType, lower: Value.IntType, upper: Value.IntType) !Error {
-//     var result = try Error.init(allocator, ErrorDetail{ .IndexOutOfRangeKind = .{
-//         .idx = idx,
-//         .lower = lower,
-//         .upper = upper,
-//     } });
-
-//     try result.appendStackItem(src, position);
-
-//     return result;
-// }
 
 pub fn lexicalError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8) !Error {
     var result = try Error.init(allocator, ErrorDetail{ .LexicalKind = .{
