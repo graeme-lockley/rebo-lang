@@ -834,7 +834,7 @@ pub const Parser = struct {
         return std.fmt.parseFloat(f64, lexeme) catch {
             const token = self.currentToken();
             self.replaceErr(try Errors.literalFloatOverflowError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
-            return error.SyntaxError;
+            return error.LiteralFloatError;
         };
     }
 
@@ -842,7 +842,7 @@ pub const Parser = struct {
         return std.fmt.parseInt(V.IntType, lexeme, 10) catch {
             const token = self.currentToken();
             self.replaceErr(try Errors.literalIntOverflowError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, lexeme));
-            return error.SyntaxError;
+            return error.LiteralIntError;
         };
     }
 

@@ -1388,8 +1388,10 @@ pub const Machine = struct {
             defer e.?.deinit();
 
             switch (err) {
+                Errors.err.LiteralIntError => _ = try raiseNamedUserErrorFromError(self, "LiteralIntOverflowError", "value", e.?.detail.LiteralIntOverflowKind.lexeme, e.?),
+                Errors.err.LiteralFloatError => _ = try raiseNamedUserErrorFromError(self, "LiteralFloatOverflowError", "value", e.?.detail.LiteralIntOverflowKind.lexeme, e.?),
                 Errors.err.SyntaxError => {
-                    const rec = try raiseNamedUserErrorFromError(self, "SyntaxError", e.?.detail.ParserKind.lexeme, e.?);
+                    const rec = try raiseNamedUserErrorFromError(self, "SyntaxError", "found", e.?.detail.ParserKind.lexeme, e.?);
 
                     const expected = try self.memoryState.newEmptySequenceValue();
                     try rec.v.RecordKind.setU8(self.memoryState.stringPool, "expected", expected);
@@ -1397,27 +1399,20 @@ pub const Machine = struct {
                     for (e.?.detail.ParserKind.expected) |vk| {
                         try expected.v.SequenceKind.appendItem(try self.memoryState.newStringValue(vk.toString()));
                     }
-
-                    return Errors.err.InterpreterError;
                 },
-                Errors.err.LexicalError => {
-                    const rec = try raiseNamedUserErrorFromError(self, "LexicalError", e.?.detail.LexicalKind.lexeme, e.?);
-
-                    try self.copyStackItems(rec, e.?);
-
-                    return Errors.err.InterpreterError;
-                },
+                Errors.err.LexicalError => _ = try raiseNamedUserErrorFromError(self, "LexicalError", "found", e.?.detail.LexicalKind.lexeme, e.?),
                 else => unreachable,
             }
+            return Errors.err.InterpreterError;
         };
         errdefer AST.destroy(allocator, ast);
 
         return ast;
     }
 
-    fn raiseNamedUserErrorFromError(self: *Machine, name: []const u8, found: []const u8, e: Errors.Error) !*V.Value {
-        const rec = try raiseNamedUserError(self, name, null);
-        try rec.v.RecordKind.setU8(self.memoryState.stringPool, "found", try self.memoryState.newStringValue(found));
+    fn raiseNamedUserErrorFromError(self: *Machine, kind: []const u8, name: []const u8, value: []const u8, e: Errors.Error) !*V.Value {
+        const rec = try raiseNamedUserError(self, kind, null);
+        try rec.v.RecordKind.setU8(self.memoryState.stringPool, name, try self.memoryState.newStringValue(value));
         try rec.v.RecordKind.setU8(self.memoryState.stringPool, "stack", try self.memoryState.newEmptySequenceValue());
 
         try self.copyStackItems(rec, e);
