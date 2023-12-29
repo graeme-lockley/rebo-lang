@@ -68,6 +68,18 @@ This error is raised when an attempt is made to perform an operation on operands
 { kind: "IncompatibleOperandTypesError", op: "+", left: "Int", right: "String", stack: [] }
 ```
 
+## IndexOfOutRangeError
+
+This error is raised when an attempt is made to assign a value to a list based on an index which is out of range.
+
+```rebo-repl
+> ([1, 2, 3][10] := 1) catch { kind: "IndexOutOfRangeError" } @ err -> {...err, stack: []}
+{ kind: "IndexOutOfRangeError", index: 10, lower: 0, upper: 3, stack: [] }
+
+> ([1, 2, 3][-1] := 1) catch { kind: "IndexOutOfRangeError" } @ err -> {...err, stack: []}
+{ kind: "IndexOutOfRangeError", index: -1, lower: 0, upper: 3, stack: [] }
+```
+
 ## InvalidLHSError
 
 This error is raised when an attempt is made to assign to a value that is not a variable.

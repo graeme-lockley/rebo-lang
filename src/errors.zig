@@ -290,17 +290,17 @@ pub fn functionValueExpectedError(allocator: std.mem.Allocator, src: []const u8,
     return expectedATypeError(allocator, src, position, ValueKind.FunctionKind, found);
 }
 
-pub fn indexOutOfRangeError(allocator: std.mem.Allocator, src: []const u8, position: Position, idx: Value.IntType, lower: Value.IntType, upper: Value.IntType) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .IndexOutOfRangeKind = .{
-        .idx = idx,
-        .lower = lower,
-        .upper = upper,
-    } });
+// pub fn indexOutOfRangeError(allocator: std.mem.Allocator, src: []const u8, position: Position, idx: Value.IntType, lower: Value.IntType, upper: Value.IntType) !Error {
+//     var result = try Error.init(allocator, ErrorDetail{ .IndexOutOfRangeKind = .{
+//         .idx = idx,
+//         .lower = lower,
+//         .upper = upper,
+//     } });
 
-    try result.appendStackItem(src, position);
+//     try result.appendStackItem(src, position);
 
-    return result;
-}
+//     return result;
+// }
 
 pub fn lexicalError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8) !Error {
     var result = try Error.init(allocator, ErrorDetail{ .LexicalKind = .{
