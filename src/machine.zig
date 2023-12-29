@@ -1382,57 +1382,74 @@ pub const Machine = struct {
 
         var p = Parser.Parser.init(self.memoryState.stringPool, l);
 
-        const ast = p.module() catch |err| switch (err) {
-            Errors.err.SyntaxError => {
-                const rec = try raiseNamedUserError(self, "SyntaxError", null);
-                var e = p.grabErr();
-                defer e.?.deinit();
+        const ast = p.module() catch |err| {
+            var e = p.grabErr();
+            defer e.?.deinit();
 
-                try rec.v.RecordKind.setU8(self.memoryState.stringPool, "found", try self.memoryState.newStringValue(e.?.detail.ParserKind.lexeme));
+            switch (err) {
+                Errors.err.SyntaxError => {
+                    const rec = try raiseNamedUserErrorFromError(self, "SyntaxError", e.?.detail.ParserKind.lexeme, e.?);
 
-                const expected = try self.memoryState.newEmptySequenceValue();
-                try rec.v.RecordKind.setU8(self.memoryState.stringPool, "expected", expected);
+                    const expected = try self.memoryState.newEmptySequenceValue();
+                    try rec.v.RecordKind.setU8(self.memoryState.stringPool, "expected", expected);
 
-                for (e.?.detail.ParserKind.expected) |vk| {
-                    try expected.v.SequenceKind.appendItem(try self.memoryState.newStringValue(vk.toString()));
-                }
-
-                const stack = try self.memoryState.newEmptySequenceValue();
-                try rec.v.RecordKind.setU8(self.memoryState.stringPool, "stack", stack);
-                for (e.?.stack.items) |item| {
-                    const frameRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
-                    try stack.v.SequenceKind.appendItem(frameRecord);
-
-                    try frameRecord.v.RecordKind.setU8(self.memoryState.stringPool, "file", try self.memoryState.newStringValue(item.src));
-                    const fromRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
-                    try frameRecord.v.RecordKind.setU8(self.memoryState.stringPool, "from", fromRecord);
-
-                    try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "offset", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(item.position.start) }));
-
-                    const toRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
-                    try frameRecord.v.RecordKind.setU8(self.memoryState.stringPool, "to", toRecord);
-
-                    try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "offset", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(item.position.end) }));
-
-                    const position = try item.location(allocator);
-                    if (position != null) {
-                        try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "line", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.?.from.line) }));
-                        try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "column", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.?.from.column) }));
-                        try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "line", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.?.to.line) }));
-                        try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "column", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.?.to.column) }));
+                    for (e.?.detail.ParserKind.expected) |vk| {
+                        try expected.v.SequenceKind.appendItem(try self.memoryState.newStringValue(vk.toString()));
                     }
-                }
 
-                return Errors.err.InterpreterError;
-            },
-            else => {
-                self.err = p.grabErr();
-                return err;
-            },
+                    return Errors.err.InterpreterError;
+                },
+                Errors.err.LexicalError => {
+                    const rec = try raiseNamedUserErrorFromError(self, "LexicalError", e.?.detail.LexicalKind.lexeme, e.?);
+
+                    try self.copyStackItems(rec, e.?);
+
+                    return Errors.err.InterpreterError;
+                },
+                else => unreachable,
+            }
         };
         errdefer AST.destroy(allocator, ast);
 
         return ast;
+    }
+
+    fn raiseNamedUserErrorFromError(self: *Machine, name: []const u8, found: []const u8, e: Errors.Error) !*V.Value {
+        const rec = try raiseNamedUserError(self, name, null);
+        try rec.v.RecordKind.setU8(self.memoryState.stringPool, "found", try self.memoryState.newStringValue(found));
+        try rec.v.RecordKind.setU8(self.memoryState.stringPool, "stack", try self.memoryState.newEmptySequenceValue());
+
+        try self.copyStackItems(rec, e);
+
+        return rec;
+    }
+
+    fn copyStackItems(self: *Machine, rec: *V.Value, e: Errors.Error) !void {
+        const stack = try self.memoryState.newEmptySequenceValue();
+        try rec.v.RecordKind.setU8(self.memoryState.stringPool, "stack", stack);
+        for (e.stack.items) |item| {
+            const frameRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
+            try stack.v.SequenceKind.appendItem(frameRecord);
+
+            try frameRecord.v.RecordKind.setU8(self.memoryState.stringPool, "file", try self.memoryState.newStringValue(item.src));
+            const fromRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
+            try frameRecord.v.RecordKind.setU8(self.memoryState.stringPool, "from", fromRecord);
+
+            try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "offset", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(item.position.start) }));
+
+            const toRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
+            try frameRecord.v.RecordKind.setU8(self.memoryState.stringPool, "to", toRecord);
+
+            try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "offset", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(item.position.end) }));
+
+            const position = try item.location(self.memoryState.allocator);
+            if (position != null) {
+                try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "line", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.?.from.line) }));
+                try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "column", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.?.from.column) }));
+                try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "line", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.?.to.line) }));
+                try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "column", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.?.to.column) }));
+            }
+        }
     }
 
     pub fn execute(self: *Machine, name: []const u8, buffer: []const u8) !void {

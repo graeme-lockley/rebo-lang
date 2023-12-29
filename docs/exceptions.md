@@ -50,6 +50,15 @@ This error is raised when an attempt is made to divide by zero.
 ()
 ```
 
+## LexicalError
+
+This error is raised when the scanner encounters a lexical error.  This example of error is a little strange in that the expression is enclosed into an `eval` call.  This is because the scanner, once it encounters an error, stops scanning and returns the error.
+
+```rebo-repl
+> eval("10 / ^") catch { kind: "LexicalError" } -> ()
+()
+```
+
 ## SyntaxError
 
 This error is raised when the parser encounters a syntactic error.  This example of error is a little strange in that the expression is enclosed into an `eval` call.  This is because the parser, once it encounters an error, stops parsing and returns the error.

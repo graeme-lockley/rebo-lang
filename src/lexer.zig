@@ -90,7 +90,7 @@ pub const Lexer = struct {
 
         self.replaceErr(try Errors.lexicalError(self.allocator, self.name, Errors.Position{ .start = tokenStart, .end = self.offset }, self.lexeme(self.current)));
 
-        return error.InterpreterError;
+        return error.LexicalError;
     }
 
     pub fn peekNext(self: *Lexer) Errors.err!TokenKind {
