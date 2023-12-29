@@ -128,7 +128,8 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) b
             if (evalExpr(machine, value)) return true;
 
             if (!(machine.memoryState.updateInScope(lhs.kind.identifier, machine.memoryState.peek(0)) catch |err| return errorHandler(err))) {
-                machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), lhs.position, lhs.kind.identifier.slice()) catch |err| return errorHandler(err));
+                const rec = raiseNamedUserError(machine, "UnknownIdentifierError", lhs.position) catch |err| return errorHandler(err);
+                rec.v.RecordKind.setU8(machine.memoryState.stringPool, "identifier", machine.memoryState.newStringPoolValue(lhs.kind.identifier) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
                 return true;
             }
         },
@@ -973,7 +974,8 @@ fn identifier(machine: *Machine, e: *AST.Expression) bool {
     const result = machine.memoryState.getFromScope(e.kind.identifier);
 
     if (result == null) {
-        machine.replaceErr(Errors.unknownIdentifierError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position, e.kind.identifier.slice()) catch |err| return errorHandler(err));
+        const rec = raiseNamedUserError(machine, "UnknownIdentifierError", e.position) catch |err| return errorHandler(err);
+        rec.v.RecordKind.setU8(machine.memoryState.stringPool, "identifier", machine.memoryState.newStringPoolValue(e.kind.identifier) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
         return true;
     } else {
         machine.memoryState.push(result.?) catch |err| return errorHandler(err);

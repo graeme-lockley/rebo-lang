@@ -115,18 +115,6 @@ pub const NoMatchError = struct {
     }
 };
 
-pub const UnknownIdentifierError = struct {
-    identifier: []u8,
-
-    pub fn deinit(self: UnknownIdentifierError, allocator: std.mem.Allocator) void {
-        allocator.free(self.identifier);
-    }
-
-    pub fn append(self: UnknownIdentifierError, buffer: *std.ArrayList(u8)) !void {
-        try std.fmt.format(buffer.writer(), "Unknown Identifier: {s}", .{self.identifier});
-    }
-};
-
 pub const UserError = struct {
     pub fn deinit(self: UserError) void {
         _ = self;
@@ -257,7 +245,6 @@ pub const ErrorKind = enum {
     LiteralIntOverflowKind,
     NoMatchKind,
     ParserKind,
-    UnknownIdentifierKind,
     UserKind,
 };
 
@@ -271,7 +258,6 @@ pub const ErrorDetail = union(ErrorKind) {
     LiteralIntOverflowKind: LexicalError,
     NoMatchKind: NoMatchError,
     ParserKind: ParserError,
-    UnknownIdentifierKind: UnknownIdentifierError,
     UserKind: UserError,
 
     pub fn deinit(self: ErrorDetail, allocator: std.mem.Allocator) void {
@@ -285,7 +271,6 @@ pub const ErrorDetail = union(ErrorKind) {
             .LiteralIntOverflowKind => self.LiteralIntOverflowKind.deinit(allocator),
             .NoMatchKind => self.NoMatchKind.deinit(),
             .ParserKind => self.ParserKind.deinit(allocator),
-            .UnknownIdentifierKind => self.UnknownIdentifierKind.deinit(allocator),
             .UserKind => self.UserKind.deinit(),
         }
     }
@@ -301,7 +286,6 @@ pub const ErrorDetail = union(ErrorKind) {
             .LiteralIntOverflowKind => try self.LiteralIntOverflowKind.append(buffer, "Literal Int Overflow Error"),
             .NoMatchKind => try self.NoMatchKind.append(buffer),
             .ParserKind => try self.ParserKind.append(buffer),
-            .UnknownIdentifierKind => try self.UnknownIdentifierKind.append(buffer),
             .UserKind => try self.UserKind.append(buffer),
         }
     }
@@ -429,16 +413,6 @@ pub fn parserError(allocator: std.mem.Allocator, src: []const u8, position: Posi
 
 pub fn recordValueExpectedError(allocator: std.mem.Allocator, src: []const u8, position: Position, found: ValueKind) !Error {
     return expectedATypeError(allocator, src, position, ValueKind.RecordKind, found);
-}
-
-pub fn unknownIdentifierError(allocator: std.mem.Allocator, src: []const u8, position: Position, identifier: []const u8) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .UnknownIdentifierKind = .{
-        .identifier = try allocator.dupe(u8, identifier),
-    } });
-
-    try result.appendStackItem(src, position);
-
-    return result;
 }
 
 pub fn userError(allocator: std.mem.Allocator, src: []const u8, position: ?Position) !Error {

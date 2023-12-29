@@ -67,3 +67,12 @@ This error is raised when the parser encounters a syntactic error.  This example
 > eval("(10 /)") catch { kind: "SyntaxError" } -> ()
 ()
 ```
+
+## UnknownIdentifierError
+
+This error is raised when the interpreter encounters an unknown identifier.
+
+```rebo-repl
+> x catch { kind: "UnknownIdentifierError" } @ err-> err.identifier
+"x"
+```
