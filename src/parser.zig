@@ -57,7 +57,6 @@ pub const Parser = struct {
             if (self.currentTokenKind() == Lexer.TokenKind.Identifier and (nextNextToken == Lexer.TokenKind.Equal or nextNextToken == Lexer.TokenKind.LParen)) {
                 const nameToken = try self.matchToken(Lexer.TokenKind.Identifier);
                 const name = self.lexer.lexeme(nameToken);
-                errdefer self.allocator.free(name);
 
                 if (self.currentTokenKind() == Lexer.TokenKind.LParen) {
                     var literalFn = try self.functionTail(letToken.start);
@@ -274,8 +273,8 @@ pub const Parser = struct {
 
                     lhs = rhs;
                 } else {
-                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, rhs.position, V.ValueKind.UnitKind));
-                    return error.SyntaxError;
+                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, rhs.position));
+                    return error.FunctionValueExpectedError;
                 }
             } else if (self.currentTokenKind() == Lexer.TokenKind.LessBar) {
                 try self.skipToken();
@@ -294,8 +293,8 @@ pub const Parser = struct {
                     self.allocator.free(lhs.kind.call.args);
                     lhs.kind.call.args = args;
                 } else {
-                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, lhs.position, V.ValueKind.UnitKind));
-                    return error.SyntaxError;
+                    self.replaceErr(try Errors.functionValueExpectedError(self.allocator, self.lexer.name, lhs.position));
+                    return error.FunctionValueExpectedError;
                 }
             } else {
                 break;

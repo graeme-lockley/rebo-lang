@@ -5,7 +5,7 @@ const Builtin = @import("./builtins.zig");
 const TokenKind = @import("./token_kind.zig").TokenKind;
 const Value = @import("./value.zig");
 const ValueKind = @import("./value.zig").ValueKind;
-pub const err = error{ InterpreterError, LexicalError, LiteralIntError, LiteralFloatError, SyntaxError, OutOfMemory, NotYetImplemented };
+pub const err = error{ InterpreterError, FunctionValueExpectedError, LexicalError, LiteralIntError, LiteralFloatError, SyntaxError, OutOfMemory, NotYetImplemented };
 
 pub const STREAM_SRC = "repl";
 
@@ -14,15 +14,13 @@ pub const Position = struct {
     end: usize,
 };
 
+pub const FunctionValueExpectedError = struct {};
+
 pub const LexicalError = struct {
     lexeme: []u8,
 
     pub fn deinit(self: LexicalError, allocator: std.mem.Allocator) void {
         allocator.free(self.lexeme);
-    }
-
-    pub fn append(self: LexicalError, buffer: *std.ArrayList(u8), nature: []const u8) !void {
-        try std.fmt.format(buffer.writer(), "{s}: \"{s}\"", .{ nature, self.lexeme });
     }
 };
 
@@ -34,47 +32,9 @@ pub const ParserError = struct {
         allocator.free(self.lexeme);
         allocator.free(self.expected);
     }
-
-    pub fn append(self: ParserError, buffer: *std.ArrayList(u8)) !void {
-        try std.fmt.format(buffer.writer(), "Parser Error: Found \"{s}\" but expected: ", .{self.lexeme});
-        for (self.expected, 0..) |expected, i| {
-            if (i > 0) {
-                try buffer.appendSlice(", ");
-            }
-            try buffer.appendSlice(expected.toString());
-        }
-    }
 };
 
-pub const ExpectedTypeError = struct {
-    expected: []ValueKind,
-    found: ValueKind,
-
-    pub fn deinit(self: ExpectedTypeError, allocator: std.mem.Allocator) void {
-        allocator.free(self.expected);
-    }
-
-    pub fn append(self: ExpectedTypeError, buffer: *std.ArrayList(u8)) !void {
-        try std.fmt.format(buffer.writer(), "Expected Type: Received value of type {s} but expected ", .{self.found.toString()});
-        for (self.expected, 0..) |expected, i| {
-            if (i > 0) {
-                try buffer.appendSlice(", ");
-            }
-            try buffer.appendSlice(expected.toString());
-        }
-    }
-};
-
-pub const UserError = struct {
-    pub fn deinit(self: UserError) void {
-        _ = self;
-    }
-
-    pub fn append(self: UserError, buffer: *std.ArrayList(u8)) !void {
-        _ = self;
-        try buffer.appendSlice("User Signal");
-    }
-};
+pub const UserError = struct {};
 
 pub fn locationFromOffsets(allocator: std.mem.Allocator, src: []const u8, position: Position) !?LocationRange {
     const content = Builtin.loadBinary(allocator, src) catch return null;
@@ -146,38 +106,6 @@ pub const Error = struct {
         self.stack.deinit();
     }
 
-    pub fn append(self: *Error, buffer: *std.ArrayList(u8)) !void {
-        try self.detail.append(buffer);
-
-        for (self.stack.items) |item| {
-            if (std.mem.eql(u8, item.src, STREAM_SRC)) {
-                continue;
-            }
-
-            const locationRange = try item.location(self.allocator);
-            if (locationRange == null) {
-                try std.fmt.format(buffer.writer(), "\n  at {s}: {d}:{d}", .{ item.src, item.position.start, item.position.end });
-            } else if (item.position.start == item.position.end or item.position.start == item.position.end - 1) {
-                try std.fmt.format(buffer.writer(), "\n  at {s}: {d}:{d}", .{ item.src, locationRange.?.from.line, locationRange.?.from.column });
-            } else if (locationRange.?.from.line == locationRange.?.to.line) {
-                try std.fmt.format(buffer.writer(), "\n  at {s}: {d},{d}-{d}", .{ item.src, locationRange.?.from.line, locationRange.?.from.column, locationRange.?.to.column });
-            } else {
-                try std.fmt.format(buffer.writer(), "\n  at {s}: {d},{d}-{d},{d}", .{ item.src, locationRange.?.from.line, locationRange.?.from.column, locationRange.?.to.line, locationRange.?.to.column });
-            }
-        }
-    }
-
-    pub fn print(self: *Error) !void {
-        var buffer = std.ArrayList(u8).init(self.allocator);
-        defer buffer.deinit();
-
-        try self.append(&buffer);
-        const msg = try buffer.toOwnedSlice();
-        defer self.allocator.free(msg);
-
-        std.log.err("{s}", .{msg});
-    }
-
     pub fn appendStackItem(self: *Error, src: []const u8, position: Position) !void {
         var stackItem = StackItem{ .src = try self.allocator.dupe(u8, src), .position = position };
 
@@ -186,7 +114,7 @@ pub const Error = struct {
 };
 
 pub const ErrorKind = enum {
-    ExpectedTypeKind,
+    FunctionValueExpectedKind,
     LexicalKind,
     LiteralFloatOverflowKind,
     LiteralIntOverflowKind,
@@ -195,7 +123,7 @@ pub const ErrorKind = enum {
 };
 
 pub const ErrorDetail = union(ErrorKind) {
-    ExpectedTypeKind: ExpectedTypeError,
+    FunctionValueExpectedKind: FunctionValueExpectedError,
     LexicalKind: LexicalError,
     LiteralFloatOverflowKind: LexicalError,
     LiteralIntOverflowKind: LexicalError,
@@ -204,57 +132,21 @@ pub const ErrorDetail = union(ErrorKind) {
 
     pub fn deinit(self: ErrorDetail, allocator: std.mem.Allocator) void {
         switch (self) {
-            .ExpectedTypeKind => self.ExpectedTypeKind.deinit(allocator),
+            .FunctionValueExpectedKind, .UserKind => {},
             .LexicalKind => self.LexicalKind.deinit(allocator),
             .LiteralFloatOverflowKind => self.LiteralFloatOverflowKind.deinit(allocator),
             .LiteralIntOverflowKind => self.LiteralIntOverflowKind.deinit(allocator),
             .ParserKind => self.ParserKind.deinit(allocator),
-            .UserKind => self.UserKind.deinit(),
-        }
-    }
-
-    pub fn append(self: ErrorDetail, buffer: *std.ArrayList(u8)) !void {
-        switch (self) {
-            .ExpectedTypeKind => try self.ExpectedTypeKind.append(buffer),
-            .LexicalKind => try self.LexicalKind.append(buffer, "Lexical Error"),
-            .LiteralFloatOverflowKind => try self.LiteralFloatOverflowKind.append(buffer, "Literal Float Overflow Error"),
-            .LiteralIntOverflowKind => try self.LiteralIntOverflowKind.append(buffer, "Literal Int Overflow Error"),
-            .ParserKind => try self.ParserKind.append(buffer),
-            .UserKind => try self.UserKind.append(buffer),
         }
     }
 };
 
-pub fn expectedATypeError(allocator: std.mem.Allocator, src: []const u8, position: Position, expected: ValueKind, found: ValueKind) !Error {
-    var exp = try allocator.alloc(ValueKind, 1);
-    errdefer allocator.free(exp);
-
-    exp[0] = expected;
-
-    return expectedTypeError(allocator, src, position, exp, found);
-}
-
-pub fn reportExpectedTypeError(allocator: std.mem.Allocator, src: []const u8, position: Position, expected: []const ValueKind, v: ValueKind) !Error {
-    var exp = try allocator.alloc(ValueKind, expected.len);
-    errdefer allocator.free(exp);
-
-    for (expected, 0..) |vk, i| {
-        exp[i] = vk;
-    }
-
-    return try expectedTypeError(allocator, src, position, exp, v);
-}
-
-pub fn expectedTypeError(allocator: std.mem.Allocator, src: []const u8, position: Position, expected: []ValueKind, found: ValueKind) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .ExpectedTypeKind = .{ .expected = expected, .found = found } });
+pub fn functionValueExpectedError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
+    var result = try Error.init(allocator, ErrorDetail{ .FunctionValueExpectedKind = .{} });
 
     try result.appendStackItem(src, position);
 
     return result;
-}
-
-pub fn functionValueExpectedError(allocator: std.mem.Allocator, src: []const u8, position: Position, found: ValueKind) !Error {
-    return expectedATypeError(allocator, src, position, ValueKind.FunctionKind, found);
 }
 
 pub fn lexicalError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8) !Error {
@@ -296,10 +188,6 @@ pub fn parserError(allocator: std.mem.Allocator, src: []const u8, position: Posi
     try result.appendStackItem(src, position);
 
     return result;
-}
-
-pub fn recordValueExpectedError(allocator: std.mem.Allocator, src: []const u8, position: Position, found: ValueKind) !Error {
-    return expectedATypeError(allocator, src, position, ValueKind.RecordKind, found);
 }
 
 pub fn userError(allocator: std.mem.Allocator, src: []const u8, position: ?Position) !Error {

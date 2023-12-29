@@ -59,6 +59,39 @@ This error is raised when an attempt is made to divide by zero.
 ()
 ```
 
+## ExpectedTypeError
+
+This error is raised when an expression is of the wrong type.
+
+```rebo-repl
+> [1, 2, 3].head catch { kind: "ExpectedTypeError" } @ err -> {...err, stack: []}
+{ kind: "ExpectedTypeError", expected: ["Record"], found: "Sequence", stack: [] }
+
+> ([1, 2, 3].head := 0) catch { kind: "ExpectedTypeError" } @ err -> {...err, stack: []}
+{ kind: "ExpectedTypeError", expected: ["Record"], found: "Sequence", stack: [] }
+
+> [1, 2, ...10] catch { kind: "ExpectedTypeError" } @ err -> {...err, stack: []}
+{ kind: "ExpectedTypeError", expected: ["Sequence"], found: "Int", stack: [] }
+
+> {a: 1, b: 2, ...10} catch { kind: "ExpectedTypeError" } @ err -> {...err, stack: []}
+{ kind: "ExpectedTypeError", expected: ["Record"], found: "Int", stack: [] }
+
+> (!10) catch { kind: "ExpectedTypeError" } @ err -> {...err, stack: []}
+{ kind: "ExpectedTypeError", expected: ["Bool"], found: "Int", stack: [] }
+```
+
+## FunctionValueExpectedError
+
+This error is a syntactic error and is raised with the operators `|>` and `<|` are not passed function invocations.  As this is a syntactic error, the expression is enclosed in an `eval` call as parsing stops as soon as this error is encountered.
+
+```rebo-repl
+> eval("10 |> 10") catch { kind: "FunctionValueExpectedError" } @ err -> {...err, stack: []}
+{ kind: "FunctionValueExpectedError", content: "10 |> 10", stack: [] }
+
+> eval("10 <| 10") catch { kind: "FunctionValueExpectedError" } @ err -> {...err, stack: []}
+{ kind: "FunctionValueExpectedError", content: "10 <| 10", stack: [] }
+```
+
 ## IncompatibleOperandTypesError
 
 This error is raised when an attempt is made to perform an operation on operands of incompatible types.
