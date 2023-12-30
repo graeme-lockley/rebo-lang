@@ -898,10 +898,6 @@ fn catche(machine: *Machine, e: *AST.Expression) bool {
             if (matched) {
                 const result = evalExpr(machine, case.body);
 
-                if (!result) {
-                    machine.eraseErr();
-                }
-
                 machine.memoryState.restoreScope();
                 const v = machine.memoryState.pop();
                 while (machine.memoryState.stack.items.len > sp) {
@@ -1145,7 +1141,6 @@ fn match(machine: *Machine, e: *AST.Expression) bool {
     }
 
     _ = raiseMatchError(machine, e.position, value) catch |err| return errorHandler(err);
-    // machine.replaceErr(Errors.noMatchError(machine.memoryState.allocator, machine.src() catch |err| return errorHandler(err), e.position) catch |err| return errorHandler(err));
 
     return true;
 }
@@ -1235,7 +1230,7 @@ fn patternDeclaration(machine: *Machine, e: *AST.Expression) bool {
 fn raise(machine: *Machine, e: *AST.Expression) bool {
     if (evalExpr(machine, e.kind.raise.expr)) return true;
 
-    raiseUserError(machine, e.position) catch |err| return errorHandler(err);
+    machine.appendStackItem(e.position) catch |err| return errorHandler(err);
 
     return true;
 }
@@ -1335,17 +1330,14 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
 
 pub const Machine = struct {
     memoryState: MS.MemoryState,
-    err: ?UserError,
 
     pub fn init(allocator: std.mem.Allocator) !Machine {
         return Machine{
             .memoryState = try initMemoryState(allocator),
-            .err = null,
         };
     }
 
     pub fn deinit(self: *Machine) void {
-        self.eraseErr();
         self.memoryState.deinit();
     }
 
@@ -1468,25 +1460,6 @@ pub const Machine = struct {
         try self.memoryState.imports.addAnnie(ast);
     }
 
-    pub fn replaceErr(self: *Machine, err: UserError) void {
-        self.eraseErr();
-        self.err = err;
-    }
-
-    pub fn eraseErr(self: *Machine) void {
-        if (self.err != null) {
-            self.err.?.deinit();
-            self.err = null;
-        }
-    }
-
-    pub fn grabErr(self: *Machine) ?UserError {
-        const err = self.err;
-        self.err = null;
-
-        return err;
-    }
-
     pub fn pop(self: *Machine) *V.Value {
         return self.memoryState.pop();
     }
@@ -1496,7 +1469,6 @@ pub const Machine = struct {
     }
 
     pub fn reset(self: *Machine) !void {
-        self.eraseErr();
         try self.memoryState.reset();
     }
 
@@ -1506,8 +1478,8 @@ pub const Machine = struct {
         return if (result == null) Errors.STREAM_SRC else if (result.?.v == V.ValueValue.StringKind) result.?.v.StringKind.slice() else Errors.STREAM_SRC;
     }
 
-    pub fn appendStackItem(self: *Machine, position: Errors.Position) !void {
-        if (self.err != null) {
+    pub fn appendStackItem(self: *Machine, position: ?Errors.Position) !void {
+        if (position != null) {
             const v = self.memoryState.peek(0);
 
             if (v.v == V.ValueValue.RecordKind) {
@@ -1528,14 +1500,14 @@ pub const Machine = struct {
                 const fromRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
                 try positionRecord.v.RecordKind.setU8(self.memoryState.stringPool, "from", fromRecord);
 
-                try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "offset", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.start) }));
+                try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "offset", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.?.start) }));
 
                 const toRecord = try self.memoryState.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.memoryState.allocator) });
                 try positionRecord.v.RecordKind.setU8(self.memoryState.stringPool, "to", toRecord);
 
-                try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "offset", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.end) }));
+                try toRecord.v.RecordKind.setU8(self.memoryState.stringPool, "offset", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(position.?.end) }));
 
-                const locationRange = try Errors.locationFromOffsets(self.memoryState.allocator, try self.src(), position);
+                const locationRange = try Errors.locationFromOffsets(self.memoryState.allocator, try self.src(), position.?);
                 if (locationRange != null) {
                     try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "line", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(locationRange.?.from.line) }));
                     try fromRecord.v.RecordKind.setU8(self.memoryState.stringPool, "column", try self.memoryState.newValue(V.ValueValue{ .IntKind = @intCast(locationRange.?.from.column) }));
@@ -1590,21 +1562,9 @@ fn raiseNamedUserError(machine: *Machine, name: []const u8, position: ?Errors.Po
     const record = machine.memoryState.peek(0);
 
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue(name));
-
-    try raiseUserError(machine, position);
+    try machine.appendStackItem(position);
 
     return record;
-}
-
-fn raiseUserError(machine: *Machine, position: ?Errors.Position) !void {
-    var err = UserError.init(machine.memoryState.allocator);
-    errdefer err.deinit();
-
-    if (position != null) {
-        try err.appendStackItem(try machine.src(), position.?);
-    }
-
-    machine.replaceErr(err);
 }
 
 fn errorHandler(err: anyerror) bool {
@@ -1612,26 +1572,3 @@ fn errorHandler(err: anyerror) bool {
 
     return true;
 }
-
-pub const UserError = struct {
-    allocator: std.mem.Allocator,
-    stack: std.ArrayList(Errors.StackItem),
-
-    pub fn init(allocator: std.mem.Allocator) UserError {
-        return UserError{ .allocator = allocator, .stack = std.ArrayList(Errors.StackItem).init(allocator) };
-    }
-
-    pub fn deinit(self: *UserError) void {
-        for (self.stack.items) |*item| {
-            item.deinit(self.allocator);
-        }
-
-        self.stack.deinit();
-    }
-
-    pub fn appendStackItem(self: *UserError, src: []const u8, position: Errors.Position) !void {
-        var stackItem = Errors.StackItem{ .src = try self.allocator.dupe(u8, src), .position = position };
-
-        try self.stack.append(stackItem);
-    }
-};

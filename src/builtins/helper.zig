@@ -36,16 +36,10 @@ pub fn silentOsError(machine: *Machine, operation: []const u8, err: anyerror) vo
 }
 
 pub fn fatalErrorHandler(machine: *Machine, operation: []const u8, err: anyerror) void {
-    var e = machine.grabErr();
-    if (e == null) {
-        std.log.err("Error: {s}: {}\n", .{ operation, err });
-    } else {
-        const str = machine.memoryState.topOfStack().?.toString(machine.memoryState.allocator, V.Style.Pretty) catch return;
-        defer machine.memoryState.allocator.free(str);
-        std.log.err("Error: {s}: {}\n", .{ operation, err });
-        std.log.err("{s}\n", .{str});
-        e.?.deinit();
-    }
+    const str = machine.memoryState.topOfStack().?.toString(machine.memoryState.allocator, V.Style.Pretty) catch return;
+    defer machine.memoryState.allocator.free(str);
+    std.log.err("Error: {s}: {}\n", .{ operation, err });
+    std.log.err("{s}\n", .{str});
     std.os.exit(1);
 }
 

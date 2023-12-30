@@ -68,16 +68,10 @@ fn printResult(allocator: std.mem.Allocator, v: ?*V.Value) !void {
 }
 
 fn errorHandler(err: anyerror, machine: *Machine.Machine) void {
-    var e = machine.grabErr();
-    if (e == null) {
-        std.log.err("Error: {}\n", .{err});
-    } else {
-        const str = machine.memoryState.topOfStack().?.toString(machine.memoryState.allocator, V.Style.Pretty) catch return;
-        defer machine.memoryState.allocator.free(str);
-        std.log.err("Error: {}\n", .{err});
-        std.log.err("{s}\n", .{str});
-        e.?.deinit();
-    }
+    const str = machine.memoryState.topOfStack().?.toString(machine.memoryState.allocator, V.Style.Pretty) catch return;
+    defer machine.memoryState.allocator.free(str);
+    std.log.err("Error: {}\n", .{err});
+    std.log.err("{s}\n", .{str});
 }
 
 fn execute(machine: *Machine.Machine, name: []const u8, buffer: []const u8) void {
