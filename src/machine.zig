@@ -1181,7 +1181,7 @@ inline fn whilee(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!voi
     try machine.createVoidValue();
 }
 
-fn addBuiltin(state: *MS.MemoryState, name: []const u8, body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*V.Value) Errors.RuntimeErrors!void) !void {
+fn addBuiltin(state: *MS.MemoryState, name: []const u8, body: V.BuiltinFunctionType) !void {
     const value = try state.newValue(V.ValueValue{ .BuiltinKind = .{ .body = body } });
 
     try state.addU8ToScope(name, value);
