@@ -1264,7 +1264,7 @@ fn whilee(machine: *Machine, e: *AST.Expression) bool {
 fn addBuiltin(
     state: *MS.MemoryState,
     name: []const u8,
-    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*V.Value) Errors.err!void,
+    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*V.Value) Errors.RuntimeErrors!void,
 ) !void {
     var vv = V.ValueValue{ .BuiltinKind = .{
         .body = body,
@@ -1389,13 +1389,13 @@ pub const Machine = struct {
             defer e.?.deinit();
 
             switch (err) {
-                Errors.err.FunctionValueExpectedError => {
+                Errors.ParserErrors.FunctionValueExpectedError => {
                     const rec = try raiseNamedUserError(self, "FunctionValueExpectedError", null);
                     try self.copyStackItems(rec, e.?);
                 },
-                Errors.err.LiteralIntError => _ = try raiseNamedUserErrorFromError(self, "LiteralIntOverflowError", "value", e.?.detail.LiteralIntOverflowKind.lexeme, e.?),
-                Errors.err.LiteralFloatError => _ = try raiseNamedUserErrorFromError(self, "LiteralFloatOverflowError", "value", e.?.detail.LiteralFloatOverflowKind.lexeme, e.?),
-                Errors.err.SyntaxError => {
+                Errors.ParserErrors.LiteralIntError => _ = try raiseNamedUserErrorFromError(self, "LiteralIntOverflowError", "value", e.?.detail.LiteralIntOverflowKind.lexeme, e.?),
+                Errors.ParserErrors.LiteralFloatError => _ = try raiseNamedUserErrorFromError(self, "LiteralFloatOverflowError", "value", e.?.detail.LiteralFloatOverflowKind.lexeme, e.?),
+                Errors.ParserErrors.SyntaxError => {
                     const rec = try raiseNamedUserErrorFromError(self, "SyntaxError", "found", e.?.detail.ParserKind.lexeme, e.?);
 
                     const expected = try self.memoryState.newEmptySequenceValue();
@@ -1405,10 +1405,10 @@ pub const Machine = struct {
                         try expected.v.SequenceKind.appendItem(try self.memoryState.newStringValue(vk.toString()));
                     }
                 },
-                Errors.err.LexicalError => _ = try raiseNamedUserErrorFromError(self, "LexicalError", "found", e.?.detail.LexicalKind.lexeme, e.?),
+                Errors.ParserErrors.LexicalError => _ = try raiseNamedUserErrorFromError(self, "LexicalError", "found", e.?.detail.LexicalKind.lexeme, e.?),
                 else => unreachable,
             }
-            return Errors.err.InterpreterError;
+            return Errors.RuntimeErrors.InterpreterError;
         };
         errdefer AST.destroy(allocator, ast);
 

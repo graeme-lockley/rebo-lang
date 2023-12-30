@@ -5,7 +5,9 @@ const Builtin = @import("./builtins.zig");
 const TokenKind = @import("./token_kind.zig").TokenKind;
 const Value = @import("./value.zig");
 const ValueKind = @import("./value.zig").ValueKind;
-pub const err = error{ InterpreterError, FunctionValueExpectedError, LexicalError, LiteralIntError, LiteralFloatError, SyntaxError, OutOfMemory, NotYetImplemented };
+
+pub const ParserErrors = error{ FunctionValueExpectedError, LexicalError, LiteralIntError, LiteralFloatError, SyntaxError, OutOfMemory, NotYetImplemented };
+pub const RuntimeErrors = error{ InterpreterError, OutOfMemory, NotYetImplemented };
 
 pub const STREAM_SRC = "repl";
 

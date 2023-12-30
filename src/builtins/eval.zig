@@ -14,7 +14,7 @@ pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []
         const record = machine.topOfStack().?;
         try record.v.RecordKind.setU8(machine.memoryState.stringPool, "content", code);
 
-        return Helper.Errors.err.InterpreterError;
+        return Helper.Errors.RuntimeErrors.InterpreterError;
     };
 }
 

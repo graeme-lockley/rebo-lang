@@ -55,7 +55,7 @@ pub const Lexer = struct {
         };
     }
 
-    pub fn initBuffer(self: *Lexer, name: []const u8, source: []const u8) Errors.err!void {
+    pub fn initBuffer(self: *Lexer, name: []const u8, source: []const u8) Errors.ParserErrors!void {
         self.name = name;
         self.source = source;
         self.sourceLength = @intCast(source.len);
@@ -85,7 +85,7 @@ pub const Lexer = struct {
         }
     }
 
-    fn reportLexicalError(self: *Lexer, tokenStart: usize) Errors.err!void {
+    fn reportLexicalError(self: *Lexer, tokenStart: usize) Errors.ParserErrors!void {
         self.current = Token{ .kind = TokenKind.Invalid, .start = tokenStart, .end = self.offset };
 
         self.replaceErr(try Errors.lexicalError(self.allocator, self.name, Errors.Position{ .start = tokenStart, .end = self.offset }, self.lexeme(self.current)));
@@ -93,7 +93,7 @@ pub const Lexer = struct {
         return error.LexicalError;
     }
 
-    pub fn peekNext(self: *Lexer) Errors.err!TokenKind {
+    pub fn peekNext(self: *Lexer) Errors.ParserErrors!TokenKind {
         const offset = self.offset;
         const token = self.current;
 
@@ -105,7 +105,7 @@ pub const Lexer = struct {
         return kind;
     }
 
-    pub fn next(self: *Lexer) Errors.err!void {
+    pub fn next(self: *Lexer) Errors.ParserErrors!void {
         while (!self.atEnd() and self.currentCharacter() <= ' ') {
             self.skipCharacter();
         }

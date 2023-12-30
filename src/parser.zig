@@ -22,7 +22,7 @@ pub const Parser = struct {
         };
     }
 
-    pub fn module(self: *Parser) Errors.err!*AST.Expression {
+    pub fn module(self: *Parser) Errors.ParserErrors!*AST.Expression {
         const start = self.currentToken().start;
 
         var exprs = std.ArrayList(*AST.Expression).init(self.allocator);
@@ -49,7 +49,7 @@ pub const Parser = struct {
         return v;
     }
 
-    pub fn expression(self: *Parser) Errors.err!*AST.Expression {
+    pub fn expression(self: *Parser) Errors.ParserErrors!*AST.Expression {
         if (self.currentTokenKind() == Lexer.TokenKind.Let) {
             const letToken = try self.nextToken();
 
@@ -215,7 +215,7 @@ pub const Parser = struct {
         }
     }
 
-    fn catchExpr(self: *Parser) Errors.err!*AST.Expression {
+    fn catchExpr(self: *Parser) Errors.ParserErrors!*AST.Expression {
         const expr = try self.pipeExpr();
         errdefer expr.destroy(self.allocator);
 
@@ -249,7 +249,7 @@ pub const Parser = struct {
         }
     }
 
-    fn pipeExpr(self: *Parser) Errors.err!*AST.Expression {
+    fn pipeExpr(self: *Parser) Errors.ParserErrors!*AST.Expression {
         var lhs = try self.orExpr();
         errdefer lhs.destroy(self.allocator);
 
@@ -304,7 +304,7 @@ pub const Parser = struct {
         return lhs;
     }
 
-    fn matchCase(self: *Parser) Errors.err!AST.MatchCase {
+    fn matchCase(self: *Parser) Errors.ParserErrors!AST.MatchCase {
         const pttrn = try self.pattern();
         errdefer pttrn.destroy(self.allocator);
 
@@ -315,7 +315,7 @@ pub const Parser = struct {
         return AST.MatchCase{ .pattern = pttrn, .body = body };
     }
 
-    fn orExpr(self: *Parser) Errors.err!*AST.Expression {
+    fn orExpr(self: *Parser) Errors.ParserErrors!*AST.Expression {
         var lhs = try self.andExpr();
         errdefer lhs.destroy(self.allocator);
 
@@ -337,7 +337,7 @@ pub const Parser = struct {
         return lhs;
     }
 
-    fn andExpr(self: *Parser) Errors.err!*AST.Expression {
+    fn andExpr(self: *Parser) Errors.ParserErrors!*AST.Expression {
         var lhs = try self.equality();
         errdefer lhs.destroy(self.allocator);
 
@@ -359,7 +359,7 @@ pub const Parser = struct {
         return lhs;
     }
 
-    fn equality(self: *Parser) Errors.err!*AST.Expression {
+    fn equality(self: *Parser) Errors.ParserErrors!*AST.Expression {
         var lhs = try self.starpend();
         errdefer lhs.destroy(self.allocator);
 
@@ -392,7 +392,7 @@ pub const Parser = struct {
         return lhs;
     }
 
-    pub fn starpend(self: *Parser) Errors.err!*AST.Expression {
+    pub fn starpend(self: *Parser) Errors.ParserErrors!*AST.Expression {
         var lhs = try self.additive();
         errdefer lhs.destroy(self.allocator);
 
@@ -425,7 +425,7 @@ pub const Parser = struct {
         return lhs;
     }
 
-    pub fn additive(self: *Parser) Errors.err!*AST.Expression {
+    pub fn additive(self: *Parser) Errors.ParserErrors!*AST.Expression {
         var lhs = try self.multiplicative();
         errdefer lhs.destroy(self.allocator);
 
@@ -454,7 +454,7 @@ pub const Parser = struct {
         return lhs;
     }
 
-    pub fn multiplicative(self: *Parser) Errors.err!*AST.Expression {
+    pub fn multiplicative(self: *Parser) Errors.ParserErrors!*AST.Expression {
         var lhs = try self.nullDefault();
         errdefer lhs.destroy(self.allocator);
 
@@ -483,7 +483,7 @@ pub const Parser = struct {
         return lhs;
     }
 
-    fn nullDefault(self: *Parser) Errors.err!*AST.Expression {
+    fn nullDefault(self: *Parser) Errors.ParserErrors!*AST.Expression {
         var lhs = try self.qualifier();
         errdefer lhs.destroy(self.allocator);
 
@@ -507,7 +507,7 @@ pub const Parser = struct {
         }
     }
 
-    pub fn qualifier(self: *Parser) Errors.err!*AST.Expression {
+    pub fn qualifier(self: *Parser) Errors.ParserErrors!*AST.Expression {
         var result = try self.factor();
         errdefer result.destroy(self.allocator);
 
@@ -602,7 +602,7 @@ pub const Parser = struct {
         return result;
     }
 
-    pub fn factor(self: *Parser) Errors.err!*AST.Expression {
+    pub fn factor(self: *Parser) Errors.ParserErrors!*AST.Expression {
         switch (self.currentTokenKind()) {
             Lexer.TokenKind.LParen => {
                 const lparen = try self.nextToken();
@@ -983,7 +983,7 @@ pub const Parser = struct {
         }
     }
 
-    fn pattern(self: *Parser) Errors.err!*AST.Pattern {
+    fn pattern(self: *Parser) Errors.ParserErrors!*AST.Pattern {
         switch (self.currentTokenKind()) {
             Lexer.TokenKind.LParen => {
                 const lparen = try self.nextToken();
@@ -1214,7 +1214,7 @@ pub const Parser = struct {
         return self.lexer.lexeme(self.lexer.current);
     }
 
-    fn nextToken(self: *Parser) Errors.err!Lexer.Token {
+    fn nextToken(self: *Parser) Errors.ParserErrors!Lexer.Token {
         const token = self.lexer.current;
 
         try self.lexer.next();
@@ -1226,11 +1226,11 @@ pub const Parser = struct {
         return try self.lexer.peekNext();
     }
 
-    fn skipToken(self: *Parser) Errors.err!void {
+    fn skipToken(self: *Parser) Errors.ParserErrors!void {
         try self.lexer.next();
     }
 
-    fn matchToken(self: *Parser, kind: Lexer.TokenKind) Errors.err!Lexer.Token {
+    fn matchToken(self: *Parser, kind: Lexer.TokenKind) Errors.ParserErrors!Lexer.Token {
         const token = self.currentToken();
 
         if (token.kind != kind) {
@@ -1248,7 +1248,7 @@ pub const Parser = struct {
         return self.nextToken();
     }
 
-    fn matchSkipToken(self: *Parser, kind: Lexer.TokenKind) Errors.err!void {
+    fn matchSkipToken(self: *Parser, kind: Lexer.TokenKind) Errors.ParserErrors!void {
         _ = try self.matchToken(kind);
     }
 

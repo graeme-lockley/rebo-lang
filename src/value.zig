@@ -244,7 +244,7 @@ pub const ValueValue = union(ValueKind) {
 };
 
 pub const BuiltinValue = struct {
-    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*Value) Errors.err!void,
+    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*Value) Errors.RuntimeErrors!void,
 };
 
 pub const FileValue = struct {
