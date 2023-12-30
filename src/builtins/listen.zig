@@ -29,12 +29,12 @@ pub fn listen(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: 
             lp += 1;
         }
 
-        if (Helper.evalExpr(machine, cb.body)) {
+        machine.eval(cb.body) catch |err| {
             machine.memoryState.restoreScope();
-            return;
-        } else {
-            _ = machine.pop();
-            machine.memoryState.restoreScope();
-        }
+            return err;
+        };
+
+        _ = machine.pop();
+        machine.memoryState.restoreScope();
     }
 }

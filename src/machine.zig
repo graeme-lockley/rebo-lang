@@ -9,7 +9,7 @@ const Parser = @import("./parser.zig");
 const SP = @import("./string_pool.zig");
 const V = @import("./value.zig");
 
-pub fn newEvalExpr(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn evalExpr(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     switch (e.kind) {
         .assignment => try assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
         .binaryOp => try binaryOp(machine, e),
@@ -39,16 +39,10 @@ pub fn newEvalExpr(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
     }
 }
 
-pub inline fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
-    newEvalExpr(machine, e) catch return true;
-
-    return false;
-}
-
 fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) Errors.RuntimeErrors!void {
     switch (lhs.kind) {
         .identifier => {
-            try newEvalExpr(machine, value);
+            try evalExpr(machine, value);
 
             if (!(try machine.memoryState.updateInScope(lhs.kind.identifier, machine.memoryState.peek(0)))) {
                 const rec = try raiseNamedUserError(machine, "UnknownIdentifierError", lhs.position);
@@ -57,14 +51,14 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) E
             }
         },
         .dot => {
-            try newEvalExpr(machine, lhs.kind.dot.record);
+            try evalExpr(machine, lhs.kind.dot.record);
             const record = machine.memoryState.peek(0);
 
             if (record.v != V.ValueValue.RecordKind) {
                 try raiseExpectedTypeError(machine, lhs.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
                 return Errors.RuntimeErrors.InterpreterError;
             }
-            try newEvalExpr(machine, value);
+            try evalExpr(machine, value);
 
             try record.v.RecordKind.set(lhs.kind.dot.field, machine.memoryState.peek(0));
 
@@ -73,7 +67,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) E
             try machine.memoryState.push(v);
         },
         .indexRange => {
-            try newEvalExpr(machine, lhs.kind.indexRange.expr);
+            try evalExpr(machine, lhs.kind.indexRange.expr);
             const sequence = machine.memoryState.peek(0);
             if (sequence.v != V.ValueValue.SequenceKind) {
                 try raiseExpectedTypeError(machine, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v);
@@ -85,7 +79,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) E
             const start: V.IntType = V.clamp(try indexPoint(machine, lhs.kind.indexRange.start, 0), 0, @intCast(seqLen));
             const end: V.IntType = V.clamp(try indexPoint(machine, lhs.kind.indexRange.end, @intCast(seqLen)), start, @intCast(seqLen));
 
-            try newEvalExpr(machine, value);
+            try evalExpr(machine, value);
             const v = machine.memoryState.peek(0);
 
             if (v.v == V.ValueValue.SequenceKind) {
@@ -103,11 +97,11 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) E
             const exprA = lhs.kind.indexValue.expr;
             const indexA = lhs.kind.indexValue.index;
 
-            try newEvalExpr(machine, exprA);
+            try evalExpr(machine, exprA);
             const expr = machine.memoryState.peek(0);
 
             if (expr.v == V.ValueValue.RecordKind) {
-                try newEvalExpr(machine, indexA);
+                try evalExpr(machine, indexA);
                 const index = machine.memoryState.peek(0);
 
                 if (index.v != V.ValueValue.StringKind) {
@@ -115,11 +109,11 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) E
                     return Errors.RuntimeErrors.InterpreterError;
                 }
 
-                try newEvalExpr(machine, value);
+                try evalExpr(machine, value);
 
                 try expr.v.RecordKind.set(index.v.StringKind.value, machine.memoryState.peek(0));
             } else if (expr.v == V.ValueValue.SequenceKind) {
-                try newEvalExpr(machine, indexA);
+                try evalExpr(machine, indexA);
                 const index = machine.memoryState.peek(0);
 
                 if (index.v != V.ValueValue.IntKind) {
@@ -127,7 +121,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) E
                     return Errors.RuntimeErrors.InterpreterError;
                 }
 
-                try newEvalExpr(machine, value);
+                try evalExpr(machine, value);
 
                 const seq = expr.v.SequenceKind;
                 const idx = index.v.IntKind;
@@ -162,8 +156,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
 
     switch (op) {
         AST.Operator.Plus => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.memoryState.peek(0);
             const left = machine.memoryState.peek(1);
@@ -238,8 +232,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             }
         },
         AST.Operator.Minus => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -272,8 +266,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             }
         },
         AST.Operator.Times => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -320,8 +314,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             }
         },
         AST.Operator.Divide => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -378,8 +372,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             }
         },
         AST.Operator.Modulo => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -391,8 +385,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             try machine.memoryState.pushIntValue(@mod(left.v.IntKind, right.v.IntKind));
         },
         AST.Operator.LessThan => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -425,8 +419,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             }
         },
         AST.Operator.LessEqual => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -459,8 +453,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             }
         },
         AST.Operator.GreaterThan => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -493,8 +487,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             }
         },
         AST.Operator.GreaterEqual => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -527,8 +521,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             }
         },
         AST.Operator.Equal => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -536,8 +530,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             try machine.memoryState.pushBoolValue(V.eq(left, right));
         },
         AST.Operator.NotEqual => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -545,7 +539,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             try machine.memoryState.pushBoolValue(!V.eq(left, right));
         },
         AST.Operator.And => {
-            try newEvalExpr(machine, leftAST);
+            try evalExpr(machine, leftAST);
 
             const left = machine.memoryState.peek(0);
             if (left.v != V.ValueValue.BoolKind) {
@@ -553,7 +547,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
                 return Errors.RuntimeErrors.InterpreterError;
             } else if (left.v.BoolKind) {
                 _ = machine.pop();
-                try newEvalExpr(machine, rightAST);
+                try evalExpr(machine, rightAST);
                 const right = machine.memoryState.peek(0);
 
                 if (right.v != V.ValueValue.BoolKind) {
@@ -563,7 +557,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             }
         },
         AST.Operator.Or => {
-            try newEvalExpr(machine, leftAST);
+            try evalExpr(machine, leftAST);
 
             const left = machine.memoryState.peek(0);
             if (left.v != V.ValueValue.BoolKind) {
@@ -571,7 +565,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
                 return Errors.RuntimeErrors.InterpreterError;
             } else if (!left.v.BoolKind) {
                 _ = machine.pop();
-                try newEvalExpr(machine, rightAST);
+                try evalExpr(machine, rightAST);
                 const right = machine.memoryState.peek(0);
 
                 if (right.v != V.ValueValue.BoolKind) {
@@ -581,8 +575,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             }
         },
         AST.Operator.Append => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
             const left = machine.memoryState.peek(1);
             const right = machine.memoryState.peek(0);
 
@@ -601,8 +595,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             try machine.memoryState.push(result);
         },
         AST.Operator.AppendUpdate => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
             const left = machine.memoryState.peek(1);
             const right = machine.memoryState.peek(0);
 
@@ -616,8 +610,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             machine.memoryState.popn(1);
         },
         AST.Operator.Prepend => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
             const left = machine.memoryState.peek(1);
             const right = machine.memoryState.peek(0);
 
@@ -636,8 +630,8 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             try machine.memoryState.push(result);
         },
         AST.Operator.PrependUpdate => {
-            try newEvalExpr(machine, leftAST);
-            try newEvalExpr(machine, rightAST);
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
             const left = machine.memoryState.peek(1);
             const right = machine.memoryState.peek(0);
 
@@ -652,14 +646,14 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             try machine.memoryState.push(right);
         },
         AST.Operator.Hook => {
-            try newEvalExpr(machine, leftAST);
+            try evalExpr(machine, leftAST);
 
             const left = machine.memoryState.peek(0);
 
             if (left.v == V.ValueValue.UnitKind) {
                 _ = machine.memoryState.pop();
 
-                try newEvalExpr(machine, rightAST);
+                try evalExpr(machine, rightAST);
             }
         },
 
@@ -668,7 +662,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
 }
 
 fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.RuntimeErrors!void {
-    try newEvalExpr(machine, calleeAST);
+    try evalExpr(machine, calleeAST);
 
     const callee = machine.memoryState.peek(0);
 
@@ -690,7 +684,7 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
 
     var index: u8 = 0;
     while (index < argsAST.len) {
-        try newEvalExpr(machine, argsAST[index]);
+        try evalExpr(machine, argsAST[index]);
         index += 1;
     }
 
@@ -718,7 +712,7 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
     }
 
     machine.memoryState.popn(index);
-    newEvalExpr(machine, callee.v.FunctionKind.body) catch |err| {
+    evalExpr(machine, callee.v.FunctionKind.body) catch |err| {
         try machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end });
         return err;
     };
@@ -734,7 +728,7 @@ fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression
 
     var index: u8 = 0;
     while (index < argsAST.len) {
-        try newEvalExpr(machine, argsAST[index]);
+        try evalExpr(machine, argsAST[index]);
         try buffer.append(machine.memoryState.peek(0));
         index += 1;
     }
@@ -751,7 +745,7 @@ fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression
 
 fn catche(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     const sp = machine.memoryState.stack.items.len;
-    newEvalExpr(machine, e.kind.catche.value) catch |err| {
+    evalExpr(machine, e.kind.catche.value) catch |err| {
         const value = machine.memoryState.peek(0);
 
         for (e.kind.catche.cases) |case| {
@@ -759,7 +753,7 @@ fn catche(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
 
             const matched = try matchPattern(machine, case.pattern, value);
             if (matched) {
-                const result = newEvalExpr(machine, case.body);
+                const result = evalExpr(machine, case.body);
 
                 machine.memoryState.restoreScope();
                 const v = machine.memoryState.pop();
@@ -777,7 +771,7 @@ fn catche(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
 }
 
 fn dot(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try newEvalExpr(machine, e.kind.dot.record);
+    try evalExpr(machine, e.kind.dot.record);
 
     const record = machine.memoryState.pop();
 
@@ -808,13 +802,13 @@ fn exprs(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
                 _ = machine.memoryState.pop();
             }
 
-            try newEvalExpr(machine, expr);
+            try evalExpr(machine, expr);
         }
     }
 }
 
 fn idDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try newEvalExpr(machine, e.kind.idDeclaration.value);
+    try evalExpr(machine, e.kind.idDeclaration.value);
 
     const value: *V.Value = machine.memoryState.peek(0);
 
@@ -836,16 +830,16 @@ fn identifier(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
 fn ifte(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     for (e.kind.ifte) |case| {
         if (case.condition == null) {
-            try newEvalExpr(machine, case.then);
+            try evalExpr(machine, case.then);
             return;
         }
 
-        try newEvalExpr(machine, case.condition.?);
+        try evalExpr(machine, case.condition.?);
 
         const condition = machine.memoryState.pop();
 
         if (condition.v == V.ValueValue.BoolKind and condition.v.BoolKind) {
-            try newEvalExpr(machine, case.then);
+            try evalExpr(machine, case.then);
             return;
         }
     }
@@ -854,7 +848,7 @@ fn ifte(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
 }
 
 fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) Errors.RuntimeErrors!void {
-    try newEvalExpr(machine, exprA);
+    try evalExpr(machine, exprA);
     const expr = machine.memoryState.peek(0);
 
     if (expr.v == V.ValueValue.SequenceKind) {
@@ -887,7 +881,7 @@ fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) Errors
     if (point == null) {
         return def;
     } else {
-        try newEvalExpr(machine, point.?);
+        try evalExpr(machine, point.?);
         const pointV = machine.memoryState.peek(0);
         if (pointV.v != V.ValueValue.IntKind) {
             try raiseExpectedTypeError(machine, point.?.position, &[_]V.ValueKind{V.ValueValue.IntKind}, pointV.v);
@@ -901,11 +895,11 @@ fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) Errors
 }
 
 fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression) Errors.RuntimeErrors!void {
-    try newEvalExpr(machine, exprA);
+    try evalExpr(machine, exprA);
     const expr = machine.memoryState.peek(0);
 
     if (expr.v == V.ValueValue.RecordKind) {
-        try newEvalExpr(machine, indexA);
+        try evalExpr(machine, indexA);
         const index = machine.memoryState.peek(0);
 
         if (index.v != V.ValueValue.StringKind) {
@@ -923,7 +917,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
             try machine.memoryState.push(value.?);
         }
     } else if (expr.v == V.ValueValue.SequenceKind) {
-        try newEvalExpr(machine, indexA);
+        try evalExpr(machine, indexA);
         const index = machine.memoryState.peek(0);
 
         if (index.v != V.ValueValue.IntKind) {
@@ -942,7 +936,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
             try machine.memoryState.push(seq.at(@intCast(idx)));
         }
     } else if (expr.v == V.ValueValue.StringKind) {
-        try newEvalExpr(machine, indexA);
+        try evalExpr(machine, indexA);
         const index = machine.memoryState.peek(0);
 
         if (index.v != V.ValueValue.IntKind) {
@@ -983,7 +977,7 @@ fn literalFunction(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
 
     for (e.kind.literalFunction.params, 0..) |param, index| {
         if (param.default != null) {
-            try newEvalExpr(machine, param.default.?);
+            try evalExpr(machine, param.default.?);
             arguments[index].default = machine.pop();
         }
     }
@@ -996,13 +990,13 @@ fn literalRecord(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!voi
     for (e.kind.literalRecord) |entry| {
         switch (entry) {
             .value => {
-                try newEvalExpr(machine, entry.value.value);
+                try evalExpr(machine, entry.value.value);
 
                 const value = machine.memoryState.pop();
                 try map.v.RecordKind.set(entry.value.key, value);
             },
             .record => {
-                try newEvalExpr(machine, entry.record);
+                try evalExpr(machine, entry.record);
 
                 const value = machine.memoryState.pop();
                 if (value.v != V.ValueValue.RecordKind) {
@@ -1026,11 +1020,11 @@ fn literalSequence(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
     for (e.kind.literalSequence) |v| {
         switch (v) {
             .value => {
-                try newEvalExpr(machine, v.value);
+                try evalExpr(machine, v.value);
                 try seq.v.SequenceKind.appendItem(machine.memoryState.pop());
             },
             .sequence => {
-                try newEvalExpr(machine, v.sequence);
+                try evalExpr(machine, v.sequence);
                 const vs = machine.memoryState.pop();
 
                 if (vs.v != V.ValueValue.SequenceKind) {
@@ -1045,7 +1039,7 @@ fn literalSequence(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
 }
 
 fn match(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try newEvalExpr(machine, e.kind.match.value);
+    try evalExpr(machine, e.kind.match.value);
 
     const value = machine.memoryState.peek(0);
 
@@ -1054,7 +1048,7 @@ fn match(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
 
         const matched = try matchPattern(machine, case.pattern, value);
         if (matched) {
-            const result = newEvalExpr(machine, case.body);
+            const result = evalExpr(machine, case.body);
 
             machine.memoryState.restoreScope();
             const v = machine.memoryState.pop();
@@ -1140,7 +1134,7 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) !bool {
 }
 
 fn notOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try newEvalExpr(machine, e.kind.notOp.value);
+    try evalExpr(machine, e.kind.notOp.value);
 
     const v = machine.memoryState.pop();
     if (v.v != V.ValueValue.BoolKind) {
@@ -1152,7 +1146,7 @@ fn notOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
 }
 
 fn patternDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try newEvalExpr(machine, e.kind.patternDeclaration.value);
+    try evalExpr(machine, e.kind.patternDeclaration.value);
 
     const value: *V.Value = machine.memoryState.peek(0);
 
@@ -1163,7 +1157,7 @@ fn patternDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeError
 }
 
 fn raise(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try newEvalExpr(machine, e.kind.raise.expr);
+    try evalExpr(machine, e.kind.raise.expr);
     try machine.appendStackItem(e.position);
 
     return Errors.RuntimeErrors.InterpreterError;
@@ -1171,7 +1165,7 @@ fn raise(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
 
 fn whilee(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     while (true) {
-        try newEvalExpr(machine, e.kind.whilee.condition);
+        try evalExpr(machine, e.kind.whilee.condition);
 
         const condition = machine.memoryState.pop();
 
@@ -1179,7 +1173,7 @@ fn whilee(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
             break;
         }
 
-        try newEvalExpr(machine, e.kind.whilee.body);
+        try evalExpr(machine, e.kind.whilee.body);
 
         _ = machine.memoryState.pop();
     }
@@ -1187,11 +1181,7 @@ fn whilee(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try machine.createVoidValue();
 }
 
-fn addBuiltin(
-    state: *MS.MemoryState,
-    name: []const u8,
-    body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*V.Value) Errors.RuntimeErrors!void,
-) !void {
+fn addBuiltin(state: *MS.MemoryState, name: []const u8, body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*V.Value) Errors.RuntimeErrors!void) !void {
     var vv = V.ValueValue{ .BuiltinKind = .{
         .body = body,
     } };
@@ -1290,9 +1280,7 @@ pub const Machine = struct {
     }
 
     pub fn eval(self: *Machine, e: *AST.Expression) !void {
-        if (evalExpr(self, e)) {
-            return error.InterpreterError;
-        }
+        try evalExpr(self, e);
     }
 
     pub fn parse(self: *Machine, name: []const u8, buffer: []const u8) !*AST.Expression {
@@ -1410,7 +1398,7 @@ pub const Machine = struct {
         return if (result == null) Errors.STREAM_SRC else if (result.?.v == V.ValueValue.StringKind) result.?.v.StringKind.slice() else Errors.STREAM_SRC;
     }
 
-    pub fn appendStackItem(self: *Machine, position: ?Errors.Position) !void {
+    fn appendStackItem(self: *Machine, position: ?Errors.Position) !void {
         if (position != null) {
             const v = self.memoryState.peek(0);
 

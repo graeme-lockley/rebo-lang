@@ -5,7 +5,6 @@ pub const Errors = @import("./../errors.zig");
 const M = @import("./../machine.zig");
 const V = @import("./../value.zig");
 
-pub const evalExpr = M.evalExpr;
 pub const Expression = AST.Expression;
 pub const IntType = V.IntType;
 pub const Machine = M.Machine;
@@ -45,7 +44,6 @@ pub fn fatalErrorHandler(machine: *Machine, operation: []const u8, err: anyerror
 
 pub fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
     try M.raiseExpectedTypeError(machine, position, expected, v);
-    // machine.replaceErr(try Errors.reportExpectedTypeError(machine.memoryState.allocator, try machine.src(), position, expected, v));
     return Errors.RuntimeErrors.InterpreterError;
 }
 
