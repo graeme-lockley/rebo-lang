@@ -8,6 +8,13 @@ let harness(title) = {
     eq: fn(name, result, expected, context) {
       tests := [...tests, {name: name, passed?: result == expected, result: result, expected: expected, context: context, duration: _resetTimestamp!()}]
     },
+    eqCatch: fn(f, name, expected, context) {
+      let error = false
+      let result = f() catch e -> { e.stack := () ; self.eq(name, e, expected, context) ; error := true }
+
+      if !error ->
+        tests := [...tests, {name: name, passed?: false, result: result, expected: expected, context: context, duration: _resetTimestamp!()}]
+    },
     assert: fn(name, result) = self.eq(name, result, true),
     suite: fn(name, runner) {
         let r = harness(title + ": " + name)

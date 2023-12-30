@@ -10,13 +10,13 @@ pub fn listen(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: 
     server.reuse_address = true;
     defer server.deinit();
 
-    server.listen(std.net.Address.parseIp(host, @intCast(port)) catch |err| return Helper.silentOsError(machine, "listen", err)) catch |err| return Helper.silentOsError(machine, "listen", err);
+    server.listen(std.net.Address.parseIp(host, @intCast(port)) catch |err| return Helper.osError(machine, "listen", err)) catch |err| return Helper.osError(machine, "listen", err);
 
     while (true) {
-        var conn = server.accept() catch |err| return Helper.silentOsError(machine, "listen", err);
+        var conn = server.accept() catch |err| return Helper.osError(machine, "listen", err);
         const stream = conn.stream;
 
-        machine.memoryState.openScopeFrom(cb.scope) catch |err| return Helper.silentOsError(machine, "listen", err);
+        try machine.memoryState.openScopeFrom(cb.scope);
 
         errdefer machine.memoryState.restoreScope();
 
@@ -25,7 +25,7 @@ pub fn listen(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: 
         }
         var lp: u8 = 1;
         while (lp < cb.arguments.len) {
-            machine.memoryState.addToScope(cb.arguments[lp].name, machine.memoryState.unitValue.?) catch |err| return Helper.osError(machine, "addToScope", err);
+            try machine.memoryState.addToScope(cb.arguments[lp].name, machine.memoryState.unitValue.?);
             lp += 1;
         }
 

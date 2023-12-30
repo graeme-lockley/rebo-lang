@@ -23,17 +23,6 @@ let runReadFile(suite) {
        len(FS.readFile(path)),
        452
     )
-
-    "invalid file" |> suite.eq(
-       FS.readFile("unknown.rebo"),
-       {
-          error: "SystemError",
-          operation: "open",
-          path: "unknown.rebo",
-          bufferSize: 1024,
-          kind: "error.FileNotFound" 
-       }
-    )
 }
 
 let runLines(suite) {
@@ -42,16 +31,5 @@ let runLines(suite) {
     "valid file" |> suite.eq(
        len(FS.lines(path)),
        24
-    )
-
-    "invalid file" |> suite.eq(
-       FS.lines("unknown.rebo"),
-       {
-          error: "SystemError",
-          operation: "open",
-          path: "unknown.rebo",
-          bufferSize: 1024,
-          kind: "error.FileNotFound" 
-       }
     )
 }

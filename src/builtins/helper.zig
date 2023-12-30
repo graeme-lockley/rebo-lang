@@ -15,11 +15,11 @@ pub const Value = V.Value;
 pub const ValueKind = V.ValueKind;
 pub const ValueValue = V.ValueValue;
 
-pub fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
+pub fn osError(machine: *Machine, operation: []const u8, err: anyerror) Errors.RuntimeErrors!void {
     try machine.memoryState.pushEmptyRecordValue();
 
     const record = machine.memoryState.peek(0);
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "error", try machine.memoryState.newStringValue("SystemError"));
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue("SystemError"));
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "operation", try machine.memoryState.newStringValue(operation));
 
     var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
@@ -27,11 +27,9 @@ pub fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
 
     try std.fmt.format(buffer.writer(), "{}", .{err});
 
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
-}
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "os", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
 
-pub fn silentOsError(machine: *Machine, operation: []const u8, err: anyerror) void {
-    osError(machine, operation, err) catch {};
+    return Errors.RuntimeErrors.InterpreterError;
 }
 
 pub fn fatalErrorHandler(machine: *Machine, operation: []const u8, err: anyerror) void {
