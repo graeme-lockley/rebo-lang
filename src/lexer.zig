@@ -17,15 +17,15 @@ const keywords = std.ComptimeStringMap(TokenKind, .{
     .{ "while", TokenKind.While },
 });
 
-fn isAlpha(c: u8) bool {
+inline fn isAlpha(c: u8) bool {
     return (c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or c == '_';
 }
 
-fn isDigit(c: u8) bool {
+inline fn isDigit(c: u8) bool {
     return c >= '0' and c <= '9';
 }
 
-fn isAlphaDigit(c: u8) bool {
+inline fn isAlphaDigit(c: u8) bool {
     return isAlpha(c) or isDigit(c);
 }
 
@@ -68,18 +68,18 @@ pub const Lexer = struct {
         return self.source[token.start..token.end];
     }
 
-    fn atEnd(self: *const Lexer) bool {
+    inline fn atEnd(self: *const Lexer) bool {
         return self.offset >= self.sourceLength;
     }
 
-    fn currentCharacter(self: *const Lexer) u8 {
+    inline fn currentCharacter(self: *const Lexer) u8 {
         if (self.atEnd()) {
             return 0;
         }
         return self.source[self.offset];
     }
 
-    fn skipCharacter(self: *Lexer) void {
+    inline fn skipCharacter(self: *Lexer) void {
         if (!self.atEnd()) {
             self.offset += 1;
         }
@@ -393,7 +393,7 @@ pub const Lexer = struct {
         }
     }
 
-    fn setSymbolToken(self: *Lexer, kind: TokenKind, tokenStart: u32) void {
+    inline fn setSymbolToken(self: *Lexer, kind: TokenKind, tokenStart: u32) void {
         self.skipCharacter();
         self.current = Token{ .kind = kind, .start = tokenStart, .end = self.offset };
     }
@@ -417,7 +417,7 @@ pub const Lexer = struct {
         return err;
     }
 
-    pub fn currentLexeme(self: *Lexer) []const u8 {
+    pub inline fn currentLexeme(self: *Lexer) []const u8 {
         return self.lexeme(self.current);
     }
 };

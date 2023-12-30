@@ -1202,19 +1202,19 @@ pub const Parser = struct {
         return AST.RecordPatternEntry{ .key = keyValue, .pattern = pttrn, .id = id };
     }
 
-    fn currentToken(self: *Parser) Lexer.Token {
+    inline fn currentToken(self: *Parser) Lexer.Token {
         return self.lexer.current;
     }
 
-    fn currentTokenKind(self: *Parser) Lexer.TokenKind {
+    inline fn currentTokenKind(self: *Parser) Lexer.TokenKind {
         return self.lexer.current.kind;
     }
 
-    fn currentTokenLexeme(self: *Parser) []const u8 {
+    inline fn currentTokenLexeme(self: *Parser) []const u8 {
         return self.lexer.lexeme(self.lexer.current);
     }
 
-    fn nextToken(self: *Parser) Errors.ParserErrors!Lexer.Token {
+    inline fn nextToken(self: *Parser) Errors.ParserErrors!Lexer.Token {
         const token = self.lexer.current;
 
         try self.lexer.next();
@@ -1222,11 +1222,11 @@ pub const Parser = struct {
         return token;
     }
 
-    fn peekNextToken(self: *Parser) !Lexer.TokenKind {
+    inline fn peekNextToken(self: *Parser) !Lexer.TokenKind {
         return try self.lexer.peekNext();
     }
 
-    fn skipToken(self: *Parser) Errors.ParserErrors!void {
+    inline fn skipToken(self: *Parser) Errors.ParserErrors!void {
         try self.lexer.next();
     }
 
@@ -1248,7 +1248,7 @@ pub const Parser = struct {
         return self.nextToken();
     }
 
-    fn matchSkipToken(self: *Parser, kind: Lexer.TokenKind) Errors.ParserErrors!void {
+    inline fn matchSkipToken(self: *Parser, kind: Lexer.TokenKind) Errors.ParserErrors!void {
         _ = try self.matchToken(kind);
     }
 
