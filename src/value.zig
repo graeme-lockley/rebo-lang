@@ -305,51 +305,47 @@ pub const RecordValue = struct {
         self.items.deinit();
     }
 
-    pub fn set(self: *RecordValue, key: *SP.String, value: *Value) !void {
+    pub inline fn set(self: *RecordValue, key: *SP.String, value: *Value) !void {
         if (value.v == ValueKind.UnitKind) {
             const old = self.items.fetchRemove(key);
 
             if (old != null) {
                 old.?.key.decRef();
             }
+        } else if (self.items.getKey(key)) |oldKey| {
+            try self.items.put(oldKey, value);
         } else {
-            const oldKey = self.items.getKey(key);
-
-            if (oldKey == null) {
-                try self.items.put(key.incRefR(), value);
-            } else {
-                try self.items.put(oldKey.?, value);
-            }
+            try self.items.put(key.incRefR(), value);
         }
     }
 
-    pub fn setU8(self: *RecordValue, stringPool: *SP.StringPool, key: []const u8, value: *Value) !void {
+    pub inline fn setU8(self: *RecordValue, stringPool: *SP.StringPool, key: []const u8, value: *Value) !void {
         const spKey = try stringPool.intern(key);
         defer spKey.decRef();
 
         return self.set(spKey, value);
     }
 
-    pub fn get(self: *const RecordValue, key: *SP.String) ?*Value {
+    pub inline fn get(self: *const RecordValue, key: *SP.String) ?*Value {
         return self.items.get(key);
     }
 
-    pub fn getU8(self: *const RecordValue, stringPool: *SP.StringPool, key: []const u8) !?*Value {
+    pub inline fn getU8(self: *const RecordValue, stringPool: *SP.StringPool, key: []const u8) !?*Value {
         const spKey = try stringPool.intern(key);
         defer spKey.decRef();
 
         return self.items.get(spKey);
     }
 
-    pub fn count(self: *const RecordValue) usize {
+    pub inline fn count(self: *const RecordValue) usize {
         return self.items.count();
     }
 
-    pub fn iterator(self: *const RecordValue) std.AutoHashMap(*SP.String, *Value).Iterator {
+    pub inline fn iterator(self: *const RecordValue) std.AutoHashMap(*SP.String, *Value).Iterator {
         return self.items.iterator();
     }
 
-    pub fn keyIterator(self: *const RecordValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
+    pub inline fn keyIterator(self: *const RecordValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
         return self.items.keyIterator();
     }
 };
@@ -369,46 +365,46 @@ pub const SequenceValue = struct {
         self.values.deinit();
     }
 
-    pub fn appendItem(self: *SequenceValue, value: *Value) !void {
+    pub inline fn appendItem(self: *SequenceValue, value: *Value) !void {
         try self.values.append(value);
     }
 
-    pub fn prependItem(self: *SequenceValue, value: *Value) !void {
+    pub inline fn prependItem(self: *SequenceValue, value: *Value) !void {
         try self.values.insert(0, value);
     }
 
-    pub fn appendSlice(self: *SequenceValue, values: []const *Value) !void {
+    pub inline fn appendSlice(self: *SequenceValue, values: []const *Value) !void {
         try self.values.appendSlice(values);
     }
 
-    pub fn replaceSlice(self: *SequenceValue, values: []*Value) !void {
+    pub inline fn replaceSlice(self: *SequenceValue, values: []*Value) !void {
         self.values.clearAndFree();
         try self.values.appendSlice(values);
     }
 
-    pub fn replaceRange(self: *SequenceValue, start: usize, end: usize, values: []*Value) !void {
+    pub inline fn replaceRange(self: *SequenceValue, start: usize, end: usize, values: []*Value) !void {
         try self.values.replaceRange(start, end - start, values);
     }
 
-    pub fn removeRange(self: *SequenceValue, start: usize, end: usize) !void {
+    pub inline fn removeRange(self: *SequenceValue, start: usize, end: usize) !void {
         const values = &[_]*Value{};
 
         try self.values.replaceRange(start, end - start, values);
     }
 
-    pub fn len(self: *const SequenceValue) usize {
+    pub inline fn len(self: *const SequenceValue) usize {
         return self.values.items.len;
     }
 
-    pub fn items(self: *const SequenceValue) []*Value {
+    pub inline fn items(self: *const SequenceValue) []*Value {
         return self.values.items;
     }
 
-    pub fn at(self: *const SequenceValue, i: usize) *Value {
+    pub inline fn at(self: *const SequenceValue, i: usize) *Value {
         return self.values.items[i];
     }
 
-    pub fn set(self: *const SequenceValue, i: usize, v: *Value) void {
+    pub inline fn set(self: *const SequenceValue, i: usize, v: *Value) void {
         self.values.items[i] = v;
     }
 };
@@ -484,17 +480,15 @@ pub const ScopeValue = struct {
         self.values.deinit();
     }
 
-    pub fn set(self: *ScopeValue, key: *SP.String, value: *Value) !void {
-        const oldKey = self.values.getKey(key);
-
-        if (oldKey == null) {
-            try self.values.put(key.incRefR(), value);
+    pub inline fn set(self: *ScopeValue, key: *SP.String, value: *Value) !void {
+        if (self.values.getKey(key)) |oldKey| {
+            try self.values.put(oldKey, value);
         } else {
-            try self.values.put(oldKey.?, value);
+            try self.values.put(key.incRefR(), value);
         }
     }
 
-    pub fn update(self: *ScopeValue, key: *SP.String, value: *Value) !bool {
+    pub inline fn update(self: *ScopeValue, key: *SP.String, value: *Value) !bool {
         var runner: ?*ScopeValue = self;
 
         while (true) {
@@ -514,7 +508,7 @@ pub const ScopeValue = struct {
         }
     }
 
-    pub fn get(self: *const ScopeValue, key: *SP.String) ?*Value {
+    pub inline fn get(self: *const ScopeValue, key: *SP.String) ?*Value {
         var runner: ?*const ScopeValue = self;
 
         while (true) {
@@ -535,24 +529,8 @@ pub fn eq(a: *Value, b: *Value) bool {
     if (@intFromPtr(a) == @intFromPtr(b)) return true;
     if (@intFromEnum(a.v) != @intFromEnum(b.v)) {
         switch (a.v) {
-            .IntKind => {
-                switch (b.v) {
-                    .IntKind => return a.v.IntKind == b.v.IntKind,
-                    .FloatKind => return @as(FloatType, @floatFromInt(a.v.IntKind)) == b.v.FloatKind,
-                    else => {
-                        return false;
-                    },
-                }
-            },
-            .FloatKind => {
-                switch (b.v) {
-                    .IntKind => return a.v.FloatKind == @as(FloatType, @floatFromInt(b.v.IntKind)),
-                    .FloatKind => return a.v.FloatKind == b.v.FloatKind,
-                    else => {
-                        return false;
-                    },
-                }
-            },
+            .IntKind => return b.v == .FloatKind and @as(FloatType, @floatFromInt(a.v.IntKind)) == b.v.FloatKind,
+            .FloatKind => return b.v == .IntKind and a.v.FloatKind == @as(FloatType, @floatFromInt(b.v.IntKind)),
             else => {
                 return false;
             },

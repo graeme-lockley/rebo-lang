@@ -20,33 +20,30 @@ pub const StringPool = struct {
     }
 
     pub fn intern(self: *StringPool, data: []const u8) !*String {
-        const s = self.items.get(data);
-        if (s == null) {
+        if (self.items.get(data)) |s| {
+            s.incRef();
+            return s;
+        } else {
             var string = try self.allocator.create(String);
+
             const dataDup = try self.allocator.dupe(u8, data);
             string.* = String.init(self, dataDup);
             try self.items.put(dataDup, string);
 
             return string;
-        } else {
-            s.?.incRef();
-
-            return s.?;
         }
     }
 
     pub fn internOwned(self: *StringPool, data: []u8) !*String {
-        const s = self.items.get(data);
-        if (s == null) {
+        if (self.items.get(data)) |s| {
+            s.incRef();
+            self.allocator.free(data);
+            return s;
+        } else {
             var string = try self.allocator.create(String);
             string.* = String.init(self, data);
             try self.items.put(string.data, string);
             return string;
-        } else {
-            s.?.incRef();
-            self.allocator.free(data);
-
-            return s.?;
         }
     }
 
@@ -80,7 +77,7 @@ pub const String = struct {
         return this.data;
     }
 
-    pub fn incRef(this: *String) void {
+    pub inline fn incRef(this: *String) void {
         if (this.count == std.math.maxInt(u32)) {
             this.count = 0;
         } else if (this.count > 0) {
@@ -88,7 +85,7 @@ pub const String = struct {
         }
     }
 
-    pub fn incRefR(this: *String) *String {
+    pub inline fn incRefR(this: *String) *String {
         this.incRef();
         return this;
     }
