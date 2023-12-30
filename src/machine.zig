@@ -723,23 +723,19 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
 }
 
 fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) !void {
-    var buffer = std.ArrayList(*V.Value).init(machine.memoryState.allocator);
-    defer buffer.deinit();
+    const argsLen = argsAST.len;
 
-    var index: u8 = 0;
-    while (index < argsAST.len) {
-        try evalExpr(machine, argsAST[index]);
-        try buffer.append(machine.memoryState.peek(0));
-        index += 1;
+    for (argsAST) |item| {
+        try evalExpr(machine, item);
     }
 
-    callee.v.BuiltinKind.body(machine, calleeAST, argsAST, buffer.items) catch |err| {
+    callee.v.BuiltinKind.body(machine, calleeAST, argsAST, machine.memoryState.stack.items[machine.memoryState.stack.items.len - argsLen ..]) catch |err| {
         try machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end });
         return err;
     };
 
     const result = machine.memoryState.pop();
-    machine.memoryState.popn(index + 1);
+    machine.memoryState.popn(@intCast(argsLen + 1));
     try machine.memoryState.push(result);
 }
 
