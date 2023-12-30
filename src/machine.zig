@@ -753,9 +753,7 @@ inline fn catche(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!voi
 
                 machine.memoryState.restoreScope();
                 const v = machine.memoryState.pop();
-                while (machine.memoryState.stack.items.len > sp) {
-                    _ = machine.memoryState.pop();
-                }
+                machine.memoryState.stack.items.len = sp;
                 try machine.memoryState.push(v);
 
                 return result;
