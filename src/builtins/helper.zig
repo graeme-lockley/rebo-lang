@@ -39,17 +39,11 @@ pub fn fatalErrorHandler(machine: *Machine, operation: []const u8, err: anyerror
     var e = machine.grabErr();
     if (e == null) {
         std.log.err("Error: {s}: {}\n", .{ operation, err });
-    } else if (e.?.detail == Errors.ErrorKind.UserKind) {
+    } else {
         const str = machine.memoryState.topOfStack().?.toString(machine.memoryState.allocator, V.Style.Pretty) catch return;
         defer machine.memoryState.allocator.free(str);
         std.log.err("Error: {s}: {}\n", .{ operation, err });
         std.log.err("{s}\n", .{str});
-        e.?.deinit();
-    } else {
-        std.log.err("Error: {s}: {}\n", .{ operation, err });
-        // e.?.print() catch |err2| {
-        //     std.log.err("Error: {}: {}\n", .{ err, err2 });
-        // };
         e.?.deinit();
     }
     std.os.exit(1);

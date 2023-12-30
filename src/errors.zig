@@ -36,8 +36,6 @@ pub const ParserError = struct {
     }
 };
 
-pub const UserError = struct {};
-
 pub fn locationFromOffsets(allocator: std.mem.Allocator, src: []const u8, position: Position) !?LocationRange {
     const content = Builtin.loadBinary(allocator, src) catch return null;
     defer allocator.free(content);
@@ -74,6 +72,10 @@ pub const StackItem = struct {
     src: []const u8,
     position: Position,
 
+    pub fn deinit(self: *StackItem, allocator: std.mem.Allocator) void {
+        allocator.free(self.src);
+    }
+
     pub fn location(self: StackItem, allocator: std.mem.Allocator) !?LocationRange {
         return try locationFromOffsets(allocator, self.src, self.position);
     }
@@ -101,8 +103,8 @@ pub const Error = struct {
     pub fn deinit(self: *Error) void {
         self.detail.deinit(self.allocator);
 
-        for (self.stack.items) |item| {
-            self.allocator.free(item.src);
+        for (self.stack.items) |*item| {
+            item.deinit(self.allocator);
         }
 
         self.stack.deinit();
@@ -121,7 +123,6 @@ pub const ErrorKind = enum {
     LiteralFloatOverflowKind,
     LiteralIntOverflowKind,
     ParserKind,
-    UserKind,
 };
 
 pub const ErrorDetail = union(ErrorKind) {
@@ -130,11 +131,10 @@ pub const ErrorDetail = union(ErrorKind) {
     LiteralFloatOverflowKind: LexicalError,
     LiteralIntOverflowKind: LexicalError,
     ParserKind: ParserError,
-    UserKind: UserError,
 
     pub fn deinit(self: ErrorDetail, allocator: std.mem.Allocator) void {
         switch (self) {
-            .FunctionValueExpectedKind, .UserKind => {},
+            .FunctionValueExpectedKind => {},
             .LexicalKind => self.LexicalKind.deinit(allocator),
             .LiteralFloatOverflowKind => self.LiteralFloatOverflowKind.deinit(allocator),
             .LiteralIntOverflowKind => self.LiteralIntOverflowKind.deinit(allocator),
@@ -188,16 +188,6 @@ pub fn parserError(allocator: std.mem.Allocator, src: []const u8, position: Posi
     } });
 
     try result.appendStackItem(src, position);
-
-    return result;
-}
-
-pub fn userError(allocator: std.mem.Allocator, src: []const u8, position: ?Position) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .UserKind = .{} });
-
-    if (position != null) {
-        try result.appendStackItem(src, position.?);
-    }
 
     return result;
 }

@@ -72,12 +72,10 @@ fn errorHandler(err: anyerror, machine: *Machine.Machine) void {
     if (e == null) {
         std.log.err("Error: {}\n", .{err});
     } else {
-        if (e.?.detail == Errors.ErrorKind.UserKind) {
-            const str = machine.memoryState.topOfStack().?.toString(machine.memoryState.allocator, V.Style.Pretty) catch return;
-            defer machine.memoryState.allocator.free(str);
-            std.log.err("Error: {}\n", .{err});
-            std.log.err("{s}\n", .{str});
-        }
+        const str = machine.memoryState.topOfStack().?.toString(machine.memoryState.allocator, V.Style.Pretty) catch return;
+        defer machine.memoryState.allocator.free(str);
+        std.log.err("Error: {}\n", .{err});
+        std.log.err("{s}\n", .{str});
         e.?.deinit();
     }
 }
