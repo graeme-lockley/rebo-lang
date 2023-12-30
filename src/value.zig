@@ -44,16 +44,12 @@ pub const Value = struct {
             .BuiltinKind => try buffer.appendSlice("fn(...)"),
             .CharKind => {
                 switch (style) {
-                    Style.Pretty => if (self.v.CharKind == 10) {
-                        try buffer.appendSlice("'\\n'");
-                    } else if (self.v.CharKind == 39) {
-                        try buffer.appendSlice("'\\''");
-                    } else if (self.v.CharKind == 92) {
-                        try buffer.appendSlice("'\\\\'");
-                    } else if (self.v.CharKind < 32) {
-                        try std.fmt.format(buffer.writer(), "'\\x{d}'", .{self.v.CharKind});
-                    } else {
-                        try std.fmt.format(buffer.writer(), "'{c}'", .{self.v.CharKind});
+                    Style.Pretty => switch (self.v.CharKind) {
+                        10 => try buffer.appendSlice("'\\n'"),
+                        39 => try buffer.appendSlice("'\\''"),
+                        92 => try buffer.appendSlice("'\\\\'"),
+                        0...9, 11...31 => try std.fmt.format(buffer.writer(), "'\\x{d}'", .{self.v.CharKind}),
+                        else => try std.fmt.format(buffer.writer(), "'{c}'", .{self.v.CharKind}),
                     },
                     Style.Raw => try buffer.append(self.v.CharKind),
                 }
@@ -62,8 +58,7 @@ pub const Value = struct {
             .FloatKind => try std.fmt.format(buffer.writer(), "{d}", .{self.v.FloatKind}),
             .FunctionKind => {
                 try buffer.appendSlice("fn(");
-                var i: usize = 0;
-                for (self.v.FunctionKind.arguments) |argument| {
+                for (self.v.FunctionKind.arguments, 0..) |argument, i| {
                     if (i != 0) {
                         try buffer.appendSlice(", ");
                     }
@@ -73,11 +68,9 @@ pub const Value = struct {
                         try buffer.appendSlice(" = ");
                         try argument.default.?.appendValue(buffer, style);
                     }
-
-                    i += 1;
                 }
                 if (self.v.FunctionKind.restOfArguments != null) {
-                    if (i != 0) {
+                    if (self.v.FunctionKind.arguments.len > 0) {
                         try buffer.appendSlice(", ");
                     }
 
@@ -612,15 +605,5 @@ pub fn eq(a: *Value, b: *Value) bool {
             return true;
         },
         .UnitKind => return true,
-    }
-}
-
-pub fn clamp(value: IntType, min: IntType, max: IntType) IntType {
-    if (value < min) {
-        return min;
-    } else if (value > max) {
-        return max;
-    } else {
-        return value;
     }
 }

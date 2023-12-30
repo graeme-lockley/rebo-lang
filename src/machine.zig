@@ -76,8 +76,8 @@ inline fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expres
 
             const seqLen = sequence.v.SequenceKind.len();
 
-            const start: V.IntType = V.clamp(try indexPoint(machine, lhs.kind.indexRange.start, 0), 0, @intCast(seqLen));
-            const end: V.IntType = V.clamp(try indexPoint(machine, lhs.kind.indexRange.end, @intCast(seqLen)), start, @intCast(seqLen));
+            const start: V.IntType = clamp(try indexPoint(machine, lhs.kind.indexRange.start, 0), 0, @intCast(seqLen));
+            const end: V.IntType = clamp(try indexPoint(machine, lhs.kind.indexRange.end, @intCast(seqLen)), start, @intCast(seqLen));
 
             try evalExpr(machine, value);
             const v = machine.memoryState.peek(0);
@@ -846,8 +846,8 @@ inline fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Ex
         V.ValueValue.SequenceKind => {
             const seq = expr.v.SequenceKind;
 
-            const start: V.IntType = V.clamp(try indexPoint(machine, startA, 0), 0, @intCast(seq.len()));
-            const end: V.IntType = V.clamp(try indexPoint(machine, endA, @intCast(seq.len())), start, @intCast(seq.len()));
+            const start: V.IntType = clamp(try indexPoint(machine, startA, 0), 0, @intCast(seq.len()));
+            const end: V.IntType = clamp(try indexPoint(machine, endA, @intCast(seq.len())), start, @intCast(seq.len()));
 
             try machine.memoryState.pushEmptySequenceValue();
             try machine.memoryState.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]);
@@ -855,8 +855,8 @@ inline fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Ex
         V.ValueValue.StringKind => {
             const str = expr.v.StringKind.slice();
 
-            const start: V.IntType = V.clamp(try indexPoint(machine, startA, 0), 0, @intCast(str.len));
-            const end: V.IntType = V.clamp(try indexPoint(machine, endA, @intCast(str.len)), start, @intCast(str.len));
+            const start: V.IntType = clamp(try indexPoint(machine, startA, 0), 0, @intCast(str.len));
+            const end: V.IntType = clamp(try indexPoint(machine, endA, @intCast(str.len)), start, @intCast(str.len));
 
             try machine.memoryState.pushStringValue(str[@intCast(start)..@intCast(end)]);
         },
@@ -1466,4 +1466,14 @@ fn raiseNamedUserError(machine: *Machine, name: []const u8, position: ?Errors.Po
     try machine.appendErrorPosition(position);
 
     return record;
+}
+
+fn clamp(value: V.IntType, min: V.IntType, max: V.IntType) V.IntType {
+    if (value < min) {
+        return min;
+    } else if (value > max) {
+        return max;
+    } else {
+        return value;
+    }
 }
