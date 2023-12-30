@@ -39,7 +39,7 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     }
 }
 
-fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) Errors.RuntimeErrors!void {
     switch (lhs.kind) {
         .identifier => {
             try evalExpr(machine, value);
@@ -149,7 +149,7 @@ fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) E
     }
 }
 
-fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     const leftAST = e.kind.binaryOp.left;
     const op = e.kind.binaryOp.op;
     const rightAST = e.kind.binaryOp.right;
@@ -661,7 +661,7 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     }
 }
 
-fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.RuntimeErrors!void {
+inline fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, calleeAST);
 
     const callee = machine.memoryState.peek(0);
@@ -676,7 +676,7 @@ fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsA
     }
 }
 
-fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) !void {
+inline fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) !void {
     const sp = machine.memoryState.stack.items.len - 1;
 
     const args = callee.v.FunctionKind.arguments;
@@ -722,7 +722,7 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
     try machine.memoryState.push(result);
 }
 
-fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) !void {
+inline fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) !void {
     const argsLen = argsAST.len;
 
     for (argsAST) |item| {
@@ -739,7 +739,7 @@ fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression
     try machine.memoryState.push(result);
 }
 
-fn catche(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn catche(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     const sp = machine.memoryState.stack.items.len;
     evalExpr(machine, e.kind.catche.value) catch |err| {
         const value = machine.memoryState.peek(0);
@@ -766,7 +766,7 @@ fn catche(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     };
 }
 
-fn dot(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn dot(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.dot.record);
 
     const record = machine.memoryState.pop();
@@ -785,7 +785,7 @@ fn dot(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     }
 }
 
-fn exprs(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn exprs(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     if (e.kind.exprs.len == 0) {
         try machine.memoryState.pushUnitValue();
     } else {
@@ -803,7 +803,7 @@ fn exprs(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     }
 }
 
-fn idDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn idDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.idDeclaration.value);
 
     const value: *V.Value = machine.memoryState.peek(0);
@@ -811,7 +811,7 @@ fn idDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!voi
     try machine.memoryState.addToScope(e.kind.idDeclaration.name, value);
 }
 
-fn identifier(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn identifier(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     const result = machine.memoryState.getFromScope(e.kind.identifier);
 
     if (result == null) {
@@ -823,7 +823,7 @@ fn identifier(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     }
 }
 
-fn ifte(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn ifte(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     for (e.kind.ifte) |case| {
         if (case.condition == null) {
             try evalExpr(machine, case.then);
@@ -843,7 +843,7 @@ fn ifte(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try machine.createVoidValue();
 }
 
-fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) Errors.RuntimeErrors!void {
+inline fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, exprA);
     const expr = machine.memoryState.peek(0);
 
@@ -873,7 +873,7 @@ fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expressio
     try machine.memoryState.push(result);
 }
 
-fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) Errors.RuntimeErrors!V.IntType {
+inline fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) Errors.RuntimeErrors!V.IntType {
     if (point == null) {
         return def;
     } else {
@@ -890,7 +890,7 @@ fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) Errors
     }
 }
 
-fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, exprA);
     const expr = machine.memoryState.peek(0);
 
@@ -957,7 +957,7 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
     }
 }
 
-fn literalFunction(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn literalFunction(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     var arguments = try machine.memoryState.allocator.alloc(V.FunctionArgument, e.kind.literalFunction.params.len);
 
     for (e.kind.literalFunction.params, 0..) |param, index| {
@@ -979,7 +979,7 @@ fn literalFunction(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
     }
 }
 
-fn literalRecord(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn literalRecord(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try machine.memoryState.pushEmptyRecordValue();
     var map = machine.topOfStack().?;
 
@@ -1009,7 +1009,7 @@ fn literalRecord(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!voi
     }
 }
 
-fn literalSequence(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn literalSequence(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try machine.memoryState.pushEmptySequenceValue();
     const seq = machine.memoryState.peek(0);
 
@@ -1034,7 +1034,7 @@ fn literalSequence(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
     }
 }
 
-fn match(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn match(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.match.value);
 
     const value = machine.memoryState.peek(0);
@@ -1129,7 +1129,7 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) !bool {
     };
 }
 
-fn notOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn notOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.notOp.value);
 
     const v = machine.memoryState.pop();
@@ -1141,7 +1141,7 @@ fn notOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try machine.memoryState.pushBoolValue(!v.v.BoolKind);
 }
 
-fn patternDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn patternDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.patternDeclaration.value);
 
     const value: *V.Value = machine.memoryState.peek(0);
@@ -1152,14 +1152,14 @@ fn patternDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeError
     }
 }
 
-fn raise(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn raise(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.raise.expr);
     try machine.appendStackItem(e.position);
 
     return Errors.RuntimeErrors.InterpreterError;
 }
 
-fn whilee(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+inline fn whilee(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     while (true) {
         try evalExpr(machine, e.kind.whilee.condition);
 

@@ -4,7 +4,7 @@ pub const AST = @import("./ast.zig");
 pub const SP = @import("./string_pool.zig");
 pub const V = @import("./value.zig");
 
-const MAINTAIN_FREE_CHAIN = false;
+const MAINTAIN_FREE_CHAIN = true;
 const INITIAL_HEAP_SIZE = 1024 * 64;
 const HEAP_GROW_THRESHOLD = 0.25;
 
