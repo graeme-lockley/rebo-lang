@@ -188,13 +188,13 @@ pub const Value = struct {
 };
 
 pub const ValueKind = enum {
+    IntKind,
+    FloatKind,
     BoolKind,
     BuiltinKind,
     CharKind,
     FileKind,
     FunctionKind,
-    IntKind,
-    FloatKind,
     SequenceKind,
     StreamKind,
     StringKind,
