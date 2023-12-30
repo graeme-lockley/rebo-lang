@@ -5,7 +5,7 @@ pub const SP = @import("./string_pool.zig");
 pub const V = @import("./value.zig");
 
 const MAINTAIN_FREE_CHAIN = true;
-const INITIAL_HEAP_SIZE = 1024 * 64;
+const INITIAL_HEAP_SIZE = 1;
 const HEAP_GROW_THRESHOLD = 0.25;
 
 pub const MemoryState = struct {
