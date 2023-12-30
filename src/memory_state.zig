@@ -329,13 +329,9 @@ fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {
                 }
             }
         },
-        .ScopeKind => {
-            markScope(&v.v.ScopeKind, colour);
-        },
-        .SequenceKind => {
-            for (v.v.SequenceKind.items()) |item| {
-                markValue(item, colour);
-            }
+        .ScopeKind => markScope(&v.v.ScopeKind, colour),
+        .SequenceKind => for (v.v.SequenceKind.items()) |item| {
+            markValue(item, colour);
         },
         .RecordKind => {
             var iterator = v.v.RecordKind.iterator();
@@ -421,7 +417,7 @@ pub fn force_gc(state: *MemoryState) GCResult {
     return GCResult{ .capacity = state.memory_capacity, .oldSize = old_size, .newSize = state.memory_size, .duration = end_time - start_time };
 }
 
-fn gc(state: *MemoryState) void {
+inline fn gc(state: *MemoryState) void {
     if (state.memory_size > state.memory_capacity) {
         // _ = force_gc(state);
         const gcResult = force_gc(state);
