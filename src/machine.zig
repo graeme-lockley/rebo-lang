@@ -82,13 +82,13 @@ inline fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expres
             try evalExpr(machine, value);
             const v = machine.memoryState.peek(0);
 
-            if (v.v == V.ValueValue.SequenceKind) {
-                try sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), v.v.SequenceKind.items());
-            } else if (v.v == V.ValueValue.UnitKind) {
-                try sequence.v.SequenceKind.removeRange(@intCast(start), @intCast(end));
-            } else if (v.v != V.ValueValue.SequenceKind) {
-                try raiseExpectedTypeError(machine, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, v.v);
-                return Errors.RuntimeErrors.InterpreterError;
+            switch (v.v) {
+                V.ValueValue.SequenceKind => try sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), v.v.SequenceKind.items()),
+                V.ValueValue.UnitKind => try sequence.v.SequenceKind.removeRange(@intCast(start), @intCast(end)),
+                else => {
+                    try raiseExpectedTypeError(machine, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, v.v);
+                    return Errors.RuntimeErrors.InterpreterError;
+                },
             }
             machine.memoryState.popn(2);
             try machine.memoryState.push(v);
@@ -100,42 +100,46 @@ inline fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expres
             try evalExpr(machine, exprA);
             const expr = machine.memoryState.peek(0);
 
-            if (expr.v == V.ValueValue.RecordKind) {
-                try evalExpr(machine, indexA);
-                const index = machine.memoryState.peek(0);
+            switch (expr.v) {
+                V.ValueValue.RecordKind => {
+                    try evalExpr(machine, indexA);
+                    const index = machine.memoryState.peek(0);
 
-                if (index.v != V.ValueValue.StringKind) {
-                    try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                    if (index.v != V.ValueValue.StringKind) {
+                        try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                        return Errors.RuntimeErrors.InterpreterError;
+                    }
+
+                    try evalExpr(machine, value);
+
+                    try expr.v.RecordKind.set(index.v.StringKind.value, machine.memoryState.peek(0));
+                },
+                V.ValueValue.SequenceKind => {
+                    try evalExpr(machine, indexA);
+                    const index = machine.memoryState.peek(0);
+
+                    if (index.v != V.ValueValue.IntKind) {
+                        try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                        return Errors.RuntimeErrors.InterpreterError;
+                    }
+
+                    try evalExpr(machine, value);
+
+                    const seq = expr.v.SequenceKind;
+                    const idx = index.v.IntKind;
+
+                    if (idx < 0 or idx >= seq.len()) {
+                        try raiseIndexOutOfRangeError(machine, indexA.position, idx, @intCast(seq.len()));
+                        return Errors.RuntimeErrors.InterpreterError;
+                    } else {
+                        seq.set(@intCast(idx), machine.memoryState.peek(0));
+                    }
+                },
+                else => {
+                    machine.memoryState.popn(1);
+                    try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind }, expr.v);
                     return Errors.RuntimeErrors.InterpreterError;
-                }
-
-                try evalExpr(machine, value);
-
-                try expr.v.RecordKind.set(index.v.StringKind.value, machine.memoryState.peek(0));
-            } else if (expr.v == V.ValueValue.SequenceKind) {
-                try evalExpr(machine, indexA);
-                const index = machine.memoryState.peek(0);
-
-                if (index.v != V.ValueValue.IntKind) {
-                    try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
-                    return Errors.RuntimeErrors.InterpreterError;
-                }
-
-                try evalExpr(machine, value);
-
-                const seq = expr.v.SequenceKind;
-                const idx = index.v.IntKind;
-
-                if (idx < 0 or idx >= seq.len()) {
-                    try raiseIndexOutOfRangeError(machine, indexA.position, idx, @intCast(seq.len()));
-                    return Errors.RuntimeErrors.InterpreterError;
-                } else {
-                    seq.set(@intCast(idx), machine.memoryState.peek(0));
-                }
-            } else {
-                machine.memoryState.popn(1);
-                try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind }, expr.v);
-                return Errors.RuntimeErrors.InterpreterError;
+                },
             }
 
             const v = machine.memoryState.pop();
@@ -774,12 +778,10 @@ inline fn dot(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
         return Errors.RuntimeErrors.InterpreterError;
     }
 
-    const value = record.v.RecordKind.get(e.kind.dot.field);
-
-    if (value == null) {
-        try machine.memoryState.pushUnitValue();
+    if (record.v.RecordKind.get(e.kind.dot.field)) |value| {
+        try machine.memoryState.push(value);
     } else {
-        try machine.memoryState.push(value.?);
+        try machine.memoryState.pushUnitValue();
     }
 }
 
@@ -803,21 +805,16 @@ inline fn exprs(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void
 
 inline fn idDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.idDeclaration.value);
-
-    const value: *V.Value = machine.memoryState.peek(0);
-
-    try machine.memoryState.addToScope(e.kind.idDeclaration.name, value);
+    try machine.memoryState.addToScope(e.kind.idDeclaration.name, machine.memoryState.peek(0));
 }
 
 inline fn identifier(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
-    const result = machine.memoryState.getFromScope(e.kind.identifier);
-
-    if (result == null) {
+    if (machine.memoryState.getFromScope(e.kind.identifier)) |result| {
+        try machine.memoryState.push(result);
+    } else {
         const rec = try raiseNamedUserError(machine, "UnknownIdentifierError", e.position);
         try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "identifier", try machine.memoryState.newStringPoolValue(e.kind.identifier));
         return Errors.RuntimeErrors.InterpreterError;
-    } else {
-        try machine.memoryState.push(result.?);
     }
 }
 
@@ -845,25 +842,29 @@ inline fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Ex
     try evalExpr(machine, exprA);
     const expr = machine.memoryState.peek(0);
 
-    if (expr.v == V.ValueValue.SequenceKind) {
-        const seq = expr.v.SequenceKind;
+    switch (expr.v) {
+        V.ValueValue.SequenceKind => {
+            const seq = expr.v.SequenceKind;
 
-        const start: V.IntType = V.clamp(try indexPoint(machine, startA, 0), 0, @intCast(seq.len()));
-        const end: V.IntType = V.clamp(try indexPoint(machine, endA, @intCast(seq.len())), start, @intCast(seq.len()));
+            const start: V.IntType = V.clamp(try indexPoint(machine, startA, 0), 0, @intCast(seq.len()));
+            const end: V.IntType = V.clamp(try indexPoint(machine, endA, @intCast(seq.len())), start, @intCast(seq.len()));
 
-        try machine.memoryState.pushEmptySequenceValue();
-        try machine.memoryState.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]);
-    } else if (expr.v == V.ValueValue.StringKind) {
-        const str = expr.v.StringKind.slice();
+            try machine.memoryState.pushEmptySequenceValue();
+            try machine.memoryState.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]);
+        },
+        V.ValueValue.StringKind => {
+            const str = expr.v.StringKind.slice();
 
-        const start: V.IntType = V.clamp(try indexPoint(machine, startA, 0), 0, @intCast(str.len));
-        const end: V.IntType = V.clamp(try indexPoint(machine, endA, @intCast(str.len)), start, @intCast(str.len));
+            const start: V.IntType = V.clamp(try indexPoint(machine, startA, 0), 0, @intCast(str.len));
+            const end: V.IntType = V.clamp(try indexPoint(machine, endA, @intCast(str.len)), start, @intCast(str.len));
 
-        try machine.memoryState.pushStringValue(str[@intCast(start)..@intCast(end)]);
-    } else {
-        machine.memoryState.popn(1);
-        try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
-        return Errors.RuntimeErrors.InterpreterError;
+            try machine.memoryState.pushStringValue(str[@intCast(start)..@intCast(end)]);
+        },
+        else => {
+            machine.memoryState.popn(1);
+            try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
+            return Errors.RuntimeErrors.InterpreterError;
+        },
     }
 
     const result = machine.memoryState.pop();
@@ -892,66 +893,71 @@ inline fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Exp
     try evalExpr(machine, exprA);
     const expr = machine.memoryState.peek(0);
 
-    if (expr.v == V.ValueValue.RecordKind) {
-        try evalExpr(machine, indexA);
-        const index = machine.memoryState.peek(0);
+    switch (expr.v) {
+        V.ValueValue.RecordKind => {
+            try evalExpr(machine, indexA);
+            const index = machine.memoryState.peek(0);
 
-        if (index.v != V.ValueValue.StringKind) {
-            try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+            if (index.v != V.ValueValue.StringKind) {
+                try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                return Errors.RuntimeErrors.InterpreterError;
+            }
+
+            machine.memoryState.popn(2);
+
+            const value = expr.v.RecordKind.get(index.v.StringKind.value);
+
+            if (value == null) {
+                try machine.memoryState.pushUnitValue();
+            } else {
+                try machine.memoryState.push(value.?);
+            }
+        },
+        V.ValueValue.SequenceKind => {
+            try evalExpr(machine, indexA);
+            const index = machine.memoryState.peek(0);
+
+            if (index.v != V.ValueValue.IntKind) {
+                try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                return Errors.RuntimeErrors.InterpreterError;
+            }
+
+            machine.memoryState.popn(2);
+
+            const seq = expr.v.SequenceKind;
+            const idx = index.v.IntKind;
+
+            if (idx < 0 or idx >= seq.len()) {
+                try machine.memoryState.pushUnitValue();
+            } else {
+                try machine.memoryState.push(seq.at(@intCast(idx)));
+            }
+        },
+        V.ValueValue.StringKind => {
+            try evalExpr(machine, indexA);
+            const index = machine.memoryState.peek(0);
+
+            if (index.v != V.ValueValue.IntKind) {
+                try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                return Errors.RuntimeErrors.InterpreterError;
+            }
+
+            machine.memoryState.popn(2);
+
+            const str = expr.v.StringKind.slice();
+            const idx = index.v.IntKind;
+
+            if (idx < 0 or idx >= str.len) {
+                try machine.memoryState.pushUnitValue();
+            } else {
+                try machine.memoryState.pushCharValue(str[@intCast(idx)]);
+            }
+        },
+        else => {
+            machine.memoryState.popn(1);
+            try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
             return Errors.RuntimeErrors.InterpreterError;
-        }
-
-        machine.memoryState.popn(2);
-
-        const value = expr.v.RecordKind.get(index.v.StringKind.value);
-
-        if (value == null) {
-            try machine.memoryState.pushUnitValue();
-        } else {
-            try machine.memoryState.push(value.?);
-        }
-    } else if (expr.v == V.ValueValue.SequenceKind) {
-        try evalExpr(machine, indexA);
-        const index = machine.memoryState.peek(0);
-
-        if (index.v != V.ValueValue.IntKind) {
-            try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
-            return Errors.RuntimeErrors.InterpreterError;
-        }
-
-        machine.memoryState.popn(2);
-
-        const seq = expr.v.SequenceKind;
-        const idx = index.v.IntKind;
-
-        if (idx < 0 or idx >= seq.len()) {
-            try machine.memoryState.pushUnitValue();
-        } else {
-            try machine.memoryState.push(seq.at(@intCast(idx)));
-        }
-    } else if (expr.v == V.ValueValue.StringKind) {
-        try evalExpr(machine, indexA);
-        const index = machine.memoryState.peek(0);
-
-        if (index.v != V.ValueValue.IntKind) {
-            try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
-            return Errors.RuntimeErrors.InterpreterError;
-        }
-
-        machine.memoryState.popn(2);
-
-        const str = expr.v.StringKind.slice();
-        const idx = index.v.IntKind;
-
-        if (idx < 0 or idx >= str.len) {
-            try machine.memoryState.pushUnitValue();
-        } else {
-            try machine.memoryState.pushCharValue(str[@intCast(idx)]);
-        }
-    } else {
-        machine.memoryState.popn(1);
-        try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
-        return Errors.RuntimeErrors.InterpreterError;
+        },
     }
 }
 
@@ -1176,11 +1182,7 @@ inline fn whilee(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!voi
 }
 
 fn addBuiltin(state: *MS.MemoryState, name: []const u8, body: *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*V.Value) Errors.RuntimeErrors!void) !void {
-    var vv = V.ValueValue{ .BuiltinKind = .{
-        .body = body,
-    } };
-
-    const value = try state.newValue(vv);
+    const value = try state.newValue(V.ValueValue{ .BuiltinKind = .{ .body = body } });
 
     try state.addU8ToScope(name, value);
 }
@@ -1329,9 +1331,9 @@ pub const Machine = struct {
 
     fn raiseNamedUserErrorFromError(self: *Machine, kind: []const u8, name: []const u8, value: []const u8, e: Errors.Error) !*V.Value {
         const rec = try raiseNamedUserError(self, kind, null);
+
         try rec.v.RecordKind.setU8(self.memoryState.stringPool, name, try self.memoryState.newStringValue(value));
         try rec.v.RecordKind.setU8(self.memoryState.stringPool, "stack", try self.memoryState.newEmptySequenceValue());
-
         try self.appendErrorStackItem(e.stackItem);
 
         return rec;
@@ -1366,8 +1368,7 @@ pub const Machine = struct {
 
     inline fn appendErrorPosition(self: *Machine, position: ?Errors.Position) !void {
         if (position != null) {
-            const si = Errors.StackItem{ .src = try self.src(), .position = position.? };
-            try self.appendErrorStackItem(si);
+            try self.appendErrorStackItem(Errors.StackItem{ .src = try self.src(), .position = position.? });
         }
     }
 
@@ -1407,7 +1408,7 @@ pub const Machine = struct {
 
             var stack = try record.getU8(self.memoryState.stringPool, "stack");
             if (stack == null) {
-                stack = try self.memoryState.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.memoryState.allocator) });
+                stack = try self.memoryState.newEmptySequenceValue();
                 try record.setU8(self.memoryState.stringPool, "stack", stack.?);
             }
             if (stack.?.v != V.ValueValue.SequenceKind) {
