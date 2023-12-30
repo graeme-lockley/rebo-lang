@@ -4,9 +4,6 @@ const Helper = @import("./helper.zig");
 pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
     const code = try Helper.getArgument(machine, calleeAST, argsAST, args, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
 
-    const stackSize = machine.memoryState.stack.items.len;
-    _ = stackSize;
-
     try machine.memoryState.openScope();
     defer machine.memoryState.restoreScope();
 
