@@ -40,12 +40,11 @@ pub fn fatalErrorHandler(machine: *Machine, operation: []const u8, err: anyerror
     std.os.exit(1);
 }
 
-pub fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
+fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
     try M.raiseExpectedTypeError(machine, position, expected, v);
-    return Errors.RuntimeErrors.InterpreterError;
 }
 
-pub fn reportPositionExpectedTypeError(machine: *Machine, position: usize, args: []*Expression, defaultPosition: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
+fn reportPositionExpectedTypeError(machine: *Machine, position: usize, args: []*Expression, defaultPosition: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
     const pos = if (args.len > position) args[position].position else defaultPosition;
     try reportExpectedTypeError(machine, pos, expected, v);
 }
