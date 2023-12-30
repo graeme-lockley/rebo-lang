@@ -9,240 +9,161 @@ const Parser = @import("./parser.zig");
 const SP = @import("./string_pool.zig");
 const V = @import("./value.zig");
 
-pub fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
+pub fn newEvalExpr(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     switch (e.kind) {
-        .assignment => return assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
-        .binaryOp => return binaryOp(machine, e),
-        .call => return call(machine, e, e.kind.call.callee, e.kind.call.args),
-        .catche => return catche(machine, e),
-        .dot => return dot(machine, e),
-        .exprs => return exprs(machine, e),
-        .idDeclaration => return declaration(machine, e),
-        .identifier => return identifier(machine, e),
-        .ifte => return ifte(machine, e),
-        .indexRange => return indexRange(machine, e.kind.indexRange.expr, e.kind.indexRange.start, e.kind.indexRange.end),
-        .indexValue => return indexValue(machine, e.kind.indexValue.expr, e.kind.indexValue.index),
-        .literalBool => machine.createBoolValue(e.kind.literalBool) catch |err| return errorHandler(err),
-        .literalChar => machine.memoryState.pushCharValue(e.kind.literalChar) catch |err| return errorHandler(err),
-        .literalFloat => machine.memoryState.pushFloatValue(e.kind.literalFloat) catch |err| return errorHandler(err),
-        .literalFunction => {
-            var arguments = machine.memoryState.allocator.alloc(V.FunctionArgument, e.kind.literalFunction.params.len) catch |err| return errorHandler(err);
-
-            for (e.kind.literalFunction.params, 0..) |param, index| {
-                arguments[index] = V.FunctionArgument{ .name = param.name.incRefR(), .default = null };
-            }
-
-            _ = machine.memoryState.pushValue(V.ValueValue{ .FunctionKind = V.FunctionValue{
-                .scope = machine.memoryState.scope(),
-                .arguments = arguments,
-                .restOfArguments = if (e.kind.literalFunction.restOfParams == null) null else e.kind.literalFunction.restOfParams.?.incRefR(),
-                .body = e.kind.literalFunction.body,
-            } }) catch |err| return errorHandler(err);
-
-            for (e.kind.literalFunction.params, 0..) |param, index| {
-                if (param.default != null) {
-                    if (evalExpr(machine, param.default.?)) return true;
-                    arguments[index].default = machine.pop();
-                }
-            }
-        },
-        .literalInt => machine.createIntValue(e.kind.literalInt) catch |err| return errorHandler(err),
-        .literalRecord => {
-            machine.memoryState.pushEmptyMapValue() catch |err| return errorHandler(err);
-            var map = machine.topOfStack().?;
-
-            for (e.kind.literalRecord) |entry| {
-                switch (entry) {
-                    .value => {
-                        if (evalExpr(machine, entry.value.value)) return true;
-
-                        const value = machine.memoryState.pop();
-                        map.v.RecordKind.set(entry.value.key, value) catch |err| return errorHandler(err);
-                    },
-                    .record => {
-                        if (evalExpr(machine, entry.record)) return true;
-
-                        const value = machine.memoryState.pop();
-                        if (value.v != V.ValueValue.RecordKind) {
-                            raiseExpectedTypeError(machine, entry.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, value.v) catch |err| return errorHandler(err);
-                            return true;
-                        }
-
-                        var iterator = value.v.RecordKind.iterator();
-                        while (iterator.next()) |rv| {
-                            map.v.RecordKind.set(rv.key_ptr.*, rv.value_ptr.*) catch |err| return errorHandler(err);
-                        }
-                    },
-                }
-            }
-        },
-        .literalSequence => {
-            machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
-            const seq = machine.memoryState.peek(0);
-
-            for (e.kind.literalSequence) |v| {
-                switch (v) {
-                    .value => {
-                        if (evalExpr(machine, v.value)) return true;
-                        seq.v.SequenceKind.appendItem(machine.memoryState.pop()) catch |err| return errorHandler(err);
-                    },
-                    .sequence => {
-                        if (evalExpr(machine, v.sequence)) return true;
-                        const vs = machine.memoryState.pop();
-
-                        if (vs.v != V.ValueValue.SequenceKind) {
-                            raiseExpectedTypeError(machine, v.sequence.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, vs.v) catch |err| return errorHandler(err);
-                            return true;
-                        }
-
-                        seq.v.SequenceKind.appendSlice(vs.v.SequenceKind.items()) catch |err| return errorHandler(err);
-                    },
-                }
-            }
-        },
-        .literalString => machine.memoryState.pushStringPoolValue(e.kind.literalString) catch |err| return errorHandler(err),
-        .literalVoid => machine.createVoidValue() catch |err| return errorHandler(err),
-        .match => return match(machine, e),
-        .notOp => {
-            if (evalExpr(machine, e.kind.notOp.value)) return true;
-
-            const v = machine.memoryState.pop();
-            if (v.v != V.ValueValue.BoolKind) {
-                raiseExpectedTypeError(machine, e.position, &[_]V.ValueKind{V.ValueValue.BoolKind}, v.v) catch |err| return errorHandler(err);
-                return true;
-            }
-
-            machine.memoryState.pushBoolValue(!v.v.BoolKind) catch |err| return errorHandler(err);
-        },
-        .patternDeclaration => return patternDeclaration(machine, e),
-        .raise => return raise(machine, e),
-        .whilee => return whilee(machine, e),
+        .assignment => try assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
+        .binaryOp => try binaryOp(machine, e),
+        .call => try call(machine, e, e.kind.call.callee, e.kind.call.args),
+        .catche => try catche(machine, e),
+        .dot => try dot(machine, e),
+        .exprs => try exprs(machine, e),
+        .idDeclaration => try idDeclaration(machine, e),
+        .identifier => try identifier(machine, e),
+        .ifte => try ifte(machine, e),
+        .indexRange => try indexRange(machine, e.kind.indexRange.expr, e.kind.indexRange.start, e.kind.indexRange.end),
+        .indexValue => try indexValue(machine, e.kind.indexValue.expr, e.kind.indexValue.index),
+        .literalBool => try machine.createBoolValue(e.kind.literalBool),
+        .literalChar => try machine.memoryState.pushCharValue(e.kind.literalChar),
+        .literalFloat => try machine.memoryState.pushFloatValue(e.kind.literalFloat),
+        .literalFunction => try literalFunction(machine, e),
+        .literalInt => try machine.createIntValue(e.kind.literalInt),
+        .literalRecord => try literalRecord(machine, e),
+        .literalSequence => try literalSequence(machine, e),
+        .literalString => try machine.memoryState.pushStringPoolValue(e.kind.literalString),
+        .literalVoid => try machine.createVoidValue(),
+        .match => try match(machine, e),
+        .notOp => try notOp(machine, e),
+        .patternDeclaration => try patternDeclaration(machine, e),
+        .raise => try raise(machine, e),
+        .whilee => try whilee(machine, e),
     }
+}
+
+pub inline fn evalExpr(machine: *Machine, e: *AST.Expression) bool {
+    newEvalExpr(machine, e) catch return true;
 
     return false;
 }
 
-fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) bool {
+fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) Errors.RuntimeErrors!void {
     switch (lhs.kind) {
         .identifier => {
-            if (evalExpr(machine, value)) return true;
+            try newEvalExpr(machine, value);
 
-            if (!(machine.memoryState.updateInScope(lhs.kind.identifier, machine.memoryState.peek(0)) catch |err| return errorHandler(err))) {
-                const rec = raiseNamedUserError(machine, "UnknownIdentifierError", lhs.position) catch |err| return errorHandler(err);
-                rec.v.RecordKind.setU8(machine.memoryState.stringPool, "identifier", machine.memoryState.newStringPoolValue(lhs.kind.identifier) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
-                return true;
+            if (!(try machine.memoryState.updateInScope(lhs.kind.identifier, machine.memoryState.peek(0)))) {
+                const rec = try raiseNamedUserError(machine, "UnknownIdentifierError", lhs.position);
+                try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "identifier", try machine.memoryState.newStringPoolValue(lhs.kind.identifier));
+                return Errors.RuntimeErrors.InterpreterError;
             }
         },
         .dot => {
-            if (evalExpr(machine, lhs.kind.dot.record)) return true;
+            try newEvalExpr(machine, lhs.kind.dot.record);
             const record = machine.memoryState.peek(0);
 
             if (record.v != V.ValueValue.RecordKind) {
-                raiseExpectedTypeError(machine, lhs.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v) catch |err| return errorHandler(err);
-                return true;
+                try raiseExpectedTypeError(machine, lhs.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
+                return Errors.RuntimeErrors.InterpreterError;
             }
-            if (evalExpr(machine, value)) return true;
+            try newEvalExpr(machine, value);
 
-            record.v.RecordKind.set(lhs.kind.dot.field, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+            try record.v.RecordKind.set(lhs.kind.dot.field, machine.memoryState.peek(0));
 
             const v = machine.memoryState.pop();
             _ = machine.memoryState.pop();
-            machine.memoryState.push(v) catch |err| return errorHandler(err);
+            try machine.memoryState.push(v);
         },
         .indexRange => {
-            if (evalExpr(machine, lhs.kind.indexRange.expr)) return true;
+            try newEvalExpr(machine, lhs.kind.indexRange.expr);
             const sequence = machine.memoryState.peek(0);
             if (sequence.v != V.ValueValue.SequenceKind) {
-                raiseExpectedTypeError(machine, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v) catch |err| return errorHandler(err);
-                return true;
+                try raiseExpectedTypeError(machine, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v);
+                return Errors.RuntimeErrors.InterpreterError;
             }
 
             const seqLen = sequence.v.SequenceKind.len();
 
-            const start: V.IntType = V.clamp(indexPoint(machine, lhs.kind.indexRange.start, 0) catch |err| return errorHandler(err), 0, @intCast(seqLen));
-            const end: V.IntType = V.clamp(indexPoint(machine, lhs.kind.indexRange.end, @intCast(seqLen)) catch |err| return errorHandler(err), start, @intCast(seqLen));
+            const start: V.IntType = V.clamp(try indexPoint(machine, lhs.kind.indexRange.start, 0), 0, @intCast(seqLen));
+            const end: V.IntType = V.clamp(try indexPoint(machine, lhs.kind.indexRange.end, @intCast(seqLen)), start, @intCast(seqLen));
 
-            if (evalExpr(machine, value)) return true;
+            try newEvalExpr(machine, value);
             const v = machine.memoryState.peek(0);
 
             if (v.v == V.ValueValue.SequenceKind) {
-                sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), v.v.SequenceKind.items()) catch |err| return errorHandler(err);
+                try sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), v.v.SequenceKind.items());
             } else if (v.v == V.ValueValue.UnitKind) {
-                sequence.v.SequenceKind.removeRange(@intCast(start), @intCast(end)) catch |err| return errorHandler(err);
+                try sequence.v.SequenceKind.removeRange(@intCast(start), @intCast(end));
             } else if (v.v != V.ValueValue.SequenceKind) {
-                raiseExpectedTypeError(machine, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, v.v) catch |err| return errorHandler(err);
-                return true;
+                try raiseExpectedTypeError(machine, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, v.v);
+                return Errors.RuntimeErrors.InterpreterError;
             }
             machine.memoryState.popn(2);
-            machine.memoryState.push(v) catch |err| return errorHandler(err);
+            try machine.memoryState.push(v);
         },
         .indexValue => {
             const exprA = lhs.kind.indexValue.expr;
             const indexA = lhs.kind.indexValue.index;
 
-            if (evalExpr(machine, exprA)) return true;
+            try newEvalExpr(machine, exprA);
             const expr = machine.memoryState.peek(0);
 
             if (expr.v == V.ValueValue.RecordKind) {
-                if (evalExpr(machine, indexA)) return true;
+                try newEvalExpr(machine, indexA);
                 const index = machine.memoryState.peek(0);
 
                 if (index.v != V.ValueValue.StringKind) {
-                    raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 }
 
-                if (evalExpr(machine, value)) return true;
+                try newEvalExpr(machine, value);
 
-                expr.v.RecordKind.set(index.v.StringKind.value, machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+                try expr.v.RecordKind.set(index.v.StringKind.value, machine.memoryState.peek(0));
             } else if (expr.v == V.ValueValue.SequenceKind) {
-                if (evalExpr(machine, indexA)) return true;
+                try newEvalExpr(machine, indexA);
                 const index = machine.memoryState.peek(0);
 
                 if (index.v != V.ValueValue.IntKind) {
-                    raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 }
 
-                if (evalExpr(machine, value)) return true;
+                try newEvalExpr(machine, value);
 
                 const seq = expr.v.SequenceKind;
                 const idx = index.v.IntKind;
 
                 if (idx < 0 or idx >= seq.len()) {
-                    raiseIndexOutOfRangeError(machine, indexA.position, idx, @intCast(seq.len())) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIndexOutOfRangeError(machine, indexA.position, idx, @intCast(seq.len()));
+                    return Errors.RuntimeErrors.InterpreterError;
                 } else {
                     seq.set(@intCast(idx), machine.memoryState.peek(0));
                 }
             } else {
                 machine.memoryState.popn(1);
-                raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind }, expr.v) catch |err| return errorHandler(err);
-                return true;
+                try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind }, expr.v);
+                return Errors.RuntimeErrors.InterpreterError;
             }
 
             const v = machine.memoryState.pop();
             machine.memoryState.popn(2);
-            machine.memoryState.push(v) catch |err| return errorHandler(err);
+            try machine.memoryState.push(v);
         },
         else => {
-            _ = raiseNamedUserError(machine, "InvalidLHSError", lhs.position) catch |err| return errorHandler(err);
-            return true;
+            _ = try raiseNamedUserError(machine, "InvalidLHSError", lhs.position);
+            return Errors.RuntimeErrors.InterpreterError;
         },
     }
-
-    return false;
 }
 
-fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
+fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     const leftAST = e.kind.binaryOp.left;
     const op = e.kind.binaryOp.op;
     const rightAST = e.kind.binaryOp.right;
 
     switch (op) {
         AST.Operator.Plus => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.memoryState.peek(0);
             const left = machine.memoryState.peek(1);
@@ -252,15 +173,15 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             machine.memoryState.popn(2);
-                            machine.memoryState.pushIntValue(left.v.IntKind + right.v.IntKind) catch |err| return errorHandler(err);
+                            try machine.memoryState.pushIntValue(left.v.IntKind + right.v.IntKind);
                         },
                         V.ValueValue.FloatKind => {
                             machine.memoryState.popn(2);
-                            machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) + right.v.FloatKind) catch |err| return errorHandler(err);
+                            try machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) + right.v.FloatKind);
                         },
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
@@ -268,31 +189,31 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             machine.memoryState.popn(2);
-                            machine.memoryState.pushFloatValue(left.v.FloatKind + @as(V.FloatType, @floatFromInt(right.v.IntKind))) catch |err| return errorHandler(err);
+                            try machine.memoryState.pushFloatValue(left.v.FloatKind + @as(V.FloatType, @floatFromInt(right.v.IntKind)));
                         },
                         V.ValueValue.FloatKind => {
                             machine.memoryState.popn(2);
-                            machine.memoryState.pushFloatValue(left.v.FloatKind + right.v.FloatKind) catch |err| return errorHandler(err);
+                            try machine.memoryState.pushFloatValue(left.v.FloatKind + right.v.FloatKind);
                         },
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 V.ValueValue.SequenceKind => {
                     switch (right.v) {
                         V.ValueValue.SequenceKind => {
-                            machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
+                            try machine.memoryState.pushEmptySequenceValue();
                             const seq = machine.memoryState.peek(0);
-                            seq.v.SequenceKind.appendSlice(left.v.SequenceKind.items()) catch |err| return errorHandler(err);
-                            seq.v.SequenceKind.appendSlice(right.v.SequenceKind.items()) catch |err| return errorHandler(err);
+                            try seq.v.SequenceKind.appendSlice(left.v.SequenceKind.items());
+                            try seq.v.SequenceKind.appendSlice(right.v.SequenceKind.items());
                             machine.memoryState.popn(3);
-                            machine.memoryState.push(seq) catch |err| return errorHandler(err);
+                            try machine.memoryState.push(seq);
                         },
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
@@ -302,23 +223,23 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                             machine.memoryState.popn(2);
 
                             const slices = [_][]const u8{ left.v.StringKind.slice(), right.v.StringKind.slice() };
-                            machine.memoryState.pushOwnedStringValue(std.mem.concat(machine.memoryState.allocator, u8, &slices) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
+                            try machine.memoryState.pushOwnedStringValue(try std.mem.concat(machine.memoryState.allocator, u8, &slices));
                         },
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 else => {
-                    raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 },
             }
         },
         AST.Operator.Minus => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -326,41 +247,33 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             switch (left.v) {
                 V.ValueValue.IntKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushIntValue(left.v.IntKind - right.v.IntKind) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) - right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushIntValue(left.v.IntKind - right.v.IntKind),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) - right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 V.ValueValue.FloatKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushFloatValue(left.v.FloatKind - @as(V.FloatType, @floatFromInt(right.v.IntKind))) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushFloatValue(left.v.FloatKind - right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushFloatValue(left.v.FloatKind - @as(V.FloatType, @floatFromInt(right.v.IntKind))),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushFloatValue(left.v.FloatKind - right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 else => {
-                    raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 },
             }
         },
         AST.Operator.Times => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -368,55 +281,47 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             switch (left.v) {
                 V.ValueValue.IntKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushIntValue(left.v.IntKind * right.v.IntKind) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) * right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushIntValue(left.v.IntKind * right.v.IntKind),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) * right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 V.ValueValue.FloatKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushFloatValue(left.v.FloatKind * @as(V.FloatType, @floatFromInt(right.v.IntKind))) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushFloatValue(left.v.FloatKind * right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushFloatValue(left.v.FloatKind * @as(V.FloatType, @floatFromInt(right.v.IntKind))),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushFloatValue(left.v.FloatKind * right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 V.ValueValue.StringKind => {
                     if (right.v == V.ValueValue.IntKind) {
-                        const mem = machine.memoryState.allocator.alloc(u8, left.v.StringKind.len() * @as(usize, @intCast(right.v.IntKind))) catch |err| return errorHandler(err);
+                        const mem = try machine.memoryState.allocator.alloc(u8, left.v.StringKind.len() * @as(usize, @intCast(right.v.IntKind)));
 
                         for (0..@intCast(right.v.IntKind)) |index| {
                             std.mem.copyForwards(u8, mem[index * left.v.StringKind.len() ..], left.v.StringKind.slice());
                         }
 
-                        machine.memoryState.pushOwnedStringValue(mem) catch |err| return errorHandler(err);
+                        try machine.memoryState.pushOwnedStringValue(mem);
                     } else {
-                        raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                        return true;
+                        try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                        return Errors.RuntimeErrors.InterpreterError;
                     }
                 },
                 else => {
-                    raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 },
             }
         },
         AST.Operator.Divide => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -426,23 +331,21 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             if (right.v.IntKind == 0) {
-                                _ = raiseNamedUserError(machine, "DivideByZeroError", e.position) catch |err| return errorHandler(err);
-
-                                return true;
+                                _ = try raiseNamedUserError(machine, "DivideByZeroError", e.position);
+                                return Errors.RuntimeErrors.InterpreterError;
                             }
-                            machine.memoryState.pushIntValue(@divTrunc(left.v.IntKind, right.v.IntKind)) catch |err| return errorHandler(err);
+                            try machine.memoryState.pushIntValue(@divTrunc(left.v.IntKind, right.v.IntKind));
                         },
                         V.ValueValue.FloatKind => {
                             if (right.v.FloatKind == 0.0) {
-                                _ = raiseNamedUserError(machine, "DivideByZeroError", e.position) catch |err| return errorHandler(err);
-
-                                return true;
+                                _ = try raiseNamedUserError(machine, "DivideByZeroError", e.position);
+                                return Errors.RuntimeErrors.InterpreterError;
                             }
-                            machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) / right.v.FloatKind) catch |err| return errorHandler(err);
+                            try machine.memoryState.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) / right.v.FloatKind);
                         },
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
@@ -450,48 +353,46 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
                     switch (right.v) {
                         V.ValueValue.IntKind => {
                             if (right.v.IntKind == 0) {
-                                _ = raiseNamedUserError(machine, "DivideByZeroError", e.position) catch |err| return errorHandler(err);
-
-                                return true;
+                                _ = try raiseNamedUserError(machine, "DivideByZeroError", e.position);
+                                return Errors.RuntimeErrors.InterpreterError;
                             }
-                            machine.memoryState.pushFloatValue(left.v.FloatKind / @as(V.FloatType, @floatFromInt(right.v.IntKind))) catch |err| return errorHandler(err);
+                            try machine.memoryState.pushFloatValue(left.v.FloatKind / @as(V.FloatType, @floatFromInt(right.v.IntKind)));
                         },
                         V.ValueValue.FloatKind => {
                             if (right.v.FloatKind == 0.0) {
-                                _ = raiseNamedUserError(machine, "DivideByZeroError", e.position) catch |err| return errorHandler(err);
-
-                                return true;
+                                _ = try raiseNamedUserError(machine, "DivideByZeroError", e.position);
+                                return Errors.RuntimeErrors.InterpreterError;
                             }
-                            machine.memoryState.pushFloatValue(left.v.FloatKind / right.v.FloatKind) catch |err| return errorHandler(err);
+                            try machine.memoryState.pushFloatValue(left.v.FloatKind / right.v.FloatKind);
                         },
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 else => {
-                    raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 },
             }
         },
         AST.Operator.Modulo => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
 
             if (left.v != V.ValueValue.IntKind or right.v != V.ValueValue.IntKind) {
-                raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                return true;
+                try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                return Errors.RuntimeErrors.InterpreterError;
             }
-            machine.memoryState.pushIntValue(@mod(left.v.IntKind, right.v.IntKind)) catch |err| return errorHandler(err);
+            try machine.memoryState.pushIntValue(@mod(left.v.IntKind, right.v.IntKind));
         },
         AST.Operator.LessThan => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -499,41 +400,33 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             switch (left.v) {
                 V.ValueValue.IntKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushBoolValue(left.v.IntKind < right.v.IntKind) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) < right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushBoolValue(left.v.IntKind < right.v.IntKind),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) < right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 V.ValueValue.FloatKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushBoolValue(left.v.FloatKind < @as(V.FloatType, @floatFromInt(right.v.IntKind))) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushBoolValue(left.v.FloatKind < right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushBoolValue(left.v.FloatKind < @as(V.FloatType, @floatFromInt(right.v.IntKind))),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushBoolValue(left.v.FloatKind < right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 else => {
-                    raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 },
             }
         },
         AST.Operator.LessEqual => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -541,41 +434,33 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             switch (left.v) {
                 V.ValueValue.IntKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushBoolValue(left.v.IntKind <= right.v.IntKind) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) <= right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushBoolValue(left.v.IntKind <= right.v.IntKind),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) <= right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 V.ValueValue.FloatKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushBoolValue(left.v.FloatKind <= @as(V.FloatType, @floatFromInt(right.v.IntKind))) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushBoolValue(left.v.FloatKind <= right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushBoolValue(left.v.FloatKind <= @as(V.FloatType, @floatFromInt(right.v.IntKind))),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushBoolValue(left.v.FloatKind <= right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 else => {
-                    raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 },
             }
         },
         AST.Operator.GreaterThan => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -583,41 +468,33 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             switch (left.v) {
                 V.ValueValue.IntKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushBoolValue(left.v.IntKind > right.v.IntKind) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) > right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushBoolValue(left.v.IntKind > right.v.IntKind),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) > right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 V.ValueValue.FloatKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushBoolValue(left.v.FloatKind > @as(V.FloatType, @floatFromInt(right.v.IntKind))) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushBoolValue(left.v.FloatKind > right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushBoolValue(left.v.FloatKind > @as(V.FloatType, @floatFromInt(right.v.IntKind))),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushBoolValue(left.v.FloatKind > right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 else => {
-                    raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 },
             }
         },
         AST.Operator.GreaterEqual => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
@@ -625,197 +502,187 @@ fn binaryOp(machine: *Machine, e: *AST.Expression) bool {
             switch (left.v) {
                 V.ValueValue.IntKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushBoolValue(left.v.IntKind >= right.v.IntKind) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) >= right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushBoolValue(left.v.IntKind >= right.v.IntKind),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) >= right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 V.ValueValue.FloatKind => {
                     switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.memoryState.pushBoolValue(left.v.FloatKind >= @as(V.FloatType, @floatFromInt(right.v.IntKind))) catch |err| return errorHandler(err);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.memoryState.pushBoolValue(left.v.FloatKind >= right.v.FloatKind) catch |err| return errorHandler(err);
-                        },
+                        V.ValueValue.IntKind => try machine.memoryState.pushBoolValue(left.v.FloatKind >= @as(V.FloatType, @floatFromInt(right.v.IntKind))),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushBoolValue(left.v.FloatKind >= right.v.FloatKind),
                         else => {
-                            raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                            return true;
+                            try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                            return Errors.RuntimeErrors.InterpreterError;
                         },
                     }
                 },
                 else => {
-                    raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 },
             }
         },
         AST.Operator.Equal => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
 
-            machine.memoryState.pushBoolValue(V.eq(left, right)) catch |err| return errorHandler(err);
+            try machine.memoryState.pushBoolValue(V.eq(left, right));
         },
         AST.Operator.NotEqual => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
 
             const right = machine.pop();
             const left = machine.pop();
 
-            machine.memoryState.pushBoolValue(!V.eq(left, right)) catch |err| return errorHandler(err);
+            try machine.memoryState.pushBoolValue(!V.eq(left, right));
         },
         AST.Operator.And => {
-            if (evalExpr(machine, leftAST)) return true;
+            try newEvalExpr(machine, leftAST);
 
             const left = machine.memoryState.peek(0);
             if (left.v != V.ValueValue.BoolKind) {
-                raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, V.ValueKind.BoolKind) catch |err| return errorHandler(err);
-                return true;
+                try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, V.ValueKind.BoolKind);
+                return Errors.RuntimeErrors.InterpreterError;
             } else if (left.v.BoolKind) {
                 _ = machine.pop();
-                if (evalExpr(machine, rightAST)) return true;
+                try newEvalExpr(machine, rightAST);
                 const right = machine.memoryState.peek(0);
 
                 if (right.v != V.ValueValue.BoolKind) {
-                    raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 }
             }
         },
         AST.Operator.Or => {
-            if (evalExpr(machine, leftAST)) return true;
+            try newEvalExpr(machine, leftAST);
 
             const left = machine.memoryState.peek(0);
             if (left.v != V.ValueValue.BoolKind) {
-                raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, V.ValueKind.BoolKind) catch |err| return errorHandler(err);
-                return true;
+                try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, V.ValueKind.BoolKind);
+                return Errors.RuntimeErrors.InterpreterError;
             } else if (!left.v.BoolKind) {
                 _ = machine.pop();
-                if (evalExpr(machine, rightAST)) return true;
+                try newEvalExpr(machine, rightAST);
                 const right = machine.memoryState.peek(0);
 
                 if (right.v != V.ValueValue.BoolKind) {
-                    raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                    return true;
+                    try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    return Errors.RuntimeErrors.InterpreterError;
                 }
             }
         },
         AST.Operator.Append => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
             const left = machine.memoryState.peek(1);
             const right = machine.memoryState.peek(0);
 
             if (left.v != V.ValueValue.SequenceKind) {
-                raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                return true;
+                try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                return Errors.RuntimeErrors.InterpreterError;
             }
 
-            machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
+            try machine.memoryState.pushEmptySequenceValue();
             const result = machine.memoryState.peek(0);
 
-            result.v.SequenceKind.appendSlice(left.v.SequenceKind.items()) catch |err| return errorHandler(err);
-            result.v.SequenceKind.appendItem(right) catch |err| return errorHandler(err);
+            try result.v.SequenceKind.appendSlice(left.v.SequenceKind.items());
+            try result.v.SequenceKind.appendItem(right);
 
             machine.memoryState.popn(3);
-            machine.memoryState.push(result) catch |err| return errorHandler(err);
+            try machine.memoryState.push(result);
         },
         AST.Operator.AppendUpdate => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
             const left = machine.memoryState.peek(1);
             const right = machine.memoryState.peek(0);
 
             if (left.v != V.ValueValue.SequenceKind) {
-                raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                return true;
+                try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                return Errors.RuntimeErrors.InterpreterError;
             }
 
-            left.v.SequenceKind.appendItem(right) catch |err| return errorHandler(err);
+            try left.v.SequenceKind.appendItem(right);
 
             machine.memoryState.popn(1);
         },
         AST.Operator.Prepend => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
             const left = machine.memoryState.peek(1);
             const right = machine.memoryState.peek(0);
 
             if (right.v != V.ValueValue.SequenceKind) {
-                raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                return true;
+                try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                return Errors.RuntimeErrors.InterpreterError;
             }
 
-            machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
+            try machine.memoryState.pushEmptySequenceValue();
             const result = machine.memoryState.peek(0);
 
-            result.v.SequenceKind.appendItem(left) catch |err| return errorHandler(err);
-            result.v.SequenceKind.appendSlice(right.v.SequenceKind.items()) catch |err| return errorHandler(err);
+            try result.v.SequenceKind.appendItem(left);
+            try result.v.SequenceKind.appendSlice(right.v.SequenceKind.items());
 
             machine.memoryState.popn(3);
-            machine.memoryState.push(result) catch |err| return errorHandler(err);
+            try machine.memoryState.push(result);
         },
         AST.Operator.PrependUpdate => {
-            if (evalExpr(machine, leftAST)) return true;
-            if (evalExpr(machine, rightAST)) return true;
+            try newEvalExpr(machine, leftAST);
+            try newEvalExpr(machine, rightAST);
             const left = machine.memoryState.peek(1);
             const right = machine.memoryState.peek(0);
 
             if (right.v != V.ValueValue.SequenceKind) {
-                raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v) catch |err| return errorHandler(err);
-                return true;
+                try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                return Errors.RuntimeErrors.InterpreterError;
             }
 
-            right.v.SequenceKind.prependItem(left) catch |err| return errorHandler(err);
+            try right.v.SequenceKind.prependItem(left);
 
             machine.memoryState.popn(2);
-            machine.memoryState.push(right) catch |err| return errorHandler(err);
+            try machine.memoryState.push(right);
         },
         AST.Operator.Hook => {
-            if (evalExpr(machine, leftAST)) return true;
+            try newEvalExpr(machine, leftAST);
 
             const left = machine.memoryState.peek(0);
 
             if (left.v == V.ValueValue.UnitKind) {
                 _ = machine.memoryState.pop();
 
-                if (evalExpr(machine, rightAST)) return true;
+                try newEvalExpr(machine, rightAST);
             }
         },
 
         // else => unreachable,
     }
-
-    return false;
 }
 
-fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) bool {
-    if (evalExpr(machine, calleeAST)) return true;
+fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.RuntimeErrors!void {
+    try newEvalExpr(machine, calleeAST);
 
     const callee = machine.memoryState.peek(0);
 
     switch (callee.v) {
-        V.ValueValue.FunctionKind => return callFn(machine, e, calleeAST, argsAST, callee),
-        V.ValueValue.BuiltinKind => return callBuiltin(machine, e, calleeAST, argsAST, callee),
+        V.ValueValue.FunctionKind => try callFn(machine, e, calleeAST, argsAST, callee),
+        V.ValueValue.BuiltinKind => try callBuiltin(machine, e, calleeAST, argsAST, callee),
         else => {
-            raiseExpectedTypeError(machine, calleeAST.position, &[_]V.ValueKind{V.ValueValue.FunctionKind}, callee.v) catch |err| return errorHandler(err);
-            return true;
+            try raiseExpectedTypeError(machine, calleeAST.position, &[_]V.ValueKind{V.ValueValue.FunctionKind}, callee.v);
+            return Errors.RuntimeErrors.InterpreterError;
         },
     }
 }
 
-fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) bool {
+fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) !void {
     const sp = machine.memoryState.stack.items.len - 1;
 
     const args = callee.v.FunctionKind.arguments;
@@ -823,131 +690,114 @@ fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, arg
 
     var index: u8 = 0;
     while (index < argsAST.len) {
-        if (evalExpr(machine, argsAST[index])) return true;
+        try newEvalExpr(machine, argsAST[index]);
         index += 1;
     }
 
     while (index < args.len) {
         if (args[index].default == null) {
-            machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
+            try machine.memoryState.pushUnitValue();
         } else {
-            machine.memoryState.push(args[index].default.?) catch |err| return errorHandler(err);
+            try machine.memoryState.push(args[index].default.?);
         }
         index += 1;
     }
 
-    machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope) catch |err| return errorHandler(err);
+    try machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope);
     defer machine.memoryState.restoreScope();
 
     var lp: u8 = 0;
     while (lp < args.len) {
-        machine.memoryState.addToScope(args[lp].name, machine.memoryState.stack.items[sp + lp + 1]) catch |err| return errorHandler(err);
+        try machine.memoryState.addToScope(args[lp].name, machine.memoryState.stack.items[sp + lp + 1]);
         lp += 1;
     }
 
     if (restOfArgs != null) {
         const rest = machine.memoryState.stack.items[sp + lp + 1 ..];
-        machine.memoryState.addArrayValueToScope(restOfArgs.?, rest) catch |err| return errorHandler(err);
+        try machine.memoryState.addArrayValueToScope(restOfArgs.?, rest);
     }
 
     machine.memoryState.popn(index);
-    if (evalExpr(machine, callee.v.FunctionKind.body)) {
-        machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end }) catch |err| return errorHandler(err);
-        return true;
-    }
+    newEvalExpr(machine, callee.v.FunctionKind.body) catch |err| {
+        try machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end });
+        return err;
+    };
 
     const result = machine.memoryState.pop();
     _ = machine.memoryState.pop();
-    machine.memoryState.push(result) catch |err| return errorHandler(err);
-
-    return false;
+    try machine.memoryState.push(result);
 }
 
-fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) bool {
+fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) !void {
     var buffer = std.ArrayList(*V.Value).init(machine.memoryState.allocator);
     defer buffer.deinit();
 
     var index: u8 = 0;
     while (index < argsAST.len) {
-        if (evalExpr(machine, argsAST[index])) return true;
-        buffer.append(machine.memoryState.peek(0)) catch |err| return errorHandler(err);
+        try newEvalExpr(machine, argsAST[index]);
+        try buffer.append(machine.memoryState.peek(0));
         index += 1;
     }
 
     callee.v.BuiltinKind.body(machine, calleeAST, argsAST, buffer.items) catch |err| {
-        machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end }) catch |err2| return errorHandler(err2);
-        return errorHandler(err);
+        try machine.appendStackItem(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end });
+        return err;
     };
 
     const result = machine.memoryState.pop();
     machine.memoryState.popn(index + 1);
-    machine.memoryState.push(result) catch |err| return errorHandler(err);
-
-    return false;
+    try machine.memoryState.push(result);
 }
 
-fn catche(machine: *Machine, e: *AST.Expression) bool {
+fn catche(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     const sp = machine.memoryState.stack.items.len;
-    if (evalExpr(machine, e.kind.catche.value)) {
+    newEvalExpr(machine, e.kind.catche.value) catch |err| {
         const value = machine.memoryState.peek(0);
 
         for (e.kind.catche.cases) |case| {
-            machine.memoryState.openScope() catch |err| return errorHandler(err);
+            try machine.memoryState.openScope();
 
-            const matched = matchPattern(machine, case.pattern, value);
+            const matched = try matchPattern(machine, case.pattern, value);
             if (matched) {
-                const result = evalExpr(machine, case.body);
+                const result = newEvalExpr(machine, case.body);
 
                 machine.memoryState.restoreScope();
                 const v = machine.memoryState.pop();
                 while (machine.memoryState.stack.items.len > sp) {
                     _ = machine.memoryState.pop();
                 }
-                machine.memoryState.push(v) catch |err| return errorHandler(err);
+                try machine.memoryState.push(v);
+
                 return result;
             }
             machine.memoryState.restoreScope();
         }
-        return true;
-    } else {
-        return false;
-    }
+        return err;
+    };
 }
 
-fn declaration(machine: *Machine, e: *AST.Expression) bool {
-    if (evalExpr(machine, e.kind.idDeclaration.value)) return true;
-
-    const value: *V.Value = machine.memoryState.peek(0);
-
-    machine.memoryState.addToScope(e.kind.idDeclaration.name, value) catch |err| return errorHandler(err);
-
-    return false;
-}
-
-fn dot(machine: *Machine, e: *AST.Expression) bool {
-    if (evalExpr(machine, e.kind.dot.record)) return true;
+fn dot(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try newEvalExpr(machine, e.kind.dot.record);
 
     const record = machine.memoryState.pop();
 
     if (record.v != V.ValueValue.RecordKind) {
-        raiseExpectedTypeError(machine, e.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v) catch |err| return errorHandler(err);
-        return true;
+        try raiseExpectedTypeError(machine, e.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
+        return Errors.RuntimeErrors.InterpreterError;
     }
 
     const value = record.v.RecordKind.get(e.kind.dot.field);
 
     if (value == null) {
-        machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
+        try machine.memoryState.pushUnitValue();
     } else {
-        machine.memoryState.push(value.?) catch |err| return errorHandler(err);
+        try machine.memoryState.push(value.?);
     }
-
-    return false;
 }
 
-fn exprs(machine: *Machine, e: *AST.Expression) bool {
+fn exprs(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     if (e.kind.exprs.len == 0) {
-        machine.createVoidValue() catch |err| return errorHandler(err);
+        try machine.memoryState.pushUnitValue();
     } else {
         var isFirst = true;
 
@@ -958,86 +808,86 @@ fn exprs(machine: *Machine, e: *AST.Expression) bool {
                 _ = machine.memoryState.pop();
             }
 
-            if (evalExpr(machine, expr)) return true;
+            try newEvalExpr(machine, expr);
         }
     }
-    return false;
 }
 
-fn identifier(machine: *Machine, e: *AST.Expression) bool {
+fn idDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try newEvalExpr(machine, e.kind.idDeclaration.value);
+
+    const value: *V.Value = machine.memoryState.peek(0);
+
+    try machine.memoryState.addToScope(e.kind.idDeclaration.name, value);
+}
+
+fn identifier(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     const result = machine.memoryState.getFromScope(e.kind.identifier);
 
     if (result == null) {
-        const rec = raiseNamedUserError(machine, "UnknownIdentifierError", e.position) catch |err| return errorHandler(err);
-        rec.v.RecordKind.setU8(machine.memoryState.stringPool, "identifier", machine.memoryState.newStringPoolValue(e.kind.identifier) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
-        return true;
+        const rec = try raiseNamedUserError(machine, "UnknownIdentifierError", e.position);
+        try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "identifier", try machine.memoryState.newStringPoolValue(e.kind.identifier));
+        return Errors.RuntimeErrors.InterpreterError;
     } else {
-        machine.memoryState.push(result.?) catch |err| return errorHandler(err);
-        return false;
+        try machine.memoryState.push(result.?);
     }
 }
 
-fn ifte(machine: *Machine, e: *AST.Expression) bool {
+fn ifte(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     for (e.kind.ifte) |case| {
         if (case.condition == null) {
-            if (evalExpr(machine, case.then)) return true;
-            return false;
+            try newEvalExpr(machine, case.then);
+            return;
         }
 
-        if (evalExpr(machine, case.condition.?)) return true;
+        try newEvalExpr(machine, case.condition.?);
 
         const condition = machine.memoryState.pop();
 
         if (condition.v == V.ValueValue.BoolKind and condition.v.BoolKind) {
-            if (evalExpr(machine, case.then)) return true;
-            return false;
+            try newEvalExpr(machine, case.then);
+            return;
         }
     }
 
-    machine.createVoidValue() catch |err| return errorHandler(err);
-
-    return false;
+    try machine.createVoidValue();
 }
 
-fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) bool {
-    if (evalExpr(machine, exprA)) return true;
+fn indexRange(machine: *Machine, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) Errors.RuntimeErrors!void {
+    try newEvalExpr(machine, exprA);
     const expr = machine.memoryState.peek(0);
 
     if (expr.v == V.ValueValue.SequenceKind) {
         const seq = expr.v.SequenceKind;
 
-        const start: V.IntType = V.clamp(indexPoint(machine, startA, 0) catch |err| return errorHandler(err), 0, @intCast(seq.len()));
-        const end: V.IntType = V.clamp(indexPoint(machine, endA, @intCast(seq.len())) catch |err| return errorHandler(err), start, @intCast(seq.len()));
+        const start: V.IntType = V.clamp(try indexPoint(machine, startA, 0), 0, @intCast(seq.len()));
+        const end: V.IntType = V.clamp(try indexPoint(machine, endA, @intCast(seq.len())), start, @intCast(seq.len()));
 
-        machine.memoryState.pushEmptySequenceValue() catch |err| return errorHandler(err);
-        machine.memoryState.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]) catch |err| return errorHandler(err);
+        try machine.memoryState.pushEmptySequenceValue();
+        try machine.memoryState.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]);
     } else if (expr.v == V.ValueValue.StringKind) {
         const str = expr.v.StringKind.slice();
 
-        const start: V.IntType = V.clamp(indexPoint(machine, startA, 0) catch |err| return errorHandler(err), 0, @intCast(str.len));
-        const end: V.IntType = V.clamp(indexPoint(machine, endA, @intCast(str.len)) catch |err| return errorHandler(err), start, @intCast(str.len));
+        const start: V.IntType = V.clamp(try indexPoint(machine, startA, 0), 0, @intCast(str.len));
+        const end: V.IntType = V.clamp(try indexPoint(machine, endA, @intCast(str.len)), start, @intCast(str.len));
 
-        machine.memoryState.pushStringValue(str[@intCast(start)..@intCast(end)]) catch |err| return errorHandler(err);
+        try machine.memoryState.pushStringValue(str[@intCast(start)..@intCast(end)]);
     } else {
         machine.memoryState.popn(1);
-        raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v) catch |err| return errorHandler(err);
-        return true;
+        try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
+        return Errors.RuntimeErrors.InterpreterError;
     }
 
     const result = machine.memoryState.pop();
     _ = machine.memoryState.pop();
-    machine.memoryState.push(result) catch |err| return errorHandler(err);
-
-    return false;
+    try machine.memoryState.push(result);
 }
 
-fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) !V.IntType {
+fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) Errors.RuntimeErrors!V.IntType {
     if (point == null) {
         return def;
     } else {
-        if (evalExpr(machine, point.?)) {
-            return error.InterpreterError;
-        }
+        try newEvalExpr(machine, point.?);
         const pointV = machine.memoryState.peek(0);
         if (pointV.v != V.ValueValue.IntKind) {
             try raiseExpectedTypeError(machine, point.?.position, &[_]V.ValueKind{V.ValueValue.IntKind}, pointV.v);
@@ -1050,17 +900,17 @@ fn indexPoint(machine: *Machine, point: ?*AST.Expression, def: V.IntType) !V.Int
     }
 }
 
-fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression) bool {
-    if (evalExpr(machine, exprA)) return true;
+fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression) Errors.RuntimeErrors!void {
+    try newEvalExpr(machine, exprA);
     const expr = machine.memoryState.peek(0);
 
     if (expr.v == V.ValueValue.RecordKind) {
-        if (evalExpr(machine, indexA)) return true;
+        try newEvalExpr(machine, indexA);
         const index = machine.memoryState.peek(0);
 
         if (index.v != V.ValueValue.StringKind) {
-            raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v) catch |err| return errorHandler(err);
-            return true;
+            try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+            return Errors.RuntimeErrors.InterpreterError;
         }
 
         machine.memoryState.popn(2);
@@ -1068,17 +918,17 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         const value = expr.v.RecordKind.get(index.v.StringKind.value);
 
         if (value == null) {
-            machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
+            try machine.memoryState.pushUnitValue();
         } else {
-            machine.memoryState.push(value.?) catch |err| return errorHandler(err);
+            try machine.memoryState.push(value.?);
         }
     } else if (expr.v == V.ValueValue.SequenceKind) {
-        if (evalExpr(machine, indexA)) return true;
+        try newEvalExpr(machine, indexA);
         const index = machine.memoryState.peek(0);
 
         if (index.v != V.ValueValue.IntKind) {
-            raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v) catch |err| return errorHandler(err);
-            return true;
+            try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+            return Errors.RuntimeErrors.InterpreterError;
         }
 
         machine.memoryState.popn(2);
@@ -1087,17 +937,17 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         const idx = index.v.IntKind;
 
         if (idx < 0 or idx >= seq.len()) {
-            machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
+            try machine.memoryState.pushUnitValue();
         } else {
-            machine.memoryState.push(seq.at(@intCast(idx))) catch |err| return errorHandler(err);
+            try machine.memoryState.push(seq.at(@intCast(idx)));
         }
     } else if (expr.v == V.ValueValue.StringKind) {
-        if (evalExpr(machine, indexA)) return true;
+        try newEvalExpr(machine, indexA);
         const index = machine.memoryState.peek(0);
 
         if (index.v != V.ValueValue.IntKind) {
-            raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v) catch |err| return errorHandler(err);
-            return true;
+            try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+            return Errors.RuntimeErrors.InterpreterError;
         }
 
         machine.memoryState.popn(2);
@@ -1106,50 +956,126 @@ fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Expression
         const idx = index.v.IntKind;
 
         if (idx < 0 or idx >= str.len) {
-            machine.memoryState.pushUnitValue() catch |err| return errorHandler(err);
+            try machine.memoryState.pushUnitValue();
         } else {
-            machine.memoryState.pushCharValue(str[@intCast(idx)]) catch |err| return errorHandler(err);
+            try machine.memoryState.pushCharValue(str[@intCast(idx)]);
         }
     } else {
         machine.memoryState.popn(1);
-        raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v) catch |err| return errorHandler(err);
-        return true;
+        try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
+        return Errors.RuntimeErrors.InterpreterError;
     }
-
-    return false;
 }
 
-fn match(machine: *Machine, e: *AST.Expression) bool {
-    if (evalExpr(machine, e.kind.match.value)) return true;
+fn literalFunction(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+    var arguments = try machine.memoryState.allocator.alloc(V.FunctionArgument, e.kind.literalFunction.params.len);
+
+    for (e.kind.literalFunction.params, 0..) |param, index| {
+        arguments[index] = V.FunctionArgument{ .name = param.name.incRefR(), .default = null };
+    }
+
+    _ = try machine.memoryState.pushValue(V.ValueValue{ .FunctionKind = V.FunctionValue{
+        .scope = machine.memoryState.scope(),
+        .arguments = arguments,
+        .restOfArguments = if (e.kind.literalFunction.restOfParams == null) null else e.kind.literalFunction.restOfParams.?.incRefR(),
+        .body = e.kind.literalFunction.body,
+    } });
+
+    for (e.kind.literalFunction.params, 0..) |param, index| {
+        if (param.default != null) {
+            try newEvalExpr(machine, param.default.?);
+            arguments[index].default = machine.pop();
+        }
+    }
+}
+
+fn literalRecord(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try machine.memoryState.pushEmptyMapValue();
+    var map = machine.topOfStack().?;
+
+    for (e.kind.literalRecord) |entry| {
+        switch (entry) {
+            .value => {
+                try newEvalExpr(machine, entry.value.value);
+
+                const value = machine.memoryState.pop();
+                try map.v.RecordKind.set(entry.value.key, value);
+            },
+            .record => {
+                try newEvalExpr(machine, entry.record);
+
+                const value = machine.memoryState.pop();
+                if (value.v != V.ValueValue.RecordKind) {
+                    try raiseExpectedTypeError(machine, entry.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, value.v);
+                    return Errors.RuntimeErrors.InterpreterError;
+                }
+
+                var iterator = value.v.RecordKind.iterator();
+                while (iterator.next()) |rv| {
+                    try map.v.RecordKind.set(rv.key_ptr.*, rv.value_ptr.*);
+                }
+            },
+        }
+    }
+}
+
+fn literalSequence(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try machine.memoryState.pushEmptySequenceValue();
+    const seq = machine.memoryState.peek(0);
+
+    for (e.kind.literalSequence) |v| {
+        switch (v) {
+            .value => {
+                try newEvalExpr(machine, v.value);
+                try seq.v.SequenceKind.appendItem(machine.memoryState.pop());
+            },
+            .sequence => {
+                try newEvalExpr(machine, v.sequence);
+                const vs = machine.memoryState.pop();
+
+                if (vs.v != V.ValueValue.SequenceKind) {
+                    try raiseExpectedTypeError(machine, v.sequence.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, vs.v);
+                    return Errors.RuntimeErrors.InterpreterError;
+                }
+
+                try seq.v.SequenceKind.appendSlice(vs.v.SequenceKind.items());
+            },
+        }
+    }
+}
+
+fn match(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try newEvalExpr(machine, e.kind.match.value);
 
     const value = machine.memoryState.peek(0);
 
     for (e.kind.match.cases) |case| {
-        machine.memoryState.openScope() catch |err| return errorHandler(err);
+        try machine.memoryState.openScope();
 
-        const matched = matchPattern(machine, case.pattern, value);
+        const matched = try matchPattern(machine, case.pattern, value);
         if (matched) {
-            const result = evalExpr(machine, case.body);
+            const result = newEvalExpr(machine, case.body);
 
             machine.memoryState.restoreScope();
             const v = machine.memoryState.pop();
             _ = machine.memoryState.pop();
-            machine.memoryState.push(v) catch |err| return errorHandler(err);
+            try machine.memoryState.push(v);
+
             return result;
         }
         machine.memoryState.restoreScope();
     }
 
-    _ = raiseMatchError(machine, e.position, value) catch |err| return errorHandler(err);
+    _ = try raiseMatchError(machine, e.position, value);
 
-    return true;
+    return Errors.RuntimeErrors.InterpreterError;
 }
 
-fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
+fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) !bool {
     return switch (p.kind) {
         .identifier => {
             if (!std.mem.eql(u8, p.kind.identifier.slice(), "_")) {
-                machine.memoryState.addToScope(p.kind.identifier, v) catch |err| return errorHandler(err);
+                try machine.memoryState.addToScope(p.kind.identifier, v);
             }
             return true;
         },
@@ -1169,14 +1095,14 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
                 if (value == null) return false;
 
                 if (entry.pattern == null) {
-                    machine.memoryState.addToScope(if (entry.id == null) entry.key else entry.id.?, value.?) catch |err| return errorHandler(err);
-                } else if (entry.pattern != null and !matchPattern(machine, entry.pattern.?, value.?)) {
+                    try machine.memoryState.addToScope(if (entry.id == null) entry.key else entry.id.?, value.?);
+                } else if (entry.pattern != null and !try matchPattern(machine, entry.pattern.?, value.?)) {
                     return false;
                 }
             }
 
             if (p.kind.record.id != null) {
-                machine.memoryState.addToScope(p.kind.record.id.?, v) catch |err| return errorHandler(err);
+                try machine.memoryState.addToScope(p.kind.record.id.?, v);
             }
 
             return true;
@@ -1191,20 +1117,20 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
 
             var index: u8 = 0;
             while (index < p.kind.sequence.patterns.len) {
-                if (!matchPattern(machine, p.kind.sequence.patterns[index], seq.at(index))) return false;
+                if (!try matchPattern(machine, p.kind.sequence.patterns[index], seq.at(index))) return false;
                 index += 1;
             }
 
             if (p.kind.sequence.restOfPatterns != null and !std.mem.eql(u8, p.kind.sequence.restOfPatterns.?.slice(), "_")) {
                 var newSeq = try V.SequenceValue.init(machine.memoryState.allocator);
                 if (seq.len() > p.kind.sequence.patterns.len) {
-                    newSeq.appendSlice(seq.items()[p.kind.sequence.patterns.len..]) catch |err| return errorHandler(err);
+                    try newSeq.appendSlice(seq.items()[p.kind.sequence.patterns.len..]);
                 }
-                machine.memoryState.addToScope(p.kind.sequence.restOfPatterns.?, machine.memoryState.newValue(V.ValueValue{ .SequenceKind = newSeq }) catch |err| return errorHandler(err)) catch |err| return errorHandler(err);
+                try machine.memoryState.addToScope(p.kind.sequence.restOfPatterns.?, try machine.memoryState.newValue(V.ValueValue{ .SequenceKind = newSeq }));
             }
 
             if (p.kind.sequence.id != null) {
-                machine.memoryState.addToScope(p.kind.sequence.id.?, v) catch |err| return errorHandler(err);
+                try machine.memoryState.addToScope(p.kind.sequence.id.?, v);
             }
 
             return true;
@@ -1213,31 +1139,39 @@ fn matchPattern(machine: *Machine, p: *AST.Pattern, v: *V.Value) bool {
     };
 }
 
-fn patternDeclaration(machine: *Machine, e: *AST.Expression) bool {
-    if (evalExpr(machine, e.kind.patternDeclaration.value)) return true;
+fn notOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try newEvalExpr(machine, e.kind.notOp.value);
+
+    const v = machine.memoryState.pop();
+    if (v.v != V.ValueValue.BoolKind) {
+        try raiseExpectedTypeError(machine, e.position, &[_]V.ValueKind{V.ValueValue.BoolKind}, v.v);
+        return Errors.RuntimeErrors.InterpreterError;
+    }
+
+    try machine.memoryState.pushBoolValue(!v.v.BoolKind);
+}
+
+fn patternDeclaration(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try newEvalExpr(machine, e.kind.patternDeclaration.value);
 
     const value: *V.Value = machine.memoryState.peek(0);
 
-    if (matchPattern(machine, e.kind.patternDeclaration.pattern, value)) {
-        return false;
+    if (!try matchPattern(machine, e.kind.patternDeclaration.pattern, value)) {
+        _ = try raiseMatchError(machine, e.position, value);
+        return Errors.RuntimeErrors.InterpreterError;
     }
-
-    _ = raiseMatchError(machine, e.position, value) catch |err| return errorHandler(err);
-
-    return true;
 }
 
-fn raise(machine: *Machine, e: *AST.Expression) bool {
-    if (evalExpr(machine, e.kind.raise.expr)) return true;
+fn raise(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try newEvalExpr(machine, e.kind.raise.expr);
+    try machine.appendStackItem(e.position);
 
-    machine.appendStackItem(e.position) catch |err| return errorHandler(err);
-
-    return true;
+    return Errors.RuntimeErrors.InterpreterError;
 }
 
-fn whilee(machine: *Machine, e: *AST.Expression) bool {
+fn whilee(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     while (true) {
-        if (evalExpr(machine, e.kind.whilee.condition)) return true;
+        try newEvalExpr(machine, e.kind.whilee.condition);
 
         const condition = machine.memoryState.pop();
 
@@ -1245,14 +1179,12 @@ fn whilee(machine: *Machine, e: *AST.Expression) bool {
             break;
         }
 
-        if (evalExpr(machine, e.kind.whilee.body)) return true;
+        try newEvalExpr(machine, e.kind.whilee.body);
 
         _ = machine.memoryState.pop();
     }
 
-    machine.createVoidValue() catch |err| return errorHandler(err);
-
-    return false;
+    try machine.createVoidValue();
 }
 
 fn addBuiltin(
@@ -1565,10 +1497,4 @@ fn raiseNamedUserError(machine: *Machine, name: []const u8, position: ?Errors.Po
     try machine.appendStackItem(position);
 
     return record;
-}
-
-fn errorHandler(err: anyerror) bool {
-    std.debug.print("Error: {}\n", .{err});
-
-    return true;
 }
