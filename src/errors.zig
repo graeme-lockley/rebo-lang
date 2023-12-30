@@ -36,38 +36,6 @@ pub const ParserError = struct {
     }
 };
 
-pub fn locationFromOffsets(allocator: std.mem.Allocator, src: []const u8, position: Position) !?LocationRange {
-    const content = Builtin.loadBinary(allocator, src) catch return null;
-    defer allocator.free(content);
-
-    var line: usize = 1;
-    var column: usize = 1;
-
-    var from = Location{ .line = 0, .column = 0 };
-    var to = Location{ .line = 0, .column = 0 };
-
-    for (content, 0..) |c, i| {
-        if (i == position.start) {
-            from = Location{ .line = line, .column = column };
-        }
-        if (i == position.end - 1) {
-            to = Location{ .line = line, .column = column };
-        }
-        if (i >= position.start and i >= position.end) {
-            break;
-        }
-
-        if (c == '\n') {
-            line += 1;
-            column = 1;
-        } else {
-            column += 1;
-        }
-    }
-
-    return LocationRange{ .from = from, .to = to };
-}
-
 pub const StackItem = struct {
     src: []const u8,
     position: Position,
@@ -77,7 +45,35 @@ pub const StackItem = struct {
     }
 
     pub fn location(self: StackItem, allocator: std.mem.Allocator) !?LocationRange {
-        return try locationFromOffsets(allocator, self.src, self.position);
+        const content = Builtin.loadBinary(allocator, self.src) catch return null;
+        defer allocator.free(content);
+
+        var line: usize = 1;
+        var column: usize = 1;
+
+        var from = Location{ .line = 0, .column = 0 };
+        var to = Location{ .line = 0, .column = 0 };
+
+        for (content, 0..) |c, i| {
+            if (i == self.position.start) {
+                from = Location{ .line = line, .column = column };
+            }
+            if (i == self.position.end - 1) {
+                to = Location{ .line = line, .column = column };
+            }
+            if (i >= self.position.start and i >= self.position.end) {
+                break;
+            }
+
+            if (c == '\n') {
+                line += 1;
+                column = 1;
+            } else {
+                column += 1;
+            }
+        }
+
+        return LocationRange{ .from = from, .to = to };
     }
 };
 
@@ -94,26 +90,15 @@ const LocationRange = struct {
 pub const Error = struct {
     allocator: std.mem.Allocator,
     detail: ErrorDetail,
-    stack: std.ArrayList(StackItem),
+    stackItem: StackItem,
 
-    pub fn init(allocator: std.mem.Allocator, detail: ErrorDetail) !Error {
-        return Error{ .allocator = allocator, .detail = detail, .stack = std.ArrayList(StackItem).init(allocator) };
+    pub fn init(allocator: std.mem.Allocator, detail: ErrorDetail, stackItem: StackItem) !Error {
+        return Error{ .allocator = allocator, .detail = detail, .stackItem = stackItem };
     }
 
     pub fn deinit(self: *Error) void {
         self.detail.deinit(self.allocator);
-
-        for (self.stack.items) |*item| {
-            item.deinit(self.allocator);
-        }
-
-        self.stack.deinit();
-    }
-
-    pub fn appendStackItem(self: *Error, src: []const u8, position: Position) !void {
-        var stackItem = StackItem{ .src = try self.allocator.dupe(u8, src), .position = position };
-
-        try self.stack.append(stackItem);
+        self.stackItem.deinit(self.allocator);
     }
 };
 
@@ -144,50 +129,30 @@ pub const ErrorDetail = union(ErrorKind) {
 };
 
 pub fn functionValueExpectedError(allocator: std.mem.Allocator, src: []const u8, position: Position) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .FunctionValueExpectedKind = .{} });
-
-    try result.appendStackItem(src, position);
-
-    return result;
+    return try Error.init(allocator, ErrorDetail{ .FunctionValueExpectedKind = .{} }, StackItem{ .src = try allocator.dupe(u8, src), .position = position });
 }
 
 pub fn lexicalError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .LexicalKind = .{
+    return try Error.init(allocator, ErrorDetail{ .LexicalKind = .{
         .lexeme = try allocator.dupe(u8, lexeme),
-    } });
-
-    try result.appendStackItem(src, position);
-
-    return result;
+    } }, StackItem{ .src = try allocator.dupe(u8, src), .position = position });
 }
 
 pub fn literalFloatOverflowError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .LiteralFloatOverflowKind = .{
+    return try Error.init(allocator, ErrorDetail{ .LiteralFloatOverflowKind = .{
         .lexeme = try allocator.dupe(u8, lexeme),
-    } });
-
-    try result.appendStackItem(src, position);
-
-    return result;
+    } }, StackItem{ .src = try allocator.dupe(u8, src), .position = position });
 }
 
 pub fn literalIntOverflowError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .LiteralIntOverflowKind = .{
+    return try Error.init(allocator, ErrorDetail{ .LiteralIntOverflowKind = .{
         .lexeme = try allocator.dupe(u8, lexeme),
-    } });
-
-    try result.appendStackItem(src, position);
-
-    return result;
+    } }, StackItem{ .src = try allocator.dupe(u8, src), .position = position });
 }
 
 pub fn parserError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8, expected: []const TokenKind) !Error {
-    var result = try Error.init(allocator, ErrorDetail{ .ParserKind = .{
+    return try Error.init(allocator, ErrorDetail{ .ParserKind = .{
         .lexeme = try allocator.dupe(u8, lexeme),
         .expected = expected,
-    } });
-
-    try result.appendStackItem(src, position);
-
-    return result;
+    } }, StackItem{ .src = try allocator.dupe(u8, src), .position = position });
 }
