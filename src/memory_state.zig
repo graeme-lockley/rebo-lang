@@ -147,12 +147,12 @@ pub const MemoryState = struct {
         }
     }
 
-    pub inline fn newMapValue(self: *MemoryState) !*V.Value {
+    pub inline fn newRecordValue(self: *MemoryState) !*V.Value {
         return try self.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.allocator) });
     }
 
-    pub inline fn pushEmptyMapValue(self: *MemoryState) !void {
-        try self.push(try self.newMapValue());
+    pub inline fn pushEmptyRecordValue(self: *MemoryState) !void {
+        try self.push(try self.newRecordValue());
     }
 
     pub inline fn pushCharValue(self: *MemoryState, v: u8) !void {

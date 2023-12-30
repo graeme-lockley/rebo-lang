@@ -70,7 +70,7 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
     machine.eval(ast) catch |err| return Helper.fatalErrorHandler(machine, "ExecuteError", err);
     _ = machine.memoryState.pop();
 
-    try machine.memoryState.pushEmptyMapValue();
+    try machine.memoryState.pushEmptyRecordValue();
 
     const result = machine.memoryState.peek(0);
 

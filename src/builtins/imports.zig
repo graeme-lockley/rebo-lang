@@ -4,7 +4,7 @@ pub fn imports(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST:
     _ = args;
     _ = argsAST;
     _ = calleeAST;
-    try machine.memoryState.pushEmptyMapValue();
+    try machine.memoryState.pushEmptyRecordValue();
 
     const result = machine.memoryState.peek(0);
 

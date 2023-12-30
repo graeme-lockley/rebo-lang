@@ -16,7 +16,7 @@ pub const ValueKind = V.ValueKind;
 pub const ValueValue = V.ValueValue;
 
 pub fn osError(machine: *Machine, operation: []const u8, err: anyerror) !void {
-    try machine.memoryState.pushEmptyMapValue();
+    try machine.memoryState.pushEmptyRecordValue();
 
     const record = machine.memoryState.peek(0);
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "error", try machine.memoryState.newStringValue("SystemError"));

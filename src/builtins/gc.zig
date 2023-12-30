@@ -6,7 +6,7 @@ pub fn gc(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*H
     _ = calleeAST;
     const result = Helper.MemoryState.force_gc(&machine.memoryState);
 
-    try machine.memoryState.pushEmptyMapValue();
+    try machine.memoryState.pushEmptyRecordValue();
 
     const record = machine.memoryState.peek(0);
 

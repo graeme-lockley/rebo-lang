@@ -984,7 +984,7 @@ fn literalFunction(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
 }
 
 fn literalRecord(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try machine.memoryState.pushEmptyMapValue();
+    try machine.memoryState.pushEmptyRecordValue();
     var map = machine.topOfStack().?;
 
     for (e.kind.literalRecord) |entry| {
@@ -1478,7 +1478,7 @@ fn raiseMatchError(machine: *Machine, position: Errors.Position, value: *V.Value
 }
 
 fn raiseNamedUserError(machine: *Machine, name: []const u8, position: ?Errors.Position) !*V.Value {
-    try machine.memoryState.pushEmptyMapValue();
+    try machine.memoryState.pushEmptyRecordValue();
     const record = machine.memoryState.peek(0);
 
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue(name));

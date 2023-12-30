@@ -18,7 +18,7 @@ pub fn ls(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*H
             continue;
         }
 
-        const record = try machine.memoryState.newMapValue();
+        const record = try machine.memoryState.newRecordValue();
         try result.v.SequenceKind.appendItem(record);
 
         try record.v.RecordKind.setU8(machine.memoryState.stringPool, "name", try machine.memoryState.newStringValue(entry.name));
