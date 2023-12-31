@@ -326,6 +326,9 @@ inline fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
             if (left.v != V.ValueValue.IntKind or right.v != V.ValueValue.IntKind) {
                 try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
             }
+            if (right.v.IntKind == 0) {
+                try raiseNamedUserError(machine, "DivideByZeroError", e.position);
+            }
             try machine.memoryState.pushIntValue(@mod(left.v.IntKind, right.v.IntKind));
         },
         AST.Operator.LessThan => {
