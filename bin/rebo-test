@@ -9,23 +9,23 @@ let Markdown = import("./src/test-markdown.rebo")
 let Suite = import("./src/test-suite.rebo")
 
 let cli = CLI.parse({
-  cmd: false,
-  enforcing: true,
-  opts: {
-    silent: false,
-    totals: true
-  }    
+   cmd: false,
+   enforcing: true,
+   opts: {
+      silent: false,
+      totals: true
+   }    
 })
 
 if len(cli.args) == 0 -> 
-  cli.args := import("../lib/fs.rebo").files(".", { predicate: fn(n) Str.endsWith?(n, ".test.rebo") || Str.endsWith?(n, ".md")})
+   cli.args := import("../lib/fs.rebo").files(".", { predicate: fn(n) Str.endsWith?(n, ".test.rebo") || Str.endsWith?(n, ".md")})
 
 let test = Test.harness("suite")
 
 cli.args|> Std.each(fn(name) 
-  if Str.endsWith?(name, ".test.rebo") -> Suite.process(name, test, cli.opts.silent)
-   | Str.endsWith?(name, ".md") -> Markdown.process(name, test, cli.opts.silent)
-   | println("Unknown file type: " + name + " - ignoring")
+   if Str.endsWith?(name, ".test.rebo") -> Suite.process(name, test, cli.opts.silent)
+    | Str.endsWith?(name, ".md") -> Markdown.process(name, test, cli.opts.silent)
+    | println("Unknown file type: " + name + " - ignoring")
 )
 
 let stats = test.report(cli.opts.totals, true)
