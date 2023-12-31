@@ -141,7 +141,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] println
 - [X] rebo value
     - [X] args
-    - [ ] exe
+    - [X] exe
     - [X] env
 - [X] str with two forms - one raw and the other literal.  The default is literal.
 - [X] typeof
@@ -171,7 +171,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 - [X] Add a github pipeline to continuously test the project
 - [ ] Expand the pipeline to test against Linux and Mac OS
 - [X] Place the AST under garbage collection.  At the moment it is not which makes AST memory management impossible.
-- [ ] Add a string heap to store identifier names and field names.  This will reduce memory footprint and allow for faster comparisons.
+- [X] Add a string heap to store identifier names and field names.  This will reduce memory footprint and allow for faster comparisons.
 - [X] On an error - display the line number and column number
 - [X] When an error is reported, unwind the stack so that the error is reported in the full context of the caller
 - [X] Record error position whenever an error is reported

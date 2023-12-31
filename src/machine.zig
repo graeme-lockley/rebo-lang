@@ -1093,6 +1093,11 @@ fn addRebo(state: *MS.MemoryState) !void {
     while (iterator.next()) |entry| {
         try reboEnv.v.RecordKind.setU8(state.stringPool, entry.key_ptr.*, try state.newStringValue(entry.value_ptr.*));
     }
+
+    const exePath = std.fs.selfExePathAlloc(state.allocator) catch return;
+    defer state.allocator.free(exePath);
+
+    try value.v.RecordKind.setU8(state.stringPool, "exe", try state.newStringValue(exePath));
 }
 
 fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
