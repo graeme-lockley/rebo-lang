@@ -1,10 +1,9 @@
 const std = @import("std");
-const Builtins = @import("./builtins.zig");
-const Errors = @import("./errors.zig");
-const Machine = @import("./machine.zig");
+
+const API = @import("./api.zig").API;
 const V = @import("./value.zig");
 
-const importFile = @import("./builtins/import.zig").importFile;
+const stdout = std.io.getStdOut().writer();
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -12,7 +11,7 @@ pub fn main() !void {
     defer {
         const err = gpa.deinit();
         if (err == std.heap.Check.leak) {
-            std.log.err("Failed to deinit allocator\n", .{});
+            stdout.print("Failed to deinit allocator\n", .{}) catch {};
             std.process.exit(1);
         }
     }
@@ -21,27 +20,31 @@ pub fn main() !void {
     defer std.process.argsFree(allocator, args);
 
     if (args.len == 2 and std.mem.eql(u8, args[1], "help")) {
-        std.debug.print("Usage: {s} [file ...args | repl | help]\n", .{args[0]});
+        try stdout.print("Usage: {s} [file ...args | repl | help]\n", .{args[0]});
         std.process.exit(1);
     } else if (args.len == 1 or args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
         var buffer = try allocator.alloc(u8, 1024);
         defer allocator.free(buffer);
 
-        var machine = try Machine.Machine.init(allocator);
-        defer machine.deinit();
+        var rebo = try API.init(allocator);
+        defer rebo.deinit();
 
         const stdin = std.io.getStdIn().reader();
 
         while (true) {
-            std.debug.print("> ", .{});
+            try stdout.print("> ", .{});
 
             if (try stdin.readUntilDelimiterOrEof(buffer[0..], '\n')) |line| {
                 if (line.len == 0) {
                     break;
                 }
-                execute(&machine, Errors.STREAM_SRC, line);
-                try printResult(allocator, machine.topOfStack());
-                try machine.reset();
+                rebo.script(line) catch |err| {
+                    try errorHandler(err, &rebo);
+                    continue;
+                };
+
+                try printResult(allocator, &rebo);
+                try rebo.reset();
             } else {
                 break;
             }
@@ -49,33 +52,35 @@ pub fn main() !void {
     } else {
         const startTime = std.time.milliTimestamp();
 
-        var machine = try Machine.Machine.init(allocator);
-        defer machine.deinit();
+        var rebo = try API.init(allocator);
+        defer rebo.deinit();
 
-        try importFile(&machine, args[1]);
+        try rebo.import(args[1]);
 
         const executeTime = std.time.milliTimestamp();
         std.log.info("time: {d}ms", .{executeTime - startTime});
     }
 }
 
-fn printResult(allocator: std.mem.Allocator, v: ?*V.Value) !void {
-    if (v != null) {
-        const result = try v.?.toString(allocator, V.Style.Pretty);
+fn printResult(allocator: std.mem.Allocator, rebo: *API) !void {
+    if (rebo.topOfStack()) |v| {
+        const result = try v.toString(allocator, V.Style.Pretty);
         std.debug.print("Result: {s}\n", .{result});
         allocator.free(result);
     }
 }
 
-fn errorHandler(err: anyerror, machine: *Machine.Machine) void {
-    const str = machine.memoryState.topOfStack().?.toString(machine.memoryState.allocator, V.Style.Pretty) catch return;
-    defer machine.memoryState.allocator.free(str);
-    std.log.err("Error: {}\n", .{err});
-    std.log.err("{s}\n", .{str});
-}
+fn errorHandler(err: anyerror, rebo: *API) !void {
+    err catch {};
+    // if (err == Errors.RuntimeErrors.InterpreterError) {
+    //     const v = machine.memoryState.topOfStack() orelse machine.memoryState.unitValue.?;
 
-fn execute(machine: *Machine.Machine, name: []const u8, buffer: []const u8) void {
-    machine.execute(name, buffer) catch |err| errorHandler(err, machine);
+    // } else {
+    // try stdout.print("Unknown Error: {}\n", err);
+    const result = try rebo.topOfStack().?.toString(rebo.allocator(), V.Style.Pretty);
+    try stdout.print("Error: {s}\n", .{result});
+    rebo.allocator().free(result);
+    // }
 }
 
 fn nike(input: []const u8) !void {
@@ -88,10 +93,10 @@ fn nike(input: []const u8) !void {
         const allocator = gpa.allocator();
 
         {
-            var machine = try Machine.Machine.init(allocator);
-            defer machine.deinit();
+            var rebo = try API.init(allocator);
+            defer rebo.deinit();
 
-            _ = machine.execute(Errors.STREAM_SRC, s) catch {};
+            _ = rebo.script(s) catch {};
         }
 
         const err = gpa.deinit();
@@ -109,26 +114,28 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
     const allocator = gpa.allocator();
 
     {
-        var machine = try Machine.Machine.init(allocator);
-        defer machine.deinit();
+        var rebo = try API.init(allocator);
+        defer rebo.deinit();
 
-        execute(&machine, Errors.STREAM_SRC, input);
-        const v = machine.topOfStack();
+        rebo.script(input) catch |err| {
+            std.log.err("Error: {}: {s}\n", .{ err, input });
+            return error.TestingError;
+        };
 
-        if (v == null) {
+        if (rebo.topOfStack()) |v| {
+            const result = try v.toString(allocator, V.Style.Pretty);
+            defer allocator.free(result);
+
+            if (!std.mem.eql(u8, result, expected)) {
+                std.log.err("Expected: '{s}', got: '{s}'\n", .{ expected, result });
+                return error.TestingError;
+            }
+            if (rebo.stackDepth() != 1) {
+                std.log.err("Expected 1 value on the stack, got: {d}\n", .{rebo.stackDepth()});
+                return error.TestingError;
+            }
+        } else {
             std.log.err("Expected a value on the stack\n", .{});
-            return error.TestingError;
-        }
-
-        const result = try v.?.toString(allocator, V.Style.Pretty);
-        defer allocator.free(result);
-
-        if (!std.mem.eql(u8, result, expected)) {
-            std.log.err("Expected: '{s}', got: '{s}'\n", .{ expected, result });
-            return error.TestingError;
-        }
-        if (machine.memoryState.stack.items.len != 1) {
-            std.log.err("Expected 1 value on the stack, got: {d}\n", .{machine.memoryState.stack.items.len});
             return error.TestingError;
         }
     }
@@ -147,19 +154,21 @@ fn expectError(input: []const u8) !void {
     const allocator = gpa.allocator();
 
     {
-        var machine = try Machine.Machine.init(allocator);
-        defer machine.deinit();
+        var rebo = try API.init(allocator);
+        defer rebo.deinit();
 
-        machine.execute(Errors.STREAM_SRC, input) catch {
+        rebo.script(input) catch {
             return;
         };
 
-        const v = machine.topOfStack();
+        if (rebo.topOfStack()) |v| {
+            const result = try v.toString(allocator, V.Style.Pretty);
+            defer allocator.free(result);
 
-        const str = try v.?.toString(allocator, V.Style.Pretty);
-        defer allocator.free(str);
-
-        std.log.err("Expected error: got: '{s}'\n", .{str});
+            std.log.err("Expected error: got: '{s}'\n", .{result});
+        } else {
+            std.log.err("Expected error: got: empty stack\n", .{});
+        }
         return error.TestingError;
     }
 
