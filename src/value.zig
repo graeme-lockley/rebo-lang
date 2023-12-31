@@ -64,9 +64,9 @@ pub const Value = struct {
                     }
 
                     try buffer.appendSlice(argument.name.slice());
-                    if (argument.default != null) {
+                    if (argument.default) |default| {
                         try buffer.appendSlice(" = ");
-                        try argument.default.?.appendValue(buffer, style);
+                        try default.appendValue(buffer, style);
                     }
                 }
                 if (self.v.FunctionKind.restOfArguments != null) {
@@ -154,22 +154,15 @@ pub const Value = struct {
                 Style.Pretty => {
                     try buffer.append('"');
                     for (self.v.StringKind.slice()) |c| {
-                        if (c == 10) {
-                            try buffer.appendSlice("\\n");
-                        } else if (c == 34) {
-                            try buffer.appendSlice("\\\"");
-                        } else if (c == 92) {
-                            try buffer.appendSlice("\\\\");
-                        } else if (c < 32) {
-                            try std.fmt.format(buffer.writer(), "\\x{d};", .{c});
-                        } else {
-                            try buffer.append(c);
+                        switch (c) {
+                            10 => try buffer.appendSlice("\\n"),
+                            34 => try buffer.appendSlice("\\\""),
+                            92 => try buffer.appendSlice("\\\\"),
+                            0...9, 11...31 => try std.fmt.format(buffer.writer(), "\\x{d};", .{c}),
+                            else => try buffer.append(c),
                         }
                     }
                     try buffer.append('"');
-                    // try buffer.appendSlice("(");
-                    // try std.fmt.format(buffer.writer(), "{d}", .{self.v.StringKind._value.count});
-                    // try buffer.appendSlice(")");
                 },
                 Style.Raw => try buffer.appendSlice(self.v.StringKind.slice()),
             },
