@@ -125,6 +125,38 @@ pub const MemoryState = struct {
         return v;
     }
 
+    pub inline fn newFileValue(self: *MemoryState, file: std.fs.File) !*V.Value {
+        return try self.newValue(V.ValueValue{ .FileKind = V.FileValue.init(file) });
+    }
+
+    pub inline fn newIntValue(self: *MemoryState, v: V.IntType) !*V.Value {
+        return try self.newValue(V.ValueValue{ .IntKind = v });
+    }
+
+    pub inline fn newRecordValue(self: *MemoryState) !*V.Value {
+        return try self.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.allocator) });
+    }
+
+    pub inline fn newEmptySequenceValue(self: *MemoryState) !*V.Value {
+        return try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
+    }
+
+    pub inline fn newStreamValue(self: *MemoryState, v: std.net.Stream) !*V.Value {
+        return try self.newValue(V.ValueValue{ .StreamKind = V.StreamValue.init(v) });
+    }
+
+    pub inline fn newStringPoolValue(self: *MemoryState, v: *SP.String) !*V.Value {
+        return try self.newValue(V.ValueValue{ .StringKind = V.StringValue.initPool(v) });
+    }
+
+    pub inline fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
+        return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.init(self.stringPool, v) });
+    }
+
+    pub inline fn newOwnedStringValue(self: *MemoryState, v: []u8) !*V.Value {
+        return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.initOwned(self.stringPool, v) });
+    }
+
     pub inline fn pushValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
         const v = try self.newValue(vv);
 
@@ -147,10 +179,6 @@ pub const MemoryState = struct {
         }
     }
 
-    pub inline fn newRecordValue(self: *MemoryState) !*V.Value {
-        return try self.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.allocator) });
-    }
-
     pub inline fn pushEmptyRecordValue(self: *MemoryState) !void {
         try self.push(try self.newRecordValue());
     }
@@ -159,48 +187,20 @@ pub const MemoryState = struct {
         _ = try self.pushValue(V.ValueValue{ .CharKind = v });
     }
 
-    pub inline fn newFileValue(self: *MemoryState, file: std.fs.File) !*V.Value {
-        return try self.newValue(V.ValueValue{ .FileKind = V.FileValue.init(file) });
-    }
-
     pub inline fn pushFloatValue(self: *MemoryState, v: V.FloatType) !void {
         _ = try self.pushValue(V.ValueValue{ .FloatKind = v });
-    }
-
-    pub inline fn newIntValue(self: *MemoryState, v: V.IntType) !*V.Value {
-        return try self.newValue(V.ValueValue{ .IntKind = v });
     }
 
     pub inline fn pushIntValue(self: *MemoryState, v: V.IntType) !void {
         _ = try self.push(try self.newIntValue(v));
     }
 
-    pub inline fn newEmptySequenceValue(self: *MemoryState) !*V.Value {
-        return try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
-    }
-
     pub inline fn pushEmptySequenceValue(self: *MemoryState) !void {
         _ = try self.push(try self.newEmptySequenceValue());
     }
 
-    pub inline fn newStreamValue(self: *MemoryState, v: std.net.Stream) !*V.Value {
-        return try self.newValue(V.ValueValue{ .StreamKind = V.StreamValue.init(v) });
-    }
-
-    pub inline fn newStringPoolValue(self: *MemoryState, v: *SP.String) !*V.Value {
-        return try self.newValue(V.ValueValue{ .StringKind = V.StringValue.initPool(v) });
-    }
-
-    pub inline fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
-        return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.init(self.stringPool, v) });
-    }
-
-    pub inline fn newOwnedStringValue(self: *MemoryState, v: []u8) !*V.Value {
-        return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.initOwned(self.stringPool, v) });
-    }
-
     pub inline fn pushStringPoolValue(self: *MemoryState, v: *SP.String) !void {
-        _ = try self.push(try self.newValue(V.ValueValue{ .StringKind = V.StringValue.initPool(v) }));
+        _ = try self.push(try self.newStringPoolValue(v));
     }
 
     pub inline fn pushStringValue(self: *MemoryState, v: []const u8) !void {
