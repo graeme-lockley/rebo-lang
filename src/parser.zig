@@ -917,7 +917,7 @@ pub const Parser = struct {
         errdefer body.destroy(self.allocator);
 
         const v = try self.allocator.create(AST.Expression);
-        v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalFunction = AST.Function{ .params = params, .restOfParams = restOfParams, .body = body } }, .position = Errors.Position{ .start = start, .end = body.position.end } };
+        v.* = AST.Expression{ .kind = AST.ExpressionKind{ .literalFunction = AST.LiteralFunction{ .params = params, .restOfParams = restOfParams, .body = body } }, .position = Errors.Position{ .start = start, .end = body.position.end } };
         return v;
     }
 

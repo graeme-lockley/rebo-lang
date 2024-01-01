@@ -71,7 +71,7 @@ pub const ExpressionKind = union(enum) {
     indexValue: IndexValueExpression,
     literalBool: bool,
     literalChar: u8,
-    literalFunction: Function,
+    literalFunction: LiteralFunction,
     literalInt: Value.IntType,
     literalFloat: Value.FloatType,
     literalRecord: []RecordEntry,
@@ -126,12 +126,28 @@ pub const DotExpression = struct {
     }
 };
 
-pub const Function = struct {
+pub const IfCouple = struct {
+    condition: ?*Expression,
+    then: *Expression,
+};
+
+pub const IndexRangeExpression = struct {
+    expr: *Expression,
+    start: ?*Expression,
+    end: ?*Expression,
+};
+
+pub const IndexValueExpression = struct {
+    expr: *Expression,
+    index: *Expression,
+};
+
+pub const LiteralFunction = struct {
     params: []FunctionParam,
     restOfParams: ?*SP.String,
     body: *Expression,
 
-    pub fn deinit(self: *Function, allocator: std.mem.Allocator) void {
+    pub fn deinit(self: *LiteralFunction, allocator: std.mem.Allocator) void {
         for (self.params) |*param| {
             param.deinit(allocator);
         }
@@ -154,22 +170,6 @@ pub const FunctionParam = struct {
             destroyExpr(allocator, self.default.?);
         }
     }
-};
-
-pub const IfCouple = struct {
-    condition: ?*Expression,
-    then: *Expression,
-};
-
-pub const IndexRangeExpression = struct {
-    expr: *Expression,
-    start: ?*Expression,
-    end: ?*Expression,
-};
-
-pub const IndexValueExpression = struct {
-    expr: *Expression,
-    index: *Expression,
 };
 
 pub const LiteralSequenceValue = union(enum) {
