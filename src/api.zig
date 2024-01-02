@@ -50,6 +50,10 @@ pub const API = struct {
     pub fn call(self: *API, numberOfArgs: usize) !void {
         try Machine.callFn(&self.machine, numberOfArgs);
     }
+
+    pub fn pushString(self: *API, s: []const u8) !void {
+        try self.machine.memoryState.pushStringValue(s);
+    }
 };
 
 fn nike(input: []const u8) !void {
