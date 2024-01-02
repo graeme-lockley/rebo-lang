@@ -81,7 +81,6 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
     try machine.memoryState.addU8ToScope("__FILE", try machine.memoryState.newStringValue(name));
 
     const ast = try machine.parse(fileName, content);
-    errdefer ast.destroy(machine.memoryState.allocator);
 
     try machine.memoryState.imports.addImport(name, null, ast);
 
