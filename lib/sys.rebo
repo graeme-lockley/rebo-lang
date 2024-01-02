@@ -1,0 +1,11 @@
+let Str = import("str")
+let Path = import("path")
+
+# The directory where the rebo binary is located.  This function is used particularly to locate the rebo
+# utilities that form part of the rebo distribution.
+let binHome() {    
+   let exe = rebo.exe
+
+   if exe |> Str.endsWith?("/zig-out/bin/rebo") -> Str.dropEnd(exe, 17) + "/bin"
+    | Path.dir(exe)
+}

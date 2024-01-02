@@ -1,0 +1,7 @@
+let printError(err) {
+    println("Error: ", err)
+}
+
+let printResult(result) {
+    println("Result: ", result)
+}

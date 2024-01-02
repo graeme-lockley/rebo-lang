@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const API = @import("./api.zig").API;
+const Errors = @import("./errors.zig");
 const V = @import("./value.zig");
 
 const stdout = std.io.getStdOut().writer();
@@ -43,7 +44,7 @@ pub fn main() !void {
                     continue;
                 };
 
-                try printResult(allocator, &rebo);
+                try printResult(&rebo);
                 try rebo.reset();
             } else {
                 break;
@@ -62,29 +63,25 @@ pub fn main() !void {
     }
 }
 
-fn printResult(allocator: std.mem.Allocator, rebo: *API) !void {
-    if (rebo.topOfStack()) |v| {
-        const result = try v.toString(allocator, V.Style.Pretty);
-        std.debug.print("Result: {s}\n", .{result});
-        allocator.free(result);
+fn printResult(rebo: *API) !void {
+    if (rebo.topOfStack()) |_| {
+        try rebo.script("import(import(\"sys\").binHome() + \"/src/repl-util.rebo\").printResult");
+        try rebo.swap();
+        try rebo.call(1);
+    } else {
+        try stdout.print("Unexpected Error: no result to print\n", .{});
     }
 }
 
 fn errorHandler(err: anyerror, rebo: *API) !void {
-    err catch {};
-    // if (err == Errors.RuntimeErrors.InterpreterError) {
-    //     const v = machine.memoryState.topOfStack() orelse machine.memoryState.unitValue.?;
-
-    // } else {
-    // try stdout.print("Unknown Error: {}\n", err);
-    const result = try rebo.topOfStack().?.toString(rebo.allocator(), V.Style.Pretty);
-    try stdout.print("Error: {s}\n", .{result});
-    rebo.allocator().free(result);
-
-    // script("import(import("\"sys\").binHome() + \"/src/repl-util.rebo\").printError")  # places function value on top of stack
-    // runtime.swap()                                                                     # swap function value with error value
-    // runtime.call(1)                                                                    # call function with error value as argument
-    // }
+    if (err == Errors.RuntimeErrors.InterpreterError) {
+        try rebo.script("import(import(\"sys\").binHome() + \"/src/repl-util.rebo\").printError");
+        try rebo.swap();
+        try rebo.call(1);
+    } else {
+        err catch {};
+        try stdout.print("Unknown Error:\n", .{});
+    }
 }
 
 fn nike(input: []const u8) !void {
@@ -150,7 +147,7 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         return error.TestingError;
     }
 
-    // try nike(input);
+    try nike(input);
 }
 
 fn expectError(input: []const u8) !void {

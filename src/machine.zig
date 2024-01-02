@@ -576,7 +576,7 @@ inline fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression
     };
 }
 
-inline fn callFn(machine: *Machine, numberOfArgs: usize) Errors.RuntimeErrors!void {
+pub inline fn callFn(machine: *Machine, numberOfArgs: usize) Errors.RuntimeErrors!void {
     const callee = machine.memoryState.peek(@intCast(numberOfArgs));
 
     switch (callee.v) {

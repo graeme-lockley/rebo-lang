@@ -1,15 +1,15 @@
 const std = @import("std");
 
-const Machine = @import("./machine.zig").Machine;
+const Machine = @import("./machine.zig");
 const V = @import("./value.zig");
 
 const importFile = @import("./builtins/import.zig").importFile;
 
 pub const API = struct {
-    machine: Machine,
+    machine: Machine.Machine,
 
     pub fn init(allocator1: std.mem.Allocator) !API {
-        return API{ .machine = try Machine.init(allocator1) };
+        return API{ .machine = try Machine.Machine.init(allocator1) };
     }
 
     pub fn deinit(self: *API) void {
@@ -38,6 +38,17 @@ pub const API = struct {
 
     pub fn stackDepth(self: *API) usize {
         return self.machine.memoryState.stack.items.len;
+    }
+
+    pub fn swap(self: *API) !void {
+        const v1 = self.machine.memoryState.pop();
+        const v2 = self.machine.memoryState.pop();
+        try self.machine.memoryState.push(v1);
+        try self.machine.memoryState.push(v2);
+    }
+
+    pub fn call(self: *API, numberOfArgs: usize) !void {
+        try Machine.callFn(&self.machine, numberOfArgs);
     }
 };
 
