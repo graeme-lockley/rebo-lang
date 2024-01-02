@@ -632,10 +632,7 @@ inline fn callUserFn(machine: *Machine, numberOfArgs: usize) !void {
         lp += 1;
     }
     while (lp < callee.v.FunctionKind.arguments.len) {
-        const value = if (callee.v.FunctionKind.arguments[lp].default == null)
-            machine.memoryState.unitValue.?
-        else
-            callee.v.FunctionKind.arguments[lp].default.?;
+        const value = callee.v.FunctionKind.arguments[lp].default orelse machine.memoryState.unitValue.?;
 
         try machine.memoryState.addToScope(callee.v.FunctionKind.arguments[lp].name, value);
         lp += 1;
