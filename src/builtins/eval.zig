@@ -1,11 +1,32 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
+fn booleanOption(stringPool: *Helper.StringPool, options: *Helper.Value, name: []const u8, default: bool) !bool {
+    if (options.v != Helper.ValueValue.RecordKind) {
+        return default;
+    }
+
+    const option = try options.v.RecordKind.getU8(stringPool, name);
+
+    if (option == null or option.?.v != Helper.ValueKind.BoolKind) {
+        return default;
+    }
+
+    return option.?.v.BoolKind;
+}
+
 pub fn eval(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const code = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
+    const options = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.UnitKind });
 
-    try machine.memoryState.openScope();
-    defer machine.memoryState.restoreScope();
+    const persistent = try booleanOption(machine.memoryState.stringPool, options, "persistent", false);
+
+    if (!persistent) {
+        try machine.memoryState.openScope();
+    }
+    defer if (!persistent) {
+        machine.memoryState.restoreScope();
+    };
 
     machine.execute("eval", code.v.StringKind.slice()) catch {
         const record = machine.topOfStack().?;
