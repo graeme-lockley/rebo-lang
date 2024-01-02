@@ -1,7 +1,52 @@
+let Std = import("std")
+
 let printError(err) {
-    println("Error: ", err)
+   err := {...err}
+   let stack = err.stack
+
+   if typeof(stack) == "Sequence" -> err.stack := ()
+   print(Std.ansi.foreground.red, "Error: ")
+
+   if err.kind != () -> {
+      print(err.kind, ": ")
+      err.kind := ()
+   }
+
+   print(Std.ansi.control.reset)
+
+   err |> keys() |> Std.sort() |> Std.each(fn (key, idx) {
+      if idx > 0 -> print(", ")
+      let value = err[key]
+
+      if typeof(value) == "Sequence" -> {
+         print(key, ": ", Std.ansi.foreground.darkGray)
+         value |> Std.each(fn (item, idx) {
+            if idx > 0 -> print(", ")
+            print(item)
+         })
+         print(Std.ansi.control.reset)
+      } | print(key, ": ", Std.ansi.foreground.darkGray, value, Std.ansi.control.reset)
+   })
+   println()
+
+   if typeof(stack) == "Sequence" -> {
+      stack |> Std.each(fn (line) {
+         print("  ")
+         if line.file != () -> print(line.file, ": ") | print("script: ")
+
+         print(Std.ansi.foreground.darkGray)
+         if line.from.line == () || line.to.line == () -> {
+            if line.from.offset == line.to.offset -> print("offset: ", line.from.offset)
+             | print("offset: ", line.from.offset, "-", line.to.offset)
+         } | line.from.line == line.to.line -> {
+            if line.from.column == line.to.column -> print(line.from.line, ":", line.from.column)
+             | print(line.from.line, ":", line.from.column, "-", line.to.column)
+         } | print(line.from.line, ":", line.from.column, "-", line.to.line, ":", line.to.column)
+         println(Std.ansi.control.reset)
+      })
+   }
 }
 
 let printResult(result) {
-    println("Result: ", result)
+   println(Std.ansi.control.reset, "Result: ", Std.ansi.foreground.darkGray, result, Std.ansi.control.reset)
 }
