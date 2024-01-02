@@ -353,6 +353,13 @@ inline fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
                         else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
                     }
                 },
+                V.ValueValue.StringKind => {
+                    if (right.v == V.ValueValue.StringKind) {
+                        try machine.memoryState.pushBoolValue(std.mem.lessThan(u8, left.v.StringKind.slice(), right.v.StringKind.slice()));
+                    } else {
+                        try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    }
+                },
                 else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
             }
         },
@@ -376,6 +383,13 @@ inline fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
                         V.ValueValue.IntKind => try machine.memoryState.pushBoolValue(left.v.FloatKind <= @as(V.FloatType, @floatFromInt(right.v.IntKind))),
                         V.ValueValue.FloatKind => try machine.memoryState.pushBoolValue(left.v.FloatKind <= right.v.FloatKind),
                         else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
+                    }
+                },
+                V.ValueValue.StringKind => {
+                    if (right.v == V.ValueValue.StringKind) {
+                        try machine.memoryState.pushBoolValue(std.mem.lessThan(u8, left.v.StringKind.slice(), right.v.StringKind.slice()) or std.mem.eql(u8, left.v.StringKind.slice(), right.v.StringKind.slice()));
+                    } else {
+                        try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
                     }
                 },
                 else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
@@ -403,6 +417,13 @@ inline fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
                         else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
                     }
                 },
+                V.ValueValue.StringKind => {
+                    if (right.v == V.ValueValue.StringKind) {
+                        try machine.memoryState.pushBoolValue(std.mem.lessThan(u8, right.v.StringKind.slice(), left.v.StringKind.slice()));
+                    } else {
+                        try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    }
+                },
                 else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
             }
         },
@@ -426,6 +447,13 @@ inline fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
                         V.ValueValue.IntKind => try machine.memoryState.pushBoolValue(left.v.FloatKind >= @as(V.FloatType, @floatFromInt(right.v.IntKind))),
                         V.ValueValue.FloatKind => try machine.memoryState.pushBoolValue(left.v.FloatKind >= right.v.FloatKind),
                         else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
+                    }
+                },
+                V.ValueValue.StringKind => {
+                    if (right.v == V.ValueValue.StringKind) {
+                        try machine.memoryState.pushBoolValue(std.mem.lessThan(u8, right.v.StringKind.slice(), left.v.StringKind.slice()) or std.mem.eql(u8, right.v.StringKind.slice(), left.v.StringKind.slice()));
+                    } else {
+                        try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v);
                     }
                 },
                 else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
