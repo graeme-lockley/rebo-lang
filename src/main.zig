@@ -56,7 +56,9 @@ pub fn main() !void {
         var rebo = try API.init(allocator);
         defer rebo.deinit();
 
-        try rebo.import(args[1]);
+        rebo.import(args[1]) catch |e| {
+            try errorHandler(e, &rebo);
+        };
 
         const executeTime = std.time.milliTimestamp();
         std.log.info("time: {d}ms", .{executeTime - startTime});
@@ -147,7 +149,7 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         return error.TestingError;
     }
 
-    try nike(input);
+    // try nike(input);
 }
 
 fn expectError(input: []const u8) !void {

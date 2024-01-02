@@ -3,18 +3,27 @@ const Helper = @import("./helper.zig");
 
 const loadBinary = @import("../builtins.zig").loadBinary;
 
-fn ffn(allocator: std.mem.Allocator, fromSourceName: ?[]const u8, fileName: []const u8) ![]u8 {
+fn ffn(machine: *Helper.Machine, fromSourceName: ?[]const u8, fileName: []const u8) Helper.Errors.RuntimeErrors![]u8 {
     if (fromSourceName == null) {
-        var buffer = std.ArrayList(u8).init(allocator);
+        var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
         defer buffer.deinit();
 
-        return try std.fs.cwd().realpathAlloc(allocator, fileName);
+        return std.fs.cwd().realpathAlloc(machine.memoryState.allocator, fileName) catch |err| {
+            try Helper.raiseOsError(machine, "import", err);
+            return "";
+        };
     }
 
     const dirname = std.fs.path.dirname(fromSourceName.?).?;
-    const dir = try std.fs.openDirAbsolute(dirname, std.fs.Dir.OpenDirOptions{ .access_sub_paths = false, .no_follow = false });
+    const dir = std.fs.openDirAbsolute(dirname, std.fs.Dir.OpenDirOptions{ .access_sub_paths = false, .no_follow = false }) catch |e| {
+        try Helper.raiseOsError(machine, "import", e);
+        return "";
+    };
 
-    return try dir.realpathAlloc(allocator, fileName);
+    return dir.realpathAlloc(machine.memoryState.allocator, fileName) catch |err| {
+        try Helper.raiseOsError(machine, "import", err);
+        return "";
+    };
 }
 
 test "ffn" {
@@ -31,21 +40,24 @@ test "ffn" {
 
 fn fullFileName(machine: *Helper.Machine, fileName: []const u8) ![]u8 {
     const fromSourceName = try machine.memoryState.getU8FromScope("__FILE");
-    return try ffn(machine.memoryState.allocator, if (fromSourceName == null) null else fromSourceName.?.v.StringKind.slice(), fileName);
+    return try ffn(machine, if (fromSourceName == null) null else fromSourceName.?.v.StringKind.slice(), fileName);
 }
 
 test "fullFileName" {}
 
 pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
-    const name = fullFileName(machine, fileName) catch |err| return Helper.fatalErrorHandler(machine, "FileError", err);
+    const name = try fullFileName(machine, fileName);
     defer machine.memoryState.allocator.free(name);
 
     const loadedImport = machine.memoryState.imports.find(name);
     if (loadedImport != null) {
         if (loadedImport.?.items == null) {
-            std.log.err("Fatal Error: Cyclic Import: {s}", .{name});
-            std.os.exit(1);
-            return;
+            const record = try Helper.M.pushNamedUserError(machine, "CyclicImport", null);
+
+            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "operation", try machine.memoryState.newStringValue("import"));
+            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "file", try machine.memoryState.newStringValue(fileName));
+
+            return Helper.Errors.RuntimeErrors.InterpreterError;
         }
 
         try machine.memoryState.push(loadedImport.?.items.?);
@@ -54,7 +66,13 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
 
     std.log.info("loading import {s}...", .{name});
 
-    const content = loadBinary(machine.memoryState.allocator, name) catch |err| return Helper.fatalErrorHandler(machine, "FileError", err);
+    const content = loadBinary(machine.memoryState.allocator, name) catch |err| {
+        const record = try Helper.pushOsError(machine, "import", err);
+
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "file", try machine.memoryState.newStringValue(fileName));
+
+        return Helper.Errors.RuntimeErrors.InterpreterError;
+    };
     defer machine.memoryState.allocator.free(content);
 
     try machine.memoryState.openScopeFrom(machine.memoryState.topScope());
@@ -62,12 +80,12 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
 
     try machine.memoryState.addU8ToScope("__FILE", try machine.memoryState.newStringValue(name));
 
-    const ast = machine.parse(fileName, content) catch |err| return Helper.fatalErrorHandler(machine, "ParseError", err);
+    const ast = try machine.parse(fileName, content);
     errdefer ast.destroy(machine.memoryState.allocator);
 
     try machine.memoryState.imports.addImport(name, null, ast);
 
-    machine.eval(ast) catch |err| return Helper.fatalErrorHandler(machine, "ExecuteError", err);
+    try machine.eval(ast);
     _ = machine.memoryState.pop();
 
     try machine.memoryState.pushEmptyRecordValue();
@@ -81,7 +99,15 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
         if (entryName.startsWith("_")) {
             continue;
         }
-        try result.v.RecordKind.set(entryName, entry.value_ptr.*);
+        result.v.RecordKind.set(entryName, entry.value_ptr.*) catch |err| {
+            const record = machine.topOfStack().?;
+            if (record.v == Helper.ValueValue.RecordKind) {
+                try record.v.RecordKind.setU8(machine.memoryState.stringPool, "operation", try machine.memoryState.newStringValue("import"));
+                try record.v.RecordKind.setU8(machine.memoryState.stringPool, "file", try machine.memoryState.newStringValue(fileName));
+            }
+
+            return err;
+        };
     }
 
     try machine.memoryState.imports.addImport(name, result, ast);

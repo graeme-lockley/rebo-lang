@@ -7,13 +7,13 @@ pub fn ls(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const path = if (v.v == Helper.ValueKind.StringKind) v.v.StringKind.slice() else "./";
     try machine.memoryState.pushEmptySequenceValue();
 
-    var dir = std.fs.cwd().openIterableDir(path, .{}) catch |err| return Helper.osError(machine, "ls", err);
+    var dir = std.fs.cwd().openIterableDir(path, .{}) catch |err| return Helper.raiseOsError(machine, "ls", err);
     defer dir.close();
 
     const result = machine.memoryState.peek(0);
 
     var it = dir.iterate();
-    while (it.next() catch |err| return Helper.osError(machine, "listen", err)) |entry| {
+    while (it.next() catch |err| return Helper.raiseOsError(machine, "listen", err)) |entry| {
         if (std.mem.eql(u8, entry.name, ".") or std.mem.eql(u8, entry.name, "..")) {
             continue;
         }

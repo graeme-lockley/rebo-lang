@@ -1369,7 +1369,7 @@ fn raiseMatchError(machine: *Machine, position: Errors.Position, value: *V.Value
     return Errors.RuntimeErrors.InterpreterError;
 }
 
-fn pushNamedUserError(machine: *Machine, name: []const u8, position: ?Errors.Position) !*V.Value {
+pub fn pushNamedUserError(machine: *Machine, name: []const u8, position: ?Errors.Position) !*V.Value {
     try machine.memoryState.pushEmptyRecordValue();
     const record = machine.memoryState.peek(0);
 

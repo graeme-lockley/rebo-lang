@@ -30,7 +30,9 @@ pub fn eval(machine: *Helper.Machine, numberOfArgs: usize) !void {
 
     machine.execute("eval", code.v.StringKind.slice()) catch {
         const record = machine.topOfStack().?;
-        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "content", code);
+        if (record.v == Helper.ValueValue.RecordKind) {
+            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "content", code);
+        }
 
         return Helper.Errors.RuntimeErrors.InterpreterError;
     };

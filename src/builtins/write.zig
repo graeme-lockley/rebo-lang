@@ -8,7 +8,7 @@ pub fn write(machine: *Helper.Machine, numberOfArgs: usize) !void {
         Helper.ValueKind.FileKind => handle.v.FileKind.file.write(bytes.v.StringKind.slice()),
         Helper.ValueKind.StreamKind => handle.v.StreamKind.stream.write(bytes.v.StringKind.slice()),
         else => unreachable,
-    } catch |err| return Helper.osError(machine, "write", err);
+    } catch |err| return Helper.raiseOsError(machine, "write", err);
 
     try machine.memoryState.pushIntValue(@intCast(bytesWritten));
 }

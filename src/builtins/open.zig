@@ -16,7 +16,7 @@ pub fn open(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const options = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.UnitKind });
 
     if (options.v == Helper.ValueKind.UnitKind) {
-        try machine.memoryState.push(try machine.memoryState.newFileValue(std.fs.cwd().openFile(path, .{}) catch |err| return Helper.osError(machine, "open", err)));
+        try machine.memoryState.push(try machine.memoryState.newFileValue(std.fs.cwd().openFile(path, .{}) catch |err| return Helper.raiseOsError(machine, "open", err)));
         return;
     }
 
@@ -27,15 +27,15 @@ pub fn open(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const createF = try booleanOption(machine.memoryState.stringPool, options, "create", false);
 
     if (createF) {
-        try machine.memoryState.push(try machine.memoryState.newFileValue(std.fs.cwd().createFile(path, .{ .read = readF, .truncate = truncateF, .exclusive = true }) catch |err| return Helper.osError(machine, "open", err)));
+        try machine.memoryState.push(try machine.memoryState.newFileValue(std.fs.cwd().createFile(path, .{ .read = readF, .truncate = truncateF, .exclusive = true }) catch |err| return Helper.raiseOsError(machine, "open", err)));
     } else {
         const mode = if (readF and writeF) std.fs.File.OpenMode.read_write else if (readF) std.fs.File.OpenMode.read_only else std.fs.File.OpenMode.write_only;
-        var file = std.fs.cwd().openFile(path, .{ .mode = mode }) catch |err| return Helper.osError(machine, "open", err);
+        var file = std.fs.cwd().openFile(path, .{ .mode = mode }) catch |err| return Helper.raiseOsError(machine, "open", err);
 
         try machine.memoryState.push(try machine.memoryState.newFileValue(file));
 
         if (appendF) {
-            file.seekFromEnd(0) catch |err| return Helper.osError(machine, "open", err);
+            file.seekFromEnd(0) catch |err| return Helper.raiseOsError(machine, "open", err);
         }
     }
 }

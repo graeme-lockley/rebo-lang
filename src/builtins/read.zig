@@ -12,8 +12,8 @@ pub fn read(machine: *Helper.Machine, numberOfArgs: usize) !void {
     defer machine.memoryState.allocator.free(buffer);
 
     const bytesRead = switch (handle.v) {
-        Helper.ValueKind.FileKind => handle.v.FileKind.file.read(buffer) catch |err| return Helper.osError(machine, "read", err),
-        Helper.ValueKind.StreamKind => handle.v.StreamKind.stream.read(buffer) catch |err| return Helper.osError(machine, "read", err),
+        Helper.ValueKind.FileKind => handle.v.FileKind.file.read(buffer) catch |err| return Helper.raiseOsError(machine, "read", err),
+        Helper.ValueKind.StreamKind => handle.v.StreamKind.stream.read(buffer) catch |err| return Helper.raiseOsError(machine, "read", err),
         else => unreachable,
     };
 

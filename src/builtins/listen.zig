@@ -10,10 +10,10 @@ pub fn listen(machine: *Helper.Machine, numberOfArgs: usize) !void {
     server.reuse_address = true;
     defer server.deinit();
 
-    server.listen(std.net.Address.parseIp(host, @intCast(port)) catch |err| return Helper.osError(machine, "listen", err)) catch |err| return Helper.osError(machine, "listen", err);
+    server.listen(std.net.Address.parseIp(host, @intCast(port)) catch |err| return Helper.raiseOsError(machine, "listen", err)) catch |err| return Helper.raiseOsError(machine, "listen", err);
 
     while (true) {
-        var conn = server.accept() catch |err| return Helper.osError(machine, "listen", err);
+        var conn = server.accept() catch |err| return Helper.raiseOsError(machine, "listen", err);
         const stream = conn.stream;
 
         try machine.memoryState.openScopeFrom(cb.scope);

@@ -2,7 +2,7 @@ const std = @import("std");
 
 const AST = @import("./../ast.zig");
 pub const Errors = @import("./../errors.zig");
-const M = @import("./../machine.zig");
+pub const M = @import("./../machine.zig");
 const V = @import("./../value.zig");
 
 pub const Expression = AST.Expression;
@@ -15,7 +15,7 @@ pub const Value = V.Value;
 pub const ValueKind = V.ValueKind;
 pub const ValueValue = V.ValueValue;
 
-pub fn osError(machine: *Machine, operation: []const u8, err: anyerror) Errors.RuntimeErrors!void {
+pub fn pushOsError(machine: *Machine, operation: []const u8, err: anyerror) Errors.RuntimeErrors!*V.Value {
     try machine.memoryState.pushEmptyRecordValue();
 
     const record = machine.memoryState.peek(0);
@@ -29,15 +29,13 @@ pub fn osError(machine: *Machine, operation: []const u8, err: anyerror) Errors.R
 
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "os", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
 
-    return Errors.RuntimeErrors.InterpreterError;
+    return record;
 }
 
-pub fn fatalErrorHandler(machine: *Machine, operation: []const u8, err: anyerror) void {
-    const str = machine.memoryState.topOfStack().?.toString(machine.memoryState.allocator, V.Style.Pretty) catch return;
-    defer machine.memoryState.allocator.free(str);
-    std.log.err("Error: {s}: {}\n", .{ operation, err });
-    std.log.err("{s}\n", .{str});
-    std.os.exit(1);
+pub fn raiseOsError(machine: *Machine, operation: []const u8, err: anyerror) Errors.RuntimeErrors!void {
+    _ = try pushOsError(machine, operation, err);
+
+    return Errors.RuntimeErrors.InterpreterError;
 }
 
 fn reportExpectedTypeError(machine: *Machine, expected: []const V.ValueKind, v: V.ValueKind) !void {
