@@ -1,10 +1,8 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn cwd(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
-    _ = args;
-    _ = argsAST;
-    _ = calleeAST;
+pub fn cwd(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    _ = numberOfArgs;
     var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
 
     const c = std.os.getcwd(&buf) catch {

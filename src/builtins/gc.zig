@@ -1,9 +1,7 @@
 const Helper = @import("./helper.zig");
 
-pub fn gc(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
-    _ = args;
-    _ = argsAST;
-    _ = calleeAST;
+pub fn gc(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    _ = numberOfArgs;
     const result = Helper.MemoryState.force_gc(&machine.memoryState);
 
     try machine.memoryState.pushEmptyRecordValue();

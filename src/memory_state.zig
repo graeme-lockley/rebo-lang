@@ -219,7 +219,7 @@ pub const MemoryState = struct {
         return self.stack.pop();
     }
 
-    pub inline fn popn(self: *MemoryState, n: u32) void {
+    pub inline fn popn(self: *MemoryState, n: usize) void {
         self.stack.items.len -= n;
     }
 
@@ -227,7 +227,7 @@ pub const MemoryState = struct {
         try self.stack.append(v);
     }
 
-    pub inline fn peek(self: *MemoryState, n: u32) *V.Value {
+    pub inline fn peek(self: *MemoryState, n: usize) *V.Value {
         return self.stack.items[self.stack.items.len - n - 1];
     }
 

@@ -1,8 +1,8 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn eval(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
-    const code = try Helper.getArgument(machine, calleeAST, argsAST, args, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
+pub fn eval(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const code = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
 
     try machine.memoryState.openScope();
     defer machine.memoryState.restoreScope();

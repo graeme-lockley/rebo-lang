@@ -100,8 +100,8 @@ fn fexists(name: []const u8) bool {
     return true;
 }
 
-pub fn import(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
-    const v = (try Helper.getArgument(machine, calleeAST, argsAST, args, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
+pub fn import(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const v = (try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
 
     const indexOfDot = indexOfLastLinear(u8, v, '.');
     const indexOfSlash = indexOfLastLinear(u8, v, '/');

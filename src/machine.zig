@@ -566,77 +566,69 @@ inline fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
 
 inline fn call(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, calleeAST);
-
-    const callee = machine.memoryState.peek(0);
-
-    switch (callee.v) {
-        V.ValueValue.FunctionKind => try callFn(machine, e, calleeAST, argsAST, callee),
-        V.ValueValue.BuiltinKind => try callBuiltin(machine, e, calleeAST, argsAST, callee),
-        else => try raiseExpectedTypeError(machine, calleeAST.position, &[_]V.ValueKind{V.ValueValue.FunctionKind}, callee.v),
+    for (argsAST) |arg| {
+        try evalExpr(machine, arg);
     }
+
+    callFn(machine, argsAST.len) catch |err| {
+        try machine.appendErrorPosition(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end });
+        return err;
+    };
 }
 
-inline fn callFn(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) !void {
-    const sp = machine.memoryState.stack.items.len - 1;
+inline fn callFn(machine: *Machine, numberOfArgs: usize) Errors.RuntimeErrors!void {
+    const callee = machine.memoryState.peek(@intCast(numberOfArgs));
 
-    const args = callee.v.FunctionKind.arguments;
-    const restOfArgs = callee.v.FunctionKind.restOfArguments;
-
-    var index: u8 = 0;
-    while (index < argsAST.len) {
-        try evalExpr(machine, argsAST[index]);
-        index += 1;
+    switch (callee.v) {
+        V.ValueValue.FunctionKind => try callUserFn(machine, numberOfArgs),
+        V.ValueValue.BuiltinKind => try callBuiltinFn(machine, numberOfArgs),
+        else => try raiseExpectedTypeError(machine, null, &[_]V.ValueKind{V.ValueValue.FunctionKind}, callee.v),
     }
 
-    while (index < args.len) {
-        if (args[index].default == null) {
-            try machine.memoryState.pushUnitValue();
-        } else {
-            try machine.memoryState.push(args[index].default.?);
-        }
-        index += 1;
-    }
+    const result = machine.memoryState.pop();
+    machine.memoryState.popn(@intCast(numberOfArgs + 1));
+    try machine.memoryState.push(result);
+}
+
+inline fn callUserFn(machine: *Machine, numberOfArgs: usize) !void {
+    const callee = machine.memoryState.peek(@intCast(numberOfArgs));
 
     try machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope);
     defer machine.memoryState.restoreScope();
 
-    var lp: u8 = 0;
-    while (lp < args.len) {
-        try machine.memoryState.addToScope(args[lp].name, machine.memoryState.stack.items[sp + lp + 1]);
+    var lp: usize = 0;
+    const maxArgs = @min(numberOfArgs, callee.v.FunctionKind.arguments.len);
+    const sp = machine.memoryState.stack.items.len - numberOfArgs;
+    while (lp < maxArgs) {
+        try machine.memoryState.addToScope(callee.v.FunctionKind.arguments[lp].name, machine.memoryState.stack.items[sp + lp]);
+        lp += 1;
+    }
+    while (lp < callee.v.FunctionKind.arguments.len) {
+        const value = if (callee.v.FunctionKind.arguments[lp].default == null)
+            machine.memoryState.unitValue.?
+        else
+            callee.v.FunctionKind.arguments[lp].default.?;
+
+        try machine.memoryState.addToScope(callee.v.FunctionKind.arguments[lp].name, value);
         lp += 1;
     }
 
-    if (restOfArgs != null) {
-        const rest = machine.memoryState.stack.items[sp + lp + 1 ..];
-        try machine.memoryState.addArrayValueToScope(restOfArgs.?, rest);
+    if (callee.v.FunctionKind.restOfArguments != null) {
+        if (numberOfArgs > callee.v.FunctionKind.arguments.len) {
+            const rest = machine.memoryState.stack.items[sp + callee.v.FunctionKind.arguments.len ..];
+            try machine.memoryState.addArrayValueToScope(callee.v.FunctionKind.restOfArguments.?, rest);
+        } else {
+            try machine.memoryState.addToScope(callee.v.FunctionKind.restOfArguments.?, try machine.memoryState.newEmptySequenceValue());
+        }
     }
 
-    machine.memoryState.popn(index);
-    evalExpr(machine, callee.v.FunctionKind.body) catch |err| {
-        try machine.appendErrorPosition(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end });
-        return err;
-    };
-
-    const result = machine.memoryState.pop();
-    _ = machine.memoryState.pop();
-    try machine.memoryState.push(result);
+    try evalExpr(machine, callee.v.FunctionKind.body);
 }
 
-inline fn callBuiltin(machine: *Machine, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression, callee: *V.Value) !void {
-    const argsLen = argsAST.len;
+inline fn callBuiltinFn(machine: *Machine, numberOfArgs: usize) !void {
+    const callee = machine.memoryState.peek(@intCast(numberOfArgs));
 
-    for (argsAST) |item| {
-        try evalExpr(machine, item);
-    }
-
-    callee.v.BuiltinKind.body(machine, calleeAST, argsAST, machine.memoryState.stack.items[machine.memoryState.stack.items.len - argsLen ..]) catch |err| {
-        try machine.appendErrorPosition(Errors.Position{ .start = calleeAST.position.start, .end = e.position.end });
-        return err;
-    };
-
-    const result = machine.memoryState.pop();
-    machine.memoryState.popn(@intCast(argsLen + 1));
-    try machine.memoryState.push(result);
+    try callee.v.BuiltinKind.body(machine, numberOfArgs);
 }
 
 inline fn catche(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
@@ -1310,7 +1302,7 @@ pub const Machine = struct {
     }
 };
 
-pub fn raiseExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, found: V.ValueKind) !void {
+pub fn raiseExpectedTypeError(machine: *Machine, position: ?Errors.Position, expected: []const V.ValueKind, found: V.ValueKind) !void {
     const rec = try pushNamedUserError(machine, "ExpectedTypeError", position);
 
     try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "found", try machine.memoryState.newStringValue(found.toString()));

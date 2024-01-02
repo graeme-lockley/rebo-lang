@@ -1,7 +1,7 @@
 const Helper = @import("./helper.zig");
 
-pub fn len(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
-    const v = try Helper.getArgument(machine, calleeAST, argsAST, args, 0, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.SequenceKind, Helper.ValueValue.StringKind });
+pub fn len(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.SequenceKind, Helper.ValueValue.StringKind });
 
     switch (v.v) {
         Helper.ValueValue.RecordKind => try machine.memoryState.pushIntValue(@intCast(v.v.RecordKind.count())),

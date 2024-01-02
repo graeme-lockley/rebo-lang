@@ -40,17 +40,12 @@ pub fn fatalErrorHandler(machine: *Machine, operation: []const u8, err: anyerror
     std.os.exit(1);
 }
 
-fn reportExpectedTypeError(machine: *Machine, position: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
-    try M.raiseExpectedTypeError(machine, position, expected, v);
+fn reportExpectedTypeError(machine: *Machine, expected: []const V.ValueKind, v: V.ValueKind) !void {
+    try M.raiseExpectedTypeError(machine, null, expected, v);
 }
 
-fn reportPositionExpectedTypeError(machine: *Machine, position: usize, args: []*Expression, defaultPosition: Errors.Position, expected: []const V.ValueKind, v: V.ValueKind) !void {
-    const pos = if (args.len > position) args[position].position else defaultPosition;
-    try reportExpectedTypeError(machine, pos, expected, v);
-}
-
-pub fn getArgument(machine: *Machine, calleeAST: *Expression, argsAST: []*Expression, args: []*V.Value, position: usize, expected: []const ValueKind) !*Value {
-    const value = if (0 <= position and position < args.len) args[position] else machine.memoryState.unitValue.?;
+pub fn getArgument(machine: *Machine, numberOfArgs: usize, position: usize, expected: []const ValueKind) !*Value {
+    const value = if (0 <= position and position < numberOfArgs) machine.memoryState.peek(numberOfArgs - position - 1) else machine.memoryState.unitValue.?;
 
     for (expected) |expctd| {
         if (value.v == expctd) {
@@ -58,7 +53,7 @@ pub fn getArgument(machine: *Machine, calleeAST: *Expression, argsAST: []*Expres
         }
     }
 
-    try reportPositionExpectedTypeError(machine, position, argsAST, calleeAST.position, expected, value.v);
+    try reportExpectedTypeError(machine, expected, value.v);
 
     return machine.memoryState.unitValue.?;
 }

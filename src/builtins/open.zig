@@ -11,9 +11,9 @@ fn booleanOption(stringPool: *Helper.StringPool, options: *Helper.Value, name: [
     return option.?.v.BoolKind;
 }
 
-pub fn open(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
-    const path = (try Helper.getArgument(machine, calleeAST, argsAST, args, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
-    const options = try Helper.getArgument(machine, calleeAST, argsAST, args, 1, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.UnitKind });
+pub fn open(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const path = (try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
+    const options = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.UnitKind });
 
     if (options.v == Helper.ValueKind.UnitKind) {
         try machine.memoryState.push(try machine.memoryState.newFileValue(std.fs.cwd().openFile(path, .{}) catch |err| return Helper.osError(machine, "open", err)));

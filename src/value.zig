@@ -7,7 +7,7 @@ const SP = @import("./string_pool.zig");
 
 pub const IntType = i64;
 pub const FloatType = f64;
-pub const BuiltinFunctionType = *const fn (machine: *Machine, calleeAST: *AST.Expression, argsAST: []*AST.Expression, args: []*Value) Errors.RuntimeErrors!void;
+pub const BuiltinFunctionType = *const fn (machine: *Machine, numberOfArguments: usize) Errors.RuntimeErrors!void;
 
 pub const Colour = enum(u2) {
     Black = 0,

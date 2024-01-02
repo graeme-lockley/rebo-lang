@@ -99,30 +99,28 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
     }
 }
 
-fn printSequence(stdout: std.fs.File.Writer, vs: []*Helper.Value) !void {
-    for (vs) |v| {
+fn printSequence(machine: *Helper.Machine, stdout: std.fs.File.Writer, numberOfArgs: usize) !void {
+    var i: usize = 1;
+    while (i <= numberOfArgs) {
+        const v = machine.memoryState.peek(numberOfArgs - i);
         try printValue(stdout, v);
+
+        i += 1;
     }
 }
 
-pub fn print(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
-    _ = argsAST;
-    _ = calleeAST;
-
+pub fn print(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const stdout = std.io.getStdOut().writer();
 
-    printSequence(stdout, args) catch {};
+    printSequence(machine, stdout, numberOfArgs) catch {};
 
     try machine.memoryState.pushUnitValue();
 }
 
-pub fn println(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
-    _ = argsAST;
-    _ = calleeAST;
-
+pub fn println(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const stdout = std.io.getStdOut().writer();
 
-    printSequence(stdout, args) catch {};
+    printSequence(machine, stdout, numberOfArgs) catch {};
     stdout.print("\n", .{}) catch {};
 
     try machine.memoryState.pushUnitValue();

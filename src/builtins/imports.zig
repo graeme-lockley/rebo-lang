@@ -1,9 +1,7 @@
 const Helper = @import("./helper.zig");
 
-pub fn imports(machine: *Helper.Machine, calleeAST: *Helper.Expression, argsAST: []*Helper.Expression, args: []*Helper.Value) !void {
-    _ = args;
-    _ = argsAST;
-    _ = calleeAST;
+pub fn imports(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    _ = numberOfArgs;
     try machine.memoryState.pushEmptyRecordValue();
 
     const result = machine.memoryState.peek(0);
