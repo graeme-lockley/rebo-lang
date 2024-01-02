@@ -41,31 +41,26 @@ let _files(path, opt, result) {
 }
 
 # Returns the contents of the given file as a string.  If the file cannot be
-# opened, the function returns the file error.
+# opened, the function raises an error.
 let readFile(path, bufferSize = 1024) {
-   let handle = open(path, { read: true })
+   let handle = open(path, { read: true }) catch e -> raise {...e, path: path, bufferSize: bufferSize}
 
-   if typeof(handle) == "File" -> {
-      let result = ""
+   let result = ""
       
-      let buffer = read(handle, bufferSize)
-      while len(buffer) == bufferSize -> {
-         result := result + buffer
-         buffer := read(handle, bufferSize)
-      }
+   let buffer = read(handle, bufferSize)
+   while len(buffer) == bufferSize -> {
       result := result + buffer
-      
-      close(handle)
+      buffer := read(handle, bufferSize)
+   }
+   result := result + buffer
+   
+   close(handle)
 
-      result
-   } | {...handle, path: path, bufferSize: bufferSize}
+   result
 }
 
 # Returns the contents of the given file as a list of lines.  If the file
-# cannot be opened, the function returns the file error.
-let lines(path) {
-   let contents = readFile(path)
+# cannot be opened, the function raises an error.
+let lines(path) =
+   readFile(path) |> Std.split('\n')
 
-   if typeof(contents) == "String" -> contents |> Std.split('\n')
-   | contents
-}
