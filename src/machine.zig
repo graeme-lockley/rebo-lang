@@ -316,6 +316,31 @@ inline fn binaryOp(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!v
                 else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
             }
         },
+        AST.Operator.Power => {
+            try evalExpr(machine, leftAST);
+            try evalExpr(machine, rightAST);
+
+            const right = machine.pop();
+            const left = machine.pop();
+
+            switch (left.v) {
+                V.ValueValue.IntKind => {
+                    switch (right.v) {
+                        V.ValueValue.IntKind => try machine.memoryState.pushIntValue(std.math.pow(V.IntType, left.v.IntKind, right.v.IntKind)),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushFloatValue(std.math.pow(V.FloatType, @as(V.FloatType, @floatFromInt(left.v.IntKind)), right.v.FloatKind)),
+                        else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
+                    }
+                },
+                V.ValueValue.FloatKind => {
+                    switch (right.v) {
+                        V.ValueValue.IntKind => try machine.memoryState.pushFloatValue(std.math.pow(V.FloatType, left.v.FloatKind, @as(V.FloatType, @floatFromInt(right.v.IntKind)))),
+                        V.ValueValue.FloatKind => try machine.memoryState.pushFloatValue(std.math.pow(V.FloatType, left.v.FloatKind, right.v.FloatKind)),
+                        else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
+                    }
+                },
+                else => try raiseIncompatibleOperandTypesError(machine, e.position, e.kind.binaryOp.op, left.v, right.v),
+            }
+        },
         AST.Operator.Modulo => {
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);

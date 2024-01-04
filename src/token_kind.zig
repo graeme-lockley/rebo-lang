@@ -56,6 +56,7 @@ pub const TokenKind = enum {
     Semicolon,
     Slash,
     Star,
+    StarStar,
 
     pub fn toString(self: TokenKind) []const u8 {
         switch (self) {
@@ -115,6 +116,7 @@ pub const TokenKind = enum {
             TokenKind.Semicolon => return "';'",
             TokenKind.Slash => return "'/'",
             TokenKind.Star => return "'*'",
+            TokenKind.StarStar => return "'**'",
         }
     }
 };

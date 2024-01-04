@@ -455,7 +455,7 @@ pub const Parser = struct {
     }
 
     pub fn multiplicative(self: *Parser) Errors.ParserErrors!*AST.Expression {
-        var lhs = try self.nullDefault();
+        var lhs = try self.power();
         errdefer lhs.destroy(self.allocator);
 
         while (true) {
@@ -464,7 +464,7 @@ pub const Parser = struct {
             if (kind == Lexer.TokenKind.Star or kind == Lexer.TokenKind.Slash or kind == Lexer.TokenKind.Percentage) {
                 try self.skipToken();
 
-                const rhs = try self.nullDefault();
+                const rhs = try self.power();
                 errdefer rhs.destroy(self.allocator);
 
                 const v = try self.allocator.create(AST.Expression);
@@ -478,6 +478,28 @@ pub const Parser = struct {
             } else {
                 break;
             }
+        }
+
+        return lhs;
+    }
+
+    fn power(self: *Parser) Errors.ParserErrors!*AST.Expression {
+        var lhs = try self.nullDefault();
+        errdefer lhs.destroy(self.allocator);
+
+        while (self.currentTokenKind() == Lexer.TokenKind.StarStar) {
+            try self.skipToken();
+
+            const rhs = try self.nullDefault();
+            errdefer rhs.destroy(self.allocator);
+
+            const v = try self.allocator.create(AST.Expression);
+
+            v.* = AST.Expression{
+                .kind = AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Power } },
+                .position = Errors.Position{ .start = lhs.position.start, .end = rhs.position.end },
+            };
+            lhs = v;
         }
 
         return lhs;
