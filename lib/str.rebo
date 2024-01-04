@@ -24,11 +24,11 @@ let takeWhile(s, p) {
 
 # `whitespace?` returns true if `c` is a whitespace character.
 let whitespace?(c) = 
-  int(c) <= 32
+  c != () && int(c) <= 32
 
 # `isDigit` returns true if `c` is a digit.
 let digit?(c) = 
-  int(c) >= 48 && int(c) <= 57
+  c != () && int(c) >= 48 && int(c) <= 57
 
 # `trimRight` removes all trailing characters that satisfy `p`.
 # If `p` is not specified, it defaults to `whitespace?`.
