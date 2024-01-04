@@ -1,4 +1,5 @@
 let { join, map } = import("std")
+let Str = import("str")
 
 let escape(text) {
    let result = []
@@ -31,3 +32,190 @@ let serialise(obj) =
    | "String" -> "\"" + escape(obj) + "\""
    | "Record" -> "{" + (obj |> keys() |> map(fn(key) "\"" + escape(key) + "\": " + serialise(obj[key])) |> join(", ")) + "}"
    | _ -> "null"
+
+
+let _Reader(input) {
+   let _idx = 0
+
+   let self = {
+      peek: fn() input[_idx],
+      eos?: fn() idx >= len(input),
+      next: fn() {
+         let char = input[_idx]
+         _idx := _idx + 1
+         char
+      },
+      idx: fn() _idx,
+      slice: fn(start, end) input[start:end],
+      matchSlice: fn(slice) {
+         let start = _idx
+         let end = start + len(slice)
+
+         if input[start:end] == slice -> {
+            _idx := end
+            true
+         } | false
+      },
+      skipWhitespace: fn() {
+         while Str.whitespace?(self.peek()) -> self.next()
+      }
+   }
+
+   self
+}
+
+let parse(input) {
+   let reader = _Reader(input)
+
+   _element(reader)
+}
+
+let _element(reader) {
+   reader.skipWhitespace()
+
+   match reader.peek()
+   | '{' -> _object(reader)
+   | '[' -> _array(reader)
+   | '"' -> _string(reader)
+   | 't' -> _true(reader)
+   | 'f' -> _false(reader)
+   | 'n' -> _null(reader)
+   | c -> 
+      if c == '-' || Str.digit?(c) -> _number(reader)
+       | raise { kind: "SyntaxError", expected: ['{', '[', '"', 't', 'f', 'n', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], got: c, position: reader.idx() }
+}
+
+let _array(reader) {
+   reader.next()
+
+   let result = []
+
+   while reader.peek() != ']' -> {
+      result <! _element(reader)
+
+      reader.skipWhitespace()
+
+      if reader.peek() == ',' -> reader.next()
+
+      reader.skipWhitespace()
+   }
+
+   reader.next()
+
+   result
+}
+
+let _false(reader) =
+   if reader.matchSlice("false") -> false
+    | raise { kind: "SyntaxError", expected: "false", got: reader.slice(reader.idx(), reader.idx() + 5), position: reader.idx() }
+
+let _null(reader) =
+   if reader.matchSlice("null") -> ()
+    | raise { kind: "SyntaxError", expected: "null", got: reader.slice(reader.idx(), reader.idx() + 4), position: reader.idx() }
+
+let _number(reader) {
+   let startIdx = reader.idx()
+   let isFloat = false
+
+   if reader.peek() == '-' -> reader.next()
+
+   while Str.digit?(reader.peek()) -> reader.next()
+
+   if (reader.peek() == '.') -> {
+      isFloat := true
+      reader.next()
+
+      while Str.digit?(reader.peek()) -> reader.next()
+
+      if reader.peek() == 'e' || reader.peek() == 'E' -> {
+         reader.next()
+
+         if reader.peek() == '-' -> reader.next()
+
+         while Str.digit?(reader.peek()) -> reader.next()
+      }
+   }
+
+   if isFloat -> float(reader.slice(startIdx, reader.idx()))
+    | int(reader.slice(startIdx, reader.idx()))
+}
+
+let _object(reader) {
+   reader.next()
+
+   let result = {}
+
+   while reader.peek() != '}' -> {
+      let key = _string(reader)
+
+      reader.skipWhitespace()
+
+      if reader.peek() != ':' -> raise { kind: "SyntaxError", expected: ":", got: reader.peek(), position: reader.idx() }
+
+      reader.next()
+
+      reader.skipWhitespace()
+
+      result[key] := _element(reader)
+
+      reader.skipWhitespace()
+
+      if reader.peek() == ',' -> reader.next()
+
+      reader.skipWhitespace()
+   }
+
+   reader.next()
+
+   result
+}
+
+let _string(reader) {
+   reader.next()
+
+   let result = []
+
+   while reader.peek() != '"' -> {
+      if reader.peek() == '\\' -> {
+         reader.next()
+
+         match reader.peek()
+         | '"' -> result <! '"'
+         | '\\' -> result <! '\\'
+         | '/' -> result <! '/'
+         | 'b' -> result <! '\x8'
+         | 'f' -> result <! '\x12'
+         | 'n' -> result <! '\n'
+         | 'r' -> result <! '\x13'
+         | 't' -> result <! '\x9'
+         | 'u' -> {
+            reader.next()
+
+            let code = 0
+            let idx = 0
+
+            while idx < 4 -> {
+               let char = reader.next()
+
+               if Str.digit?(char) -> code := code * 16 + (int(char) - 48)
+                | Str.lowercase?(char) -> code := code * 16 + (int(char) - 87)
+                | Str.uppercase?(char) -> code := code * 16 + (int(char) - 55)
+                | raise { kind: "SyntaxError", expected: "hexadecimal digit", got: char, position: reader.idx() }
+
+               idx := idx + 1
+            }
+
+            result <! char(code)
+         }
+         | _ -> raise { kind: "SyntaxError", expected: ['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'] , got: reader.peek(), position: reader.idx() }
+      } | result <! reader.next()
+   }
+
+   reader.next()
+
+   str(result, false)
+}
+
+let _true(reader) =
+   if reader.matchSlice("true") -> true
+    | raise { kind: "SyntaxError", expected: "true", got: reader.slice(reader.idx(), reader.idx() + 4), position: reader.idx() }

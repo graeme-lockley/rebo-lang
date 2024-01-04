@@ -1,25 +1,46 @@
 let JSON = import("json")
 
 let run(suite) {
-  _escape(suite.suite("escape"))
-  _serialise(suite.suite("serialise"))
+   _escape(suite.suite("escape"))
+   _parse(suite.suite("parse"))
+   _serialise(suite.suite("serialise"))
 }
 
 let _escape(suite) {
-  let _tst(src, expected) =
-    src |> suite.eq(JSON.escape(src), expected)
+   let _tst(src, expected) =
+      src |> suite.eq(JSON.escape(src), expected)
 
-  _tst("hello world", "hello world")
-  _tst("hello\nworld", "hello\\nworld")
+   _tst("hello world", "hello world")
+   _tst("hello\nworld", "hello\\nworld")
+}
+
+let _parse(suite) {
+   let _tst(src, expected) =
+      src |> suite.eq(JSON.parse(src), expected)
+
+   _tst("true", true)
+   _tst("false", false)
+   _tst("null", ())
+   _tst("123", 123)
+   _tst("-123", -123)
+   _tst("1.23", 1.23)
+   _tst("-1.23", -1.23)
+   _tst("1.23E5", 123000.0)
+   _tst("-1.23E5", -123000.0)
+   _tst("1.23E-5", 0.0000123)
+   _tst("-1.23E-5", -0.0000123)
+   _tst("\"hello\"", "hello")
+   _tst("[1, 2, 3]", [1, 2, 3])
+   _tst("{\"a\": 1, \"b\": 2}", {a: 1, b: 2})
 }
 
 let _serialise(suite) {
-  let _tst(src, expected) =
-    str(src) |> suite.eq(JSON.serialise(src), expected)
+   let _tst(src, expected) =
+      str(src) |> suite.eq(JSON.serialise(src), expected)
 
-  _tst(true, "true")
-  _tst('a', "\"a\"")
-  _tst(1.23, "1.23")
-  _tst([1, 2, 3], "[1, 2, 3]")
+   _tst(true, "true")
+   _tst('a', "\"a\"")
+   _tst(1.23, "1.23")
+   _tst([1, 2, 3], "[1, 2, 3]")
   # _tst({a: "hello", b: 2}, "{\"b\": 2, \"a\": \"hello\"}")
 }
