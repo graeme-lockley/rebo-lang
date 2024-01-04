@@ -7,6 +7,7 @@ const V = @import("./../value.zig");
 
 pub const Expression = AST.Expression;
 pub const IntType = V.IntType;
+pub const FloatType = V.FloatType;
 pub const Machine = M.Machine;
 pub const MemoryState = @import("./../memory_state.zig");
 pub const StringPool = @import("./../string_pool.zig").StringPool;

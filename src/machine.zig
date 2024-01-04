@@ -1155,6 +1155,7 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
     try addBuiltin(&state, "import", &Builtins.import);
     try addBuiltin(&state, "imports", &Builtins.imports);
     try addBuiltin(&state, "int", &Builtins.int);
+    try addBuiltin(&state, "float", &Builtins.float);
     try addBuiltin(&state, "keys", &Builtins.keys);
     try addBuiltin(&state, "len", &Builtins.len);
     try addBuiltin(&state, "listen", &Builtins.listen);
