@@ -13,7 +13,7 @@ pub fn ls(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const result = machine.memoryState.peek(0);
 
     var it = dir.iterate();
-    while (it.next() catch |err| return Helper.raiseOsError(machine, "listen", err)) |entry| {
+    while (it.next() catch |err| return Helper.raiseOsError(machine, "ls", err)) |entry| {
         if (std.mem.eql(u8, entry.name, ".") or std.mem.eql(u8, entry.name, "..")) {
             continue;
         }
