@@ -28,6 +28,7 @@ pub const open = @import("./builtins/open.zig").open;
 pub const print = @import("./builtins/print.zig").print;
 pub const println = @import("./builtins/print.zig").println;
 pub const read = @import("./builtins/read.zig").read;
+pub const scope = @import("./builtins/scope.zig").scope;
 pub const socket = @import("./builtins/socket.zig").socket;
 pub const str = @import("./builtins/str.zig").str;
 pub const typeof = @import("./builtins/typeof.zig").typeof;

@@ -1165,6 +1165,7 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
     try addBuiltin(&state, "print", &Builtins.print);
     try addBuiltin(&state, "println", &Builtins.println);
     try addBuiltin(&state, "read", &Builtins.read);
+    try addBuiltin(&state, "scope", &Builtins.scope);
     try addBuiltin(&state, "socket", &Builtins.socket);
     try addBuiltin(&state, "str", &Builtins.str);
     try addBuiltin(&state, "typeof", &Builtins.typeof);
