@@ -256,6 +256,8 @@ pub const MemoryState = struct {
     }
 
     pub fn openScopeFrom(self: *MemoryState, outerScope: ?*V.Value) !void {
+        if (outerScope != null and outerScope.?.v != V.ValueKind.ScopeKind) unreachable;
+
         try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, outerScope) }));
     }
 
