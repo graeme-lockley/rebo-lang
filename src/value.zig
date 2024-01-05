@@ -209,7 +209,7 @@ pub const ValueKind = enum {
             ValueKind.StringKind => "String",
             ValueKind.RecordKind => "Record",
             ValueKind.ScopeKind => "Scope",
-            ValueKind.UnitKind => "()",
+            ValueKind.UnitKind => "Unit",
         };
     }
 };
