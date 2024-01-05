@@ -9,20 +9,23 @@ fn ffn(machine: *Helper.Machine, fromSourceName: ?[]const u8, fileName: []const 
         defer buffer.deinit();
 
         return std.fs.cwd().realpathAlloc(machine.memoryState.allocator, fileName) catch |err| {
-            try Helper.raiseOsError(machine, "import", err);
-            return "";
+            const record = try Helper.pushOsError(machine, "import", err);
+            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "file", try machine.memoryState.newStringValue(fileName));
+            return Helper.Errors.RuntimeErrors.InterpreterError;
         };
     }
 
     const dirname = std.fs.path.dirname(fromSourceName.?).?;
-    const dir = std.fs.openDirAbsolute(dirname, std.fs.Dir.OpenDirOptions{ .access_sub_paths = false, .no_follow = false }) catch |e| {
-        try Helper.raiseOsError(machine, "import", e);
-        return "";
+    const dir = std.fs.openDirAbsolute(dirname, std.fs.Dir.OpenDirOptions{ .access_sub_paths = false, .no_follow = false }) catch |err| {
+        const record = try Helper.pushOsError(machine, "import", err);
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "file", try machine.memoryState.newStringValue(fileName));
+        return Helper.Errors.RuntimeErrors.InterpreterError;
     };
 
     return dir.realpathAlloc(machine.memoryState.allocator, fileName) catch |err| {
-        try Helper.raiseOsError(machine, "import", err);
-        return "";
+        const record = try Helper.pushOsError(machine, "import", err);
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "file", try machine.memoryState.newStringValue(fileName));
+        return Helper.Errors.RuntimeErrors.InterpreterError;
     };
 }
 
