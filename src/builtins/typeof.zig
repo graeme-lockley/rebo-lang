@@ -3,22 +3,9 @@ const Helper = @import("./helper.zig");
 pub fn typeof(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const v = if (numberOfArgs > 0) machine.memoryState.peek(numberOfArgs - 1) else machine.memoryState.unitValue.?;
 
-    const typeName = switch (v.v) {
-        Helper.ValueKind.BoolKind => "Bool",
-        Helper.ValueKind.BuiltinKind => "Function",
-        Helper.ValueKind.CharKind => "Char",
-        Helper.ValueKind.FileKind => "File",
-        Helper.ValueKind.FunctionKind => "Function",
-        Helper.ValueKind.FloatKind => "Float",
-        Helper.ValueKind.IntKind => "Int",
-        Helper.ValueKind.SequenceKind => "Sequence",
-        Helper.ValueKind.StreamKind => "Stream",
-        Helper.ValueKind.StringKind => "String",
-        Helper.ValueKind.RecordKind => "Record",
-        Helper.ValueKind.ScopeKind => "Scope",
-        Helper.ValueKind.UnitKind => "Unit",
-    };
-    try machine.memoryState.pushStringValue(typeName);
+    const tt: Helper.ValueKind = v.v;
+
+    try machine.memoryState.pushStringValue(tt.toString());
 }
 
 test "typeof" {
