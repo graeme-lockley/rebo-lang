@@ -146,6 +146,8 @@ let _object(reader) {
    let result = {}
 
    while reader.peek() != '}' -> {
+      reader.skipWhitespace()
+
       let key = _string(reader)
 
       reader.skipWhitespace()
