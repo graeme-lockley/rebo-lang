@@ -67,10 +67,10 @@ let lines(path) =
 # Writes the given content to the given file.  If the file cannot be opened,
 # the function raises an error.
 let writeFile(path, content) {
-   let handle = _openReadWrite(path) catch e -> raise {...e, path: path}
+   let handle = open(path, { create: true, truncate: true, write: true }) catch e -> raise {...e, path: path}
 
    write(handle, content)
 }
 
-let _openReadWrite(path) =
-   open(path, { write: true }) catch { kind: "SystemError", os: "error.FileNotFound" } -> open(path, { create: true, write: true })
+let _openForWrite(path) =
+   open(path, { create: true, truncate: true, write: true })
