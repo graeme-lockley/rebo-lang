@@ -64,3 +64,13 @@ let readFile(path, bufferSize = 1024) {
 let lines(path) =
    readFile(path) |> Std.split('\n')
 
+# Writes the given content to the given file.  If the file cannot be opened,
+# the function raises an error.
+let writeFile(path, content) {
+   let handle = _openReadWrite(path) catch e -> raise {...e, path: path}
+
+   write(handle, content)
+}
+
+let _openReadWrite(path) =
+   open(path, { write: true }) catch { kind: "SystemError", os: "error.FileNotFound" } -> open(path, { create: true, write: true })
