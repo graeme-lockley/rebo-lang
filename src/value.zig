@@ -326,7 +326,7 @@ pub const HttpClientRequestValue = struct {
 
         const bytesRead = try self.request.read(buffer);
 
-        if (bytesRead < buffer.len) {
+        if (bytesRead == 0) {
             self.done = true;
         }
 
