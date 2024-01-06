@@ -27,7 +27,8 @@ pub fn open(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const createF = try booleanOption(machine.memoryState.stringPool, options, "create", false);
 
     if (createF) {
-        try machine.memoryState.push(try machine.memoryState.newFileValue(std.fs.cwd().createFile(path, .{ .read = readF, .truncate = truncateF, .exclusive = true }) catch |err| return Helper.raiseOsError(machine, "open", err)));
+        const file = std.fs.cwd().createFile(path, .{ .read = readF, .truncate = truncateF, .exclusive = false }) catch |err| return Helper.raiseOsError(machine, "open", err);
+        try machine.memoryState.push(try machine.memoryState.newFileValue(file));
     } else {
         const mode = if (readF and writeF) std.fs.File.OpenMode.read_write else if (readF) std.fs.File.OpenMode.read_only else std.fs.File.OpenMode.write_only;
         var file = std.fs.cwd().openFile(path, .{ .mode = mode }) catch |err| return Helper.raiseOsError(machine, "open", err);
