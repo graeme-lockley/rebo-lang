@@ -331,6 +331,8 @@ fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {
                 }
             }
         },
+        .HttpClientKind => {},
+        .HttpClientRequestKind => {},
         .ScopeKind => markScope(&v.v.ScopeKind, colour),
         .SequenceKind => for (v.v.SequenceKind.items()) |item| {
             markValue(item, colour);

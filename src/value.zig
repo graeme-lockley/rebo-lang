@@ -30,6 +30,8 @@ pub const Value = struct {
             .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .UnitKind => {},
             .FileKind => self.v.FileKind.deinit(),
             .FunctionKind => self.v.FunctionKind.deinit(allocator),
+            .HttpClientKind => self.v.HttpClientKind.deinit(allocator),
+            .HttpClientRequestKind => self.v.HttpClientRequestKind.deinit(allocator),
             .SequenceKind => self.v.SequenceKind.deinit(),
             .StreamKind => self.v.StreamKind.deinit(),
             .StringKind => self.v.StringKind.deinit(),
@@ -79,6 +81,8 @@ pub const Value = struct {
                 }
                 try buffer.append(')');
             },
+            .HttpClientKind => try buffer.appendSlice("<http client>"),
+            .HttpClientRequestKind => try buffer.appendSlice("<http client response>"),
             .IntKind => try std.fmt.format(buffer.writer(), "{d}", .{self.v.IntKind}),
             .RecordKind => {
                 var first = true;
@@ -188,6 +192,8 @@ pub const ValueKind = enum {
     CharKind,
     FileKind,
     FunctionKind,
+    HttpClientKind,
+    HttpClientRequestKind,
     SequenceKind,
     StreamKind,
     StringKind,
@@ -203,6 +209,8 @@ pub const ValueKind = enum {
             ValueKind.FileKind => "File",
             ValueKind.FunctionKind => "Function",
             ValueKind.FloatKind => "Float",
+            ValueKind.HttpClientKind => "HttpClient",
+            ValueKind.HttpClientRequestKind => "HttpClientRequest",
             ValueKind.IntKind => "Int",
             ValueKind.SequenceKind => "Sequence",
             ValueKind.StreamKind => "Stream",
@@ -222,6 +230,8 @@ pub const ValueValue = union(ValueKind) {
     FloatKind: FloatType,
     FunctionKind: FunctionValue,
     IntKind: IntType,
+    HttpClientKind: HttpClientValue,
+    HttpClientRequestKind: HttpClientRequestValue,
     RecordKind: RecordValue,
     ScopeKind: ScopeValue,
     SequenceKind: SequenceValue,
@@ -280,6 +290,47 @@ pub const FunctionArgument = struct {
 
     pub fn deinit(self: *FunctionArgument) void {
         self.name.decRef();
+    }
+};
+
+pub const HttpClientValue = struct {
+    client: *std.http.Client,
+
+    pub fn init(client: *std.http.Client) HttpClientValue {
+        return HttpClientValue{ .client = client };
+    }
+
+    pub fn deinit(self: *HttpClientValue, allocator: std.mem.Allocator) void {
+        self.client.deinit();
+        allocator.destroy(self.client);
+    }
+};
+
+pub const HttpClientRequestValue = struct {
+    done: bool,
+    request: *std.http.Client.Request,
+
+    pub fn init(request: *std.http.Client.Request) HttpClientRequestValue {
+        return HttpClientRequestValue{ .done = false, .request = request };
+    }
+
+    pub fn deinit(self: *HttpClientRequestValue, allocator: std.mem.Allocator) void {
+        self.request.deinit();
+        allocator.destroy(self.request);
+    }
+
+    pub fn read(self: *HttpClientRequestValue, buffer: []u8) !usize {
+        if (self.done) {
+            return 0;
+        }
+
+        const bytesRead = try self.request.read(buffer);
+
+        if (bytesRead < buffer.len) {
+            self.done = true;
+        }
+
+        return bytesRead;
     }
 };
 
@@ -538,6 +589,8 @@ pub fn eq(a: *Value, b: *Value) bool {
         .FunctionKind => return @intFromPtr(a) == @intFromPtr(b),
         .IntKind => return a.v.IntKind == b.v.IntKind,
         .FloatKind => return a.v.FloatKind == b.v.FloatKind,
+        .HttpClientKind => unreachable,
+        .HttpClientRequestKind => unreachable,
         .SequenceKind => {
             if (a.v.SequenceKind.len() != b.v.SequenceKind.len()) return false;
 

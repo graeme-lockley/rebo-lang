@@ -3,7 +3,7 @@ const std = @import("std");
 const AST = @import("./../ast.zig");
 pub const Errors = @import("./../errors.zig");
 pub const M = @import("./../machine.zig");
-const V = @import("./../value.zig");
+pub const V = @import("./../value.zig");
 
 pub const Expression = AST.Expression;
 pub const IntType = V.IntType;

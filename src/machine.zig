@@ -1138,8 +1138,14 @@ fn addRebo(state: *MS.MemoryState) !void {
 
     const exePath = std.fs.selfExePathAlloc(state.allocator) catch return;
     defer state.allocator.free(exePath);
-
     try value.v.RecordKind.setU8(state.stringPool, "exe", try state.newStringValue(exePath));
+
+    const reboOS = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
+    try value.v.RecordKind.setU8(state.stringPool, "os", reboOS);
+
+    var client = try state.allocator.create(std.http.Client);
+    client.* = std.http.Client{ .allocator = state.allocator };
+    try reboOS.v.RecordKind.setU8(state.stringPool, "httpClient", try state.newValue(V.ValueValue{ .HttpClientKind = V.HttpClientValue.init(client) }));
 }
 
 fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
@@ -1156,6 +1162,7 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
     try addBuiltin(&state, "imports", &Builtins.imports);
     try addBuiltin(&state, "int", &Builtins.int);
     try addBuiltin(&state, "float", &Builtins.float);
+    try addBuiltin(&state, "httpRequest", &Builtins.httpRequest);
     try addBuiltin(&state, "keys", &Builtins.keys);
     try addBuiltin(&state, "len", &Builtins.len);
     try addBuiltin(&state, "listen", &Builtins.listen);

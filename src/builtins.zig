@@ -19,6 +19,7 @@ pub const import = @import("./builtins/import.zig").import;
 pub const imports = @import("./builtins/imports.zig").imports;
 pub const int = @import("./builtins/int.zig").int;
 pub const float = @import("./builtins/float.zig").float;
+pub const httpRequest = @import("./builtins/httpRequest.zig").httpRequest;
 pub const keys = @import("./builtins/keys.zig").keys;
 pub const listen = @import("./builtins/listen.zig").listen;
 pub const len = @import("./builtins/len.zig").len;
