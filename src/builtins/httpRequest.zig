@@ -32,7 +32,13 @@ pub fn httpRequest(machine: *Helper.Machine, numberOfArgs: usize) !void {
                 request.wait() catch |err| return Helper.raiseOsError(machine, "httpRquest", err);
 
                 try machine.memoryState.push(try machine.memoryState.newValue(Helper.ValueValue{ .HttpClientRequestKind = Helper.V.HttpClientRequestValue.init(request) }));
+                return;
             }
         }
     }
+
+    const record = try Helper.M.pushNamedUserError(machine, "ExpectedTypeError", null);
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "name", try machine.memoryState.newStringValue("rebo.os.httpClient"));
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "expected", try machine.memoryState.newStringValue("Record"));
+    return Helper.Errors.RuntimeErrors.InterpreterError;
 }
