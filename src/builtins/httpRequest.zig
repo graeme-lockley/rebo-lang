@@ -12,7 +12,7 @@ pub fn httpRequest(machine: *Helper.Machine, numberOfArgs: usize) !void {
         const os = try rebo.?.v.RecordKind.getU8(machine.memoryState.stringPool, "os");
 
         if (os != null and os.?.v == Helper.ValueKind.RecordKind) {
-            const client = try os.?.v.RecordKind.getU8(machine.memoryState.stringPool, "httpClient");
+            const client = try os.?.v.RecordKind.getU8(machine.memoryState.stringPool, "http.client");
 
             if (client != null and client.?.v == Helper.ValueKind.HttpClientKind) {
                 const uri = std.Uri.parse(url) catch |err| {

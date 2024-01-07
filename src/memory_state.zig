@@ -125,6 +125,10 @@ pub const MemoryState = struct {
         return v;
     }
 
+    pub inline fn newBuiltinValue(self: *MemoryState, body: V.BuiltinFunctionType) !*V.Value {
+        return try self.newValue(V.ValueValue{ .BuiltinKind = .{ .body = body } });
+    }
+
     pub inline fn newFileValue(self: *MemoryState, file: std.fs.File) !*V.Value {
         return try self.newValue(V.ValueValue{ .FileKind = V.FileValue.init(file) });
     }

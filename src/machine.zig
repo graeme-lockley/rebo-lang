@@ -1107,9 +1107,7 @@ inline fn whilee(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!voi
 }
 
 fn addBuiltin(state: *MS.MemoryState, name: []const u8, body: V.BuiltinFunctionType) !void {
-    const value = try state.newValue(V.ValueValue{ .BuiltinKind = .{ .body = body } });
-
-    try state.addU8ToScope(name, value);
+    try state.addU8ToScope(name, try state.newBuiltinValue(body));
 }
 
 fn addRebo(state: *MS.MemoryState) !void {
@@ -1145,7 +1143,8 @@ fn addRebo(state: *MS.MemoryState) !void {
 
     var client = try state.allocator.create(std.http.Client);
     client.* = std.http.Client{ .allocator = state.allocator };
-    try reboOS.v.RecordKind.setU8(state.stringPool, "httpClient", try state.newValue(V.ValueValue{ .HttpClientKind = V.HttpClientValue.init(client) }));
+    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client", try state.newValue(V.ValueValue{ .HttpClientKind = V.HttpClientValue.init(client) }));
+    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.response", try state.newBuiltinValue(@import("builtins/httpRequestResponse.zig").httpRequestResponse));
 }
 
 fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
