@@ -1,0 +1,96 @@
+let JSON = import("json")
+let Std = import("std")
+
+# `get` makes a GET request to the given URL and returns a response object.
+let get(url, headers = {}) = _bodyLess(url, "GET", headers)
+
+# `head` makes a HEAD request to the given URL and returns a response object.
+let head(url, headers = {}) = _bodyLess(url, "HEAD", headers)
+
+# `delete` makes a DELETE request to the given URL and returns a response object.
+let delete(url, headers = {}) = _bodyLess(url, "DELETE", headers)
+
+let _bodyLess(url, method, headers) {
+   let response = httpRequest(url, method, headers)
+
+   rebo.os["http.client.start"](response)
+   rebo.os["http.client.wait"](response)
+
+   {
+      response: fn() rebo.os["http.client.response"](response),
+      read: fn(bytes) read(response, bytes),
+      readAll: fn(bytes) _readAll(response, bytes),
+      readAllJson: fn(bytes) JSON.parse(_readAll(response, bytes))
+   }
+}
+
+# `post` makes a POST request to the given URL and returns a response object.
+let post(url, body = (), headers = {}) = _body(url, "POST", body, headers)
+
+# `put` makes a PUT request to the given URL and returns a response object.
+let put(url, body = (), headers = {}) = _body(url, "PUT", body, headers)
+
+# `patch` makes a PATCH request to the given URL and returns a response object.
+let patch(url, body = (), headers = {}) = _body(url, "PATCH", body, headers)
+
+let _body(url, method, body, headers ) {
+   headers := { ...headers }
+
+   headers["transfer-encoding"] := headers["transfer-encoding"] ? "chunked"
+   if body != () -> {
+      body := encode(body)
+
+      headers["Content-Type"] := headers["Content-Type"] ? "application/json"
+      headers["Content-Length"] := headers["Content-Length"] ? len(body)
+    }
+
+   let response = httpRequest(url, method, headers)
+   rebo.os["http.client.start"](response)
+
+   if body == () -> {
+      let self = {
+         response: fn() rebo.os["http.client.response"](response),
+         write: fn(body) write(response, encode(body)),
+         wait: fn() {
+            rebo.os["http.client.finish"](response)
+            rebo.os["http.client.wait"](response)
+            self.write := ()
+            self.read := fn(bytes) read(response, bytes)
+            self.readAll := fn(bytes) _readAll(response, bytes)
+         }
+      }
+
+      self
+   } | {
+      write(response, body)
+
+      rebo.os["http.client.finish"](response)
+      rebo.os["http.client.wait"](response)
+
+      {
+         response: fn() rebo.os["http.client.response"](response),
+         read: fn(bytes) read(response, bytes),
+         readAll: fn(bytes) _readAll(response, bytes),
+         readAllJson: fn(bytes) JSON.parse(_readAll(response, bytes))
+      }
+   }
+}
+
+let _readAll(response, bytes) {
+   let fullResponse = []
+   let content = read(response, bytes)
+
+   while content != () -> {
+      fullResponse <! content
+      content := read(response, bytes)
+   }
+
+   fullResponse |> Std.join("")
+}
+
+let encode(content) =
+   if typeof(content) == "string" -> content
+    | JSON.serialise(content)
+
+# let HTTP = import("http") ; HTTP.get("https://godsays.xyz").readAll()
+# { \"name\": \"Apple MacBook Pro 16\", \"data\": { \"year\": 2019, \"price\": 1849.99, \"CPU model\": \"Intel Core i9\", \"Hard disk size\": \"1 TB\" } }
