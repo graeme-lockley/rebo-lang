@@ -49,7 +49,7 @@ There is so much to do.  The following is my work list on this project.  I will 
 ## Records
 
 - [X] Add support for a literal record
-- [ ] Add support for a literal string as a literal record field name
+- [X] Add support for a literal string as a literal record field name
 - [X] Add support for `...` when incorporating a literal record
 - [X] Add support for `.field` to access a record's field
 - [X] Add support for `[]` to access a field in a record based on value
@@ -133,6 +133,7 @@ There is so much to do.  The following is my work list on this project.  I will 
     - [ ] Add an option to import the private members of a module
     - [ ] Add a non-fatal option
     - [X] Add ability to import lib files without path or extension
+    - [ ] Add ability to import all names directly into the current scope
 - [X] imports
 - [X] int
 - [X] len

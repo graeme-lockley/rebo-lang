@@ -288,6 +288,11 @@ This style of pattern matching is useful when you want to match against a record
 . | {a @ xName, b @ yName} -> xName + yName
 . | _ -> 0
 3
+
+> match {a: 1, b: 2}
+. | {"a" @ xName, "b" @ yName} -> xName + yName
+. | _ -> 0
+3
 ```
 
 It is also possible to match against a record that has a particular field and a particular value for that field.

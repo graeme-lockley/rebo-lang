@@ -32,7 +32,7 @@ Pattern
     ;
 
 MapPattern
-    : Identifier [":" Pattern]
+    : [LiteralString | Identifier] [":" Pattern]
     ;
 
 Catch

@@ -647,7 +647,7 @@ pub const Parser = struct {
             Lexer.TokenKind.LCurly => {
                 const lcurly = try self.nextToken();
 
-                if (self.currentTokenKind() == Lexer.TokenKind.RCurly or self.currentTokenKind() == Lexer.TokenKind.DotDotDot or self.currentTokenKind() == Lexer.TokenKind.Identifier and try self.peekNextToken() == Lexer.TokenKind.Colon) {
+                if (self.currentTokenKind() == Lexer.TokenKind.RCurly or self.currentTokenKind() == Lexer.TokenKind.DotDotDot or (self.currentTokenKind() == Lexer.TokenKind.Identifier or self.currentTokenKind() == Lexer.TokenKind.LiteralString) and try self.peekNextToken() == Lexer.TokenKind.Colon) {
                     var es = std.ArrayList(AST.RecordEntry).init(self.allocator);
                     defer {
                         for (es.items) |item| {
@@ -997,11 +997,29 @@ pub const Parser = struct {
             const e = try self.expression();
             return AST.RecordEntry{ .record = e };
         } else {
-            const key = try self.matchToken(Lexer.TokenKind.Identifier);
+            const key = switch (self.currentTokenKind()) {
+                Lexer.TokenKind.Identifier => try self.stringPool.intern(self.lexer.lexeme(try self.matchToken(Lexer.TokenKind.Identifier))),
+                Lexer.TokenKind.LiteralString => try self.parseLiteralString(self.lexer.lexeme(try self.matchToken(Lexer.TokenKind.LiteralString))),
+                else => {
+                    {
+                        var expected = try self.allocator.alloc(Lexer.TokenKind, 2);
+                        errdefer self.allocator.free(expected);
+
+                        expected[0] = Lexer.TokenKind.Identifier;
+                        expected[1] = Lexer.TokenKind.LiteralString;
+
+                        self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
+                    }
+
+                    return error.SyntaxError;
+                },
+            };
+            errdefer key.decRef();
+
             try self.matchSkipToken(Lexer.TokenKind.Colon);
             const value = try self.expression();
 
-            return AST.RecordEntry{ .value = .{ .key = try self.stringPool.intern(self.lexer.lexeme(key)), .value = value } };
+            return AST.RecordEntry{ .value = .{ .key = key, .value = value } };
         }
     }
 
@@ -1151,7 +1169,7 @@ pub const Parser = struct {
                     es.deinit();
                 }
 
-                if (self.currentTokenKind() == Lexer.TokenKind.Identifier) {
+                if (self.currentTokenKind() == Lexer.TokenKind.Identifier or self.currentTokenKind() == Lexer.TokenKind.LiteralString) {
                     try es.append(try self.recordPatternEntry());
                     while (self.currentTokenKind() == Lexer.TokenKind.Comma) {
                         try self.skipToken();
@@ -1199,10 +1217,25 @@ pub const Parser = struct {
     }
 
     fn recordPatternEntry(self: *Parser) !AST.RecordPatternEntry {
-        const key = try self.matchToken(Lexer.TokenKind.Identifier);
+        const key = switch (self.currentTokenKind()) {
+            Lexer.TokenKind.Identifier => try self.stringPool.intern(self.lexer.lexeme(try self.matchToken(Lexer.TokenKind.Identifier))),
+            Lexer.TokenKind.LiteralString => try self.parseLiteralString(self.lexer.lexeme(try self.matchToken(Lexer.TokenKind.LiteralString))),
+            else => {
+                {
+                    var expected = try self.allocator.alloc(Lexer.TokenKind, 2);
+                    errdefer self.allocator.free(expected);
 
-        const keyValue = try self.stringPool.intern(self.lexer.lexeme(key));
-        errdefer keyValue.decRef();
+                    expected[0] = Lexer.TokenKind.Identifier;
+                    expected[1] = Lexer.TokenKind.LiteralString;
+
+                    self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
+                }
+
+                return error.SyntaxError;
+            },
+        };
+
+        errdefer key.decRef();
 
         var pttrn: ?*AST.Pattern = null;
         errdefer if (pttrn != null) pttrn.?.destroy(self.allocator);
@@ -1221,7 +1254,7 @@ pub const Parser = struct {
             try self.matchSkipToken(Lexer.TokenKind.Identifier);
         }
 
-        return AST.RecordPatternEntry{ .key = keyValue, .pattern = pttrn, .id = id };
+        return AST.RecordPatternEntry{ .key = key, .pattern = pttrn, .id = id };
     }
 
     inline fn currentToken(self: *Parser) Lexer.Token {

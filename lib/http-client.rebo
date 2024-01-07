@@ -34,14 +34,16 @@ let put(url, body = (), headers = {}) = _body(url, "PUT", body, headers)
 let patch(url, body = (), headers = {}) = _body(url, "PATCH", body, headers)
 
 let _body(url, method, body, headers ) {
-   headers := { ...headers }
-
-   headers["transfer-encoding"] := headers["transfer-encoding"] ? "chunked"
-   if body != () -> {
+   if body == () -> headers := {"transfer-encoding": "chunked", ...headers }
+   | { 
       body := encode(body)
 
-      headers["Content-Type"] := headers["Content-Type"] ? "application/json"
-      headers["Content-Length"] := headers["Content-Length"] ? len(body)
+      headers := {
+         "transfer-encoding": "chunked", 
+         "Content-Type": "application/json",
+         "Content-Length": len(body),
+         ...headers 
+      }
     }
 
    let response = httpRequest(url, method, headers)
@@ -56,7 +58,7 @@ let _body(url, method, body, headers ) {
             rebo.os["http.client.wait"](response)
             self.write := ()
             self.read := fn(bytes) read(response, bytes)
-            self.readAll := fn(bytes) _readAll(response, bytes)
+            self.readAllJson := fn(bytes) JSON.parse(_readAll(response, bytes))
          }
       }
 
@@ -89,7 +91,7 @@ let _readAll(response, bytes) {
 }
 
 let encode(content) =
-   if typeof(content) == "string" -> content
+   if typeof(content) == "String" -> content
     | JSON.serialise(content)
 
 # let HTTP = import("http") ; HTTP.get("https://godsays.xyz").readAll()
