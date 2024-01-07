@@ -26,7 +26,9 @@ pub fn httpRequest(machine: *Helper.Machine, numberOfArgs: usize) !void {
 
                 try headers.append("accept", "*/*");
                 var request = try machine.memoryState.allocator.create(std.http.Client.Request);
+                errdefer machine.memoryState.allocator.destroy(request);
                 request.* = client.?.v.HttpClientKind.client.request(.GET, uri, headers, .{}) catch |err| return Helper.raiseOsError(machine, "httpRquest", err);
+                errdefer request.deinit();
 
                 request.start() catch |err| return Helper.raiseOsError(machine, "httpRquest", err);
                 request.wait() catch |err| return Helper.raiseOsError(machine, "httpRquest", err);
