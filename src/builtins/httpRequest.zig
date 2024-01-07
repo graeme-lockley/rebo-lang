@@ -50,8 +50,6 @@ pub fn httpRequest(machine: *Helper.Machine, numberOfArgs: usize) !void {
     errdefer request.deinit();
 
     try machine.memoryState.push(try machine.memoryState.newValue(Helper.ValueValue{ .HttpClientRequestKind = Helper.V.HttpClientRequestValue.init(requestHeaders, request) }));
-
-    machine.memoryState.peek(0).v.HttpClientRequestKind.start() catch |err| return Helper.raiseOsError(machine, "httpRequest", err);
 }
 
 pub fn httpResponse(machine: *Helper.Machine, numberOfArgs: usize) !void {
@@ -89,10 +87,18 @@ pub fn httpResponse(machine: *Helper.Machine, numberOfArgs: usize) !void {
     }
 }
 
+pub fn httpStart(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
+
+    request.v.HttpClientRequestKind.start() catch |err| return Helper.raiseOsError(machine, "rebo.os[\"http.client.start\"]", err);
+
+    try machine.memoryState.pushUnitValue();
+}
+
 pub fn httpFinish(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
 
-    request.v.HttpClientRequestKind.request.finish() catch |err| return Helper.raiseOsError(machine, "rebo.os[\"http.client.finish\"]", err);
+    request.v.HttpClientRequestKind.finish() catch |err| return Helper.raiseOsError(machine, "rebo.os[\"http.client.finish\"]", err);
 
     try machine.memoryState.pushUnitValue();
 }

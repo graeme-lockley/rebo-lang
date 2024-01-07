@@ -31,7 +31,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
             try stdout.print(")", .{});
         },
         .HttpClientKind => try stdout.print("<http client>", .{}),
-        .HttpClientRequestKind => try stdout.print("<http client response>", .{}),
+        .HttpClientRequestKind => try stdout.print("<http client response {s}>", .{@tagName(v.v.HttpClientRequestKind.state)}),
         .IntKind => try stdout.print("{d}", .{v.v.IntKind}),
         .RecordKind => {
             var first = true;

@@ -94,7 +94,7 @@ pub const Value = struct {
                 try buffer.append(')');
             },
             .HttpClientKind => try buffer.appendSlice("<http client>"),
-            .HttpClientRequestKind => try buffer.appendSlice("<http client response>"),
+            .HttpClientRequestKind => try std.fmt.format(buffer.writer(), "<http client response {s}>", .{@tagName(self.v.HttpClientRequestKind.state)}),
             .IntKind => try std.fmt.format(buffer.writer(), "{d}", .{self.v.IntKind}),
             .RecordKind => {
                 var first = true;
@@ -321,8 +321,9 @@ pub const HttpClientValue = struct {
 pub const HttpClientRequestState = enum {
     Created,
     Started,
-    Waiting,
     Finished,
+    Waiting,
+    Done,
 };
 
 pub const HttpClientRequestValue = struct {
@@ -349,26 +350,6 @@ pub const HttpClientRequestValue = struct {
         }
     }
 
-    pub fn wait(self: *HttpClientRequestValue) !void {
-        if (self.state == .Started) {
-            try self.request.wait();
-            self.state = .Waiting;
-        } else {
-            return error.IllegalState;
-        }
-    }
-
-    pub fn finish(self: *HttpClientRequestValue) !void {
-        if (self.state == .Finished) {
-            return;
-        } else if (self.state == .Waiting) {
-            try self.request.finish();
-            self.state = .Finished;
-        } else {
-            return error.IllegalState;
-        }
-    }
-
     pub fn write(self: *HttpClientRequestValue, buffer: []const u8) !usize {
         if (self.state != .Started) {
             return error.IllegalState;
@@ -377,8 +358,28 @@ pub const HttpClientRequestValue = struct {
         return try self.request.write(buffer);
     }
 
-    pub fn read(self: *HttpClientRequestValue, buffer: []u8) !usize {
+    pub fn finish(self: *HttpClientRequestValue) !void {
         if (self.state == .Finished) {
+            return;
+        } else if (self.state == .Started) {
+            try self.request.finish();
+            self.state = .Finished;
+        } else {
+            return error.IllegalState;
+        }
+    }
+
+    pub fn wait(self: *HttpClientRequestValue) !void {
+        if (self.state == .Started or self.state == .Finished) {
+            try self.request.wait();
+            self.state = .Waiting;
+        } else {
+            return error.IllegalState;
+        }
+    }
+
+    pub fn read(self: *HttpClientRequestValue, buffer: []u8) !usize {
+        if (self.state == .Done) {
             return 0;
         }
 
@@ -389,7 +390,7 @@ pub const HttpClientRequestValue = struct {
         const bytesRead = try self.request.read(buffer);
 
         if (bytesRead == 0) {
-            self.state = .Finished;
+            self.state = .Done;
         }
 
         return bytesRead;
