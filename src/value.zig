@@ -40,6 +40,18 @@ pub const Value = struct {
         }
     }
 
+    pub inline fn isUnit(self: *Value) bool {
+        return self.v == .UnitKind;
+    }
+
+    pub inline fn isRecord(self: *Value) bool {
+        return self.v == .RecordKind;
+    }
+
+    pub inline fn isString(self: *Value) bool {
+        return self.v == .StringKind;
+    }
+
     pub fn appendValue(self: *const Value, buffer: *std.ArrayList(u8), style: Style) !void {
         switch (self.v) {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
@@ -306,28 +318,78 @@ pub const HttpClientValue = struct {
     }
 };
 
+pub const HttpClientRequestState = enum {
+    Created,
+    Started,
+    Waiting,
+    Finished,
+};
+
 pub const HttpClientRequestValue = struct {
-    done: bool,
+    state: HttpClientRequestState,
+    headers: std.http.Headers,
     request: *std.http.Client.Request,
 
-    pub fn init(request: *std.http.Client.Request) HttpClientRequestValue {
-        return HttpClientRequestValue{ .done = false, .request = request };
+    pub fn init(headers: std.http.Headers, request: *std.http.Client.Request) HttpClientRequestValue {
+        return HttpClientRequestValue{ .state = .Created, .headers = headers, .request = request };
     }
 
     pub fn deinit(self: *HttpClientRequestValue, allocator: std.mem.Allocator) void {
+        self.headers.deinit();
         self.request.deinit();
         allocator.destroy(self.request);
     }
 
+    pub fn start(self: *HttpClientRequestValue) !void {
+        if (self.state == .Created) {
+            try self.request.start();
+            self.state = .Started;
+        } else {
+            return error.IllegalState;
+        }
+    }
+
+    pub fn wait(self: *HttpClientRequestValue) !void {
+        if (self.state == .Started) {
+            try self.request.wait();
+            self.state = .Waiting;
+        } else {
+            return error.IllegalState;
+        }
+    }
+
+    pub fn finish(self: *HttpClientRequestValue) !void {
+        if (self.state == .Finished) {
+            return;
+        } else if (self.state == .Waiting) {
+            try self.request.finish();
+            self.state = .Finished;
+        } else {
+            return error.IllegalState;
+        }
+    }
+
+    pub fn write(self: *HttpClientRequestValue, buffer: []const u8) !usize {
+        if (self.state != .Started) {
+            return error.IllegalState;
+        }
+
+        return try self.request.write(buffer);
+    }
+
     pub fn read(self: *HttpClientRequestValue, buffer: []u8) !usize {
-        if (self.done) {
+        if (self.state == .Finished) {
             return 0;
+        }
+
+        if (self.state != .Waiting) {
+            return error.IllegalState;
         }
 
         const bytesRead = try self.request.read(buffer);
 
         if (bytesRead == 0) {
-            self.done = true;
+            self.state = .Finished;
         }
 
         return bytesRead;

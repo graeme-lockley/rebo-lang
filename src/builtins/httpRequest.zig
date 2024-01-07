@@ -1,11 +1,111 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
+pub const protocol_map = std.ComptimeStringMap(std.http.Method, .{
+    .{ "GET", .GET },
+    .{ "POST", .POST },
+    .{ "PUT", .PUT },
+    .{ "DELETE", .DELETE },
+    .{ "HEAD", .HEAD },
+    .{ "OPTIONS", .OPTIONS },
+    .{ "PATH", .PATCH },
+});
+
 pub fn httpRequest(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const url = (try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
     const method = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.StringKind, Helper.ValueValue.UnitKind });
-    _ = method;
+    const headers = try Helper.getArgument(machine, numberOfArgs, 2, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.UnitKind });
 
+    const uri = std.Uri.parse(url) catch |err| {
+        const record = try Helper.pushOsError(machine, "httpRequest", err);
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "url", try machine.memoryState.newStringValue(url));
+        return Helper.Errors.RuntimeErrors.InterpreterError;
+    };
+
+    var requestHeaders = std.http.Headers{ .allocator = machine.memoryState.allocator };
+    errdefer requestHeaders.deinit();
+
+    if (headers.isRecord()) {
+        var iterator = headers.v.RecordKind.iterator();
+
+        while (iterator.next()) |entry| {
+            if (entry.value_ptr.*.isString()) {
+                try requestHeaders.append(entry.key_ptr.*.slice(), entry.value_ptr.*.v.StringKind.slice());
+            }
+        }
+    }
+
+    const client = try getHttpClient(machine);
+
+    const requestMethod = if (method.isUnit()) .GET else if (protocol_map.get(method.v.StringKind.slice())) |v| v else {
+        const record = try Helper.M.pushNamedUserError(machine, "InvalidMethodError", null);
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "method", method);
+        return Helper.Errors.RuntimeErrors.InterpreterError;
+    };
+
+    var request = try machine.memoryState.allocator.create(std.http.Client.Request);
+    errdefer machine.memoryState.allocator.destroy(request);
+
+    request.* = client.request(requestMethod, uri, requestHeaders, .{}) catch |err| return Helper.raiseOsError(machine, "httpRequest", err);
+    errdefer request.deinit();
+
+    try machine.memoryState.push(try machine.memoryState.newValue(Helper.ValueValue{ .HttpClientRequestKind = Helper.V.HttpClientRequestValue.init(requestHeaders, request) }));
+
+    machine.memoryState.peek(0).v.HttpClientRequestKind.start() catch |err| return Helper.raiseOsError(machine, "httpRequest", err);
+}
+
+pub fn httpResponse(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
+
+    if (request.v.HttpClientRequestKind.state != .Waiting and request.v.HttpClientRequestKind.state != .Finished) {
+        try Helper.raiseOsError(machine, "rebo.os[\"http.client.response\"]", error.IllegalState);
+    }
+
+    const record = try machine.memoryState.newRecordValue();
+    try machine.memoryState.push(record);
+
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "version", try machine.memoryState.newStringValue(@tagName(request.v.HttpClientRequestKind.request.response.version)));
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "status", try machine.memoryState.newIntValue(@intFromEnum(request.v.HttpClientRequestKind.request.response.status)));
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "statusName", try machine.memoryState.newStringValue(@tagName(request.v.HttpClientRequestKind.request.response.status)));
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "reason", try machine.memoryState.newStringValue(request.v.HttpClientRequestKind.request.response.reason));
+    if (request.v.HttpClientRequestKind.request.response.content_length != null) {
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "contentLength", try machine.memoryState.newIntValue(@intCast(request.v.HttpClientRequestKind.request.response.content_length.?)));
+    }
+    if (request.v.HttpClientRequestKind.request.response.transfer_encoding != null) {
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "transferEncoding", try machine.memoryState.newStringValue(@tagName(request.v.HttpClientRequestKind.request.response.transfer_encoding.?)));
+    }
+    if (request.v.HttpClientRequestKind.request.response.transfer_compression != null) {
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "transferCompression", try machine.memoryState.newStringValue(@tagName(request.v.HttpClientRequestKind.request.response.transfer_compression.?)));
+    }
+
+    const header = try machine.memoryState.newEmptySequenceValue();
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "header", header);
+
+    for (request.v.HttpClientRequestKind.request.response.headers.list.items) |field| {
+        const headerField = try machine.memoryState.newEmptySequenceValue();
+        try header.v.SequenceKind.appendItem(headerField);
+        try headerField.v.SequenceKind.appendItem(try machine.memoryState.newStringValue(field.name));
+        try headerField.v.SequenceKind.appendItem(try machine.memoryState.newStringValue(field.value));
+    }
+}
+
+pub fn httpFinish(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
+
+    request.v.HttpClientRequestKind.request.finish() catch |err| return Helper.raiseOsError(machine, "rebo.os[\"http.client.finish\"]", err);
+
+    try machine.memoryState.pushUnitValue();
+}
+
+pub fn httpWait(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
+
+    request.v.HttpClientRequestKind.wait() catch |err| return Helper.raiseOsError(machine, "rebo.os[\"http.client.wait\"]", err);
+
+    try machine.memoryState.pushUnitValue();
+}
+
+fn getHttpClient(machine: *Helper.Machine) !*std.http.Client {
     const rebo = try machine.memoryState.getU8FromScope("rebo");
 
     if (rebo != null and rebo.?.v == Helper.ValueKind.RecordKind) {
@@ -15,32 +115,13 @@ pub fn httpRequest(machine: *Helper.Machine, numberOfArgs: usize) !void {
             const client = try os.?.v.RecordKind.getU8(machine.memoryState.stringPool, "http.client");
 
             if (client != null and client.?.v == Helper.ValueKind.HttpClientKind) {
-                const uri = std.Uri.parse(url) catch |err| {
-                    const record = try Helper.pushOsError(machine, "httpRequest", err);
-                    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "url", try machine.memoryState.newStringValue(url));
-                    return Helper.Errors.RuntimeErrors.InterpreterError;
-                };
-
-                var headers = std.http.Headers{ .allocator = machine.memoryState.allocator };
-                defer headers.deinit();
-
-                try headers.append("accept", "*/*");
-                var request = try machine.memoryState.allocator.create(std.http.Client.Request);
-                errdefer machine.memoryState.allocator.destroy(request);
-                request.* = client.?.v.HttpClientKind.client.request(.GET, uri, headers, .{}) catch |err| return Helper.raiseOsError(machine, "httpRquest", err);
-                errdefer request.deinit();
-
-                request.start() catch |err| return Helper.raiseOsError(machine, "httpRquest", err);
-                request.wait() catch |err| return Helper.raiseOsError(machine, "httpRquest", err);
-
-                try machine.memoryState.push(try machine.memoryState.newValue(Helper.ValueValue{ .HttpClientRequestKind = Helper.V.HttpClientRequestValue.init(request) }));
-                return;
+                return client.?.v.HttpClientKind.client;
             }
         }
     }
 
     const record = try Helper.M.pushNamedUserError(machine, "ExpectedTypeError", null);
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "name", try machine.memoryState.newStringValue("rebo.os.httpClient"));
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "name", try machine.memoryState.newStringValue("rebo.os[\"http.client\"]"));
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "expected", try machine.memoryState.newStringValue("Record"));
     return Helper.Errors.RuntimeErrors.InterpreterError;
 }
