@@ -19,7 +19,7 @@ echo "info: running all unit tests"
 zig build run -- ./bin/rebo-test || exit 1
 
 echo "info: building release binary"
-zig build-exe ./src/main.zig -O ReleaseFast -fstrip -fsingle-threaded || exit 1
+zig build-exe ./src/main.zig -O ReleaseFast -fstrip || exit 1
 
 mv main ./bin/rebo-fast || exit 1
 rm main.o || exit 1
