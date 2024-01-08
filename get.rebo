@@ -1,0 +1,18 @@
+#!env rebo
+
+let Client = import("http-client")
+
+let payload = { 
+   name: "Apple MacBook Pro 16",
+   data: {
+      year: 2019, 
+      price: 1849.99, 
+      "CPU model": "Intel Core i9",
+      "Hard disk size": "1 TB" 
+   }
+}
+
+let post = Client.post("https://api.restful-api.dev/objects", payload)
+println(post.readAllJson())
+println("-----------------------------------")
+println(Client.get("https://api.restful-api.dev/objects").readAllJson())
