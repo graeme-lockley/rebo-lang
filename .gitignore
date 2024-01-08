@@ -1,3 +1,5 @@
+.*.history
+
 bin/rebo
 bin/rebo-fast
 rebo/

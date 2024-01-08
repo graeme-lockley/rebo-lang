@@ -4,6 +4,8 @@ const API = @import("./api.zig").API;
 const Errors = @import("./errors.zig");
 const V = @import("./value.zig");
 
+const Editor = @import("zigline/main.zig").Editor;
+
 const stdout = std.io.getStdOut().writer();
 
 pub fn main() !void {
@@ -24,31 +26,36 @@ pub fn main() !void {
         try stdout.print("Usage: {s} [file ...args | repl | help]\n", .{args[0]});
         std.process.exit(1);
     } else if (args.len == 1 or args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
-        var buffer = try allocator.alloc(u8, 1024);
-        defer allocator.free(buffer);
+        var editor = Editor.init(gpa.allocator(), .{});
+        defer editor.deinit();
+
+        try editor.loadHistory(".rebo.repl.history");
+        defer editor.saveHistory(".rebo.repl.history") catch unreachable;
 
         var rebo = try API.init(allocator);
         defer rebo.deinit();
-
-        const stdin = std.io.getStdIn().reader();
-
         while (true) {
-            try stdout.print("> ", .{});
+            const line: []const u8 = editor.getLine("> ") catch |err| switch (err) {
+                error.Eof => break,
+                else => return err,
+            };
+            defer gpa.allocator().free(line);
 
-            if (try stdin.readUntilDelimiterOrEof(buffer[0..], '\n')) |line| {
-                if (line.len == 0) {
-                    break;
-                }
-                rebo.script(line) catch |err| {
-                    try errorHandler(err, &rebo);
-                    continue;
-                };
-
-                try printResult(&rebo);
-                try rebo.reset();
-            } else {
+            if (line.len == 0) {
+                continue;
+            }
+            if (std.mem.eql(u8, line, "quit")) {
                 break;
             }
+
+            try editor.addToHistory(line);
+            rebo.script(line) catch |err| {
+                try errorHandler(err, &rebo);
+                continue;
+            };
+
+            try printResult(&rebo);
+            try rebo.reset();
         }
     } else {
         const startTime = std.time.milliTimestamp();
