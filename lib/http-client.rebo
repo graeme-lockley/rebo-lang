@@ -11,17 +11,16 @@ let head(url, headers = {}) = _bodyLess(url, "HEAD", headers)
 let delete(url, headers = {}) = _bodyLess(url, "DELETE", headers)
 
 let _bodyLess(url, method, headers) {
-   let response = httpRequest(url, method, headers)
+   let response = rebo.os["http.client.request"](url, method, headers)
 
    rebo.os["http.client.start"](response)
    rebo.os["http.client.wait"](response)
 
-   let responseContent = rebo.os["http.client.response"](response)
-
-   if responseContent.status != 200 -> raise { kind: "RequestError", url: url, method: method, ...responseContent}
+   let status = rebo.os["http.client.status"](response)
+   if status != 200 -> raise { kind: "RequestError", url: url, method: method, ...rebo.os["http.client.response"](response)}
 
    {
-      response: responseContent,
+      response: fn() rebo.os["http.client.response"](response),
       read: fn(bytes) read(response, bytes),
       readAll: fn(bytes) _readAll(response, bytes),
       readAllJson: fn(bytes) JSON.parse(_readAll(response, bytes))
@@ -50,7 +49,7 @@ let _body(url, method, body, headers ) {
       }
     }
 
-   let response = httpRequest(url, method, headers)
+   let response = rebo.os["http.client.request"](url, method, headers)
    rebo.os["http.client.start"](response)
 
    if body == () -> {
@@ -60,11 +59,11 @@ let _body(url, method, body, headers ) {
             rebo.os["http.client.finish"](response)
             rebo.os["http.client.wait"](response)
 
-            let responseContent = rebo.os["http.client.response"](response)
-            if responseContent.status != 200 -> raise { kind: "RequestError", url: url, method: method, ...responseContent}
+            let status = rebo.os["http.client.status"](response)
+            if status != 200 -> raise { kind: "RequestError", url: url, method: method, ...rebo.os["http.client.response"](response)}
 
             self.write := ()
-            self.content := responseContent
+            self.content := fn() rebo.os["http.client.response"](response)
             self.read := fn(bytes) read(response, bytes)
             self.readAllJson := fn(bytes) JSON.parse(_readAll(response, bytes))
          }
@@ -77,11 +76,11 @@ let _body(url, method, body, headers ) {
       rebo.os["http.client.finish"](response)
       rebo.os["http.client.wait"](response)
 
-      let responseContent = rebo.os["http.client.response"](response)
-      if responseContent.status != 200 -> raise { kind: "RequestError", url: url, method: method, ...responseContent}
+      let status = rebo.os["http.client.status"](response)
+      if status != 200 -> raise { kind: "RequestError", url: url, method: method, ...rebo.os["http.client.response"](response)}
 
       {
-         response: responseContent,
+         response: fn() rebo.os["http.client.response"](response),
          read: fn(bytes) read(response, bytes),
          readAll: fn(bytes) _readAll(response, bytes),
          readAllJson: fn(bytes) JSON.parse(_readAll(response, bytes))

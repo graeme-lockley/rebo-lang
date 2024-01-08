@@ -87,6 +87,16 @@ pub fn httpResponse(machine: *Helper.Machine, numberOfArgs: usize) !void {
     }
 }
 
+pub fn httpStatus(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
+
+    if (request.v.HttpClientRequestKind.state != .Waiting and request.v.HttpClientRequestKind.state != .Finished) {
+        try Helper.raiseOsError(machine, "rebo.os[\"http.client.status\"]", error.IllegalState);
+    }
+
+    try machine.memoryState.pushIntValue(@intFromEnum(request.v.HttpClientRequestKind.request.response.status));
+}
+
 pub fn httpStart(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
 

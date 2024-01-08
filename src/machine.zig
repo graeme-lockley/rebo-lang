@@ -1145,6 +1145,8 @@ fn addRebo(state: *MS.MemoryState) !void {
     client.* = std.http.Client{ .allocator = state.allocator };
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client", try state.newValue(V.ValueValue{ .HttpClientKind = V.HttpClientValue.init(client) }));
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.start", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpStart));
+    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.status", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpStatus));
+    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.request", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpRequest));
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.response", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpResponse));
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.wait", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpWait));
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.finish", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpFinish));
@@ -1164,7 +1166,6 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
     try addBuiltin(&state, "imports", &Builtins.imports);
     try addBuiltin(&state, "int", &Builtins.int);
     try addBuiltin(&state, "float", &Builtins.float);
-    try addBuiltin(&state, "httpRequest", &Builtins.httpRequest);
     try addBuiltin(&state, "keys", &Builtins.keys);
     try addBuiltin(&state, "len", &Builtins.len);
     try addBuiltin(&state, "listen", &Builtins.listen);
