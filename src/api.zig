@@ -51,6 +51,10 @@ pub const API = struct {
         try Machine.callFn(&self.machine, numberOfArgs);
     }
 
+    pub fn pop(self: *API) void {
+        _ = self.machine.memoryState.pop();
+    }
+
     pub fn pushString(self: *API, s: []const u8) !void {
         try self.machine.memoryState.pushStringValue(s);
     }

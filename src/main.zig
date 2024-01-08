@@ -29,11 +29,15 @@ pub fn main() !void {
         var editor = Editor.init(gpa.allocator(), .{});
         defer editor.deinit();
 
-        try editor.loadHistory(".rebo.repl.history");
-        defer editor.saveHistory(".rebo.repl.history") catch unreachable;
-
         var rebo = try API.init(allocator);
         defer rebo.deinit();
+
+        var historyFile = try historyFileName(&rebo);
+        defer allocator.free(historyFile);
+
+        try editor.loadHistory(historyFile);
+        defer editor.saveHistory(historyFile) catch unreachable;
+
         while (true) {
             const line: []const u8 = editor.getLine("> ") catch |err| switch (err) {
                 error.Eof => break,
@@ -69,6 +73,17 @@ pub fn main() !void {
 
         const executeTime = std.time.milliTimestamp();
         std.log.info("time: {d}ms", .{executeTime - startTime});
+    }
+}
+
+fn historyFileName(rebo: *API) ![]u8 {
+    try rebo.script("(rebo.env.HOME ? \".\") + \"/.rebo.repl.history\"");
+    if (rebo.topOfStack()) |v| {
+        const result = try rebo.allocator().dupe(u8, v.v.StringKind.slice());
+        rebo.pop();
+        return result;
+    } else {
+        return rebo.allocator().dupe(u8, ".rebo.repl.history");
     }
 }
 
