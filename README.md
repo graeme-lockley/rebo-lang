@@ -70,6 +70,7 @@ server.start(9999)
 ## See also
 
 - Where does the name "Rebo" come from?  I am an annoying Star Wars fan and it is a reference to the [Max Rebo Band](https://starwars.fandom.com/wiki/Max_Rebo_Band) from Return of the Jedi.
+- I have embedded [Zigline](https://github.com/alimpfard/zigline) into the interpreter to provide a REPL.  Using Zigline is a bit of a hack at the moment but it works until Zig has stablised its package management and the build tools it will have to do.
 
 ## Languages of interest
 
