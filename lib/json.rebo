@@ -121,7 +121,7 @@ let _number(reader) {
 
    while Str.digit?(reader.peek()) -> reader.next()
 
-   if (reader.peek() == '.') -> {
+   if reader.peek() == '.' -> {
       isFloat := true
       reader.next()
 
