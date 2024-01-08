@@ -153,6 +153,6 @@ pub fn literalIntOverflowError(allocator: std.mem.Allocator, src: []const u8, po
 pub fn parserError(allocator: std.mem.Allocator, src: []const u8, position: Position, lexeme: []const u8, expected: []const TokenKind) !Error {
     return try Error.init(allocator, ErrorDetail{ .ParserKind = .{
         .lexeme = try allocator.dupe(u8, lexeme),
-        .expected = expected,
+        .expected = try allocator.dupe(TokenKind, expected),
     } }, StackItem{ .src = try allocator.dupe(u8, src), .position = position });
 }

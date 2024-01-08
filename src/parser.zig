@@ -812,24 +812,7 @@ pub const Parser = struct {
                 return v;
             },
             else => {
-                {
-                    var expected = try self.allocator.alloc(Lexer.TokenKind, 11);
-                    errdefer self.allocator.free(expected);
-
-                    expected[0] = Lexer.TokenKind.LBracket;
-                    expected[1] = Lexer.TokenKind.LCurly;
-                    expected[2] = Lexer.TokenKind.Identifier;
-                    expected[3] = Lexer.TokenKind.LParen;
-                    expected[4] = Lexer.TokenKind.LiteralBoolFalse;
-                    expected[5] = Lexer.TokenKind.LiteralBoolTrue;
-                    expected[6] = Lexer.TokenKind.LiteralChar;
-                    expected[7] = Lexer.TokenKind.LiteralFloat;
-                    expected[8] = Lexer.TokenKind.LiteralInt;
-                    expected[9] = Lexer.TokenKind.LiteralString;
-                    expected[10] = Lexer.TokenKind.Fn;
-
-                    self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
-                }
+                self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), &[_]Lexer.TokenKind{ Lexer.TokenKind.LBracket, Lexer.TokenKind.LCurly, Lexer.TokenKind.Identifier, Lexer.TokenKind.LParen, Lexer.TokenKind.LiteralBoolFalse, Lexer.TokenKind.LiteralBoolTrue, Lexer.TokenKind.LiteralChar, Lexer.TokenKind.LiteralFloat, Lexer.TokenKind.LiteralInt, Lexer.TokenKind.LiteralString, Lexer.TokenKind.Fn }));
 
                 return error.SyntaxError;
             },
@@ -841,11 +824,7 @@ pub const Parser = struct {
         if (lexeme.len == 3) {
             return lexeme[1];
         } else if (lexeme.len == 4) {
-            if (lexeme[2] == 'n') {
-                return 10;
-            } else {
-                return lexeme[2];
-            }
+            return if (lexeme[2] == 'n') 10 else lexeme[2];
         } else {
             return std.fmt.parseInt(u8, lexeme[3 .. lexeme.len - 1], 10) catch 0;
         }
@@ -1001,15 +980,7 @@ pub const Parser = struct {
                 Lexer.TokenKind.Identifier => try self.stringPool.intern(self.lexer.lexeme(try self.matchToken(Lexer.TokenKind.Identifier))),
                 Lexer.TokenKind.LiteralString => try self.parseLiteralString(self.lexer.lexeme(try self.matchToken(Lexer.TokenKind.LiteralString))),
                 else => {
-                    {
-                        var expected = try self.allocator.alloc(Lexer.TokenKind, 2);
-                        errdefer self.allocator.free(expected);
-
-                        expected[0] = Lexer.TokenKind.Identifier;
-                        expected[1] = Lexer.TokenKind.LiteralString;
-
-                        self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
-                    }
+                    self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), &[_]Lexer.TokenKind{ Lexer.TokenKind.Identifier, Lexer.TokenKind.LiteralString }));
 
                     return error.SyntaxError;
                 },
@@ -1192,24 +1163,7 @@ pub const Parser = struct {
                 return v;
             },
             else => {
-                {
-                    var expected = try self.allocator.alloc(Lexer.TokenKind, 11);
-                    errdefer self.allocator.free(expected);
-
-                    expected[0] = Lexer.TokenKind.LBracket;
-                    expected[1] = Lexer.TokenKind.LCurly;
-                    expected[2] = Lexer.TokenKind.Identifier;
-                    expected[3] = Lexer.TokenKind.LParen;
-                    expected[4] = Lexer.TokenKind.LiteralBoolFalse;
-                    expected[5] = Lexer.TokenKind.LiteralBoolTrue;
-                    expected[6] = Lexer.TokenKind.LiteralChar;
-                    expected[7] = Lexer.TokenKind.LiteralFloat;
-                    expected[8] = Lexer.TokenKind.LiteralInt;
-                    expected[9] = Lexer.TokenKind.LiteralString;
-                    expected[10] = Lexer.TokenKind.Fn;
-
-                    self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
-                }
+                self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), &[_]Lexer.TokenKind{ Lexer.TokenKind.LBracket, Lexer.TokenKind.LCurly, Lexer.TokenKind.Identifier, Lexer.TokenKind.LParen, Lexer.TokenKind.LiteralBoolFalse, Lexer.TokenKind.LiteralBoolTrue, Lexer.TokenKind.LiteralChar, Lexer.TokenKind.LiteralFloat, Lexer.TokenKind.LiteralInt, Lexer.TokenKind.LiteralString, Lexer.TokenKind.Fn }));
 
                 return error.SyntaxError;
             },
@@ -1221,15 +1175,7 @@ pub const Parser = struct {
             Lexer.TokenKind.Identifier => try self.stringPool.intern(self.lexer.lexeme(try self.matchToken(Lexer.TokenKind.Identifier))),
             Lexer.TokenKind.LiteralString => try self.parseLiteralString(self.lexer.lexeme(try self.matchToken(Lexer.TokenKind.LiteralString))),
             else => {
-                {
-                    var expected = try self.allocator.alloc(Lexer.TokenKind, 2);
-                    errdefer self.allocator.free(expected);
-
-                    expected[0] = Lexer.TokenKind.Identifier;
-                    expected[1] = Lexer.TokenKind.LiteralString;
-
-                    self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), expected));
-                }
+                self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), &[_]Lexer.TokenKind{ Lexer.TokenKind.Identifier, Lexer.TokenKind.LiteralString }));
 
                 return error.SyntaxError;
             },
@@ -1289,13 +1235,10 @@ pub const Parser = struct {
         const token = self.currentToken();
 
         if (token.kind != kind) {
-            {
-                var expected = try self.allocator.alloc(Lexer.TokenKind, 1);
-                errdefer self.allocator.free(expected);
+            var expected = [_]Lexer.TokenKind{Lexer.TokenKind.LBracket};
+            expected[0] = kind;
 
-                expected[0] = kind;
-                self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, self.currentTokenLexeme(), expected));
-            }
+            self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = token.start, .end = token.end }, self.currentTokenLexeme(), &expected));
 
             return error.SyntaxError;
         }
