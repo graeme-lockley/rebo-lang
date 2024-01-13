@@ -293,6 +293,7 @@ pub const FunctionValue = struct {
             self.restOfArguments.?.decRef();
         }
         allocator.free(self.arguments);
+        self.body.destroy(allocator);
     }
 };
 

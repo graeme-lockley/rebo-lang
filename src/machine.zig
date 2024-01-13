@@ -903,7 +903,7 @@ inline fn literalFunction(machine: *Machine, e: *AST.Expression) Errors.RuntimeE
         .scope = machine.memoryState.scope(),
         .arguments = arguments,
         .restOfArguments = if (e.kind.literalFunction.restOfParams == null) null else e.kind.literalFunction.restOfParams.?.incRefR(),
-        .body = e.kind.literalFunction.body,
+        .body = e.kind.literalFunction.body.incRefR(),
     } });
 
     for (e.kind.literalFunction.params, 0..) |param, index| {
@@ -1286,11 +1286,9 @@ pub const Machine = struct {
 
     pub fn execute(self: *Machine, name: []const u8, buffer: []const u8) !void {
         const ast = try self.parse(name, buffer);
-        errdefer ast.destroy(self.memoryState.allocator);
+        defer ast.destroy(self.memoryState.allocator);
 
         try self.eval(ast);
-
-        try self.memoryState.imports.addAnnie(ast);
     }
 
     pub fn pop(self: *Machine) *V.Value {

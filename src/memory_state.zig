@@ -441,10 +441,9 @@ inline fn gc(state: *MemoryState) void {
 pub const Imports = struct {
     items: std.StringHashMap(Import),
     allocator: std.mem.Allocator,
-    annie: u32,
 
     pub fn init(allocator: std.mem.Allocator) Imports {
-        return Imports{ .items = std.StringHashMap(Import).init(allocator), .allocator = allocator, .annie = 0 };
+        return Imports{ .items = std.StringHashMap(Import).init(allocator), .allocator = allocator };
     }
 
     pub fn deinit(self: *Imports) void {
@@ -473,31 +472,10 @@ pub const Imports = struct {
         } else {
             try self.items.put(oldName.?, Import{ .items = items, .ast = e });
         }
-
-        // try self.items.put(try self.allocator.dupe(u8, name), Import{ .items = items, .ast = e });
-        // self.dump();
-    }
-
-    pub fn addAnnie(self: *Imports, e: *AST.Expression) !void {
-        var buffer = std.ArrayList(u8).init(self.allocator);
-        defer buffer.deinit();
-
-        try std.fmt.format(buffer.writer(), "repl-{d}", .{self.annie});
-        self.annie += 1;
-
-        try self.items.put(try buffer.toOwnedSlice(), Import{ .items = null, .ast = e });
-        // self.dump();
     }
 
     pub fn find(self: *Imports, name: []const u8) ?Import {
         return self.items.get(name);
-    }
-
-    fn dump(self: *Imports) void {
-        var iterator = self.items.iterator();
-        while (iterator.next()) |entry| {
-            std.log.info("- {s}: {?}", .{ entry.key_ptr.*, entry.value_ptr.*.items });
-        }
     }
 };
 

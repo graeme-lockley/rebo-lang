@@ -23,6 +23,7 @@ This is a very powerful feature that would allow `rebo` to be used to build a wi
 
 ## Tasks
 
+- [X] Add ReferenceCounting into AST nodes and wire into the entire system
+- [X] Remove the "Annie" code from the `import` builtin and system `execute` 
 - [ ] Move the collection of imported modules to `rebo.imports`
-
-
+- [ ] Add a form of `fexists` into the `os` builtin

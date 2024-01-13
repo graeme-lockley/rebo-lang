@@ -53,11 +53,13 @@ pub const Operator = enum {
 pub const Expression = struct {
     kind: ExpressionKind,
     position: Errors.Position,
+    count: u32,
 
     pub inline fn init(kind: ExpressionKind, position: Errors.Position) Expression {
         return Expression{
             .kind = kind,
             .position = position,
+            .count = 1,
         };
     }
 
@@ -70,6 +72,20 @@ pub const Expression = struct {
 
     pub inline fn destroy(self: *Expression, allocator: std.mem.Allocator) void {
         destroyExpr(allocator, self);
+    }
+
+    pub inline fn incRef(this: *Expression) void {
+        if (this.count == std.math.maxInt(u32)) {
+            this.count = 0;
+        } else if (this.count > 0) {
+            this.count += 1;
+        }
+    }
+
+    pub inline fn incRefR(this: *Expression) *Expression {
+        this.incRef();
+
+        return this;
     }
 };
 
@@ -241,104 +257,114 @@ pub const WhileExpression = struct {
 };
 
 fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
-    switch (expr.kind) {
-        .assignment => {
-            destroyExpr(allocator, expr.kind.assignment.lhs);
-            destroyExpr(allocator, expr.kind.assignment.value);
-        },
-        .binaryOp => {
-            destroyExpr(allocator, expr.kind.binaryOp.left);
-            destroyExpr(allocator, expr.kind.binaryOp.right);
-        },
-        .call => {
-            destroyExpr(allocator, expr.kind.call.callee);
-            for (expr.kind.call.args) |arg| {
-                destroyExpr(allocator, arg);
-            }
-            allocator.free(expr.kind.call.args);
-        },
-        .catche => {
-            destroyExpr(allocator, expr.kind.catche.value);
-            for (expr.kind.catche.cases) |*c| {
-                c.deinit(allocator);
-            }
-            allocator.free(expr.kind.catche.cases);
-        },
-        .dot => expr.kind.dot.deinit(allocator),
-        .exprs => {
-            for (expr.kind.exprs) |v| {
-                destroyExpr(allocator, v);
-            }
-            allocator.free(expr.kind.exprs);
-        },
-        .idDeclaration => expr.kind.idDeclaration.deinit(allocator),
-        .identifier => expr.kind.identifier.decRef(),
-        .ifte => {
-            for (expr.kind.ifte) |v| {
-                if (v.condition != null) {
-                    destroyExpr(allocator, v.condition.?);
-                }
-                destroyExpr(allocator, v.then);
-            }
-            allocator.free(expr.kind.ifte);
-        },
-        .indexRange => {
-            destroyExpr(allocator, expr.kind.indexRange.expr);
-            if (expr.kind.indexRange.start != null) {
-                destroyExpr(allocator, expr.kind.indexRange.start.?);
-            }
-            if (expr.kind.indexRange.end != null) {
-                destroyExpr(allocator, expr.kind.indexRange.end.?);
-            }
-        },
-        .indexValue => {
-            destroyExpr(allocator, expr.kind.indexValue.expr);
-            destroyExpr(allocator, expr.kind.indexValue.index);
-        },
-        .literalBool, .literalChar, .literalFloat, .literalInt, .literalVoid => {},
-        .literalFunction => expr.kind.literalFunction.deinit(allocator),
-        .literalRecord => {
-            for (expr.kind.literalRecord) |v| {
-                switch (v) {
-                    .value => {
-                        v.value.key.decRef();
-                        destroyExpr(allocator, v.value.value);
-                    },
-                    .record => destroyExpr(allocator, v.record),
-                }
-            }
-            allocator.free(expr.kind.literalRecord);
-        },
-        .literalSequence => {
-            for (expr.kind.literalSequence) |v| {
-                switch (v) {
-                    .value => destroyExpr(allocator, v.value),
-                    .sequence => destroyExpr(allocator, v.sequence),
-                }
-            }
-            allocator.free(expr.kind.literalSequence);
-        },
-        .literalString => expr.kind.literalString.decRef(),
-        .match => {
-            destroyExpr(allocator, expr.kind.match.value);
-            for (expr.kind.match.cases) |*c| {
-                c.deinit(allocator);
-            }
-            allocator.free(expr.kind.match.cases);
-            if (expr.kind.match.elseCase != null) {
-                destroyExpr(allocator, expr.kind.match.elseCase.?);
-            }
-        },
-        .notOp => destroyExpr(allocator, expr.kind.notOp.value),
-        .patternDeclaration => expr.kind.patternDeclaration.deinit(allocator),
-        .raise => destroyExpr(allocator, expr.kind.raise.expr),
-        .whilee => {
-            destroyExpr(allocator, expr.kind.whilee.condition);
-            destroyExpr(allocator, expr.kind.whilee.body);
-        },
+    if (expr.count == 0) {
+        return;
     }
 
-    allocator.destroy(expr);
+    if (expr.count == 1) {
+        switch (expr.kind) {
+            .assignment => {
+                destroyExpr(allocator, expr.kind.assignment.lhs);
+                destroyExpr(allocator, expr.kind.assignment.value);
+            },
+            .binaryOp => {
+                destroyExpr(allocator, expr.kind.binaryOp.left);
+                destroyExpr(allocator, expr.kind.binaryOp.right);
+            },
+            .call => {
+                destroyExpr(allocator, expr.kind.call.callee);
+                for (expr.kind.call.args) |arg| {
+                    destroyExpr(allocator, arg);
+                }
+                allocator.free(expr.kind.call.args);
+            },
+            .catche => {
+                destroyExpr(allocator, expr.kind.catche.value);
+                for (expr.kind.catche.cases) |*c| {
+                    c.deinit(allocator);
+                }
+                allocator.free(expr.kind.catche.cases);
+            },
+            .dot => expr.kind.dot.deinit(allocator),
+            .exprs => {
+                for (expr.kind.exprs) |v| {
+                    destroyExpr(allocator, v);
+                }
+                allocator.free(expr.kind.exprs);
+            },
+            .idDeclaration => expr.kind.idDeclaration.deinit(allocator),
+            .identifier => expr.kind.identifier.decRef(),
+            .ifte => {
+                for (expr.kind.ifte) |v| {
+                    if (v.condition != null) {
+                        destroyExpr(allocator, v.condition.?);
+                    }
+                    destroyExpr(allocator, v.then);
+                }
+                allocator.free(expr.kind.ifte);
+            },
+            .indexRange => {
+                destroyExpr(allocator, expr.kind.indexRange.expr);
+                if (expr.kind.indexRange.start != null) {
+                    destroyExpr(allocator, expr.kind.indexRange.start.?);
+                }
+                if (expr.kind.indexRange.end != null) {
+                    destroyExpr(allocator, expr.kind.indexRange.end.?);
+                }
+            },
+            .indexValue => {
+                destroyExpr(allocator, expr.kind.indexValue.expr);
+                destroyExpr(allocator, expr.kind.indexValue.index);
+            },
+            .literalBool, .literalChar, .literalFloat, .literalInt, .literalVoid => {},
+            .literalFunction => expr.kind.literalFunction.deinit(allocator),
+            .literalRecord => {
+                for (expr.kind.literalRecord) |v| {
+                    switch (v) {
+                        .value => {
+                            v.value.key.decRef();
+                            destroyExpr(allocator, v.value.value);
+                        },
+                        .record => destroyExpr(allocator, v.record),
+                    }
+                }
+                allocator.free(expr.kind.literalRecord);
+            },
+            .literalSequence => {
+                for (expr.kind.literalSequence) |v| {
+                    switch (v) {
+                        .value => destroyExpr(allocator, v.value),
+                        .sequence => destroyExpr(allocator, v.sequence),
+                    }
+                }
+                allocator.free(expr.kind.literalSequence);
+            },
+            .literalString => expr.kind.literalString.decRef(),
+            .match => {
+                destroyExpr(allocator, expr.kind.match.value);
+                for (expr.kind.match.cases) |*c| {
+                    c.deinit(allocator);
+                }
+                allocator.free(expr.kind.match.cases);
+                if (expr.kind.match.elseCase != null) {
+                    destroyExpr(allocator, expr.kind.match.elseCase.?);
+                }
+            },
+            .notOp => destroyExpr(allocator, expr.kind.notOp.value),
+            .patternDeclaration => expr.kind.patternDeclaration.deinit(allocator),
+            .raise => destroyExpr(allocator, expr.kind.raise.expr),
+            .whilee => {
+                destroyExpr(allocator, expr.kind.whilee.condition);
+                destroyExpr(allocator, expr.kind.whilee.body);
+            },
+        }
+
+        allocator.destroy(expr);
+
+        return;
+    }
+
+    expr.count -= 1;
 }
 
 pub const Pattern = struct {
