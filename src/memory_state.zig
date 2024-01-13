@@ -451,7 +451,6 @@ pub const Imports = struct {
 
         while (iterator.next()) |entry| {
             self.allocator.free(entry.key_ptr.*);
-            entry.value_ptr.*.ast.destroy(self.allocator);
         }
         self.items.deinit();
     }
@@ -464,13 +463,13 @@ pub const Imports = struct {
         }
     }
 
-    pub fn addImport(self: *Imports, name: []const u8, items: ?*V.Value, e: *AST.Expression) !void {
+    pub fn addImport(self: *Imports, name: []const u8, items: ?*V.Value) !void {
         const oldName = self.items.getKey(name);
 
         if (oldName == null) {
-            try self.items.put(try self.allocator.dupe(u8, name), Import{ .items = items, .ast = e });
+            try self.items.put(try self.allocator.dupe(u8, name), Import{ .items = items });
         } else {
-            try self.items.put(oldName.?, Import{ .items = items, .ast = e });
+            try self.items.put(oldName.?, Import{ .items = items });
         }
     }
 
@@ -481,7 +480,6 @@ pub const Imports = struct {
 
 pub const Import = struct {
     items: ?*V.Value,
-    ast: *AST.Expression,
 
     pub fn mark(this: *Import, colour: V.Colour) void {
         if (this.items != null) {

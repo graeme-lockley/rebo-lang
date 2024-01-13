@@ -86,7 +86,7 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
     const ast = try machine.parse(fileName, content);
     defer ast.destroy(machine.memoryState.allocator);
 
-    try machine.memoryState.imports.addImport(name, null, ast.incRefR());
+    try machine.memoryState.imports.addImport(name, null);
 
     try machine.eval(ast);
     _ = machine.memoryState.pop();
@@ -113,7 +113,7 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
         };
     }
 
-    try machine.memoryState.imports.addImport(name, result, ast);
+    try machine.memoryState.imports.addImport(name, result);
 }
 
 fn indexOfLastLinear(comptime T: type, haystack: []const T, needle: T) ?usize {
