@@ -3,7 +3,15 @@ const std = @import("std");
 const Errors = @import("./errors.zig");
 pub const TokenKind = @import("./token_kind.zig").TokenKind;
 
-pub const Token = struct { kind: TokenKind, start: usize, end: usize };
+pub const Token = struct {
+    kind: TokenKind,
+    start: usize,
+    end: usize,
+
+    pub inline fn position(self: Token) Errors.Position {
+        return Errors.Position{ .start = self.start, .end = self.end };
+    }
+};
 
 const keywords = std.ComptimeStringMap(TokenKind, .{
     .{ "catch", TokenKind.Catch },

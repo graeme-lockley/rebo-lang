@@ -54,7 +54,21 @@ pub const Expression = struct {
     kind: ExpressionKind,
     position: Errors.Position,
 
-    pub fn destroy(self: *Expression, allocator: std.mem.Allocator) void {
+    pub inline fn init(kind: ExpressionKind, position: Errors.Position) Expression {
+        return Expression{
+            .kind = kind,
+            .position = position,
+        };
+    }
+
+    pub inline fn create(allocator: std.mem.Allocator, kind: ExpressionKind, position: Errors.Position) !*Expression {
+        var expr = try allocator.create(Expression);
+        expr.* = Expression.init(kind, position);
+
+        return expr;
+    }
+
+    pub inline fn destroy(self: *Expression, allocator: std.mem.Allocator) void {
         destroyExpr(allocator, self);
     }
 };
