@@ -61,6 +61,19 @@ pub fn main() !void {
             try printResult(&rebo);
             try rebo.reset();
         }
+    } else if (args.len == 3 and std.mem.eql(u8, args[1], "script")) {
+        var exitValue: u8 = 0;
+
+        var rebo = try API.init(allocator);
+        defer rebo.deinit();
+
+        rebo.script(args[2]) catch |e| {
+            exitValue = 1;
+            try errorHandler(e, &rebo);
+        };
+        try printResult(&rebo);
+
+        std.os.exit(exitValue);
     } else {
         const startTime = std.time.milliTimestamp();
 
