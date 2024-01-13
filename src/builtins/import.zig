@@ -48,13 +48,33 @@ fn fullFileName(machine: *Helper.Machine, fileName: []const u8) ![]u8 {
 
 test "fullFileName" {}
 
+fn getReboImports(machine: *Helper.Machine) !*Helper.V.Value {
+    const rebo = try machine.memoryState.getU8FromScope("rebo");
+
+    if (rebo != null and rebo.?.isRecord()) {
+        const imports = try rebo.?.v.RecordKind.getU8(machine.memoryState.stringPool, "imports");
+
+        if (imports != null and imports.?.isRecord()) {
+            return imports.?;
+        }
+    }
+
+    const record = try Helper.M.pushNamedUserError(machine, "ExpectedTypeError", null);
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "name", try machine.memoryState.newStringValue("rebo.imports"));
+    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "expected", try machine.memoryState.newStringValue("Record"));
+
+    return Helper.Errors.RuntimeErrors.InterpreterError;
+}
+
 pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
     const name = try fullFileName(machine, fileName);
     defer machine.memoryState.allocator.free(name);
 
-    const loadedImport = machine.memoryState.imports.find(name);
+    const reboImports = try getReboImports(machine);
+    const loadedImport = try reboImports.v.RecordKind.getU8(machine.memoryState.stringPool, name);
+
     if (loadedImport != null) {
-        if (loadedImport.?.items == null) {
+        if (loadedImport.?.isUnit()) {
             const record = try Helper.M.pushNamedUserError(machine, "CyclicImport", null);
 
             try record.v.RecordKind.setU8(machine.memoryState.stringPool, "operation", try machine.memoryState.newStringValue("import"));
@@ -63,7 +83,8 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
             return Helper.Errors.RuntimeErrors.InterpreterError;
         }
 
-        try machine.memoryState.push(loadedImport.?.items.?);
+        try machine.memoryState.push(loadedImport.?);
+
         return;
     }
 
@@ -85,8 +106,6 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
 
     const ast = try machine.parse(fileName, content);
     defer ast.destroy(machine.memoryState.allocator);
-
-    try machine.memoryState.imports.addImport(name, null);
 
     try machine.eval(ast);
     _ = machine.memoryState.pop();
@@ -113,7 +132,7 @@ pub fn importFile(machine: *Helper.Machine, fileName: []const u8) !void {
         };
     }
 
-    try machine.memoryState.imports.addImport(name, result);
+    try reboImports.v.RecordKind.setU8(machine.memoryState.stringPool, name, result);
 }
 
 fn indexOfLastLinear(comptime T: type, haystack: []const T, needle: T) ?usize {

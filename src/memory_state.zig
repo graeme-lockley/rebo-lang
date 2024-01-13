@@ -20,7 +20,6 @@ pub const MemoryState = struct {
     memory_capacity: u32,
     allocations: u64,
     scopes: std.ArrayList(*V.Value),
-    imports: Imports,
     unitValue: ?*V.Value,
     trueValue: ?*V.Value,
     falseValue: ?*V.Value,
@@ -40,7 +39,6 @@ pub const MemoryState = struct {
             .memory_capacity = INITIAL_HEAP_SIZE,
             .allocations = 0,
             .scopes = std.ArrayList(*V.Value).init(allocator),
-            .imports = Imports.init(allocator),
             .unitValue = null,
             .trueValue = null,
             .falseValue = null,
@@ -77,8 +75,6 @@ pub const MemoryState = struct {
         self.scopes = std.ArrayList(*V.Value).init(self.allocator);
         self.stack.deinit();
         self.stack = std.ArrayList(*V.Value).init(self.allocator);
-        self.imports.deinit();
-        self.imports = Imports.init(self.allocator);
         _ = force_gc(self);
 
         if (MAINTAIN_FREE_CHAIN) {
@@ -86,7 +82,6 @@ pub const MemoryState = struct {
         }
 
         self.stack.deinit();
-        self.imports.deinit();
 
         std.log.info("gc: memory state stack length: {d} vs {d}, values: {d}, stringpool: {d}", .{ self.stack.items.len, count, self.memory_size, self.stringPool.count() });
 
@@ -399,7 +394,6 @@ pub fn force_gc(state: *MemoryState) GCResult {
 
     const new_colour = if (state.colour == V.Colour.Black) V.Colour.White else V.Colour.Black;
 
-    state.imports.mark(new_colour);
     if (state.unitValue != null) {
         markValue(state.unitValue.?, new_colour);
     }
@@ -437,53 +431,3 @@ inline fn gc(state: *MemoryState) void {
         }
     }
 }
-
-pub const Imports = struct {
-    items: std.StringHashMap(Import),
-    allocator: std.mem.Allocator,
-
-    pub fn init(allocator: std.mem.Allocator) Imports {
-        return Imports{ .items = std.StringHashMap(Import).init(allocator), .allocator = allocator };
-    }
-
-    pub fn deinit(self: *Imports) void {
-        var iterator = self.items.iterator();
-
-        while (iterator.next()) |entry| {
-            self.allocator.free(entry.key_ptr.*);
-        }
-        self.items.deinit();
-    }
-
-    pub fn mark(self: *Imports, colour: V.Colour) void {
-        var iterator = self.items.iterator();
-
-        while (iterator.next()) |entry| {
-            entry.value_ptr.*.mark(colour);
-        }
-    }
-
-    pub fn addImport(self: *Imports, name: []const u8, items: ?*V.Value) !void {
-        const oldName = self.items.getKey(name);
-
-        if (oldName == null) {
-            try self.items.put(try self.allocator.dupe(u8, name), Import{ .items = items });
-        } else {
-            try self.items.put(oldName.?, Import{ .items = items });
-        }
-    }
-
-    pub fn find(self: *Imports, name: []const u8) ?Import {
-        return self.items.get(name);
-    }
-};
-
-pub const Import = struct {
-    items: ?*V.Value,
-
-    pub fn mark(this: *Import, colour: V.Colour) void {
-        if (this.items != null) {
-            markValue(this.items.?, colour);
-        }
-    }
-};

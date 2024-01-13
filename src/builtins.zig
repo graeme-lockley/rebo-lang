@@ -16,7 +16,6 @@ pub const exit = @import("./builtins/exit.zig").exit;
 pub const eval = @import("./builtins/eval.zig").eval;
 pub const gc = @import("./builtins/gc.zig").gc;
 pub const import = @import("./builtins/import.zig").import;
-pub const imports = @import("./builtins/imports.zig").imports;
 pub const int = @import("./builtins/int.zig").int;
 pub const float = @import("./builtins/float.zig").float;
 pub const httpRequest = @import("./builtins/httpRequest.zig").httpRequest;
