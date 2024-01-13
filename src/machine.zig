@@ -1150,6 +1150,9 @@ fn addRebo(state: *MS.MemoryState) !void {
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.response", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpResponse));
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.wait", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpWait));
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.finish", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpFinish));
+
+    const reboImports = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
+    try value.v.RecordKind.setU8(state.stringPool, "imports", reboImports);
 }
 
 fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {

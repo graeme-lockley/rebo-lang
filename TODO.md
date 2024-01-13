@@ -1,178 +1,28 @@
 There is so much to do.  The following is my work list on this project.  I will continuously juggle the sequence of these tasks as I work on them depending on what I would like to get working next.
 
-# Language Features
+# Feature: Move `import` into user space
 
-## Literals:
+The first implementation of `import` was as a builtin which was perfect to get started.  However imports can be so much more.  For example, using [Scanpiler's](https://github.com/littlelanguages/scanpiler) notation, I can write a a lexical definition for a language and place it in the file `scanner.llex`.  It would be super cool to be able to use these definitions in my code with the following statement:
 
-- [X] Unit literal
-- [X] Boolean literal
-- [X] Integer literal
-- [X] Char literal
-- [X] Float literal
+```rebo
+let Scanner = import("scanner.llex", { tool: "./tools/scanpiler.rebo", cache: true })
+```
 
-## Values
+This would import the lexical definitions from the file `scanner.llex` and compile them into a module called `Scanner`.  The `tool` option would be used to specify the path to the tool that would be used to compile the lexical definitions.  The `cache` option would be used to specify whether the compiled module should be cached or not.  If the `cache` option is `true` then the compiled module would be cached and the next time the `import` statement is executed, the cached module would be used instead of recompiling the lexical definitions.
 
-- [X] Let declaration
-- [X] Assignment without destructing
-- [X] Assignment with destructing
+Of course, we can up the ante with by allowing the `import` statement to import modules from the web.  For example, the following statement would import the lexical definitions from the file `scanner.llex` from the `littlelanguages` repository on GitHub:
 
-## Functions
+```rebo
+let Scanner = import("scanner.llex", { 
+   tools: "https://raw.githubusercontent.com/littlelanguages/scanpiler/main/tools/scanpiler.rebo", 
+   cache: true 
+})
+```
 
-- [X] Add function literal
-- [X] Add function call
-- [X] Add function value
-- [X] Add support for `...` argument to get the remainder of the arguments as a sequence
+This is a very powerful feature that would allow `rebo` to be used to build a wide variety of tools and then attach them to the language using the `import` statement.  This feature supports the `rebo` principle of *Zero Configuration*.
 
-## Sequences
+## Tasks
 
-- [X] Add support for a literal sequence
-- [X] Add support for `...` when incorporating a literal sequence
-- [X] Add support for `[]` to access an element in a sequence based on value
-- [X] Add support for `[start:end]` to access a slice of sequence
-- [X] Add support for `[] = value` to update a sequence
-- [X] Add support for `[start:end] = value` to update a slice of sequence
-- [X] Add support for `[start:end] = ()` to remove a slice from a sequence
-- [X] `+` concatenates two sequences
-- [X] Add support destructuring a sequence into variables
-- [X] Move all the functions into the SequenceKind rather than having them lying all over the code base and forcing knowledge of the implementation
+- [ ] Move the collection of imported modules to `rebo.imports`
 
-## Strings
 
-- [X] Literal string without interpolation
-- [ ] Literal string interpolation
-- [X] `[]` to access a char in a string
-- [X] `[start:end]` to access a slice of a string
-- [X] `+` concatenates two strings
-- [X] `*` repeats a string
-- [X] Move all the functions into the StringKind rather than having them lying all over the code base and forcing knowledge of the implementation
-
-## Records
-
-- [X] Add support for a literal record
-- [X] Add support for a literal string as a literal record field name
-- [X] Add support for `...` when incorporating a literal record
-- [X] Add support for `.field` to access a record's field
-- [X] Add support for `[]` to access a field in a record based on value
-- [X] Add support for `.field = value` to update a record
-- [X] Add support for `[] = value` to update a record's field
-- [ ] `+` concatenates two records
-- [X] Add support for destructing a record into variables
-- [X] Move all the functions into the RecordKind rather than having them lying all over the code base and forcing knowledge of the implementation
-
-## Scope
-
-- [X] Move all the functions into the ScopeKind rather than having them lying all over the code base and forcing knowledge of the implementation
-
-# Operators
-
-- [X] Integer '+'
-- [X] Integer '-'
-- [X] Integer '*'
-- [X] Integer '/'
-- [X] Integer '%'
-- [X] Float '+'
-- [X] Float '-'
-- [X] Float '*'
-- [X] Float '/'
-- [X] Integer '=='
-- [X] Integer '!='
-- [X] All '=='
-- [X] All '!='
-- [X] All '<'
-- [X] All '<='
-- [X] All '>'
-- [X] All '>='
-- [X] Boolean '&&'
-- [X] Boolean '||'
-- [X] Boolean '!'
-- [X] '|>' pipe operator
-- [X] '<|' pipe operator
-- [X] '>>' prepend operator leaving the underlying structure unaffected
-- [X] '>!' prepend operator changing the underlying structure
-- [X] '<<' append operator leaving the underlying structure unaffected
-- [X] '<!' append operator changing the underlying structure
-- [X] '?' operator to provide default values for null
-
-# Control Statements
-
-## Sequences
-
-- [X] Add top-level support for expression sequences terminated with a semicolon
-- [X] Add support for {... ; ... ; ...} to create a sequence of expressions 
-
-## if
-
-- [X] Add support for if expressions
-- [X] The if guard succeeds if the expression is boolean and true.  It is synonymous with `guard == true`.  Equality does not fail if the values being compared are of different types.
-
-## match
-
-- [X] Add support for match expressions
-- [ ] Add support for an else
-
-## try-catch
-
-- [X] Add support for try-catch expressions
-
-## while
-
-- [X] Add support for a while loop
-- [X] The while guard succeeds if the expression is boolean and true.  It is synonymous with `guard == true`.  Equality does not fail if the values being compared are of different types.
-
-# Built-in Functions
-
-- [X] eval with all it's evilness
-- [ ] exit
-    - [X] Basic function
-    - [ ] If a non-integer is passed then print it to stderr and exit with 1
-    - [ ] Add an option to print the entire stack trace as well
-- [X] gc - which is actually a force gc
-- [ ] import
-    - [X] Basic function
-    - [ ] Add a fatal option to the import function; this is default behavior
-    - [ ] Add an option to import the private members of a module
-    - [ ] Add a non-fatal option
-    - [X] Add ability to import lib files without path or extension
-    - [ ] Add ability to import all names directly into the current scope
-- [X] imports
-- [X] int
-- [X] len
-- [X] milliTimestamp
-- [X] print
-- [X] println
-- [X] rebo value
-    - [X] args
-    - [X] exe
-    - [X] env
-- [X] str with two forms - one raw and the other literal.  The default is literal.
-- [X] typeof
-
-# Library
-
-## CLI
-
-- [X] Implement based on Oak
-- [X] Add support for flag + or - suffix to enable is disable.
-
-## Test
-
-- [X] Tidy up the guards once `!` has been implemented
-- [X] Should a test fail then exit(1) otherwise exit(0) so that I can add into pipeline
-- [X] Fix: duration of the entire test suite is incorrectly calculated
-- [X] Display the report after each suite rather than all at the end
-
-# REPL Features
-
-- [X] Add support for state in the REPL
-- [ ] Add a `readline` like capability into the REPL
-- [ ] Auto-import the following libraries into the REPL - Std, Str, FS.  Add an option to disable this.
-
-# Chore Features
-
-- [X] Add a github pipeline to continuously test the project
-- [ ] Expand the pipeline to test against Linux and Mac OS
-- [X] Place the AST under garbage collection.  At the moment it is not which makes AST memory management impossible.
-- [X] Add a string heap to store identifier names and field names.  This will reduce memory footprint and allow for faster comparisons.
-- [X] On an error - display the line number and column number
-- [X] When an error is reported, unwind the stack so that the error is reported in the full context of the caller
-- [X] Record error position whenever an error is reported
