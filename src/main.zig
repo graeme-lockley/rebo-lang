@@ -23,7 +23,7 @@ pub fn main() !void {
     defer std.process.argsFree(allocator, args);
 
     if (args.len == 2 and std.mem.eql(u8, args[1], "help")) {
-        try stdout.print("Usage: {s} [file ...args | repl | help]\n", .{args[0]});
+        try stdout.print("Usage: {s} [file ...args | repl | script arg | help]\n", .{args[0]});
         std.process.exit(1);
     } else if (args.len == 1 or args.len == 2 and std.mem.eql(u8, args[1], "repl")) {
         var editor = Editor.init(gpa.allocator(), .{});
