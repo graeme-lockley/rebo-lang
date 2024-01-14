@@ -55,7 +55,7 @@ pub const Expression = struct {
     position: Errors.Position,
     count: u32,
 
-    pub inline fn init(kind: ExpressionKind, position: Errors.Position) Expression {
+    inline fn init(kind: ExpressionKind, position: Errors.Position) Expression {
         return Expression{
             .kind = kind,
             .position = position,
@@ -370,6 +370,20 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
 pub const Pattern = struct {
     kind: PatternKind,
     position: Errors.Position,
+
+    inline fn init(kind: PatternKind, position: Errors.Position) Pattern {
+        return Pattern{
+            .kind = kind,
+            .position = position,
+        };
+    }
+
+    pub inline fn create(allocator: std.mem.Allocator, kind: PatternKind, position: Errors.Position) !*Pattern {
+        var expr = try allocator.create(Pattern);
+        expr.* = Pattern.init(kind, position);
+
+        return expr;
+    }
 
     pub fn destroy(self: *Pattern, allocator: std.mem.Allocator) void {
         destroyPattern(allocator, self);

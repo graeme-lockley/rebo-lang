@@ -951,9 +951,11 @@ pub const Parser = struct {
                 if (self.currentTokenKind() == Lexer.TokenKind.RParen) {
                     const rparen = try self.nextToken();
 
-                    const v = try self.allocator.create(AST.Pattern);
-                    v.* = AST.Pattern{ .kind = AST.PatternKind{ .void = void{} }, .position = Errors.Position{ .start = lparen.start, .end = rparen.end } };
-                    return v;
+                    return try AST.Pattern.create(
+                        self.allocator,
+                        AST.PatternKind{ .void = void{} },
+                        Errors.Position{ .start = lparen.start, .end = rparen.end },
+                    );
                 }
 
                 const e = try self.pattern();
@@ -964,62 +966,46 @@ pub const Parser = struct {
                 return e;
             },
             Lexer.TokenKind.Identifier => {
-                const lexeme = self.lexer.currentLexeme();
+                const token = try self.nextToken();
+                const identifier = try self.stringPool.intern(self.lexer.lexeme(token));
+                errdefer identifier.decRef();
 
-                const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .identifier = try self.stringPool.intern(lexeme) }, .position = Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end } };
-                errdefer v.destroy(self.allocator);
-
-                try self.skipToken();
-
-                return v;
+                return try AST.Pattern.create(self.allocator, AST.PatternKind{ .identifier = identifier }, token.position());
             },
             Lexer.TokenKind.LiteralBoolFalse => {
                 const token = try self.nextToken();
 
-                const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalBool = false }, .position = token.position() };
-                return v;
+                return try AST.Pattern.create(self.allocator, AST.PatternKind{ .literalBool = false }, token.position());
             },
             Lexer.TokenKind.LiteralBoolTrue => {
                 const token = try self.nextToken();
 
-                const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalBool = true }, .position = token.position() };
-                return v;
+                return try AST.Pattern.create(self.allocator, AST.PatternKind{ .literalBool = true }, token.position());
             },
             Lexer.TokenKind.LiteralChar => {
                 const literalChar = try self.parseLiteralChar(self.lexer.currentLexeme());
                 const token = try self.nextToken();
 
-                const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalChar = literalChar }, .position = token.position() };
-                return v;
+                return try AST.Pattern.create(self.allocator, AST.PatternKind{ .literalChar = literalChar }, token.position());
             },
             Lexer.TokenKind.LiteralFloat => {
                 const literalFloat = try self.parseLiteralFloat(self.lexer.currentLexeme());
                 const token = try self.nextToken();
 
-                const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalFloat = literalFloat }, .position = token.position() };
-                return v;
+                return try AST.Pattern.create(self.allocator, AST.PatternKind{ .literalFloat = literalFloat }, token.position());
             },
             Lexer.TokenKind.LiteralInt => {
                 const literalInt = try self.parseLiteralInt(self.lexer.currentLexeme());
                 const token = try self.nextToken();
 
-                const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalInt = literalInt }, .position = token.position() };
-                return v;
+                return try AST.Pattern.create(self.allocator, AST.PatternKind{ .literalInt = literalInt }, token.position());
             },
             Lexer.TokenKind.LiteralString => {
                 const literalString = try self.parseLiteralString(self.lexer.currentLexeme());
                 errdefer literalString.decRef();
                 const token = try self.nextToken();
 
-                const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .literalString = literalString }, .position = token.position() };
-                return v;
+                return try AST.Pattern.create(self.allocator, AST.PatternKind{ .literalString = literalString }, token.position());
             },
             Lexer.TokenKind.LBracket => {
                 const lbracket = try self.nextToken();
@@ -1074,9 +1060,11 @@ pub const Parser = struct {
                     try self.matchSkipToken(Lexer.TokenKind.Identifier);
                 }
 
-                const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .sequence = AST.SequencePattern{ .patterns = try es.toOwnedSlice(), .restOfPatterns = restOfPatterns, .id = id } }, .position = Errors.Position{ .start = lbracket.start, .end = rbracket.end } };
-                return v;
+                return try AST.Pattern.create(
+                    self.allocator,
+                    AST.PatternKind{ .sequence = AST.SequencePattern{ .patterns = try es.toOwnedSlice(), .restOfPatterns = restOfPatterns, .id = id } },
+                    Errors.Position{ .start = lbracket.start, .end = rbracket.end },
+                );
             },
             Lexer.TokenKind.LCurly => {
                 const lcurly = try self.nextToken();
@@ -1107,9 +1095,11 @@ pub const Parser = struct {
                     id = try self.stringPool.intern(self.lexer.lexeme(alias));
                 }
 
-                const v = try self.allocator.create(AST.Pattern);
-                v.* = AST.Pattern{ .kind = AST.PatternKind{ .record = AST.RecordPattern{ .entries = try es.toOwnedSlice(), .id = id } }, .position = Errors.Position{ .start = lcurly.start, .end = rcurly.end } };
-                return v;
+                return try AST.Pattern.create(
+                    self.allocator,
+                    AST.PatternKind{ .record = AST.RecordPattern{ .entries = try es.toOwnedSlice(), .id = id } },
+                    Errors.Position{ .start = lcurly.start, .end = rcurly.end },
+                );
             },
             else => {
                 self.replaceErr(try Errors.parserError(self.allocator, self.lexer.name, Errors.Position{ .start = self.currentToken().start, .end = self.currentToken().end }, self.currentTokenLexeme(), &[_]Lexer.TokenKind{ Lexer.TokenKind.LBracket, Lexer.TokenKind.LCurly, Lexer.TokenKind.Identifier, Lexer.TokenKind.LParen, Lexer.TokenKind.LiteralBoolFalse, Lexer.TokenKind.LiteralBoolTrue, Lexer.TokenKind.LiteralChar, Lexer.TokenKind.LiteralFloat, Lexer.TokenKind.LiteralInt, Lexer.TokenKind.LiteralString, Lexer.TokenKind.Fn }));
