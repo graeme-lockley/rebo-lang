@@ -238,7 +238,7 @@ pub const MemoryState = struct {
         }
     }
 
-    pub fn scope(self: *MemoryState) ?*V.Value {
+    pub inline fn scope(self: *MemoryState) ?*V.Value {
         if (self.scopes.items.len == 0) {
             return null;
         } else {
@@ -246,21 +246,21 @@ pub const MemoryState = struct {
         }
     }
 
-    pub fn topScope(self: *MemoryState) *V.Value {
+    pub inline fn topScope(self: *MemoryState) *V.Value {
         return self.scopes.items[0];
     }
 
-    pub fn openScope(self: *MemoryState) !void {
+    pub inline fn openScope(self: *MemoryState) !void {
         try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, self.scope()) }));
     }
 
-    pub fn openScopeFrom(self: *MemoryState, outerScope: ?*V.Value) !void {
+    pub inline fn openScopeFrom(self: *MemoryState, outerScope: ?*V.Value) !void {
         if (outerScope != null and outerScope.?.v != V.ValueKind.ScopeKind) unreachable;
 
         try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, outerScope) }));
     }
 
-    pub fn restoreScope(self: *MemoryState) void {
+    pub inline fn restoreScope(self: *MemoryState) void {
         _ = self.scopes.pop();
     }
 

@@ -644,10 +644,14 @@ pub inline fn callFn(machine: *Machine, numberOfArgs: usize) Errors.RuntimeError
 }
 
 inline fn callUserFn(machine: *Machine, numberOfArgs: usize) !void {
+    const enclosingScope = machine.memoryState.scope().?;
+
     const callee = machine.memoryState.peek(@intCast(numberOfArgs));
 
     try machine.memoryState.openScopeFrom(callee.v.FunctionKind.scope);
     defer machine.memoryState.restoreScope();
+
+    try machine.memoryState.addU8ToScope("__caller_scope__", enclosingScope);
 
     var lp: usize = 0;
     const maxArgs = @min(numberOfArgs, callee.v.FunctionKind.arguments.len);

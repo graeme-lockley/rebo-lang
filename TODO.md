@@ -26,4 +26,12 @@ This is a very powerful feature that would allow `rebo` to be used to build a wi
 - [X] Add ReferenceCounting into AST nodes and wire into the entire system
 - [X] Remove the "Annie" code from the `import` builtin and system `execute` 
 - [X] Move the collection of imported modules to `rebo.imports`
+- [X] Allow a function in execution to access the caller's scope - __caller_scope__
+- Update and add builtin functions to work with scope:
+   - [ ] `len`
+   - [ ] `[]`
+   - [ ] `[] :=`
+   - [ ] `super`
+   - [ ] `super :=`
+   - [ ] `keys`
 - [ ] Add a form of `fexists` into the `os` builtin
