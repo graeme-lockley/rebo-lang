@@ -5,6 +5,12 @@ pub fn scope(machine: *Helper.Machine, numberOfArgs: usize) !void {
     try machine.memoryState.push(machine.memoryState.scope().?);
 }
 
+pub fn open(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const scp = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.ScopeKind});
+
+    try machine.memoryState.pushScopeValue(scp);
+}
+
 pub fn super(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.ScopeKind});
 

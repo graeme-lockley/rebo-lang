@@ -35,6 +35,7 @@ This is a very powerful feature that would allow `rebo` to be used to build a wi
    - [x] `scope` - `rebo.lang.scope`
    - [X] `super` - `rebo.lang["scope.super"]`
    - [X] `super :=` - `rebo.lang["scope.assign"]`: this is super dangerous as it can break EVERYTHING
+   - [X] `rebo.lang["scope.open"]`
 - [ ] Add a form of `fexists` into the `os` builtin
 - [ ] Create a `prelude.rebo` file that sets up the `rebo` runtime before user code runs
 - [ ] Move all of the builtins into rebo.lang and rebo.os, and initialise them in `prelude.rebo`

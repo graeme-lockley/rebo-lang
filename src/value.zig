@@ -458,6 +458,79 @@ pub const RecordValue = struct {
     }
 };
 
+pub const ScopeValue = struct {
+    parent: ?*Value,
+    values: std.AutoHashMap(*SP.String, *Value),
+
+    pub fn init(allocator: std.mem.Allocator, parent: ?*Value) ScopeValue {
+        return ScopeValue{
+            .parent = parent,
+            .values = std.AutoHashMap(*SP.String, *Value).init(allocator),
+        };
+    }
+
+    pub fn deinit(self: *ScopeValue) void {
+        var iterator = self.values.keyIterator();
+        while (iterator.next()) |keyPtr| {
+            keyPtr.*.decRef();
+        }
+
+        self.values.deinit();
+    }
+
+    pub inline fn set(self: *ScopeValue, key: *SP.String, value: *Value) !void {
+        if (self.values.getKey(key)) |oldKey| {
+            try self.values.put(oldKey, value);
+        } else {
+            try self.values.put(key.incRefR(), value);
+        }
+    }
+
+    pub inline fn update(self: *ScopeValue, key: *SP.String, value: *Value) !bool {
+        var runner: ?*ScopeValue = self;
+
+        while (true) {
+            const oldKey = runner.?.values.getKey(key);
+
+            if (oldKey == null) {
+                if (runner.?.parent == null) {
+                    return false;
+                } else {
+                    runner = &runner.?.parent.?.v.ScopeKind;
+                }
+            } else {
+                try runner.?.values.put(oldKey.?, value);
+
+                return true;
+            }
+        }
+    }
+
+    pub inline fn get(self: *const ScopeValue, key: *SP.String) ?*Value {
+        var runner: ?*const ScopeValue = self;
+
+        while (true) {
+            const value = runner.?.values.get(key);
+
+            if (value != null) {
+                return value;
+            } else if (runner.?.parent == null) {
+                return null;
+            } else {
+                runner = &runner.?.parent.?.v.ScopeKind;
+            }
+        }
+    }
+
+    pub fn count(self: *const ScopeValue) usize {
+        return self.values.count() + if (self.parent != null) self.parent.?.v.ScopeKind.count() else 0;
+    }
+
+    pub inline fn keyIterator(self: *const ScopeValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
+        return self.values.keyIterator();
+    }
+};
+
 pub const SequenceValue = struct {
     values: std.ArrayList(*Value),
 
@@ -565,79 +638,6 @@ pub const StringValue = struct {
 
     pub inline fn len(self: *const StringValue) usize {
         return self.value.len();
-    }
-};
-
-pub const ScopeValue = struct {
-    parent: ?*Value,
-    values: std.AutoHashMap(*SP.String, *Value),
-
-    pub fn init(allocator: std.mem.Allocator, parent: ?*Value) ScopeValue {
-        return ScopeValue{
-            .parent = parent,
-            .values = std.AutoHashMap(*SP.String, *Value).init(allocator),
-        };
-    }
-
-    pub fn deinit(self: *ScopeValue) void {
-        var iterator = self.values.keyIterator();
-        while (iterator.next()) |keyPtr| {
-            keyPtr.*.decRef();
-        }
-
-        self.values.deinit();
-    }
-
-    pub inline fn set(self: *ScopeValue, key: *SP.String, value: *Value) !void {
-        if (self.values.getKey(key)) |oldKey| {
-            try self.values.put(oldKey, value);
-        } else {
-            try self.values.put(key.incRefR(), value);
-        }
-    }
-
-    pub inline fn update(self: *ScopeValue, key: *SP.String, value: *Value) !bool {
-        var runner: ?*ScopeValue = self;
-
-        while (true) {
-            const oldKey = runner.?.values.getKey(key);
-
-            if (oldKey == null) {
-                if (runner.?.parent == null) {
-                    return false;
-                } else {
-                    runner = &runner.?.parent.?.v.ScopeKind;
-                }
-            } else {
-                try runner.?.values.put(oldKey.?, value);
-
-                return true;
-            }
-        }
-    }
-
-    pub inline fn get(self: *const ScopeValue, key: *SP.String) ?*Value {
-        var runner: ?*const ScopeValue = self;
-
-        while (true) {
-            const value = runner.?.values.get(key);
-
-            if (value != null) {
-                return value;
-            } else if (runner.?.parent == null) {
-                return null;
-            } else {
-                runner = &runner.?.parent.?.v.ScopeKind;
-            }
-        }
-    }
-
-    pub fn count(self: *const ScopeValue) usize {
-        return self.values.count() + if (self.parent != null) self.parent.?.v.ScopeKind.count() else 0;
-    }
-
-    pub inline fn keyIterator(self: *const ScopeValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
-        return self.values.keyIterator();
     }
 };
 

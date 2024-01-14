@@ -136,6 +136,10 @@ pub const MemoryState = struct {
         return try self.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.allocator) });
     }
 
+    pub inline fn newScopeValue(self: *MemoryState, parent: ?*V.Value) !*V.Value {
+        return try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, parent) });
+    }
+
     pub inline fn newEmptySequenceValue(self: *MemoryState) !*V.Value {
         return try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
     }
@@ -192,6 +196,10 @@ pub const MemoryState = struct {
 
     pub inline fn pushIntValue(self: *MemoryState, v: V.IntType) !void {
         _ = try self.push(try self.newIntValue(v));
+    }
+
+    pub inline fn pushScopeValue(self: *MemoryState, parent: ?*V.Value) !void {
+        _ = try self.push(try self.newScopeValue(parent));
     }
 
     pub inline fn pushEmptySequenceValue(self: *MemoryState) !void {
