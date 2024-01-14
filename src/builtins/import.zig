@@ -176,6 +176,12 @@ pub fn import(machine: *Helper.Machine, numberOfArgs: usize) !void {
     }
 }
 
+pub fn exists(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const fileName = (try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
+
+    try machine.memoryState.pushBoolValue(fexists(fileName));
+}
+
 test "import" {
     const Main = @import("./../main.zig");
 

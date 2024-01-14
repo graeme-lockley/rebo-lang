@@ -96,10 +96,13 @@ $ rebo show-exe.rebo
 | `scope.super` | fn (`s: Scope`) | Returns the super scope of the current scope. |
 | `scope.super.assign!` | fn (`s: Scope`, `newParent: Scope`) | Makes `newParent` the super scope of `s`.  This function returns `s`. |
 
-
 ## `os`
 
 `os` is a record that contains all of the builtin values and functions that allow rebo to access the operating system functions.
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `fs.exists` | fn (`name: String`) | Returns `true` if the object `name` exists on the file system.  Note that this function does not discriminate between files or directories and whether or not the object is readable. |
 
 ### eval(script, options = {})
 

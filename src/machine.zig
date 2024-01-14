@@ -1187,6 +1187,8 @@ fn addRebo(state: *MS.MemoryState) !void {
     const reboOS = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
     try value.v.RecordKind.setU8(state.stringPool, "os", reboOS);
 
+    try reboOS.v.RecordKind.setU8(state.stringPool, "fs.exists", try state.newBuiltinValue(@import("builtins/import.zig").exists));
+
     var client = try state.allocator.create(std.http.Client);
     client.* = std.http.Client{ .allocator = state.allocator };
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client", try state.newValue(V.ValueValue{ .HttpClientKind = V.HttpClientValue.init(client) }));
