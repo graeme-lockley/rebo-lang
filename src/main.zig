@@ -38,6 +38,8 @@ pub fn main() !void {
         try editor.loadHistory(historyFile);
         defer editor.saveHistory(historyFile) catch unreachable;
 
+        try runPrelude(&rebo);
+
         while (true) {
             const line: []const u8 = editor.getLine("> ") catch |err| switch (err) {
                 error.Eof => break,
@@ -67,6 +69,8 @@ pub fn main() !void {
         var rebo = try API.init(allocator);
         defer rebo.deinit();
 
+        try runPrelude(&rebo);
+
         rebo.script(args[2]) catch |e| {
             exitValue = 1;
             try errorHandler(e, &rebo);
@@ -79,6 +83,8 @@ pub fn main() !void {
 
         var rebo = try API.init(allocator);
         defer rebo.deinit();
+
+        try runPrelude(&rebo);
 
         rebo.import(args[1]) catch |e| {
             try errorHandler(e, &rebo);
@@ -121,6 +127,39 @@ fn errorHandler(err: anyerror, rebo: *API) !void {
     }
 }
 
+fn runPrelude(rebo: *API) !void {
+    const preludeSrc = try prelude(rebo);
+    defer rebo.allocator().free(preludeSrc);
+
+    rebo.script(preludeSrc) catch |err| {
+        try errorHandler(err, rebo);
+    };
+
+    try rebo.machine.memoryState.openScope();
+}
+
+fn prelude(rebo: *API) ![]u8 {
+    const allocator = rebo.allocator();
+    const fexists = @import("./builtins/import.zig").fexists;
+    const loadBinary = @import("./builtins.zig").loadBinary;
+
+    const exePath = try std.fs.selfExePathAlloc(allocator);
+    defer allocator.free(exePath);
+
+    const exeDir = std.fs.path.dirname(exePath).?;
+
+    var buffer = std.ArrayList(u8).init(allocator);
+    defer buffer.deinit();
+
+    try std.fmt.format(buffer.writer(), "{s}/prelude.rebo", .{exeDir});
+    if (!fexists(buffer.items)) {
+        buffer.clearAndFree();
+        try std.fmt.format(buffer.writer(), "{s}/../../bin/prelude.rebo", .{exeDir});
+    }
+
+    return loadBinary(allocator, buffer.items);
+}
+
 fn nike(input: []const u8) !void {
     var lp: usize = 1;
 
@@ -154,6 +193,8 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
     {
         var rebo = try API.init(allocator);
         defer rebo.deinit();
+
+        try rebo.machine.memoryState.openScope();
 
         rebo.script(input) catch |err| {
             std.log.err("Error: {}: {s}\n", .{ err, input });
@@ -194,6 +235,8 @@ fn expectError(input: []const u8) !void {
     {
         var rebo = try API.init(allocator);
         defer rebo.deinit();
+
+        try rebo.machine.memoryState.openScope();
 
         rebo.script(input) catch {
             return;

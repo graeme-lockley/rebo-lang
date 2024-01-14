@@ -1,0 +1,3 @@
+let fexists = rebo.os["fs.exists"]
+
+let map = import("std").map

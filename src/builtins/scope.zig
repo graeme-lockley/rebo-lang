@@ -43,3 +43,16 @@ pub fn bind(machine: *Helper.Machine, numberOfArgs: usize) !void {
 
     try machine.memoryState.push(value);
 }
+
+pub fn delete(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const scp = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.ScopeKind});
+    const key = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
+
+    const value = try scp.v.ScopeKind.delete(key.v.StringKind.value);
+
+    if (value == null) {
+        try machine.memoryState.pushUnitValue();
+    } else {
+        try machine.memoryState.push(value.?);
+    }
+}

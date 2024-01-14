@@ -529,6 +529,17 @@ pub const ScopeValue = struct {
     pub inline fn keyIterator(self: *const ScopeValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
         return self.values.keyIterator();
     }
+
+    pub inline fn delete(self: *ScopeValue, key: *SP.String) !?*Value {
+        const value = self.values.get(key);
+
+        if (self.values.getKey(key)) |oldKey| {
+            _ = self.values.remove(oldKey);
+            oldKey.decRef();
+        }
+
+        return value;
+    }
 };
 
 pub const SequenceValue = struct {

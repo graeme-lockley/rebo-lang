@@ -143,7 +143,7 @@ fn indexOfLastLinear(comptime T: type, haystack: []const T, needle: T) ?usize {
     }
 }
 
-fn fexists(name: []const u8) bool {
+pub fn fexists(name: []const u8) bool {
     std.fs.Dir.access(std.fs.cwd(), name, .{}) catch return false;
     return true;
 }
@@ -169,11 +169,12 @@ pub fn import(machine: *Helper.Machine, numberOfArgs: usize) !void {
     try std.fmt.format(buffer.writer(), "{s}/../lib/{s}.rebo", .{ exeDir, v });
     if (fexists(buffer.items)) {
         try importFile(machine, buffer.items);
-    } else {
-        buffer.clearAndFree();
-        try std.fmt.format(buffer.writer(), "{s}/../../lib/{s}.rebo", .{ exeDir, v });
-        try importFile(machine, buffer.items);
+        return;
     }
+
+    buffer.clearAndFree();
+    try std.fmt.format(buffer.writer(), "{s}/../../lib/{s}.rebo", .{ exeDir, v });
+    try importFile(machine, buffer.items);
 }
 
 pub fn exists(machine: *Helper.Machine, numberOfArgs: usize) !void {

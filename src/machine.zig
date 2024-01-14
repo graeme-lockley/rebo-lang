@@ -1180,6 +1180,7 @@ fn addRebo(state: *MS.MemoryState) !void {
     try value.v.RecordKind.setU8(state.stringPool, "lang", reboLang);
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope", try state.newBuiltinValue(@import("builtins/scope.zig").scope));
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope.bind!", try state.newBuiltinValue(@import("builtins/scope.zig").bind));
+    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.delete!", try state.newBuiltinValue(@import("builtins/scope.zig").delete));
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope.open", try state.newBuiltinValue(@import("builtins/scope.zig").open));
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope.super", try state.newBuiltinValue(@import("builtins/scope.zig").super));
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope.super.assign!", try state.newBuiltinValue(@import("builtins/scope.zig").assign));
@@ -1232,8 +1233,6 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
     try addBuiltin(&state, "write", &Builtins.write);
 
     try addRebo(&state);
-
-    try state.openScope();
 
     return state;
 }
