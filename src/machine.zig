@@ -1179,8 +1179,9 @@ fn addRebo(state: *MS.MemoryState) !void {
     const reboLang = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
     try value.v.RecordKind.setU8(state.stringPool, "lang", reboLang);
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope", try state.newBuiltinValue(@import("builtins/scope.zig").scope));
+    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.bind!", try state.newBuiltinValue(@import("builtins/scope.zig").bind));
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope.super", try state.newBuiltinValue(@import("builtins/scope.zig").super));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.assign", try state.newBuiltinValue(@import("builtins/scope.zig").assign));
+    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.super.assign!", try state.newBuiltinValue(@import("builtins/scope.zig").assign));
 
     const reboOS = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
     try value.v.RecordKind.setU8(state.stringPool, "os", reboOS);

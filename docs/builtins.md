@@ -88,8 +88,12 @@ $ rebo show-exe.rebo
 
 `lang` is a record that contains all of the builtin values and functions that collectively make up the `rebo` runtime system.
 
-| Name | Description |
-| ---- | ----------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `scope` | fn () | Returns the current scope. |
+| `scope.bind!` | fn (`s: Scope`, `name: String`, `value: Any`) | Binds `value` to `name` in the passed scope. Should `name` already have a binding then it will be updated to `value`.  This function returns `value`. |
+| `scope.super` | fn (`s: Scope`) | Returns the super scope of the current scope. |
+| `scope.super.assign!` | fn (`s: Scope`, `newParent: Scope`) | Makes `newParent` the super scope of `s`.  This function returns `s`. |
 
 
 ## `os`
