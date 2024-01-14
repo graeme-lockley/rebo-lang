@@ -15,10 +15,10 @@ On startup `rebo` contains a number of categories of values of varying types:
 
 ```rebo-repl
 > keys(rebo) |> Std.sort()
-[ "args", "env", "exe", "imports", "os" ]
+[ "args", "env", "exe", "imports", "lang", "os" ]
 
 > keys(rebo) |> Std.sort() |> Std.map(fn(k) [k, typeof(rebo[k])])
-[["args", "Sequence"], ["env", "Record"], ["exe", "String"], ["imports", "Record"], ["os", "Record"]]
+[["args", "Sequence"], ["env", "Record"], ["exe", "String"], ["imports", "Record"], ["lang", "Record"], ["os", "Record"]]
 ```
 
 ## `args`
@@ -87,6 +87,10 @@ $ rebo show-exe.rebo
 ## `lang`
 
 `lang` is a record that contains all of the builtin values and functions that collectively make up the `rebo` runtime system.
+
+| Name | Description |
+| ---- | ----------- |
+
 
 ## `os`
 

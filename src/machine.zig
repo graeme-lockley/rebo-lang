@@ -96,7 +96,7 @@ inline fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expres
             const expr = machine.memoryState.peek(0);
 
             switch (expr.v) {
-                V.ValueValue.RecordKind => {
+                V.ValueValue.ScopeKind => {
                     try evalExpr(machine, indexA);
                     const index = machine.memoryState.peek(0);
 
@@ -106,7 +106,11 @@ inline fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expres
 
                     try evalExpr(machine, value);
 
-                    try expr.v.RecordKind.set(index.v.StringKind.value, machine.memoryState.peek(0));
+                    if (!(try expr.v.ScopeKind.update(index.v.StringKind.value, machine.memoryState.peek(0)))) {
+                        const rec = try pushNamedUserError(machine, "UnknownIdentifierError", indexA.position);
+                        try rec.v.RecordKind.setU8(machine.memoryState.stringPool, "identifier", index);
+                        return Errors.RuntimeErrors.InterpreterError;
+                    }
                 },
                 V.ValueValue.SequenceKind => {
                     try evalExpr(machine, indexA);
@@ -127,9 +131,21 @@ inline fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expres
                         seq.set(@intCast(idx), machine.memoryState.peek(0));
                     }
                 },
+                V.ValueValue.RecordKind => {
+                    try evalExpr(machine, indexA);
+                    const index = machine.memoryState.peek(0);
+
+                    if (index.v != V.ValueValue.StringKind) {
+                        try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                    }
+
+                    try evalExpr(machine, value);
+
+                    try expr.v.RecordKind.set(index.v.StringKind.value, machine.memoryState.peek(0));
+                },
                 else => {
                     machine.memoryState.popn(1);
-                    try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind }, expr.v);
+                    try raiseExpectedTypeError(machine, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.ScopeKind, V.ValueValue.SequenceKind }, expr.v);
                 },
             }
 
@@ -851,6 +867,24 @@ inline fn indexValue(machine: *Machine, exprA: *AST.Expression, indexA: *AST.Exp
                 try machine.memoryState.push(value.?);
             }
         },
+        V.ValueValue.ScopeKind => {
+            try evalExpr(machine, indexA);
+            const index = machine.memoryState.peek(0);
+
+            if (index.v != V.ValueValue.StringKind) {
+                try raiseExpectedTypeError(machine, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+            }
+
+            machine.memoryState.popn(2);
+
+            const value = expr.v.ScopeKind.get(index.v.StringKind.value);
+
+            if (value == null) {
+                try machine.memoryState.pushUnitValue();
+            } else {
+                try machine.memoryState.push(value.?);
+            }
+        },
         V.ValueValue.SequenceKind => {
             try evalExpr(machine, indexA);
             const index = machine.memoryState.peek(0);
@@ -1141,6 +1175,12 @@ fn addRebo(state: *MS.MemoryState) !void {
     const exePath = std.fs.selfExePathAlloc(state.allocator) catch return;
     defer state.allocator.free(exePath);
     try value.v.RecordKind.setU8(state.stringPool, "exe", try state.newStringValue(exePath));
+
+    const reboLang = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
+    try value.v.RecordKind.setU8(state.stringPool, "lang", reboLang);
+    try reboLang.v.RecordKind.setU8(state.stringPool, "scope", try state.newBuiltinValue(@import("builtins/scope.zig").scope));
+    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.super", try state.newBuiltinValue(@import("builtins/scope.zig").super));
+    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.assign", try state.newBuiltinValue(@import("builtins/scope.zig").assign));
 
     const reboOS = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
     try value.v.RecordKind.setU8(state.stringPool, "os", reboOS);
