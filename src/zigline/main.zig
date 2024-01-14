@@ -31,6 +31,7 @@ const SystemCapabilities = switch (builtin.os.tag) {
             EOF,
             EOL,
             ERASE,
+            WERASE,
             INTR,
             KILL,
             MIN,
@@ -57,6 +58,7 @@ const SystemCapabilities = switch (builtin.os.tag) {
                 .EOF => 4,
                 .EOL => 0,
                 .ERASE => 127,
+                .WERASE => 23, // ctrl('w')
                 .INTR => 3,
                 .KILL => 21,
                 .MIN => 1,
@@ -204,6 +206,22 @@ const V = SystemCapabilities.V;
 
 fn isAsciiControl(code_point: u32) bool {
     return code_point < 0x20 or code_point == 0x7f;
+}
+
+fn isAsciiSpace(code_point: u32) bool {
+    return code_point == ' ' or code_point == '\t';
+}
+
+fn isAsciiAlpha(code_point: u32) bool {
+    return (code_point >= 'a' and code_point <= 'z') or (code_point >= 'A' and code_point <= 'Z');
+}
+
+fn isAsciiNumeric(code_point: u32) bool {
+    return code_point >= '0' and code_point <= '9';
+}
+
+fn isAsciiAlnum(code_point: u32) bool {
+    return isAsciiAlpha(code_point) or isAsciiNumeric(code_point);
 }
 
 pub fn ctrl(c: u32) u32 {
@@ -439,7 +457,7 @@ pub const Key = struct {
     modifiers: enum(u8) {
         None = 0,
         Alt = 1,
-    } = .Alt,
+    } = .None,
 
     const Self = @This();
 
@@ -1032,9 +1050,29 @@ pub const Editor = struct {
         var array = ArrayList(u8).init(self.allocator);
         defer array.deinit();
 
-        try std.io.getStdIn().reader().streamUntilDelimiter(array.container.writer(), '\n', null);
+        streamUntilEol(std.io.getStdIn().reader(), array.container.writer()) catch |e| switch (e) {
+            error.EndOfStream => return error.Eof,
+            else => return e,
+        };
 
         return array.container.toOwnedSlice();
+    }
+
+    fn streamUntilEol(reader: anytype, writer: anytype) !void {
+        if (!is_windows) {
+            // eol is '\n', so we can just use streamUntilDelimiter.
+            return reader.streamUntilDelimiter(writer, '\n', null);
+        }
+
+        // Read until '\r', return if '\n' follows, otherwise keep reading.
+        while (true) {
+            try reader.streamUntilDelimiter(writer, '\r', null);
+            const byte = try reader.readByte();
+            if (byte == '\n')
+                return;
+            try writer.writeByte('\r');
+            try writer.writeByte(byte);
+        }
     }
 
     fn nicelyAskControlThreadToDie(self: *Self) !void {
@@ -1149,8 +1187,6 @@ pub const Editor = struct {
                 }
                 had_incomplete_data_at_start = false;
 
-                self.logic_cond_mutex.lock();
-                defer self.logic_cond_mutex.unlock();
                 defer self.logic_condition.broadcast();
 
                 while (!self.signal_queue.isEmpty()) {
@@ -1283,11 +1319,11 @@ pub const Editor = struct {
                 }
 
                 self.deferred_action_queue.enqueue(DeferredAction{ .TryUpdateOnce = 0 }) catch {};
+                self.logic_cond_mutex.lock();
+                defer self.logic_cond_mutex.unlock();
                 self.queue_condition.broadcast();
                 // Wait for the main thread to process the event, any further input between now and then will be
                 // picked up either immediately, or in the next cycle.
-                self.logic_cond_mutex.lock();
-                defer self.logic_cond_mutex.unlock();
                 self.logic_condition.wait(&self.logic_cond_mutex);
             }
         }
@@ -1584,14 +1620,50 @@ pub const Editor = struct {
 
     fn setDefaultKeybinds(self: *Self) !void {
         try self.registerCharInputCallback('\n', &Self.finish);
+        try self.registerCharInputCallback(ctrl('C'), &eatErrors(Self.interrupted));
+
+        // ^N searchForwards, ^P searchBackwards
+        try self.registerCharInputCallback(ctrl('N'), &Self.searchForwards);
+        try self.registerCharInputCallback(ctrl('P'), &Self.searchBackwards);
+        // ^A goHome, ^B cursorLeftCharacter
+        try self.registerCharInputCallback(ctrl('A'), &Self.goHome);
+        try self.registerCharInputCallback(ctrl('B'), &Self.cursorLeftCharacter);
+        // ^D eraseCharacterForwards, ^E goEnd
+        try self.registerCharInputCallback(ctrl('D'), &Self.eraseCharacterForwards);
+        try self.registerCharInputCallback(ctrl('E'), &Self.goEnd);
+        // ^F cursorRightCharacter, ^H eraseCharacterBackwards
+        try self.registerCharInputCallback(ctrl('F'), &Self.cursorRightCharacter);
         try self.registerCharInputCallback(ctrl('H'), &Self.eraseCharacterBackwards);
         // DEL, some terminals send this instead of ctrl('H')
         try self.registerCharInputCallback(127, &Self.eraseCharacterBackwards);
-        try self.registerCharInputCallback(ctrl('D'), &Self.eraseCharacterForwards);
-        try self.registerCharInputCallback(ctrl('A'), &Self.goHome);
-        try self.registerCharInputCallback(ctrl('C'), &eatErrors(Self.interrupted));
-        try self.registerCharInputCallback(ctrl('E'), &Self.goEnd);
+        // ^K eraseToEnd, ^L clearScreen, ^R enterSearch
+        try self.registerCharInputCallback(ctrl('K'), &Self.eraseToEnd);
         try self.registerCharInputCallback(ctrl('L'), &Self.clearScreen);
+        // FIXME: try self.registerCharInputCallback(ctrl('R'), &Self.enterSearch);
+        // ^T transposeCharacters
+        try self.registerCharInputCallback(ctrl('T'), &Self.transposeCharacters);
+
+        // ^[b cursorLeftWord, ^[f cursorRightWord
+        try self.registerKeyInputCallback(Key{ .code_point = 'b', .modifiers = .Alt }, &Self.cursorLeftWord);
+        try self.registerKeyInputCallback(Key{ .code_point = 'f', .modifiers = .Alt }, &Self.cursorRightWord);
+        // ^[^B cursorLeftNonspaceWord, ^[^F cursorRightNonspaceWord
+        try self.registerKeyInputCallback(Key{ .code_point = ctrl('B'), .modifiers = .Alt }, &Self.cursorLeftNonspaceWord);
+        try self.registerKeyInputCallback(Key{ .code_point = ctrl('F'), .modifiers = .Alt }, &Self.cursorRightNonspaceWord);
+        // ^[^H eraseAlnumWordBackwards
+        try self.registerKeyInputCallback(Key{ .code_point = ctrl('H'), .modifiers = .Alt }, &Self.eraseAlnumWordBackwards);
+        // ^[d eraseAlnumWordForwards
+        try self.registerKeyInputCallback(Key{ .code_point = 'd', .modifiers = .Alt }, &Self.eraseAlnumWordForwards);
+        // ^[c capitalizeWord, ^[l lowercaseWord, ^[u uppercaseWord, ^[t transposeWords
+        try self.registerKeyInputCallback(Key{ .code_point = 'c', .modifiers = .Alt }, &Self.capitalizeWord);
+        try self.registerKeyInputCallback(Key{ .code_point = 'l', .modifiers = .Alt }, &Self.lowercaseWord);
+        try self.registerKeyInputCallback(Key{ .code_point = 'u', .modifiers = .Alt }, &Self.uppercaseWord);
+        // FIXME: try self.registerKeyInputCallback(Key{ .code_point = 't', .modifiers = .Alt }, &Self.transposeWords);
+
+        // Normally ^W eraseWordBackwards
+        // Normally ^U killLine
+        try self.registerCharInputCallback(ctrl('W'), &Self.eraseWordBackwards);
+        try self.registerCharInputCallback(getTermiosCC(self.termios, V.KILL), &Self.killLine);
+        try self.registerCharInputCallback(getTermiosCC(self.termios, V.ERASE), &Self.eraseCharacterBackwards);
     }
 
     fn registerKeyInputCallback(self: *Self, key: Key, c: *const fn (*Editor) bool) !void {
@@ -1735,6 +1807,8 @@ pub const Editor = struct {
         }
 
         var csi_parameters = std.ArrayList(u32).init(self.allocator);
+        defer csi_parameters.deinit();
+
         var csi_final: u8 = 0;
 
         var input_it = input_view.iterator();
@@ -1756,6 +1830,8 @@ pub const Editor = struct {
                     },
                     else => {
                         try self.callback_machine.keyPressed(self, Key{ .code_point = code_point, .modifiers = .Alt });
+                        self.input_state = .Free;
+                        continue;
                     },
                 },
                 .CSIExpectParameter, .CSIExpectIntermediate, .CSIExpectFinal => {
@@ -1817,6 +1893,9 @@ pub const Editor = struct {
                         csi_parameters.clearAndFree();
                         csi.parameter_bytes.clearAndFree();
                         csi.intermediate_bytes.clearAndFree();
+                        csi.initialized = false;
+                        csi.parameter_bytes.deinit();
+                        csi.intermediate_bytes.deinit();
 
                         if (csi_final == 'Z') {
                             // 'reverse tab'
@@ -1837,7 +1916,7 @@ pub const Editor = struct {
                             },
                             'D' => { // ^[[D: arrow left
                                 if (modifiers == .Alt or modifiers == .Ctrl) {
-                                    // TODO: self.cursorLeftWord();
+                                    _ = self.cursorLeftWord();
                                 } else {
                                     _ = self.cursorLeftCharacter();
                                 }
@@ -1845,7 +1924,7 @@ pub const Editor = struct {
                             },
                             'C' => { // ^[[C: arrow right
                                 if (modifiers == .Alt or modifiers == .Ctrl) {
-                                    // TODO: self.cursorRightWord();
+                                    _ = self.cursorRightWord();
                                 } else {
                                     _ = self.cursorRightCharacter();
                                 }
@@ -2810,5 +2889,207 @@ pub const Editor = struct {
             self.reallyQuitEventLoop() catch {};
         }
         return false;
+    }
+
+    pub fn eraseToEnd(self: *Self) bool {
+        if (self.cursor == self.buffer.size()) {
+            return false;
+        }
+
+        while (self.cursor < self.buffer.size()) {
+            _ = self.eraseCharacterForwards();
+        }
+
+        return false;
+    }
+
+    pub fn transposeCharacters(self: *Self) bool {
+        if (self.cursor > 0 and self.buffer.size() >= 2) {
+            if (self.cursor < self.buffer.size()) {
+                self.cursor += 1;
+            }
+
+            std.mem.swap(u32, &self.buffer.container.items[self.cursor - 1], &self.buffer.container.items[self.cursor - 2]);
+            self.refresh_needed = true;
+            self.chars_touched_in_the_middle += 2;
+        }
+        return false;
+    }
+
+    pub fn cursorLeftWord(self: *Self) bool {
+        var has_seen_alnum = false;
+        while (self.cursor > 0) {
+            if (!isAsciiAlnum(self.buffer.container.items[self.cursor - 1])) {
+                if (has_seen_alnum) {
+                    break;
+                }
+            } else {
+                has_seen_alnum = true;
+            }
+
+            self.cursor -= 1;
+        }
+        self.inline_search_cursor = self.cursor;
+        return false;
+    }
+
+    pub fn cursorLeftNonspaceWord(self: *Self) bool {
+        var has_seen_space = false;
+        while (self.cursor > 0) {
+            if (isAsciiSpace(self.buffer.container.items[self.cursor - 1])) {
+                if (has_seen_space) {
+                    break;
+                }
+            } else {
+                has_seen_space = true;
+            }
+
+            self.cursor -= 1;
+        }
+        self.inline_search_cursor = self.cursor;
+        return false;
+    }
+
+    pub fn cursorRightWord(self: *Self) bool {
+        var has_seen_alnum = false;
+        while (self.cursor < self.buffer.size()) {
+            if (!isAsciiAlnum(self.buffer.container.items[self.cursor])) {
+                if (has_seen_alnum) {
+                    break;
+                }
+            } else {
+                has_seen_alnum = true;
+            }
+
+            self.cursor += 1;
+        }
+        self.inline_search_cursor = self.cursor;
+        self.search_offset = 0;
+        return false;
+    }
+
+    pub fn cursorRightNonspaceWord(self: *Self) bool {
+        var has_seen_space = false;
+        while (self.cursor < self.buffer.size()) {
+            if (isAsciiSpace(self.buffer.container.items[self.cursor])) {
+                if (has_seen_space) {
+                    break;
+                }
+            } else {
+                has_seen_space = true;
+            }
+
+            self.cursor += 1;
+        }
+        self.inline_search_cursor = self.cursor;
+        self.search_offset = 0;
+        return false;
+    }
+
+    pub fn eraseAlnumWordBackwards(self: *Self) bool {
+        if (self.cursor == 0) {
+            return false;
+        }
+
+        var has_seen_alnum = false;
+        while (self.cursor > 0) {
+            if (!isAsciiAlnum(self.buffer.container.items[self.cursor - 1])) {
+                if (has_seen_alnum) {
+                    break;
+                }
+            } else {
+                has_seen_alnum = true;
+            }
+
+            _ = self.eraseCharacterBackwards();
+        }
+        return false;
+    }
+
+    pub fn eraseAlnumWordForwards(self: *Self) bool {
+        if (self.cursor == self.buffer.size()) {
+            return false;
+        }
+
+        var has_seen_alnum = false;
+        while (self.cursor < self.buffer.size()) {
+            if (!isAsciiAlnum(self.buffer.container.items[self.cursor])) {
+                if (has_seen_alnum) {
+                    break;
+                }
+            } else {
+                has_seen_alnum = true;
+            }
+
+            _ = self.eraseCharacterForwards();
+        }
+        return false;
+    }
+
+    pub fn eraseWordBackwards(self: *Self) bool {
+        if (self.cursor == 0) {
+            return false;
+        }
+
+        var has_seen_nonspace = false;
+        while (self.cursor > 0) {
+            if (isAsciiSpace(self.buffer.container.items[self.cursor - 1])) {
+                if (has_seen_nonspace) {
+                    break;
+                }
+            } else {
+                has_seen_nonspace = true;
+            }
+
+            _ = self.eraseCharacterBackwards();
+        }
+        return false;
+    }
+
+    pub fn capitalizeWord(self: *Self) bool {
+        self.caseChangeWord(.Capital);
+        return false;
+    }
+
+    pub fn lowercaseWord(self: *Self) bool {
+        self.caseChangeWord(.Lower);
+        return false;
+    }
+
+    pub fn uppercaseWord(self: *Self) bool {
+        self.caseChangeWord(.Upper);
+        return false;
+    }
+
+    pub fn killLine(self: *Self) bool {
+        if (self.cursor == 0) {
+            return false;
+        }
+
+        for (0..self.cursor) |_| {
+            self.removeAtIndex(0);
+        }
+        self.cursor = 0;
+        self.inline_search_cursor = 0;
+        self.refresh_needed = true;
+        return false;
+    }
+
+    fn caseChangeWord(self: *Self, op: enum { Lower, Upper, Capital }) void {
+        while (self.cursor < self.buffer.size() and !isAsciiAlnum(self.buffer.container.items[self.cursor])) {
+            self.cursor += 1;
+        }
+        const start = self.cursor;
+        while (self.cursor < self.buffer.size() and isAsciiAlnum(self.buffer.container.items[self.cursor])) {
+            if (op == .Upper or (op == .Capital and self.cursor == start)) {
+                self.buffer.container.items[self.cursor] = std.ascii.toUpper(@intCast(self.buffer.container.items[self.cursor]));
+            } else {
+                self.buffer.container.items[self.cursor] = std.ascii.toLower(@intCast(self.buffer.container.items[self.cursor]));
+            }
+            self.cursor += 1;
+        }
+
+        self.refresh_needed = true;
+        self.chars_touched_in_the_middle += 1;
     }
 };
