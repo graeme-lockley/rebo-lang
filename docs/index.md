@@ -362,7 +362,7 @@ The operators `<<` and `>>` are used to append and prepend a value onto to a seq
 [1, 2, 3]
 ```
 
-As can be seen, the operators do not modify the sequence but return a new sequence. The operators '>!' and '<!' are used to modify the sequence.
+As can be seen, the operators do not modify the sequence but return a new sequence. The operators `>!` and `<!` are used to modify the sequence.
 
 ```rebo-repl
 > let seq = [1, 2, 3]
