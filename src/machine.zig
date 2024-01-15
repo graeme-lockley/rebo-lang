@@ -1188,6 +1188,8 @@ fn addRebo(state: *MS.MemoryState) !void {
     const reboOS = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
     try value.v.RecordKind.setU8(state.stringPool, "os", reboOS);
 
+    try reboOS.v.RecordKind.setU8(state.stringPool, "fs.close", try state.newBuiltinValue(@import("builtins/close.zig").close));
+    try reboOS.v.RecordKind.setU8(state.stringPool, "fs.cwd", try state.newBuiltinValue(@import("builtins/cwd.zig").cwd));
     try reboOS.v.RecordKind.setU8(state.stringPool, "fs.exists", try state.newBuiltinValue(@import("builtins/import.zig").exists));
 
     var client = try state.allocator.create(std.http.Client);
@@ -1209,8 +1211,6 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
 
     try state.openScope();
 
-    try addBuiltin(&state, "close", &Builtins.close);
-    try addBuiltin(&state, "cwd", &Builtins.cwd);
     try addBuiltin(&state, "eval", &Builtins.eval);
     try addBuiltin(&state, "exit", &Builtins.exit);
     try addBuiltin(&state, "gc", &Builtins.gc);

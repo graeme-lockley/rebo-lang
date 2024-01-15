@@ -1,3 +1,5 @@
+let close = rebo.os["fs.close"]
+let cwd = rebo.os["fs.cwd"]
 let fexists = rebo.os["fs.exists"]
 
 let map = import("std").map
