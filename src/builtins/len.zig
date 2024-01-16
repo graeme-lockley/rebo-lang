@@ -19,7 +19,8 @@ test "len" {
     try Main.expectExprEqual("len({a: 1})", "1");
     try Main.expectExprEqual("len({a: 1, b: 2, c: 3})", "3");
 
-    try Main.expectExprEqual("len(scope())", "21");
+    try Main.expectExprEqual("len(scope())", "0");
+    try Main.expectExprEqual("let x = 10 ; len(scope())", "1");
 
     try Main.expectExprEqual("len([])", "0");
     try Main.expectExprEqual("len([1])", "1");

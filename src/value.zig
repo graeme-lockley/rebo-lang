@@ -523,7 +523,7 @@ pub const ScopeValue = struct {
     }
 
     pub fn count(self: *const ScopeValue) usize {
-        return self.values.count() + if (self.parent != null) self.parent.?.v.ScopeKind.count() else 0;
+        return self.values.count();
     }
 
     pub inline fn keyIterator(self: *const ScopeValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
