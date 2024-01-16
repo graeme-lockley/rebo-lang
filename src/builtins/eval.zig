@@ -41,9 +41,9 @@ pub fn eval(machine: *Helper.Machine, numberOfArgs: usize) !void {
 test "eval" {
     const Main = @import("./../main.zig");
 
-    try Main.expectExprEqual("eval(\"\")", "()");
+    try Main.expectExprEqual("rebo.lang.eval(\"\")", "()");
 
-    try Main.expectExprEqual("eval(\"1\")", "1");
-    try Main.expectExprEqual("eval(\"let x = 10; x + 1\")", "11");
-    try Main.expectExprEqual("eval(\"let add(a, b) a + b; add\")(1, 2)", "3");
+    try Main.expectExprEqual("rebo.lang.eval(\"1\")", "1");
+    try Main.expectExprEqual("rebo.lang.eval(\"let x = 10; x + 1\")", "11");
+    try Main.expectExprEqual("rebo.lang.eval(\"let add(a, b) a + b; add\")(1, 2)", "3");
 }

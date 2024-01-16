@@ -22,15 +22,15 @@ pub fn int(machine: *Helper.Machine, numberOfArgs: usize) !void {
 test "int" {
     const Main = @import("./../main.zig");
 
-    try Main.expectExprEqual("int(\"\")", "()");
-    try Main.expectExprEqual("int(\"123\")", "123");
-    try Main.expectExprEqual("int(\"123\", 0, 8)", "83");
+    try Main.expectExprEqual("rebo.lang.int(\"\")", "()");
+    try Main.expectExprEqual("rebo.lang.int(\"123\")", "123");
+    try Main.expectExprEqual("rebo.lang.int(\"123\", 0, 8)", "83");
 
-    try Main.expectExprEqual("int(\"xxx\", 0, 8)", "0");
+    try Main.expectExprEqual("rebo.lang.int(\"xxx\", 0, 8)", "0");
 
-    try Main.expectExprEqual("int('1')", "49");
-    try Main.expectExprEqual("int('\\n')", "10");
-    try Main.expectExprEqual("int('\\\\')", "92");
-    try Main.expectExprEqual("int('\\'')", "39");
-    try Main.expectExprEqual("int('\\x13')", "13");
+    try Main.expectExprEqual("rebo.lang.int('1')", "49");
+    try Main.expectExprEqual("rebo.lang.int('\\n')", "10");
+    try Main.expectExprEqual("rebo.lang.int('\\\\')", "92");
+    try Main.expectExprEqual("rebo.lang.int('\\'')", "39");
+    try Main.expectExprEqual("rebo.lang.int('\\x13')", "13");
 }

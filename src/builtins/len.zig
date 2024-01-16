@@ -15,18 +15,18 @@ pub fn len(machine: *Helper.Machine, numberOfArgs: usize) !void {
 test "len" {
     const Main = @import("./../main.zig");
 
-    try Main.expectExprEqual("len({})", "0");
-    try Main.expectExprEqual("len({a: 1})", "1");
-    try Main.expectExprEqual("len({a: 1, b: 2, c: 3})", "3");
+    try Main.expectExprEqual("rebo.lang.len({})", "0");
+    try Main.expectExprEqual("rebo.lang.len({a: 1})", "1");
+    try Main.expectExprEqual("rebo.lang.len({a: 1, b: 2, c: 3})", "3");
 
-    try Main.expectExprEqual("len(scope())", "0");
-    try Main.expectExprEqual("let x = 10 ; len(scope())", "1");
+    try Main.expectExprEqual("rebo.lang.len(rebo.lang.scope())", "0");
+    try Main.expectExprEqual("let x = 10 ; rebo.lang.len(rebo.lang.scope())", "1");
 
-    try Main.expectExprEqual("len([])", "0");
-    try Main.expectExprEqual("len([1])", "1");
-    try Main.expectExprEqual("len([1, 2, 3])", "3");
+    try Main.expectExprEqual("rebo.lang.len([])", "0");
+    try Main.expectExprEqual("rebo.lang.len([1])", "1");
+    try Main.expectExprEqual("rebo.lang.len([1, 2, 3])", "3");
 
-    try Main.expectExprEqual("len(\"\")", "0");
-    try Main.expectExprEqual("len(\"x\")", "1");
-    try Main.expectExprEqual("len(\"hello\")", "5");
+    try Main.expectExprEqual("rebo.lang.len(\"\")", "0");
+    try Main.expectExprEqual("rebo.lang.len(\"x\")", "1");
+    try Main.expectExprEqual("rebo.lang.len(\"hello\")", "5");
 }

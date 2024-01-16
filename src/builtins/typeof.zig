@@ -11,14 +11,14 @@ pub fn typeof(machine: *Helper.Machine, numberOfArgs: usize) !void {
 test "typeof" {
     const Main = @import("./../main.zig");
 
-    try Main.expectExprEqual("typeof(true)", "\"Bool\"");
-    try Main.expectExprEqual("typeof(len)", "\"Function\"");
-    try Main.expectExprEqual("typeof('x')", "\"Char\"");
-    try Main.expectExprEqual("typeof(fn() = ())", "\"Function\"");
-    try Main.expectExprEqual("typeof(1.0)", "\"Float\"");
-    try Main.expectExprEqual("typeof(1)", "\"Int\"");
-    try Main.expectExprEqual("typeof([])", "\"Sequence\"");
-    try Main.expectExprEqual("typeof({})", "\"Record\"");
-    try Main.expectExprEqual("typeof(())", "\"Unit\"");
-    try Main.expectExprEqual("typeof()", "\"Unit\"");
+    try Main.expectExprEqual("rebo.lang.typeof(true)", "\"Bool\"");
+    try Main.expectExprEqual("rebo.lang.typeof(rebo.lang.len)", "\"Function\"");
+    try Main.expectExprEqual("rebo.lang.typeof('x')", "\"Char\"");
+    try Main.expectExprEqual("rebo.lang.typeof(fn() = ())", "\"Function\"");
+    try Main.expectExprEqual("rebo.lang.typeof(1.0)", "\"Float\"");
+    try Main.expectExprEqual("rebo.lang.typeof(1)", "\"Int\"");
+    try Main.expectExprEqual("rebo.lang.typeof([])", "\"Sequence\"");
+    try Main.expectExprEqual("rebo.lang.typeof({})", "\"Record\"");
+    try Main.expectExprEqual("rebo.lang.typeof(())", "\"Unit\"");
+    try Main.expectExprEqual("rebo.lang.typeof()", "\"Unit\"");
 }

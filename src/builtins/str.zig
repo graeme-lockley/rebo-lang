@@ -17,11 +17,11 @@ pub fn str(machine: *Helper.Machine, numberOfArgs: usize) !void {
 test "str" {
     const Main = @import("./../main.zig");
 
-    try Main.expectExprEqual("str(1)", "\"1\"");
-    try Main.expectExprEqual("str(1, true)", "\"1\"");
-    try Main.expectExprEqual("str(1, false)", "\"1\"");
+    try Main.expectExprEqual("rebo.lang.str(1)", "\"1\"");
+    try Main.expectExprEqual("rebo.lang.str(1, true)", "\"1\"");
+    try Main.expectExprEqual("rebo.lang.str(1, false)", "\"1\"");
 
-    try Main.expectExprEqual("str('a')", "\"'a'\"");
-    try Main.expectExprEqual("str('a', true)", "\"'a'\"");
-    try Main.expectExprEqual("str('a', false)", "\"a\"");
+    try Main.expectExprEqual("rebo.lang.str('a')", "\"'a'\"");
+    try Main.expectExprEqual("rebo.lang.str('a', true)", "\"'a'\"");
+    try Main.expectExprEqual("rebo.lang.str('a', false)", "\"a\"");
 }

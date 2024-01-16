@@ -28,10 +28,10 @@ pub fn keys(machine: *Helper.Machine, numberOfArgs: usize) !void {
 test "int" {
     const Main = @import("./../main.zig");
 
-    try Main.expectExprEqual("keys({})", "[]");
-    try Main.expectExprEqual("keys({a: 1})", "[\"a\"]");
-    try Main.expectExprEqual("len(keys({a: 1, b: 2}))", "2");
+    try Main.expectExprEqual("rebo.lang.keys({})", "[]");
+    try Main.expectExprEqual("rebo.lang.keys({a: 1})", "[\"a\"]");
+    try Main.expectExprEqual("rebo.lang.len(rebo.lang.keys({a: 1, b: 2}))", "2");
 
-    try Main.expectExprEqual("keys(scope())", "[]");
-    try Main.expectExprEqual("let x = 10 ; keys(scope())", "[\"x\"]");
+    try Main.expectExprEqual("rebo.lang.keys(rebo.lang.scope())", "[]");
+    try Main.expectExprEqual("let x = 10 ; rebo.lang.keys(rebo.lang.scope())", "[\"x\"]");
 }

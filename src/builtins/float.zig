@@ -15,9 +15,9 @@ pub fn float(machine: *Helper.Machine, numberOfArgs: usize) !void {
 test "float" {
     const Main = @import("./../main.zig");
 
-    try Main.expectExprEqual("float(\"\")", "()");
-    try Main.expectExprEqual("float(\"1.23\")", "1.23");
-    try Main.expectExprEqual("float(\"1.23\", 0)", "1.23");
+    try Main.expectExprEqual("rebo.lang.float(\"\")", "()");
+    try Main.expectExprEqual("rebo.lang.float(\"1.23\")", "1.23");
+    try Main.expectExprEqual("rebo.lang.float(\"1.23\", 0)", "1.23");
 
-    try Main.expectExprEqual("float(\"xxx\", 0)", "0");
+    try Main.expectExprEqual("rebo.lang.float(\"xxx\", 0)", "0");
 }

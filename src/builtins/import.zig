@@ -186,5 +186,5 @@ pub fn exists(machine: *Helper.Machine, numberOfArgs: usize) !void {
 test "import" {
     const Main = @import("./../main.zig");
 
-    try Main.expectExprEqual("import(\"./test/simple.rebo\").x", "10");
+    try Main.expectExprEqual("rebo.lang.import(\"./test/simple.rebo\").x", "10");
 }

@@ -268,8 +268,8 @@ test "assignment expression" {
     try expectExprEqual("(fn (x = 0) = { x := x + 1 })(10)", "11");
     try expectExprEqual("let count = 0; let inc() = count := count + 1; inc(); inc(); inc()", "3");
 
-    try expectExprEqual("let count = 0; scope()[\"count\"] := 10", "10");
-    try expectError("let count = 0; scope()[\"counting\"] := 10");
+    try expectExprEqual("let count = 0; rebo.lang.scope()[\"count\"] := 10", "10");
+    try expectError("let count = 0; rebo.lang.scope()[\"counting\"] := 10");
 
     try expectExprEqual("let x = {a: 10, b: 20}; x.a := x.a + 1", "11");
     try expectExprEqual("let x = {a: 10, b: 20}; x.a := x.a + 1; [x.a, x.b]", "[11, 20]");
@@ -347,8 +347,8 @@ test "index value" {
     try expectExprEqual("{a: 10, b: 20}[\"b\"]", "20");
     try expectExprEqual("{a: 10, b: 20}[\"c\"]", "()");
 
-    try expectExprEqual("let x = 10 ; scope()[\"x\"]", "10");
-    try expectExprEqual("let x = 10 ; scope()[\"y\"]", "()");
+    try expectExprEqual("let x = 10 ; rebo.lang.scope()[\"x\"]", "10");
+    try expectExprEqual("let x = 10 ; rebo.lang.scope()[\"y\"]", "()");
 
     try expectExprEqual("[1, 2, 3][0]", "1");
     try expectExprEqual("[1, 2, 3][2]", "3");
@@ -418,7 +418,7 @@ test "literal record" {
     try expectExprEqual("{a: 10, b: ()}", "{a: 10}");
     try expectExprEqual("{a: 10, b: 20, a: ()}", "{b: 20}");
 
-    try expectExprEqual("len({a: 10, ...{b: 20}})", "2");
+    try expectExprEqual("rebo.lang.len({a: 10, ...{b: 20}})", "2");
     try expectExprEqual("{a: 10, ...{b: 20}}.a", "10");
     try expectExprEqual("{a: 10, ...{b: 20}}.b", "20");
 

@@ -102,7 +102,10 @@ $ rebo show-exe.rebo
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `fs.exists` | fn (`name: String`) | Returns `true` if the object `name` exists on the file system.  Note that this function does not discriminate between files or directories and whether or not the object is readable. |
+| `close` | fn (`fd: File \| Stream`) | Closes the file descriptor `fd`. |
+| `cwd` | fn () | Returns the current working directory as a string. |
+| `exit` | fn (`code: Int`) | Exits the current process with the exit code `code`. |
+| `fexists` | fn (`name: String`) | Returns `true` if the object `name` exists on the file system.  Note that this function does not discriminate between files or directories and whether or not the object is readable. |
 
 ### eval(script, options = {})
 
