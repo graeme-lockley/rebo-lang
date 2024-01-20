@@ -11,5 +11,6 @@ let dir(path) {
   let lastSlash = path |> Str.trimRight(fn(c) c == '/') |> _lastSlash()
 
   if lastSlash == () -> "."
+   | lastSlash == 0 -> "/"
    | path[0:lastSlash]
 }
