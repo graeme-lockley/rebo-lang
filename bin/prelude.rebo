@@ -112,7 +112,8 @@ let import(name) {
          rebo.imports[name]
       } | typeof(current) == "Record" -> current
       | raise {
-            kind: "CyclicImport"
+            kind: "CyclicImport",
+            name: name
          }
    }
 
@@ -120,13 +121,9 @@ let import(name) {
       if name[0] == '/' || callerScope == () || callerScope["__FILE"] == () -> realRawImport(name)
        | realRawImport(dir(callerScope["__FILE"]) + "/" + name)
 
-   let indexOfDot = lastIndexOf(name, '.')
-   let indexOfSlash = lastIndexOf(name, '/')
-
-   if indexOfDot != () || indexOfSlash != () -> rawImport(name)
+   if lastIndexOf(name, '.') != () || lastIndexOf(name, '/') != () -> rawImport(name)
     | { 
-      let indexOfReboExeSlash = lastIndexOf(rebo.exe, '/')
-      let reboExeHome = rebo.exe[0:indexOfReboExeSlash ? len(rebo.exe)]
+      let reboExeHome = dir(rebo.exe)
       
       if fexists(reboExeHome + "/../lib/" + name + ".rebo") -> rawImport(reboExeHome + "/../lib/" + name + ".rebo")
        | rawImport(reboExeHome + "/../../lib/" + name + ".rebo")
