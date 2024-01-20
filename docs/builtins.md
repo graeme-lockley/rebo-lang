@@ -14,10 +14,10 @@ Redefining `rebo` is not recommended, but, as illustrated above, it is possible.
 On startup `rebo` contains a number of categories of values of varying types:
 
 ```rebo-repl
-> keys(rebo) |> Std.sort()
+> keys(rebo) |> sort()
 [ "args", "env", "exe", "imports", "lang", "os" ]
 
-> keys(rebo) |> Std.sort() |> Std.map(fn(k) [k, typeof(rebo[k])])
+> keys(rebo) |> sort() |> map(fn(k) [k, typeof(rebo[k])])
 [["args", "Sequence"], ["env", "Record"], ["exe", "String"], ["imports", "Record"], ["lang", "Record"], ["os", "Record"]]
 ```
 
@@ -43,7 +43,7 @@ $ rebo show-args.rebo hello world
 $ cat show-env.rebo 
 let Std = import("std")
 
-keys(rebo.env) |> Std.sort() |> Std.each(fn(k) println(k, ": ", rebo.env[k]))
+keys(rebo.env) |> sort() |> each(fn(k) println(k, ": ", rebo.env[k]))
 
 $ rebo show-env.rebo 
 CPPFLAGS: -I/usr/local/opt/llvm/include

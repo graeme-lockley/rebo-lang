@@ -1,7 +1,6 @@
 #!env rebo
 
 let CLI = import("cli")
-let Std = import("std")
 let Str = import("str")
 let Test = import("test")
 
@@ -22,7 +21,7 @@ if len(cli.args) == 0 ->
 
 let test = Test.harness("suite")
 
-cli.args|> Std.each(fn(name) 
+cli.args|> each(fn(name) 
    if Str.endsWith?(name, ".test.rebo") -> Suite.process(name, test, cli.opts.silent)
     | Str.endsWith?(name, ".md") -> Markdown.process(name, test, cli.opts.silent)
     | println("Unknown file type: " + name + " - ignoring")

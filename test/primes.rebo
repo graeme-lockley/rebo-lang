@@ -1,18 +1,3 @@
-let range(min = 10, max) = {
-  if max == () -> {
-    max := min
-    min := 0
-  }
-
-  let result = []
-  while min < max -> {
-    result := result + [min]
-    min := min + 1
-  }
-
-  result
-}
-
 let prime? = import("prime.rebo").prime?
 
-let primes(n) = import("../lib/std.rebo").filter(range(n), prime?)
+let primes(n) = range(n) |> filter(prime?)

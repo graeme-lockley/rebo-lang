@@ -1,5 +1,4 @@
 let JSON = import("json")
-let Std = import("std")
 
 # `get` makes a GET request to the given URL and returns a response object.
 let get(url, headers = {}) = _bodyLess(url, "GET", headers)
@@ -97,7 +96,7 @@ let _readAll(response, bytes) {
       content := read(response, bytes)
    }
 
-   fullResponse |> Std.join("")
+   fullResponse |> join("")
 }
 
 let encode(content) =

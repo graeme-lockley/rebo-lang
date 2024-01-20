@@ -1,8 +1,7 @@
-let Std = import("std")
 let Str = import("str")
 
 let _lastSlash(path) = 
-  Std.lastIndexOf(path, '/')
+  lastIndexOf(path, '/')
 
 # Returns the directory part of a path. If the path ends with a slash, the
 # directory is the path itself. If the path does not contain a slash, the

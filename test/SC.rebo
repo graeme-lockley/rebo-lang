@@ -1,5 +1,3 @@
-let {any, filter, map, split, sum} = import("std")
-
 let add(v = "") {
   let tokens = 
     if v == "" -> 

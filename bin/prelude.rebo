@@ -130,6 +130,12 @@ let import(name) {
    }
 }
 
+# Default the displaying of imports to true.
 rebo.lang["import.verbose"] := true
 
-let map = import("std").map
+# Add all values in "std" to the top-level scope.  The consequence is any 
+# declaration in "std" will be shadowed by a declaration in the top-level 
+# scope.
+keys(import("std")) |> import("std").each(fn(key) {
+   rebo.lang["scope.bind!"](rebo.lang["scope.super"](scope()), key, import("std")[key])
+})

@@ -1,4 +1,3 @@
-let { join, map } = import("std")
 let Str = import("str")
 
 let escape(text) {

@@ -1,5 +1,3 @@
-let Std = import("std")
-
 let harness(title) = {
   let tests = []
 
@@ -38,15 +36,13 @@ let _test?(t) = t.passed? != ()
 let _reportSuite(title, silent, tests, totals, startTime) {
   let endTime = milliTimestamp() - startTime
 
-  let ansi = Std.ansi
-
-  let actuals = tests |> Std.filter(_test?)
+  let actuals = tests |> filter(_test?)
 
   if !silent && len(actuals) > 0 -> {
     let lenActuals = len(actuals)
     println(ansi.foreground.lightGray, "run ", lenActuals, " test", if lenActuals == 1 -> "" | "s", " from ", title, " (", endTime, "ms)", ansi.control.reset);
 
-    actuals |> Std.each(fn(t) = {
+    actuals |> each(fn(t) = {
       let name = t.name
       let passed = t.passed?
       let result = t.result
@@ -66,13 +62,13 @@ let _reportSuite(title, silent, tests, totals, startTime) {
 
   let suiteTotals = {
     total: len(actuals),
-    passed: len(Std.filter(actuals, fn(test) test.passed?)),
-    failed: len(Std.filter(actuals, fn(test) !test.passed?))
+    passed: len(filter(actuals, fn(test) test.passed?)),
+    failed: len(filter(actuals, fn(test) !test.passed?))
   }
 
   tests 
-    |> Std.filter(_suite?) 
-    |> Std.each(fn(suite) _addTotal!(suiteTotals, suite.report(title, silent)))
+    |> filter(_suite?) 
+    |> each(fn(suite) _addTotal!(suiteTotals, suite.report(title, silent)))
 
   if totals -> {
     println()

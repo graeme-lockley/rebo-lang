@@ -1,5 +1,3 @@
-let { each, split } = import("std")
-
 let mimeTypes = {
    blob: "application/octet-stream",
 

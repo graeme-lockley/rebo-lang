@@ -1,8 +1,7 @@
 let CLI = import("cli")
-let Std = import("std")
 
 let _parse(args) =
-  ["/bin/rebo", "main.rebo"] + Std.split(args, " ") |> Std.filter(fn(s) s != "") |> CLI.parseArgs()
+  ["/bin/rebo", "main.rebo"] + split(args, " ") |> filter(fn(s) s != "") |> CLI.parseArgs()
 
 let run(suite) {
   let argsEq(args, expected) =

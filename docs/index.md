@@ -219,7 +219,7 @@ fn(x)
 A function can also be declared with many parameters which are then passed as a sequence.
 
 ```rebo-repl
-> let add(...args) = Std.reduce(args, fn(a, b) = a + b, 0)
+> let add(...args) = reduce(args, fn(a, b) = a + b, 0)
 fn(...args)
 
 > add()
@@ -275,7 +275,7 @@ fn(n)
 > factorial(20)
 2432902008176640000
 
-> Std.range(11) |> Std.map(factorial)
+> range(11) |> map(factorial)
 [1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800]
 ```
 

@@ -1,5 +1,3 @@
-let Std = import("../lib/std.rebo")
-
 let prime?(n = 2) = _primes(n)[n]
 
 let primes(n = 2) {
@@ -19,7 +17,7 @@ let primes(n = 2) {
 }
 
 let _primes(n = 2) {
-  let primes = Std.range(0, n + 1, 1, fn(n) true)
+  let primes = range(0, n + 1, 1, fn(n) true)
 
   let outer = 2
   while outer * outer <= n -> {

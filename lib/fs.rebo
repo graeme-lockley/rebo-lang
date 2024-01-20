@@ -1,5 +1,3 @@
-let Std = import("std")
-
 # The default options for the `files` function.  The `recursive?` option is 
 # whether or not to recursively search the directory.  The `predicate` option
 # accepts a file path and returns whether or not to include the file in the
@@ -30,7 +28,7 @@ let files(path, opt = defaultFiles) {
 }
 
 let _files(path, opt, result) {
-   ls(path) |> Std.each(fn(item) {
+   ls(path) |> each(fn(item) {
       let fullPath = path + "/" + item.name
    
       if item.kind == "directory" && opt.recursive? && opt.dirPredicate(fullPath) ->
@@ -61,7 +59,7 @@ let readFile(path, bufferSize = 1024) {
 # Returns the contents of the given file as a list of lines.  If the file
 # cannot be opened, the function raises an error.
 let lines(path) =
-   readFile(path) |> Std.split('\n')
+   readFile(path) |> split('\n')
 
 # Writes the given content to the given file.  If the file cannot be opened,
 # the function raises an error.

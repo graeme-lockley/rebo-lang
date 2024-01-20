@@ -31,8 +31,8 @@ Idiomatically, rather than returning a string as the exception message, we retur
 > head([1, 2, 3]) catch _ -> ()
 1
 
-> head([]) catch { kind: "EmptyList", stack } -> stack |> Std.map(fn (x) { ...x, file: "foo.rebo" })
-[{ from: { offset: 39, line: 2, column: 18 }, to: { offset: 66, line: 3, column: 20 }, file: "foo.rebo"}, { from: { offset: 162, line: 7, column: 19 }, to: { offset: 170, line: 7, column: 26 }, file: "foo.rebo" }]
+> head([]) catch { kind: "EmptyList", stack } -> stack |> map(fn (x) { ...x, file: "foo.rebo" })
+[{to: {line: 4, column: 19, offset: 66}, from: {line: 2, column: 18, offset: 39}, file: "foo.rebo"}, {to: {line: 8, column: 6, offset: 170}, from: {line: 6, column: 43, offset: 162}, file: "foo.rebo"}]
 ```
 
 In the last example I change all of the file names in the stack to `foo.rebo` as the actual name is fully qualified and will differ from system to system depending on where this file is located.
