@@ -1144,10 +1144,6 @@ inline fn whilee(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!voi
     try machine.createVoidValue();
 }
 
-fn addBuiltin(state: *MS.MemoryState, name: []const u8, body: V.BuiltinFunctionType) !void {
-    try state.addU8ToScope(name, try state.newBuiltinValue(body));
-}
-
 fn addRebo(state: *MS.MemoryState) !void {
     var args = try std.process.argsAlloc(state.allocator);
     defer std.process.argsFree(state.allocator, args);
@@ -1215,6 +1211,7 @@ fn addRebo(state: *MS.MemoryState) !void {
     try reboOS.v.RecordKind.setU8(state.stringPool, "ls", try state.newBuiltinValue(@import("builtins/ls.zig").ls));
     try reboOS.v.RecordKind.setU8(state.stringPool, "milliTimestamp", try state.newBuiltinValue(@import("builtins/milliTimestamp.zig").milliTimestamp));
     try reboOS.v.RecordKind.setU8(state.stringPool, "open", try state.newBuiltinValue(@import("builtins/open.zig").open));
+    try reboOS.v.RecordKind.setU8(state.stringPool, "path.absolute", try state.newBuiltinValue(@import("builtins/import.zig").absolute));
     try reboOS.v.RecordKind.setU8(state.stringPool, "print", try state.newBuiltinValue(@import("builtins/print.zig").print));
     try reboOS.v.RecordKind.setU8(state.stringPool, "println", try state.newBuiltinValue(@import("builtins/print.zig").println));
     try reboOS.v.RecordKind.setU8(state.stringPool, "read", try state.newBuiltinValue(@import("builtins/read.zig").read));

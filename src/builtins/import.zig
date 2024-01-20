@@ -183,6 +183,18 @@ pub fn exists(machine: *Helper.Machine, numberOfArgs: usize) !void {
     try machine.memoryState.pushBoolValue(fexists(fileName));
 }
 
+pub fn absolute(machine: *Helper.Machine, numberOfArgs: usize) !void {
+    const fileName = (try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
+
+    const absolutePath = std.fs.cwd().realpathAlloc(machine.memoryState.allocator, fileName) catch |err| {
+        const record = try Helper.pushOsError(machine, "absolute", err);
+        try record.v.RecordKind.setU8(machine.memoryState.stringPool, "file", try machine.memoryState.newStringValue(fileName));
+        return Helper.Errors.RuntimeErrors.InterpreterError;
+    };
+
+    try machine.memoryState.pushOwnedStringValue(absolutePath);
+}
+
 test "import" {
     const Main = @import("./../main.zig");
 
