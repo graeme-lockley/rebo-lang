@@ -17,16 +17,10 @@ fn booleanOption(stringPool: *Helper.StringPool, options: *Helper.Value, name: [
 
 pub fn eval(machine: *Helper.Machine, numberOfArgs: usize) !void {
     const code = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
-    const options = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.UnitKind });
+    const scope = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{Helper.ValueValue.ScopeKind});
 
-    const persistent = try booleanOption(machine.memoryState.stringPool, options, "persistent", false);
-
-    if (!persistent) {
-        try machine.memoryState.openScope();
-    }
-    defer if (!persistent) {
-        machine.memoryState.restoreScope();
-    };
+    try machine.memoryState.openScopeUsing(scope);
+    defer machine.memoryState.restoreScope();
 
     machine.execute("eval", code.v.StringKind.slice()) catch {
         const record = machine.topOfStack().?;
@@ -41,9 +35,9 @@ pub fn eval(machine: *Helper.Machine, numberOfArgs: usize) !void {
 test "eval" {
     const Main = @import("./../main.zig");
 
-    try Main.expectExprEqual("rebo.lang.eval(\"\")", "()");
+    try Main.expectExprEqual("rebo.lang.eval(\"\", rebo.lang.scope())", "()");
 
-    try Main.expectExprEqual("rebo.lang.eval(\"1\")", "1");
-    try Main.expectExprEqual("rebo.lang.eval(\"let x = 10; x + 1\")", "11");
-    try Main.expectExprEqual("rebo.lang.eval(\"let add(a, b) a + b; add\")(1, 2)", "3");
+    try Main.expectExprEqual("rebo.lang.eval(\"1\", rebo.lang.scope())", "1");
+    try Main.expectExprEqual("rebo.lang.eval(\"let x = 10; x + 1\", rebo.lang.scope())", "11");
+    try Main.expectExprEqual("rebo.lang.eval(\"let add(a, b) a + b; add\", rebo.lang.scope())(1, 2)", "3");
 }
