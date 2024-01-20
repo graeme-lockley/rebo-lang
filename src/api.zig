@@ -3,8 +3,6 @@ const std = @import("std");
 const Machine = @import("./machine.zig");
 const V = @import("./value.zig");
 
-const importFile = @import("./builtins/import.zig").importFile;
-
 pub const API = struct {
     machine: Machine.Machine,
 
@@ -25,7 +23,22 @@ pub const API = struct {
     }
 
     pub fn import(self: *API, path: []const u8) !void {
-        try importFile(&self.machine, path);
+        var buffer = std.ArrayList(u8).init(self.allocator());
+        defer buffer.deinit();
+
+        try buffer.appendSlice("import(\"");
+        for (path) |c| {
+            switch (c) {
+                10 => try buffer.appendSlice("\\n"),
+                34 => try buffer.appendSlice("\\\""),
+                92 => try buffer.appendSlice("\\\\"),
+                0...9, 11...31 => try std.fmt.format(buffer.writer(), "\\x{d};", .{c}),
+                else => try buffer.append(c),
+            }
+        }
+        try buffer.appendSlice("\")");
+
+        try self.machine.execute(path, buffer.items);
     }
 
     pub fn script(self: *API, text: []const u8) !void {

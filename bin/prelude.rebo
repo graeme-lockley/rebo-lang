@@ -85,6 +85,7 @@ let import(name) {
       let current = rebo.imports[name]
 
       if current == () -> {
+         let startTime = milliTimestamp()
          rebo.imports[name] := true
 
          let processFile() {
@@ -94,7 +95,7 @@ let import(name) {
             rebo.lang.eval(script, newScope)
             
             let bindings = {}
-            newScope |> keys() |> each(fn(key) { bindings[key] := newScope[key] })
+            newScope |> keys() |> each(fn(key) { if key[0] != '_' -> bindings[key] := newScope[key] })
 
             bindings
          }
@@ -103,6 +104,10 @@ let import(name) {
             rebo.imports[name] := ()
             raise e
          }
+
+         let endTime = milliTimestamp()
+
+         if rebo.lang["import.verbose"] -> println("\x27;[37m", "Imported ", name, " (", endTime - startTime, "ms)", "\x27;[0m")
 
          rebo.imports[name]
       } | typeof(current) == "Record" -> current
@@ -127,5 +132,7 @@ let import(name) {
        | rawImport(reboExeHome + "/../../lib/" + name + ".rebo")
    }
 }
+
+rebo.lang["import.verbose"] := true
 
 let map = import("std").map

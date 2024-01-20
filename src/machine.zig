@@ -1176,7 +1176,6 @@ fn addRebo(state: *MS.MemoryState) !void {
     try value.v.RecordKind.setU8(state.stringPool, "lang", reboLang);
     try reboLang.v.RecordKind.setU8(state.stringPool, "eval", try state.newBuiltinValue(@import("builtins/eval.zig").eval));
     try reboLang.v.RecordKind.setU8(state.stringPool, "gc", try state.newBuiltinValue(@import("builtins/gc.zig").gc));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "import", try state.newBuiltinValue(@import("builtins/import.zig").import));
     try reboLang.v.RecordKind.setU8(state.stringPool, "int", try state.newBuiltinValue(@import("builtins/int.zig").int));
     try reboLang.v.RecordKind.setU8(state.stringPool, "float", try state.newBuiltinValue(@import("builtins/float.zig").float));
     try reboLang.v.RecordKind.setU8(state.stringPool, "keys", try state.newBuiltinValue(@import("builtins/keys.zig").keys));
