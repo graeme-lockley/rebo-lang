@@ -268,6 +268,12 @@ pub const MemoryState = struct {
         try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, outerScope) }));
     }
 
+    pub inline fn openScopeUsing(self: *MemoryState, outerScope: *V.Value) !void {
+        if (outerScope.v != V.ValueKind.ScopeKind) unreachable;
+
+        try self.scopes.append(outerScope);
+    }
+
     pub inline fn restoreScope(self: *MemoryState) void {
         _ = self.scopes.pop();
     }
