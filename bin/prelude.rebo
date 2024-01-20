@@ -1,7 +1,7 @@
-let eval = rebo.lang.eval
 let import = rebo.lang.import
 let int = rebo.lang.int
 let float = rebo.lang.float
+let gc = rebo.lang.gc
 let keys = rebo.lang.keys
 let len = rebo.lang.len
 let scope = rebo.lang.scope
@@ -11,7 +11,7 @@ let typeof = rebo.lang.typeof
 let close = rebo.os.close
 let cwd = rebo.os.cwd
 let exit = rebo.os.exit
-let fexists = rebo.os.exists
+let fexists = rebo.os.fexists
 let listen = rebo.os.listen
 let ls = rebo.os.ls
 let milliTimestamp = rebo.os.milliTimestamp
@@ -21,5 +21,111 @@ let println = rebo.os.println
 let read = rebo.os.read
 let socket = rebo.os.socket
 let write = rebo.os.write
+
+let eval(script, opts = {}) {
+   let callerScope = __caller_scope__
+
+   if opts.persistent -> rebo.lang.eval(script, callerScope)
+    | rebo.lang.eval(script, rebo.lang["scope.open"](callerScope))
+}
+
+let import(name) {
+   let callerScope = __caller_scope__
+
+   let lastIndexOf(xs, item) {
+      let result = ()
+      let lp = len(xs) - 1
+
+      while result == () && lp >= 0 -> {
+         if xs[lp] == item -> result := lp
+
+         lp := lp - 1
+      }
+
+      result
+   }
+
+   let dir(path) {
+      let lastSlash = lastIndexOf(path, '/')
+      
+      if lastSlash == () -> "."
+       | lastSlash == 0 -> "/"
+       | lastSlash == len(path) - 1 -> dir(path[0:lastSlash])
+       | path[0:lastSlash]
+   }
+
+   let readFile(path, bufferSize = 1024) {
+      let handle = open(path, { read: true }) catch e -> raise {...e, path: path, bufferSize: bufferSize}
+
+      let result = ""
+         
+      let buffer = read(handle, bufferSize)
+      while buffer != () -> {
+         result := result + buffer
+         buffer := read(handle, bufferSize)
+      }
+      
+      close(handle)
+
+      result
+   }
+
+   let each(xs, f) {
+      let lp = 0
+
+      while lp < len(xs) -> {
+         f(xs[lp], lp)
+
+         lp := lp + 1
+      }
+   }
+
+   let realRawImport(name) {
+      let name = rebo.os["path.absolute"](name)
+      let current = rebo.imports[name]
+
+      if current == () -> {
+         rebo.imports[name] := true
+
+         let processFile() {
+            let script = readFile(name)
+            let newScope = rebo.lang["scope.open"](callerScope)
+            rebo.lang["scope.bind!"](newScope, "__FILE", name)
+            rebo.lang.eval(script, newScope)
+            
+            let bindings = {}
+            newScope |> keys() |> each(fn(key) { bindings[key] := newScope[key] })
+
+            bindings
+         }
+         
+         rebo.imports[name] := processFile() catch e -> { 
+            rebo.imports[name] := ()
+            raise e
+         }
+
+         rebo.imports[name]
+      } | typeof(current) == "Record" -> current
+      | raise {
+            kind: "CyclicImport"
+         }
+   }
+
+   let rawImport(name) =
+      if name[0] == '/' || callerScope == () || callerScope["__FILE"] == () -> realRawImport(name)
+       | realRawImport(dir(callerScope["__FILE"]) + "/" + name)
+
+   let indexOfDot = lastIndexOf(name, '.')
+   let indexOfSlash = lastIndexOf(name, '/')
+
+   if indexOfDot != () || indexOfSlash != () -> rawImport(name)
+    | { 
+      let indexOfReboExeSlash = lastIndexOf(rebo.exe, '/')
+      let reboExeHome = rebo.exe[0:indexOfReboExeSlash ? len(rebo.exe)]
+      
+      if fexists(reboExeHome + "/../lib/" + name + ".rebo") -> rawImport(reboExeHome + "/../lib/" + name + ".rebo")
+       | rawImport(reboExeHome + "/../../lib/" + name + ".rebo")
+   }
+}
 
 let map = import("std").map
