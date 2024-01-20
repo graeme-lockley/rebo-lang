@@ -48,11 +48,10 @@ let readFile(path, bufferSize = 1024) {
    let result = ""
       
    let buffer = read(handle, bufferSize)
-   while len(buffer) == bufferSize -> {
+   while buffer != () -> {
       result := result + buffer
       buffer := read(handle, bufferSize)
    }
-   result := result + buffer
    
    close(handle)
 
