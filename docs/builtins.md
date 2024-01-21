@@ -90,6 +90,11 @@ $ rebo show-exe.rebo
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
+| `eval` | fn (`script: String`, `s: Scope`) | Evaluates the string `script` as Rebo code within scope `s` and returns the last calculated value.  Should `s` be set to the current scope, declarations will persist into the current scope and `script` will have access to all available bindings.  |
+| `float` | fn(`value: String`, `default: Any = ()`) | Converts `value` to a floating point number. Should the conversion fail then `default` is returned. | 
+| `gc` | fn () | Forces the garbage collector to run. |
+| `int` | fn (`value: Char \| String`, `default: Any = ()`, `base: Int = 10`) | Converts `value` to an integer. Should the conversion fail then `default` is returned.  Note that, when `value` is a character, the function will return the character's ASCII value. |
+| `keys` | fn (`value : Record \| Scope`) | Returns a sequence of the keys of `value`. |
 | `scope` | fn () | Returns the current scope. |
 | `scope.bind!` | fn (`s: Scope`, `name: String`, `value: Any`) | Binds `value` to `name` in the passed scope. Should `name` already have a binding then it will be updated to `value`.  This function returns `value`. |
 | `scope.open` | fn (`s: Scope`) | Opens a new scope with `s` as the parent to the result.  This function returns the new scope. |
