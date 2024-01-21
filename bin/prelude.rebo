@@ -23,7 +23,7 @@ let socket = rebo.os.socket
 let write = rebo.os.write
 
 let eval(script, opts = {}) {
-   let callerScope = __caller_scope__
+   let callerScope = opts.scope ? __caller_scope__
 
    if opts.persistent -> rebo.lang.eval(script, callerScope)
     | rebo.lang.eval(script, rebo.lang["scope.open"](callerScope))
