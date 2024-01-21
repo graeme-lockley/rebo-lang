@@ -135,7 +135,7 @@ fn runPrelude(rebo: *API) !void {
         try errorHandler(err, rebo);
     };
 
-    try rebo.machine.memoryState.openScope();
+    try rebo.machine.memoryState.pushScope();
 }
 
 fn prelude(rebo: *API) ![]u8 {

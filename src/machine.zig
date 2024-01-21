@@ -707,20 +707,20 @@ inline fn catche(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!voi
         const value = machine.memoryState.peek(0);
 
         for (e.kind.catche.cases) |case| {
-            try machine.memoryState.openScope();
+            try machine.memoryState.pushScope();
 
             const matched = try matchPattern(machine, case.pattern, value);
             if (matched) {
                 const result = evalExpr(machine, case.body);
 
-                machine.memoryState.restoreScope();
+                machine.memoryState.popScope();
                 const v = machine.memoryState.pop();
                 machine.memoryState.stack.items.len = sp;
                 try machine.memoryState.push(v);
 
                 return result;
             }
-            machine.memoryState.restoreScope();
+            machine.memoryState.popScope();
         }
         return err;
     };
@@ -746,6 +746,9 @@ inline fn exprs(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void
     if (e.kind.exprs.len == 0) {
         try machine.memoryState.pushUnitValue();
     } else {
+        // try machine.memoryState.pushScope();
+        // defer machine.memoryState.popScope();
+
         var isFirst = true;
 
         for (e.kind.exprs) |expr| {
@@ -1011,20 +1014,20 @@ inline fn match(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void
     const value = machine.memoryState.peek(0);
 
     for (e.kind.match.cases) |case| {
-        try machine.memoryState.openScope();
+        try machine.memoryState.pushScope();
 
         const matched = try matchPattern(machine, case.pattern, value);
         if (matched) {
             const result = evalExpr(machine, case.body);
 
-            machine.memoryState.restoreScope();
+            machine.memoryState.popScope();
             const v = machine.memoryState.pop();
             _ = machine.memoryState.pop();
             try machine.memoryState.push(v);
 
             return result;
         }
-        machine.memoryState.restoreScope();
+        machine.memoryState.popScope();
     }
 
     try raiseMatchError(machine, e.position, value);
