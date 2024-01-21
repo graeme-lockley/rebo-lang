@@ -390,3 +390,31 @@ let reverse(xs) =
 let count(xs, p = constant(true)) = 
     xs |> reduce(fn (acc, v) if p(v) -> acc + 1 | acc, 0)
 
+# `super` returns the super scope of the passed given scope.
+let super =
+   rebo.lang["scope.super"]
+
+# `global` returns the global scope of the passed given scope.
+let global(s = ()) =
+   if s == () -> global(scope())
+    | super(s) == () -> s
+    | global(super(s))
+
+# `module` returns the module scope of the passed given scope.  Should no scope 
+# be passed then it will return the module scope of the caller.
+let module(s = ()) =
+   if s == () -> module(__caller_scope__)
+    | super(s) == () -> ()
+    | super(super(s)) == () -> s
+    | module(super(s))
+
+# `scopeHeight` returns the height of the passed given scope.  Should no scope
+# be passed then it will return the height of the caller scope.
+let scopeHeight(s = ()) {
+   let calculate(s) =
+      if s == () -> 0
+       | super(s) == () -> 1
+       | 1 + calculate(super(s))
+
+   calculate(s ? __caller_scope__)
+}

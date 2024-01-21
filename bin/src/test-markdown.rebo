@@ -25,7 +25,7 @@ let process(path, test, silent = false) {
             }
 
             cmd := cmd + " ; " + cmdSegment
-            let result = eval(cmd) catch e -> e
+            let result = eval(cmd, { scope: global() }) catch e -> e
 
             let expected = ""
             while lp < len(code) && !Str.startsWith?(code[lp], ">") -> {

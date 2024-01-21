@@ -31,11 +31,9 @@ Idiomatically, rather than returning a string as the exception message, we retur
 > head([1, 2, 3]) catch _ -> ()
 1
 
-> head([]) catch { kind: "EmptyList", stack } -> stack |> map(fn (x) { ...x, file: "foo.rebo" })
-[{to: {line: 4, column: 19, offset: 66}, from: {line: 2, column: 18, offset: 39}, file: "foo.rebo"}, {to: {line: 8, column: 6, offset: 170}, from: {line: 6, column: 43, offset: 162}, file: "foo.rebo"}]
+> head([]) catch { kind: "EmptyList", stack } -> stack
+[{from: {offset: 39}, to: {offset: 66}, file: "repl"}, {from: {offset: 162}, to: {offset: 170}, file: "repl"}]
 ```
-
-In the last example I change all of the file names in the stack to `foo.rebo` as the actual name is fully qualified and will differ from system to system depending on where this file is located.
 
 There are some standard errors that are raised in the runtime system.  These errors are layed out through code examples.
 
