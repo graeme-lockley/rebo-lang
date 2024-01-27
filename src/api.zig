@@ -19,7 +19,7 @@ pub const API = struct {
     }
 
     pub inline fn allocator(self: *API) std.mem.Allocator {
-        return self.interpreter.memoryState.allocator;
+        return self.interpreter.runtime.allocator;
     }
 
     pub fn import(self: *API, path: []const u8) !void {
@@ -50,14 +50,14 @@ pub const API = struct {
     }
 
     pub fn stackDepth(self: *API) usize {
-        return self.interpreter.memoryState.stack.items.len;
+        return self.interpreter.runtime.stack.items.len;
     }
 
     pub fn swap(self: *API) !void {
-        const v1 = self.interpreter.memoryState.pop();
-        const v2 = self.interpreter.memoryState.pop();
-        try self.interpreter.memoryState.push(v1);
-        try self.interpreter.memoryState.push(v2);
+        const v1 = self.interpreter.runtime.pop();
+        const v2 = self.interpreter.runtime.pop();
+        try self.interpreter.runtime.push(v1);
+        try self.interpreter.runtime.push(v2);
     }
 
     pub fn call(self: *API, numberOfArgs: usize) !void {
@@ -65,10 +65,10 @@ pub const API = struct {
     }
 
     pub fn pop(self: *API) void {
-        _ = self.interpreter.memoryState.pop();
+        _ = self.interpreter.runtime.pop();
     }
 
     pub fn pushString(self: *API, s: []const u8) !void {
-        try self.interpreter.memoryState.pushStringValue(s);
+        try self.interpreter.runtime.pushStringValue(s);
     }
 };

@@ -2,14 +2,14 @@ const std = @import("std");
 const Helper = @import("./helper.zig");
 
 pub fn str(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
-    const v = if (numberOfArgs > 0) machine.memoryState.peek(numberOfArgs - 1) else machine.memoryState.unitValue.?;
+    const v = if (numberOfArgs > 0) machine.runtime.peek(numberOfArgs - 1) else machine.runtime.unitValue.?;
     const s = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.BoolKind, Helper.ValueValue.UnitKind });
 
     const style = if (s.v == Helper.ValueValue.UnitKind or s.v.BoolKind) Helper.Style.Pretty else Helper.Style.Raw;
 
-    const strValue = try v.toString(machine.memoryState.allocator, style);
+    const strValue = try v.toString(machine.runtime.allocator, style);
 
-    try machine.memoryState.pushOwnedStringValue(strValue);
+    try machine.runtime.pushOwnedStringValue(strValue);
 
     return;
 }

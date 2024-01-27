@@ -19,13 +19,13 @@ pub fn eval(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const code = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
     const scope = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{Helper.ValueValue.ScopeKind});
 
-    try machine.memoryState.openScopeUsing(scope);
-    defer machine.memoryState.restoreScope();
+    try machine.runtime.openScopeUsing(scope);
+    defer machine.runtime.restoreScope();
 
     machine.execute("eval", code.v.StringKind.slice()) catch {
         const record = machine.topOfStack().?;
         if (record.v == Helper.ValueValue.RecordKind) {
-            try record.v.RecordKind.setU8(machine.memoryState.stringPool, "content", code);
+            try record.v.RecordKind.setU8(machine.runtime.stringPool, "content", code);
         }
 
         return Helper.Errors.RuntimeErrors.InterpreterError;

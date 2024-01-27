@@ -3,5 +3,5 @@ const Helper = @import("./helper.zig");
 
 pub fn milliTimestamp(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     _ = numberOfArgs;
-    try machine.memoryState.pushIntValue(@intCast(std.time.milliTimestamp()));
+    try machine.runtime.pushIntValue(@intCast(std.time.milliTimestamp()));
 }

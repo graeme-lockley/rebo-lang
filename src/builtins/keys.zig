@@ -4,21 +4,21 @@ const Helper = @import("./helper.zig");
 pub fn keys(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.ScopeKind });
 
-    try machine.memoryState.pushEmptySequenceValue();
+    try machine.runtime.pushEmptySequenceValue();
 
-    const seq = machine.memoryState.peek(0);
+    const seq = machine.runtime.peek(0);
 
     switch (v.v) {
         Helper.ValueValue.RecordKind => {
             var iterator = v.v.RecordKind.keyIterator();
             while (iterator.next()) |item| {
-                try seq.v.SequenceKind.appendItem(try machine.memoryState.newStringPoolValue(item.*));
+                try seq.v.SequenceKind.appendItem(try machine.runtime.newStringPoolValue(item.*));
             }
         },
         Helper.ValueValue.ScopeKind => {
             var iterator = v.v.ScopeKind.keyIterator();
             while (iterator.next()) |item| {
-                try seq.v.SequenceKind.appendItem(try machine.memoryState.newStringPoolValue(item.*));
+                try seq.v.SequenceKind.appendItem(try machine.runtime.newStringPoolValue(item.*));
             }
         },
         else => unreachable,

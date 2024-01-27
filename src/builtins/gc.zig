@@ -2,16 +2,16 @@ const Helper = @import("./helper.zig");
 
 pub fn gc(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     _ = numberOfArgs;
-    const result = Helper.MemoryState.force_gc(&machine.memoryState);
+    const result = Helper.MemoryState.force_gc(&machine.runtime);
 
-    try machine.memoryState.pushEmptyRecordValue();
+    try machine.runtime.pushEmptyRecordValue();
 
-    const record = machine.memoryState.peek(0);
+    const record = machine.runtime.peek(0);
 
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "allocations", try machine.memoryState.newIntValue(@intCast((machine.memoryState.allocations))));
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "stringpool", try machine.memoryState.newIntValue(@intCast((machine.memoryState.stringPool.count()))));
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "capacity", try machine.memoryState.newIntValue(result.capacity));
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "before", try machine.memoryState.newIntValue(result.oldSize));
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "after", try machine.memoryState.newIntValue(result.newSize));
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "duration", try machine.memoryState.newIntValue(@intCast(result.duration)));
+    try record.v.RecordKind.setU8(machine.runtime.stringPool, "allocations", try machine.runtime.newIntValue(@intCast((machine.runtime.allocations))));
+    try record.v.RecordKind.setU8(machine.runtime.stringPool, "stringpool", try machine.runtime.newIntValue(@intCast((machine.runtime.stringPool.count()))));
+    try record.v.RecordKind.setU8(machine.runtime.stringPool, "capacity", try machine.runtime.newIntValue(result.capacity));
+    try record.v.RecordKind.setU8(machine.runtime.stringPool, "before", try machine.runtime.newIntValue(result.oldSize));
+    try record.v.RecordKind.setU8(machine.runtime.stringPool, "after", try machine.runtime.newIntValue(result.newSize));
+    try record.v.RecordKind.setU8(machine.runtime.stringPool, "duration", try machine.runtime.newIntValue(@intCast(result.duration)));
 }

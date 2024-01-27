@@ -16,25 +16,25 @@ pub fn listen(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
         var conn = server.accept() catch |err| return Helper.raiseOsError(machine, "listen", err);
         const stream = conn.stream;
 
-        try machine.memoryState.openScopeFrom(cb.scope);
+        try machine.runtime.openScopeFrom(cb.scope);
 
-        errdefer machine.memoryState.restoreScope();
+        errdefer machine.runtime.restoreScope();
 
         if (cb.arguments.len > 0) {
-            try machine.memoryState.addToScope(cb.arguments[0].name, try machine.memoryState.newStreamValue(stream));
+            try machine.runtime.addToScope(cb.arguments[0].name, try machine.runtime.newStreamValue(stream));
         }
         var lp: u8 = 1;
         while (lp < cb.arguments.len) {
-            try machine.memoryState.addToScope(cb.arguments[lp].name, machine.memoryState.unitValue.?);
+            try machine.runtime.addToScope(cb.arguments[lp].name, machine.runtime.unitValue.?);
             lp += 1;
         }
 
         machine.eval(cb.body) catch |err| {
-            machine.memoryState.restoreScope();
+            machine.runtime.restoreScope();
             return err;
         };
 
         _ = machine.pop();
-        machine.memoryState.restoreScope();
+        machine.runtime.restoreScope();
     }
 }

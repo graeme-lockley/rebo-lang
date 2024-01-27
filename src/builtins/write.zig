@@ -11,5 +11,5 @@ pub fn write(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
         else => unreachable,
     } catch |err| return Helper.raiseOsError(machine, "write", err);
 
-    try machine.memoryState.pushIntValue(@intCast(bytesWritten));
+    try machine.runtime.pushIntValue(@intCast(bytesWritten));
 }

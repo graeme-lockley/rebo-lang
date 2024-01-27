@@ -6,9 +6,9 @@ pub fn cwd(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     var buf: [std.fs.MAX_PATH_BYTES]u8 = undefined;
 
     const c = std.os.getcwd(&buf) catch {
-        try machine.memoryState.pushStringValue("./");
+        try machine.runtime.pushStringValue("./");
         return;
     };
 
-    try machine.memoryState.pushStringValue(c);
+    try machine.runtime.pushStringValue(c);
 }

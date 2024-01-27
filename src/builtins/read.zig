@@ -8,8 +8,8 @@ pub fn read(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const handle = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.FileKind, Helper.ValueValue.HttpClientRequestKind, Helper.ValueValue.StreamKind });
     const bytes = bytesToRead(try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueValue.UnitKind }));
 
-    const buffer = try machine.memoryState.allocator.alloc(u8, @intCast(bytes));
-    defer machine.memoryState.allocator.free(buffer);
+    const buffer = try machine.runtime.allocator.alloc(u8, @intCast(bytes));
+    defer machine.runtime.allocator.free(buffer);
 
     const bytesRead = switch (handle.v) {
         Helper.ValueKind.FileKind => handle.v.FileKind.file.read(buffer) catch |err| return Helper.raiseOsError(machine, "read", err),
@@ -19,8 +19,8 @@ pub fn read(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     };
 
     if (bytesRead == 0) {
-        try machine.memoryState.pushUnitValue();
+        try machine.runtime.pushUnitValue();
     } else {
-        try machine.memoryState.push(try machine.memoryState.newStringValue(buffer[0..bytesRead]));
+        try machine.runtime.push(try machine.runtime.newStringValue(buffer[0..bytesRead]));
     }
 }

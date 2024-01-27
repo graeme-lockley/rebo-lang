@@ -18,18 +18,18 @@ pub const ValueKind = V.ValueKind;
 pub const ValueValue = V.ValueValue;
 
 pub fn pushOsError(machine: *ASTInterpreter, operation: []const u8, err: anyerror) Errors.RuntimeErrors!*V.Value {
-    try machine.memoryState.pushEmptyRecordValue();
+    try machine.runtime.pushEmptyRecordValue();
 
-    const record = machine.memoryState.peek(0);
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "kind", try machine.memoryState.newStringValue("SystemError"));
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "operation", try machine.memoryState.newStringValue(operation));
+    const record = machine.runtime.peek(0);
+    try record.v.RecordKind.setU8(machine.runtime.stringPool, "kind", try machine.runtime.newStringValue("SystemError"));
+    try record.v.RecordKind.setU8(machine.runtime.stringPool, "operation", try machine.runtime.newStringValue(operation));
 
-    var buffer = std.ArrayList(u8).init(machine.memoryState.allocator);
+    var buffer = std.ArrayList(u8).init(machine.runtime.allocator);
     defer buffer.deinit();
 
     try std.fmt.format(buffer.writer(), "{}", .{err});
 
-    try record.v.RecordKind.setU8(machine.memoryState.stringPool, "os", try machine.memoryState.newOwnedStringValue(try buffer.toOwnedSlice()));
+    try record.v.RecordKind.setU8(machine.runtime.stringPool, "os", try machine.runtime.newOwnedStringValue(try buffer.toOwnedSlice()));
 
     return record;
 }
@@ -41,11 +41,11 @@ pub fn raiseOsError(machine: *ASTInterpreter, operation: []const u8, err: anyerr
 }
 
 fn reportExpectedTypeError(machine: *ASTInterpreter, expected: []const V.ValueKind, v: V.ValueKind) !void {
-    try ER.raiseExpectedTypeError(&machine.memoryState, null, expected, v);
+    try ER.raiseExpectedTypeError(&machine.runtime, null, expected, v);
 }
 
 pub fn getArgument(machine: *ASTInterpreter, numberOfArgs: usize, position: usize, expected: []const ValueKind) !*Value {
-    const value = if (0 <= position and position < numberOfArgs) machine.memoryState.peek(numberOfArgs - position - 1) else machine.memoryState.unitValue.?;
+    const value = if (0 <= position and position < numberOfArgs) machine.runtime.peek(numberOfArgs - position - 1) else machine.runtime.unitValue.?;
 
     for (expected) |expctd| {
         if (value.v == expctd) {
@@ -55,5 +55,5 @@ pub fn getArgument(machine: *ASTInterpreter, numberOfArgs: usize, position: usiz
 
     try reportExpectedTypeError(machine, expected, value.v);
 
-    return machine.memoryState.unitValue.?;
+    return machine.runtime.unitValue.?;
 }

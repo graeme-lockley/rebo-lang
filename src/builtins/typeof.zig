@@ -1,11 +1,11 @@
 const Helper = @import("./helper.zig");
 
 pub fn typeof(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
-    const v = if (numberOfArgs > 0) machine.memoryState.peek(numberOfArgs - 1) else machine.memoryState.unitValue.?;
+    const v = if (numberOfArgs > 0) machine.runtime.peek(numberOfArgs - 1) else machine.runtime.unitValue.?;
 
     const tt: Helper.ValueKind = v.v;
 
-    try machine.memoryState.pushStringValue(tt.toString());
+    try machine.runtime.pushStringValue(tt.toString());
 }
 
 test "typeof" {

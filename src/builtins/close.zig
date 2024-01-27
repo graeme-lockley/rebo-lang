@@ -9,5 +9,5 @@ pub fn close(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
         else => unreachable,
     }
 
-    try machine.memoryState.pushUnitValue();
+    try machine.runtime.pushUnitValue();
 }
