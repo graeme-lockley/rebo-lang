@@ -636,3 +636,12 @@ test "catch-raise" {
     try expectExprEqual("{ raise \"Bye\" } catch \"Hello\" -> 1 | _ -> 2", "2");
     try expectExprEqual("{{ raise \"Bye\" } catch \"Hello\" -> 1} catch \"Bye\" -> 2", "2");
 }
+
+test "bytecode" {
+    const BC = @import("bc-interpreter.zig");
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var compiler = BC.Compiler.init(gpa.allocator());
+    defer compiler.deinit();
+    defer _ = gpa.deinit();
+}
