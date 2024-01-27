@@ -40,8 +40,8 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
 }
 
 inline fn evalExprInScope(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try machine.memoryState.pushScope();
-    defer machine.memoryState.popScope();
+    if (e.kind == .exprs) try machine.memoryState.pushScope();
+    defer if (e.kind == .exprs) machine.memoryState.popScope();
 
     try evalExpr(machine, e);
 }
@@ -762,11 +762,7 @@ inline fn exprs(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void
                 _ = machine.memoryState.pop();
             }
 
-            if (expr.kind == .exprs) {
-                try evalExprInScope(machine, expr);
-            } else {
-                try evalExpr(machine, expr);
-            }
+            try evalExprInScope(machine, expr);
         }
     }
 }
