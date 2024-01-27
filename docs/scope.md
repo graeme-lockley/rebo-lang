@@ -1,6 +1,6 @@
-In `rebo` the handling of scopes is novel because one has access to a scope and can manipulate it.
+In Rebo the handling of scopes is novel because one has access to a scope and can manipulate it.
 
-A scope is represented as a sequence of bindings where the first element in the sequence is the global scope, the second element is the module scope and the remaining elements are based on the rules of each of `rebo`'s different  expression constructs.
+A scope is represented as a sequence of bindings where the first element in the sequence is the global scope, the second element is the module scope and the remaining elements are based on the rules of each of Rebo's different  expression constructs.
 
 The height of a scope is the number of elements in the sequence.  The height of the global scope is 1, the height of the module scope is 2 and the height of a scope created by a function call is 3.
 
@@ -33,13 +33,44 @@ The two code blocks above demonstrates that each code block is evaluated in its 
 
 ## Block
 
-Whenever `rebo` encounters a block it opens a new scope and evaluates the expressions in the block in that scope.  Once the block has been evaluated the scope is closed and the bindings are discarded.
+Whenever Rebo encounters a block it opens a new scope and evaluates the expressions in the block in that scope.  Once the block has been evaluated the scope is closed and the bindings are discarded.
 
 ```rebo-repl
 > scopeHeight(scope())
 2
 
 > { scopeHeight(scope()) }
+3
+```
+
+## If
+
+The `if` guards and their actions are run in the same scope as the enclosing block.
+
+```rebo-repl
+> if scopeHeight(scope()) == 2 -> true | false
+true
+
+> if true -> scopeHeight(scope())
+2
+
+> if false -> 0 | scopeHeight(scope())
 2
 ```
 
+## While
+
+The `while` guard and body are run in the same scope as the enclosing block.
+
+
+```rebo-repl
+> let result = true
+> while typeof(result := scopeHeight(scope())) == "Bool" -> { }
+> result
+2
+
+> let result = true
+> while typeof(result) == "Bool" -> { result := scopeHeight(scope()) }
+> result
+2
+```

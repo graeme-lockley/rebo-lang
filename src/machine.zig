@@ -39,6 +39,13 @@ fn evalExpr(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
     }
 }
 
+inline fn evalExprInScope(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try machine.memoryState.pushScope();
+    defer machine.memoryState.popScope();
+
+    try evalExpr(machine, e);
+}
+
 inline fn assignment(machine: *Machine, lhs: *AST.Expression, value: *AST.Expression) Errors.RuntimeErrors!void {
     switch (lhs.kind) {
         .identifier => {
@@ -746,9 +753,6 @@ inline fn exprs(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void
     if (e.kind.exprs.len == 0) {
         try machine.memoryState.pushUnitValue();
     } else {
-        // try machine.memoryState.pushScope();
-        // defer machine.memoryState.popScope();
-
         var isFirst = true;
 
         for (e.kind.exprs) |expr| {
@@ -758,7 +762,11 @@ inline fn exprs(machine: *Machine, e: *AST.Expression) Errors.RuntimeErrors!void
                 _ = machine.memoryState.pop();
             }
 
-            try evalExpr(machine, expr);
+            if (expr.kind == .exprs) {
+                try evalExprInScope(machine, expr);
+            } else {
+                try evalExpr(machine, expr);
+            }
         }
     }
 }
