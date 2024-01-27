@@ -4,7 +4,7 @@ const AST = @import("./ast.zig");
 const Builtins = @import("./builtins.zig");
 const Errors = @import("./errors.zig");
 const Lexer = @import("./lexer.zig");
-const MS = @import("./memory_state.zig");
+const MS = @import("./runtime.zig");
 const Parser = @import("./parser.zig");
 const SP = @import("./string_pool.zig");
 const V = @import("./value.zig");
@@ -1151,7 +1151,7 @@ inline fn whilee(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErr
     try machine.createVoidValue();
 }
 
-fn addRebo(state: *MS.MemoryState) !void {
+fn addRebo(state: *MS.Runtime) !void {
     var args = try std.process.argsAlloc(state.allocator);
     defer std.process.argsFree(state.allocator, args);
 
@@ -1228,8 +1228,8 @@ fn addRebo(state: *MS.MemoryState) !void {
     try value.v.RecordKind.setU8(state.stringPool, "imports", reboImports);
 }
 
-fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
-    var state = try MS.MemoryState.init(allocator);
+fn initMemoryState(allocator: std.mem.Allocator) !MS.Runtime {
+    var state = try MS.Runtime.init(allocator);
 
     try state.openScope();
 
@@ -1239,7 +1239,7 @@ fn initMemoryState(allocator: std.mem.Allocator) !MS.MemoryState {
 }
 
 pub const ASTInterpreter = struct {
-    memoryState: MS.MemoryState,
+    memoryState: MS.Runtime,
 
     pub fn init(allocator: std.mem.Allocator) !ASTInterpreter {
         return ASTInterpreter{

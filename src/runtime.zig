@@ -8,7 +8,7 @@ const MAINTAIN_FREE_CHAIN = true;
 const INITIAL_HEAP_SIZE = 1;
 const HEAP_GROW_THRESHOLD = 0.25;
 
-pub const MemoryState = struct {
+pub const Runtime = struct {
     allocator: std.mem.Allocator,
 
     stringPool: *SP.StringPool,
@@ -24,11 +24,11 @@ pub const MemoryState = struct {
     trueValue: ?*V.Value,
     falseValue: ?*V.Value,
 
-    pub fn init(allocator: std.mem.Allocator) !MemoryState {
+    pub fn init(allocator: std.mem.Allocator) !Runtime {
         const stringPool = try allocator.create(SP.StringPool);
         stringPool.* = SP.StringPool.init(allocator);
 
-        var state = MemoryState{
+        var state = Runtime{
             .allocator = allocator,
             .stringPool = stringPool,
             .stack = std.ArrayList(*V.Value).init(allocator),
@@ -51,7 +51,7 @@ pub const MemoryState = struct {
         return state;
     }
 
-    pub fn deinit(self: *MemoryState) void {
+    pub fn deinit(self: *Runtime) void {
         var count = self.stack.items.len;
 
         _ = force_gc(self);
@@ -89,7 +89,7 @@ pub const MemoryState = struct {
         self.allocator.destroy(self.stringPool);
     }
 
-    fn destroyFreeList(self: *MemoryState) void {
+    fn destroyFreeList(self: *Runtime) void {
         var runner: ?*V.Value = self.free;
         while (runner != null) {
             const next = runner.?.next;
@@ -99,7 +99,7 @@ pub const MemoryState = struct {
         self.free = null;
     }
 
-    pub inline fn newValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
+    pub inline fn newValue(self: *Runtime, vv: V.ValueValue) !*V.Value {
         const v = if (self.free == null) try self.allocator.create(V.Value) else self.nextFreeValue();
         self.memory_size += 1;
         self.allocations += 1;
@@ -113,54 +113,54 @@ pub const MemoryState = struct {
         return v;
     }
 
-    fn nextFreeValue(self: *MemoryState) *V.Value {
+    fn nextFreeValue(self: *Runtime) *V.Value {
         const v: *V.Value = self.free.?;
         self.free = v.next;
 
         return v;
     }
 
-    pub inline fn newBuiltinValue(self: *MemoryState, body: V.BuiltinFunctionType) !*V.Value {
+    pub inline fn newBuiltinValue(self: *Runtime, body: V.BuiltinFunctionType) !*V.Value {
         return try self.newValue(V.ValueValue{ .BuiltinKind = .{ .body = body } });
     }
 
-    pub inline fn newFileValue(self: *MemoryState, file: std.fs.File) !*V.Value {
+    pub inline fn newFileValue(self: *Runtime, file: std.fs.File) !*V.Value {
         return try self.newValue(V.ValueValue{ .FileKind = V.FileValue.init(file) });
     }
 
-    pub inline fn newIntValue(self: *MemoryState, v: V.IntType) !*V.Value {
+    pub inline fn newIntValue(self: *Runtime, v: V.IntType) !*V.Value {
         return try self.newValue(V.ValueValue{ .IntKind = v });
     }
 
-    pub inline fn newRecordValue(self: *MemoryState) !*V.Value {
+    pub inline fn newRecordValue(self: *Runtime) !*V.Value {
         return try self.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.allocator) });
     }
 
-    pub inline fn newScopeValue(self: *MemoryState, parent: ?*V.Value) !*V.Value {
+    pub inline fn newScopeValue(self: *Runtime, parent: ?*V.Value) !*V.Value {
         return try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, parent) });
     }
 
-    pub inline fn newEmptySequenceValue(self: *MemoryState) !*V.Value {
+    pub inline fn newEmptySequenceValue(self: *Runtime) !*V.Value {
         return try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
     }
 
-    pub inline fn newStreamValue(self: *MemoryState, v: std.net.Stream) !*V.Value {
+    pub inline fn newStreamValue(self: *Runtime, v: std.net.Stream) !*V.Value {
         return try self.newValue(V.ValueValue{ .StreamKind = V.StreamValue.init(v) });
     }
 
-    pub inline fn newStringPoolValue(self: *MemoryState, v: *SP.String) !*V.Value {
+    pub inline fn newStringPoolValue(self: *Runtime, v: *SP.String) !*V.Value {
         return try self.newValue(V.ValueValue{ .StringKind = V.StringValue.initPool(v) });
     }
 
-    pub inline fn newStringValue(self: *MemoryState, v: []const u8) !*V.Value {
+    pub inline fn newStringValue(self: *Runtime, v: []const u8) !*V.Value {
         return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.init(self.stringPool, v) });
     }
 
-    pub inline fn newOwnedStringValue(self: *MemoryState, v: []u8) !*V.Value {
+    pub inline fn newOwnedStringValue(self: *Runtime, v: []u8) !*V.Value {
         return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.initOwned(self.stringPool, v) });
     }
 
-    pub inline fn pushValue(self: *MemoryState, vv: V.ValueValue) !*V.Value {
+    pub inline fn pushValue(self: *Runtime, vv: V.ValueValue) !*V.Value {
         const v = try self.newValue(vv);
 
         try self.stack.append(v);
@@ -170,7 +170,7 @@ pub const MemoryState = struct {
         return v;
     }
 
-    pub inline fn pushBoolValue(self: *MemoryState, b: bool) !void {
+    pub inline fn pushBoolValue(self: *Runtime, b: bool) !void {
         if (b and self.trueValue != null) {
             _ = try self.push(self.trueValue.?);
             return;
@@ -182,63 +182,63 @@ pub const MemoryState = struct {
         }
     }
 
-    pub inline fn pushEmptyRecordValue(self: *MemoryState) !void {
+    pub inline fn pushEmptyRecordValue(self: *Runtime) !void {
         try self.push(try self.newRecordValue());
     }
 
-    pub inline fn pushCharValue(self: *MemoryState, v: u8) !void {
+    pub inline fn pushCharValue(self: *Runtime, v: u8) !void {
         _ = try self.pushValue(V.ValueValue{ .CharKind = v });
     }
 
-    pub inline fn pushFloatValue(self: *MemoryState, v: V.FloatType) !void {
+    pub inline fn pushFloatValue(self: *Runtime, v: V.FloatType) !void {
         _ = try self.pushValue(V.ValueValue{ .FloatKind = v });
     }
 
-    pub inline fn pushIntValue(self: *MemoryState, v: V.IntType) !void {
+    pub inline fn pushIntValue(self: *Runtime, v: V.IntType) !void {
         _ = try self.push(try self.newIntValue(v));
     }
 
-    pub inline fn pushScopeValue(self: *MemoryState, parent: ?*V.Value) !void {
+    pub inline fn pushScopeValue(self: *Runtime, parent: ?*V.Value) !void {
         _ = try self.push(try self.newScopeValue(parent));
     }
 
-    pub inline fn pushEmptySequenceValue(self: *MemoryState) !void {
+    pub inline fn pushEmptySequenceValue(self: *Runtime) !void {
         _ = try self.push(try self.newEmptySequenceValue());
     }
 
-    pub inline fn pushStringPoolValue(self: *MemoryState, v: *SP.String) !void {
+    pub inline fn pushStringPoolValue(self: *Runtime, v: *SP.String) !void {
         _ = try self.push(try self.newStringPoolValue(v));
     }
 
-    pub inline fn pushStringValue(self: *MemoryState, v: []const u8) !void {
+    pub inline fn pushStringValue(self: *Runtime, v: []const u8) !void {
         _ = try self.push(try self.newStringValue(v));
     }
 
-    pub inline fn pushOwnedStringValue(self: *MemoryState, v: []u8) !void {
+    pub inline fn pushOwnedStringValue(self: *Runtime, v: []u8) !void {
         _ = try self.push(try self.newOwnedStringValue(v));
     }
 
-    pub inline fn pushUnitValue(self: *MemoryState) !void {
+    pub inline fn pushUnitValue(self: *Runtime) !void {
         _ = try self.push(self.unitValue.?);
     }
 
-    pub inline fn pop(self: *MemoryState) *V.Value {
+    pub inline fn pop(self: *Runtime) *V.Value {
         return self.stack.pop();
     }
 
-    pub inline fn popn(self: *MemoryState, n: usize) void {
+    pub inline fn popn(self: *Runtime, n: usize) void {
         self.stack.items.len -= n;
     }
 
-    pub inline fn push(self: *MemoryState, v: *V.Value) !void {
+    pub inline fn push(self: *Runtime, v: *V.Value) !void {
         try self.stack.append(v);
     }
 
-    pub inline fn peek(self: *MemoryState, n: usize) *V.Value {
+    pub inline fn peek(self: *Runtime, n: usize) *V.Value {
         return self.stack.items[self.stack.items.len - n - 1];
     }
 
-    pub fn topOfStack(self: *MemoryState) ?*V.Value {
+    pub fn topOfStack(self: *Runtime) ?*V.Value {
         if (self.stack.items.len == 0) {
             return null;
         } else {
@@ -246,7 +246,7 @@ pub const MemoryState = struct {
         }
     }
 
-    pub inline fn scope(self: *MemoryState) ?*V.Value {
+    pub inline fn scope(self: *Runtime) ?*V.Value {
         if (self.scopes.items.len == 0) {
             return null;
         } else {
@@ -254,72 +254,72 @@ pub const MemoryState = struct {
         }
     }
 
-    pub inline fn topScope(self: *MemoryState) *V.Value {
+    pub inline fn topScope(self: *Runtime) *V.Value {
         return self.scopes.items[0];
     }
 
-    pub inline fn openScope(self: *MemoryState) !void {
+    pub inline fn openScope(self: *Runtime) !void {
         try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, self.scope()) }));
     }
 
-    pub inline fn openScopeFrom(self: *MemoryState, outerScope: ?*V.Value) !void {
+    pub inline fn openScopeFrom(self: *Runtime, outerScope: ?*V.Value) !void {
         if (outerScope != null and outerScope.?.v != V.ValueKind.ScopeKind) unreachable;
 
         try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, outerScope) }));
     }
 
-    pub inline fn openScopeUsing(self: *MemoryState, outerScope: *V.Value) !void {
+    pub inline fn openScopeUsing(self: *Runtime, outerScope: *V.Value) !void {
         if (outerScope.v != V.ValueKind.ScopeKind) unreachable;
 
         try self.scopes.append(outerScope);
     }
 
-    pub inline fn restoreScope(self: *MemoryState) void {
+    pub inline fn restoreScope(self: *Runtime) void {
         _ = self.scopes.pop();
     }
 
-    pub inline fn pushScope(self: *MemoryState) !void {
+    pub inline fn pushScope(self: *Runtime) !void {
         self.scopes.items[self.scopes.items.len - 1] = try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, self.scopes.items[self.scopes.items.len - 1]) });
     }
 
-    pub inline fn popScope(self: *MemoryState) void {
+    pub inline fn popScope(self: *Runtime) void {
         self.scopes.items[self.scopes.items.len - 1] = self.scopes.items[self.scopes.items.len - 1].v.ScopeKind.parent.?;
     }
 
-    pub inline fn addToScope(self: *MemoryState, name: *SP.String, value: *V.Value) !void {
+    pub inline fn addToScope(self: *Runtime, name: *SP.String, value: *V.Value) !void {
         try self.scope().?.v.ScopeKind.set(name, value);
     }
 
-    pub inline fn addU8ToScope(self: *MemoryState, name: []const u8, value: *V.Value) !void {
+    pub inline fn addU8ToScope(self: *Runtime, name: []const u8, value: *V.Value) !void {
         const spName = try self.stringPool.intern(name);
         defer spName.decRef();
 
         try self.scope().?.v.ScopeKind.set(spName, value);
     }
 
-    pub inline fn addArrayValueToScope(self: *MemoryState, name: *SP.String, values: []*V.Value) !void {
+    pub inline fn addArrayValueToScope(self: *Runtime, name: *SP.String, values: []*V.Value) !void {
         const value = try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
         try value.v.SequenceKind.appendSlice(values);
 
         try self.scope().?.v.ScopeKind.set(name, value);
     }
 
-    pub inline fn updateInScope(self: *MemoryState, name: *SP.String, value: *V.Value) !bool {
+    pub inline fn updateInScope(self: *Runtime, name: *SP.String, value: *V.Value) !bool {
         return try self.scope().?.v.ScopeKind.update(name, value);
     }
 
-    pub inline fn getFromScope(self: *MemoryState, name: *SP.String) ?*V.Value {
+    pub inline fn getFromScope(self: *Runtime, name: *SP.String) ?*V.Value {
         return self.scope().?.v.ScopeKind.get(name);
     }
 
-    pub inline fn getU8FromScope(self: *MemoryState, name: []const u8) !?*V.Value {
+    pub inline fn getU8FromScope(self: *Runtime, name: []const u8) !?*V.Value {
         const spName = try self.stringPool.intern(name);
         defer spName.decRef();
 
         return self.scope().?.v.ScopeKind.get(spName);
     }
 
-    pub fn reset(self: *MemoryState) !void {
+    pub fn reset(self: *Runtime) !void {
         while (self.scopes.items.len > 2) {
             self.restoreScope();
         }
@@ -380,7 +380,7 @@ fn markScope(scope: ?*V.ScopeValue, colour: V.Colour) void {
     markValue(scope.?.parent, colour);
 }
 
-fn sweep(state: *MemoryState, colour: V.Colour) void {
+fn sweep(state: *Runtime, colour: V.Colour) void {
     var runner: *?*V.Value = &state.root;
     while (runner.* != null) {
         if (runner.*.?.colour != colour) {
@@ -410,7 +410,7 @@ pub const GCResult = struct {
     duration: i64,
 };
 
-pub fn force_gc(state: *MemoryState) GCResult {
+pub fn force_gc(state: *Runtime) GCResult {
     const start_time = std.time.milliTimestamp();
     const old_size = state.memory_size;
 
@@ -441,7 +441,7 @@ pub fn force_gc(state: *MemoryState) GCResult {
     return GCResult{ .capacity = state.memory_capacity, .oldSize = old_size, .newSize = state.memory_size, .duration = end_time - start_time };
 }
 
-inline fn gc(state: *MemoryState) void {
+inline fn gc(state: *Runtime) void {
     if (state.memory_size > state.memory_capacity) {
         // _ = force_gc(state);
         const gcResult = force_gc(state);
