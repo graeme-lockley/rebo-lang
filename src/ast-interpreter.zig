@@ -1151,99 +1151,12 @@ inline fn whilee(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErr
     try machine.createVoidValue();
 }
 
-fn addRebo(state: *MS.Runtime) !void {
-    var args = try std.process.argsAlloc(state.allocator);
-    defer std.process.argsFree(state.allocator, args);
-
-    const value = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
-    try state.addU8ToScope("rebo", value);
-
-    const reboArgs = try state.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(state.allocator) });
-    try value.v.RecordKind.setU8(state.stringPool, "args", reboArgs);
-
-    for (args) |arg| {
-        try reboArgs.v.SequenceKind.appendItem(try state.newStringValue(arg));
-    }
-
-    var env = try std.process.getEnvMap(state.allocator);
-    defer env.deinit();
-    const reboEnv = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
-    try value.v.RecordKind.setU8(state.stringPool, "env", reboEnv);
-
-    var iterator = env.iterator();
-    while (iterator.next()) |entry| {
-        try reboEnv.v.RecordKind.setU8(state.stringPool, entry.key_ptr.*, try state.newStringValue(entry.value_ptr.*));
-    }
-
-    const exePath = std.fs.selfExePathAlloc(state.allocator) catch return;
-    defer state.allocator.free(exePath);
-    try value.v.RecordKind.setU8(state.stringPool, "exe", try state.newStringValue(exePath));
-
-    const reboLang = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
-    try value.v.RecordKind.setU8(state.stringPool, "lang", reboLang);
-    try reboLang.v.RecordKind.setU8(state.stringPool, "eval", try state.newBuiltinValue(@import("builtins/eval.zig").eval));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "gc", try state.newBuiltinValue(@import("builtins/gc.zig").gc));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "int", try state.newBuiltinValue(@import("builtins/int.zig").int));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "float", try state.newBuiltinValue(@import("builtins/float.zig").float));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "keys", try state.newBuiltinValue(@import("builtins/keys.zig").keys));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "len", try state.newBuiltinValue(@import("builtins/len.zig").len));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "scope", try state.newBuiltinValue(@import("builtins/scope.zig").scope));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.bind!", try state.newBuiltinValue(@import("builtins/scope.zig").bind));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.delete!", try state.newBuiltinValue(@import("builtins/scope.zig").delete));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.open", try state.newBuiltinValue(@import("builtins/scope.zig").open));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.super", try state.newBuiltinValue(@import("builtins/scope.zig").super));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "scope.super.assign!", try state.newBuiltinValue(@import("builtins/scope.zig").assign));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "str", try state.newBuiltinValue(@import("builtins/str.zig").str));
-    try reboLang.v.RecordKind.setU8(state.stringPool, "typeof", try state.newBuiltinValue(@import("builtins/typeof.zig").typeof));
-
-    const reboOS = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
-    try value.v.RecordKind.setU8(state.stringPool, "os", reboOS);
-
-    try reboOS.v.RecordKind.setU8(state.stringPool, "close", try state.newBuiltinValue(@import("builtins/close.zig").close));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "cwd", try state.newBuiltinValue(@import("builtins/cwd.zig").cwd));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "exit", try state.newBuiltinValue(@import("builtins/exit.zig").exit));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "fexists", try state.newBuiltinValue(@import("builtins/import.zig").exists));
-
-    var client = try state.allocator.create(std.http.Client);
-    client.* = std.http.Client{ .allocator = state.allocator };
-    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client", try state.newValue(V.ValueValue{ .HttpClientKind = V.HttpClientValue.init(client) }));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.start", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpStart));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.status", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpStatus));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.request", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpRequest));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.response", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpResponse));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.wait", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpWait));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.finish", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpFinish));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "listen", try state.newBuiltinValue(@import("builtins/listen.zig").listen));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "ls", try state.newBuiltinValue(@import("builtins/ls.zig").ls));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "milliTimestamp", try state.newBuiltinValue(@import("builtins/milliTimestamp.zig").milliTimestamp));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "open", try state.newBuiltinValue(@import("builtins/open.zig").open));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "path.absolute", try state.newBuiltinValue(@import("builtins/import.zig").absolute));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "print", try state.newBuiltinValue(@import("builtins/print.zig").print));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "println", try state.newBuiltinValue(@import("builtins/print.zig").println));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "read", try state.newBuiltinValue(@import("builtins/read.zig").read));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "socket", try state.newBuiltinValue(@import("builtins/socket.zig").socket));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "write", try state.newBuiltinValue(@import("builtins/write.zig").write));
-
-    const reboImports = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
-    try value.v.RecordKind.setU8(state.stringPool, "imports", reboImports);
-}
-
-fn initMemoryState(allocator: std.mem.Allocator) !MS.Runtime {
-    var state = try MS.Runtime.init(allocator);
-
-    try state.openScope();
-
-    try addRebo(&state);
-
-    return state;
-}
-
 pub const ASTInterpreter = struct {
     memoryState: MS.Runtime,
 
     pub fn init(allocator: std.mem.Allocator) !ASTInterpreter {
         return ASTInterpreter{
-            .memoryState = try initMemoryState(allocator),
+            .memoryState = try MS.Runtime.init(allocator),
         };
     }
 
