@@ -279,11 +279,11 @@ pub const MemoryState = struct {
     }
 
     pub inline fn pushScope(self: *MemoryState) !void {
-        self.scopes.items[self.scopes.items.len - 1] = try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, self.scope()) });
+        self.scopes.items[self.scopes.items.len - 1] = try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, self.scopes.items[self.scopes.items.len - 1]) });
     }
 
     pub inline fn popScope(self: *MemoryState) void {
-        self.scopes.items[self.scopes.items.len - 1] = self.scope().?.v.ScopeKind.parent.?;
+        self.scopes.items[self.scopes.items.len - 1] = self.scopes.items[self.scopes.items.len - 1].v.ScopeKind.parent.?;
     }
 
     pub inline fn addToScope(self: *MemoryState, name: *SP.String, value: *V.Value) !void {
