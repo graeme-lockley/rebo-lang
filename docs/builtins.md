@@ -41,8 +41,6 @@ $ rebo show-args.rebo hello world
 
 ```bash
 $ cat show-env.rebo 
-let Std = import("std")
-
 keys(rebo.env) |> sort() |> each(fn(k) println(k, ": ", rebo.env[k]))
 
 $ rebo show-env.rebo 
