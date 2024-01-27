@@ -5,6 +5,7 @@ pub const Errors = @import("./../errors.zig");
 pub const M = @import("./../ast-interpreter.zig");
 pub const V = @import("./../value.zig");
 
+pub const ER = @import("./../error-reporting.zig");
 pub const Expression = AST.Expression;
 pub const IntType = V.IntType;
 pub const FloatType = V.FloatType;
@@ -40,7 +41,7 @@ pub fn raiseOsError(machine: *ASTInterpreter, operation: []const u8, err: anyerr
 }
 
 fn reportExpectedTypeError(machine: *ASTInterpreter, expected: []const V.ValueKind, v: V.ValueKind) !void {
-    try M.raiseExpectedTypeError(machine, null, expected, v);
+    try ER.raiseExpectedTypeError(&machine.memoryState, null, expected, v);
 }
 
 pub fn getArgument(machine: *ASTInterpreter, numberOfArgs: usize, position: usize, expected: []const ValueKind) !*Value {

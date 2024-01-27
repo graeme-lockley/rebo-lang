@@ -1,3 +1,4 @@
+const AST = @import("ast.zig");
 const Errors = @import("errors.zig");
 const Runtime = @import("runtime.zig");
 const V = @import("value.zig");
@@ -45,12 +46,54 @@ pub fn pushNamedUserError(runtime: *Runtime.Runtime, name: []const u8, position:
     return record;
 }
 
-fn raiseNamedUserError(runtime: *Runtime.Runtime, name: []const u8, position: ?Errors.Position) !void {
+pub fn raiseNamedUserError(runtime: *Runtime.Runtime, name: []const u8, position: ?Errors.Position) !void {
     _ = try pushNamedUserError(runtime, name, position);
     return Errors.RuntimeErrors.InterpreterError;
 }
 
-inline fn appendErrorPosition(runtime: *Runtime.Runtime, position: ?Errors.Position) !void {
+pub fn raiseExpectedTypeError(runtime: *Runtime.Runtime, position: ?Errors.Position, expected: []const V.ValueKind, found: V.ValueKind) !void {
+    const rec = try pushNamedUserError(runtime, "ExpectedTypeError", position);
+
+    try rec.v.RecordKind.setU8(runtime.stringPool, "found", try runtime.newStringValue(found.toString()));
+    const expectedSeq = try runtime.newEmptySequenceValue();
+    try rec.v.RecordKind.setU8(runtime.stringPool, "expected", expectedSeq);
+
+    for (expected) |vk| {
+        try expectedSeq.v.SequenceKind.appendItem(try runtime.newStringValue(vk.toString()));
+    }
+
+    return Errors.RuntimeErrors.InterpreterError;
+}
+
+pub fn raiseIncompatibleOperandTypesError(runtime: *Runtime.Runtime, position: Errors.Position, op: AST.Operator, left: V.ValueKind, right: V.ValueKind) !void {
+    const rec = try pushNamedUserError(runtime, "IncompatibleOperandTypesError", position);
+
+    try rec.v.RecordKind.setU8(runtime.stringPool, "op", try runtime.newStringValue(op.toString()));
+    try rec.v.RecordKind.setU8(runtime.stringPool, "left", try runtime.newStringValue(left.toString()));
+    try rec.v.RecordKind.setU8(runtime.stringPool, "right", try runtime.newStringValue(right.toString()));
+
+    return Errors.RuntimeErrors.InterpreterError;
+}
+
+pub fn raiseIndexOutOfRangeError(runtime: *Runtime.Runtime, position: Errors.Position, index: V.IntType, len: V.IntType) !void {
+    const rec = try pushNamedUserError(runtime, "IndexOutOfRangeError", position);
+
+    try rec.v.RecordKind.setU8(runtime.stringPool, "index", try runtime.newIntValue(index));
+    try rec.v.RecordKind.setU8(runtime.stringPool, "lower", try runtime.newIntValue(0));
+    try rec.v.RecordKind.setU8(runtime.stringPool, "upper", try runtime.newIntValue(len));
+
+    return Errors.RuntimeErrors.InterpreterError;
+}
+
+pub fn raiseMatchError(runtime: *Runtime.Runtime, position: Errors.Position, value: *V.Value) !void {
+    const rec = try pushNamedUserError(runtime, "MatchError", position);
+
+    try rec.v.RecordKind.setU8(runtime.stringPool, "value", value);
+
+    return Errors.RuntimeErrors.InterpreterError;
+}
+
+pub inline fn appendErrorPosition(runtime: *Runtime.Runtime, position: ?Errors.Position) !void {
     if (position != null) {
         try appendErrorStackItem(runtime, Errors.StackItem{ .src = try src(runtime), .position = position.? });
     }

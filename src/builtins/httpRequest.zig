@@ -38,7 +38,7 @@ pub fn httpRequest(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const client = try getHttpClient(machine);
 
     const requestMethod = if (method.isUnit()) .GET else if (protocol_map.get(method.v.StringKind.slice())) |v| v else {
-        const record = try Helper.M.pushNamedUserError(machine, "InvalidMethodError", null);
+        const record = try Helper.ER.pushNamedUserError(&machine.memoryState, "InvalidMethodError", null);
         try record.v.RecordKind.setU8(machine.memoryState.stringPool, "method", method);
         return Helper.Errors.RuntimeErrors.InterpreterError;
     };
@@ -136,7 +136,7 @@ fn getHttpClient(machine: *Helper.ASTInterpreter) !*std.http.Client {
         }
     }
 
-    const record = try Helper.M.pushNamedUserError(machine, "ExpectedTypeError", null);
+    const record = try Helper.ER.pushNamedUserError(&machine.memoryState, "ExpectedTypeError", null);
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "name", try machine.memoryState.newStringValue("rebo.os[\"http.client\"]"));
     try record.v.RecordKind.setU8(machine.memoryState.stringPool, "expected", try machine.memoryState.newStringValue("Record"));
     return Helper.Errors.RuntimeErrors.InterpreterError;
