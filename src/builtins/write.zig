@@ -1,6 +1,6 @@
 const Helper = @import("./helper.zig");
 
-pub fn write(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn write(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const handle = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.FileKind, Helper.ValueValue.HttpClientRequestKind, Helper.ValueKind.StreamKind });
     const bytes = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
 

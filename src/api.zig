@@ -1,25 +1,25 @@
 const std = @import("std");
 
-const Machine = @import("./machine.zig");
+const ASTInterpreter = @import("./ast-interpreter.zig");
 const V = @import("./value.zig");
 
 pub const API = struct {
-    machine: Machine.Machine,
+    interpreter: ASTInterpreter.ASTInterpreter,
 
     pub fn init(allocator1: std.mem.Allocator) !API {
-        return API{ .machine = try Machine.Machine.init(allocator1) };
+        return API{ .interpreter = try ASTInterpreter.ASTInterpreter.init(allocator1) };
     }
 
     pub fn deinit(self: *API) void {
-        self.machine.deinit();
+        self.interpreter.deinit();
     }
 
     pub fn reset(self: *API) !void {
-        try self.machine.reset();
+        try self.interpreter.reset();
     }
 
     pub inline fn allocator(self: *API) std.mem.Allocator {
-        return self.machine.memoryState.allocator;
+        return self.interpreter.memoryState.allocator;
     }
 
     pub fn import(self: *API, path: []const u8) !void {
@@ -38,37 +38,37 @@ pub const API = struct {
         }
         try buffer.appendSlice("\")");
 
-        try self.machine.execute(path, buffer.items);
+        try self.interpreter.execute(path, buffer.items);
     }
 
     pub fn script(self: *API, text: []const u8) !void {
-        try self.machine.execute("script", text);
+        try self.interpreter.execute("script", text);
     }
 
     pub fn topOfStack(self: *API) ?*V.Value {
-        return self.machine.topOfStack();
+        return self.interpreter.topOfStack();
     }
 
     pub fn stackDepth(self: *API) usize {
-        return self.machine.memoryState.stack.items.len;
+        return self.interpreter.memoryState.stack.items.len;
     }
 
     pub fn swap(self: *API) !void {
-        const v1 = self.machine.memoryState.pop();
-        const v2 = self.machine.memoryState.pop();
-        try self.machine.memoryState.push(v1);
-        try self.machine.memoryState.push(v2);
+        const v1 = self.interpreter.memoryState.pop();
+        const v2 = self.interpreter.memoryState.pop();
+        try self.interpreter.memoryState.push(v1);
+        try self.interpreter.memoryState.push(v2);
     }
 
     pub fn call(self: *API, numberOfArgs: usize) !void {
-        try Machine.callFn(&self.machine, numberOfArgs);
+        try ASTInterpreter.callFn(&self.interpreter, numberOfArgs);
     }
 
     pub fn pop(self: *API) void {
-        _ = self.machine.memoryState.pop();
+        _ = self.interpreter.memoryState.pop();
     }
 
     pub fn pushString(self: *API, s: []const u8) !void {
-        try self.machine.memoryState.pushStringValue(s);
+        try self.interpreter.memoryState.pushStringValue(s);
     }
 };

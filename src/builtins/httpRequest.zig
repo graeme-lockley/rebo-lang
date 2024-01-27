@@ -11,7 +11,7 @@ pub const protocol_map = std.ComptimeStringMap(std.http.Method, .{
     .{ "PATH", .PATCH },
 });
 
-pub fn httpRequest(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn httpRequest(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const url = (try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
     const method = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.StringKind, Helper.ValueValue.UnitKind });
     const headers = try Helper.getArgument(machine, numberOfArgs, 2, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.UnitKind });
@@ -52,7 +52,7 @@ pub fn httpRequest(machine: *Helper.Machine, numberOfArgs: usize) !void {
     try machine.memoryState.push(try machine.memoryState.newValue(Helper.ValueValue{ .HttpClientRequestKind = Helper.V.HttpClientRequestValue.init(requestHeaders, request) }));
 }
 
-pub fn httpResponse(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn httpResponse(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
 
     if (request.v.HttpClientRequestKind.state != .Waiting and request.v.HttpClientRequestKind.state != .Finished) {
@@ -87,7 +87,7 @@ pub fn httpResponse(machine: *Helper.Machine, numberOfArgs: usize) !void {
     }
 }
 
-pub fn httpStatus(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn httpStatus(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
 
     if (request.v.HttpClientRequestKind.state != .Waiting and request.v.HttpClientRequestKind.state != .Finished) {
@@ -97,7 +97,7 @@ pub fn httpStatus(machine: *Helper.Machine, numberOfArgs: usize) !void {
     try machine.memoryState.pushIntValue(@intFromEnum(request.v.HttpClientRequestKind.request.response.status));
 }
 
-pub fn httpStart(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn httpStart(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
 
     request.v.HttpClientRequestKind.start() catch |err| return Helper.raiseOsError(machine, "rebo.os[\"http.client.start\"]", err);
@@ -105,7 +105,7 @@ pub fn httpStart(machine: *Helper.Machine, numberOfArgs: usize) !void {
     try machine.memoryState.pushUnitValue();
 }
 
-pub fn httpFinish(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn httpFinish(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
 
     request.v.HttpClientRequestKind.finish() catch |err| return Helper.raiseOsError(machine, "rebo.os[\"http.client.finish\"]", err);
@@ -113,7 +113,7 @@ pub fn httpFinish(machine: *Helper.Machine, numberOfArgs: usize) !void {
     try machine.memoryState.pushUnitValue();
 }
 
-pub fn httpWait(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn httpWait(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
 
     request.v.HttpClientRequestKind.wait() catch |err| return Helper.raiseOsError(machine, "rebo.os[\"http.client.wait\"]", err);
@@ -121,7 +121,7 @@ pub fn httpWait(machine: *Helper.Machine, numberOfArgs: usize) !void {
     try machine.memoryState.pushUnitValue();
 }
 
-fn getHttpClient(machine: *Helper.Machine) !*std.http.Client {
+fn getHttpClient(machine: *Helper.ASTInterpreter) !*std.http.Client {
     const rebo = try machine.memoryState.getU8FromScope("rebo");
 
     if (rebo != null and rebo.?.v == Helper.ValueKind.RecordKind) {

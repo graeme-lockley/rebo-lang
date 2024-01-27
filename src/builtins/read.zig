@@ -4,7 +4,7 @@ fn bytesToRead(arg: *Helper.Value) usize {
     return if (arg.v == Helper.ValueValue.UnitKind) 4096 else @intCast(arg.v.IntKind);
 }
 
-pub fn read(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn read(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const handle = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.FileKind, Helper.ValueValue.HttpClientRequestKind, Helper.ValueValue.StreamKind });
     const bytes = bytesToRead(try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueValue.UnitKind }));
 

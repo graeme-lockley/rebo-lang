@@ -1,7 +1,7 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn int(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn int(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.CharKind, Helper.ValueKind.StringKind });
     const d = if (numberOfArgs > 1) machine.memoryState.peek(numberOfArgs - 2) else machine.memoryState.unitValue.?;
     const b = try Helper.getArgument(machine, numberOfArgs, 2, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueKind.UnitKind });

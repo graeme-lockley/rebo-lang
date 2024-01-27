@@ -1,6 +1,6 @@
 const Helper = @import("./helper.zig");
 
-pub fn len(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn len(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.ScopeKind, Helper.ValueValue.SequenceKind, Helper.ValueValue.StringKind });
 
     switch (v.v) {

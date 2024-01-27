@@ -1,6 +1,6 @@
 const Helper = @import("./helper.zig");
 
-pub fn close(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn close(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const handle = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.FileKind, Helper.ValueKind.StreamKind });
 
     switch (handle.v) {

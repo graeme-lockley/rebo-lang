@@ -1,7 +1,7 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn keys(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn keys(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.ScopeKind });
 
     try machine.memoryState.pushEmptySequenceValue();

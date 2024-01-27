@@ -2,13 +2,13 @@ const std = @import("std");
 
 const AST = @import("./../ast.zig");
 pub const Errors = @import("./../errors.zig");
-pub const M = @import("./../machine.zig");
+pub const M = @import("./../ast-interpreter.zig");
 pub const V = @import("./../value.zig");
 
 pub const Expression = AST.Expression;
 pub const IntType = V.IntType;
 pub const FloatType = V.FloatType;
-pub const Machine = M.Machine;
+pub const ASTInterpreter = M.ASTInterpreter;
 pub const MemoryState = @import("./../memory_state.zig");
 pub const StringPool = @import("./../string_pool.zig").StringPool;
 pub const Style = V.Style;
@@ -16,7 +16,7 @@ pub const Value = V.Value;
 pub const ValueKind = V.ValueKind;
 pub const ValueValue = V.ValueValue;
 
-pub fn pushOsError(machine: *Machine, operation: []const u8, err: anyerror) Errors.RuntimeErrors!*V.Value {
+pub fn pushOsError(machine: *ASTInterpreter, operation: []const u8, err: anyerror) Errors.RuntimeErrors!*V.Value {
     try machine.memoryState.pushEmptyRecordValue();
 
     const record = machine.memoryState.peek(0);
@@ -33,17 +33,17 @@ pub fn pushOsError(machine: *Machine, operation: []const u8, err: anyerror) Erro
     return record;
 }
 
-pub fn raiseOsError(machine: *Machine, operation: []const u8, err: anyerror) Errors.RuntimeErrors!void {
+pub fn raiseOsError(machine: *ASTInterpreter, operation: []const u8, err: anyerror) Errors.RuntimeErrors!void {
     _ = try pushOsError(machine, operation, err);
 
     return Errors.RuntimeErrors.InterpreterError;
 }
 
-fn reportExpectedTypeError(machine: *Machine, expected: []const V.ValueKind, v: V.ValueKind) !void {
+fn reportExpectedTypeError(machine: *ASTInterpreter, expected: []const V.ValueKind, v: V.ValueKind) !void {
     try M.raiseExpectedTypeError(machine, null, expected, v);
 }
 
-pub fn getArgument(machine: *Machine, numberOfArgs: usize, position: usize, expected: []const ValueKind) !*Value {
+pub fn getArgument(machine: *ASTInterpreter, numberOfArgs: usize, position: usize, expected: []const ValueKind) !*Value {
     const value = if (0 <= position and position < numberOfArgs) machine.memoryState.peek(numberOfArgs - position - 1) else machine.memoryState.unitValue.?;
 
     for (expected) |expctd| {

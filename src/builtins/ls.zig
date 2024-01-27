@@ -1,7 +1,7 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn ls(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn ls(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.StringKind, Helper.ValueValue.UnitKind });
 
     const path = if (v.v == Helper.ValueKind.StringKind) v.v.StringKind.slice() else "./";

@@ -2,7 +2,6 @@ const std = @import("std");
 
 const AST = @import("./ast.zig");
 const Errors = @import("./errors.zig");
-const Machine = @import("./machine.zig");
 const Lexer = @import("./lexer.zig");
 const SP = @import("./string_pool.zig");
 const V = @import("./value.zig");

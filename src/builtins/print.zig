@@ -101,7 +101,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
     }
 }
 
-fn printSequence(machine: *Helper.Machine, stdout: std.fs.File.Writer, numberOfArgs: usize) !void {
+fn printSequence(machine: *Helper.ASTInterpreter, stdout: std.fs.File.Writer, numberOfArgs: usize) !void {
     var i: usize = 1;
     while (i <= numberOfArgs) {
         const v = machine.memoryState.peek(numberOfArgs - i);
@@ -111,7 +111,7 @@ fn printSequence(machine: *Helper.Machine, stdout: std.fs.File.Writer, numberOfA
     }
 }
 
-pub fn print(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn print(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const stdout = std.io.getStdOut().writer();
 
     printSequence(machine, stdout, numberOfArgs) catch {};
@@ -119,7 +119,7 @@ pub fn print(machine: *Helper.Machine, numberOfArgs: usize) !void {
     try machine.memoryState.pushUnitValue();
 }
 
-pub fn println(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn println(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const stdout = std.io.getStdOut().writer();
 
     printSequence(machine, stdout, numberOfArgs) catch {};

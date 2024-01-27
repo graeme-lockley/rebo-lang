@@ -6,13 +6,13 @@ pub fn fexists(name: []const u8) bool {
     return true;
 }
 
-pub fn exists(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn exists(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const fileName = (try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
 
     try machine.memoryState.pushBoolValue(fexists(fileName));
 }
 
-pub fn absolute(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn absolute(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const fileName = (try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
 
     const absolutePath = std.fs.cwd().realpathAlloc(machine.memoryState.allocator, fileName) catch |err| {

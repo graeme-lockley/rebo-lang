@@ -15,7 +15,7 @@ fn booleanOption(stringPool: *Helper.StringPool, options: *Helper.Value, name: [
     return option.?.v.BoolKind;
 }
 
-pub fn eval(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn eval(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const code = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
     const scope = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{Helper.ValueValue.ScopeKind});
 

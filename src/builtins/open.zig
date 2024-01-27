@@ -11,7 +11,7 @@ fn booleanOption(stringPool: *Helper.StringPool, options: *Helper.Value, name: [
     return option.?.v.BoolKind;
 }
 
-pub fn open(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn open(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const path = (try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
     const options = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.UnitKind });
 

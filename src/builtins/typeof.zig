@@ -1,6 +1,6 @@
 const Helper = @import("./helper.zig");
 
-pub fn typeof(machine: *Helper.Machine, numberOfArgs: usize) !void {
+pub fn typeof(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const v = if (numberOfArgs > 0) machine.memoryState.peek(numberOfArgs - 1) else machine.memoryState.unitValue.?;
 
     const tt: Helper.ValueKind = v.v;
