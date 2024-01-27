@@ -13,6 +13,7 @@ const ER = @import("error-reporting.zig");
 
 const Op = enum(u8) {
     ret,
+    push_int,
     push_unit,
 };
 
@@ -42,12 +43,31 @@ pub const Compiler = struct {
 
     fn compileExpr(self: *Compiler, e: *AST.Expression) !void {
         switch (e.kind) {
-            .literalVoid => try self.buffer.append(@intFromEnum(Op.push_unit)),
-            .exprs => {
-                for (e.kind.exprs) |expr| {
-                    try self.compileExpr(expr);
-                }
+            .exprs => for (e.kind.exprs) |expr| {
+                try self.compileExpr(expr);
             },
+            .literalInt => {
+                try self.buffer.append(@intFromEnum(Op.push_int));
+
+                const v1: u8 = @intCast(e.kind.literalInt & 0xff);
+                const v2: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff00))) >> 8);
+                const v3: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff0000))) >> 16);
+                const v4: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff000000))) >> 24);
+                const v5: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff00000000))) >> 32);
+                const v6: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff0000000000))) >> 40);
+                const v7: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff000000000000))) >> 48);
+                const v8: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt))) >> 56);
+
+                try self.buffer.append(v1);
+                try self.buffer.append(v2);
+                try self.buffer.append(v3);
+                try self.buffer.append(v4);
+                try self.buffer.append(v5);
+                try self.buffer.append(v6);
+                try self.buffer.append(v7);
+                try self.buffer.append(v8);
+            },
+            .literalVoid => try self.buffer.append(@intFromEnum(Op.push_unit)),
             else => {
                 std.debug.panic("Unhandled: {}", .{e.kind});
                 unreachable;
@@ -77,10 +97,24 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
     while (true) {
         switch (@as(Op, @enumFromInt(bytecode[ip]))) {
             Op.ret => return,
-            Op.push_unit => try runtime.pushUnitValue(),
+            Op.push_int => {
+                const v: V.IntType = @bitCast(@as(u64, (bytecode[ip + 1])) |
+                    (@as(u64, bytecode[ip + 2]) << 8) |
+                    (@as(u64, bytecode[ip + 3]) << 16) |
+                    (@as(u64, bytecode[ip + 4]) << 24) |
+                    (@as(u64, bytecode[ip + 5]) << 32) |
+                    (@as(u64, bytecode[ip + 6]) << 40) |
+                    (@as(u64, bytecode[ip + 7]) << 48) |
+                    (@as(u64, bytecode[ip + 8]) << 56));
+                try runtime.pushIntValue(v);
+                ip += 9;
+            },
+            Op.push_unit => {
+                try runtime.pushUnitValue();
+                ip += 1;
+            },
             // else => unreachable,
         }
-        ip += 1;
     }
 }
 
@@ -147,6 +181,13 @@ fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         std.log.err("Failed to deinit allocator\n", .{});
         return error.TestingError;
     }
+}
+
+test "literal int" {
+    try expectExprEqual("0", "0");
+    try expectExprEqual("-0", "0");
+    try expectExprEqual("123", "123");
+    try expectExprEqual("-123", "-123");
 }
 
 test "literal unit" {
