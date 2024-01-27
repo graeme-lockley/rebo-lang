@@ -1,48 +1,50 @@
 let printError(err) {
-   err := {...err}
-   let stack = err.stack
+   if typeof(err) == "Record" -> {
+      err := {...err}
+      let stack = err.stack
 
-   if typeof(stack) == "Sequence" -> err.stack := ()
-   print(ansi.foreground.red, "Error: ")
+      if typeof(stack) == "Sequence" -> err.stack := ()
+      print(ansi.foreground.red, "Error: ")
 
-   if err.kind != () -> {
-      print(err.kind, ": ")
-      err.kind := ()
-   }
+      if err.kind != () -> {
+         print(err.kind, ": ")
+         err.kind := ()
+      }
 
-   print(ansi.control.reset)
+      print(ansi.control.reset)
 
-   err |> keys() |> sort() |> each(fn (key, idx) {
-      if idx > 0 -> print(", ")
-      let value = err[key]
+      err |> keys() |> sort() |> each(fn (key, idx) {
+         if idx > 0 -> print(", ")
+         let value = err[key]
 
-      if typeof(value) == "Sequence" -> {
-         print(key, ": ", ansi.foreground.darkGray)
-         value |> each(fn (item, idx) {
-            if idx > 0 -> print(", ")
-            print(item)
-         })
-         print(ansi.control.reset)
-      } | print(key, ": ", ansi.foreground.darkGray, value, ansi.control.reset)
-   })
-   println()
-
-   if typeof(stack) == "Sequence" -> {
-      stack |> each(fn (line) {
-         print("  ")
-         if line.file != () -> print(line.file, ": ") | print("script: ")
-
-         print(ansi.foreground.darkGray)
-         if line.from.line == () || line.to.line == () -> {
-            if line.from.offset == line.to.offset -> print("offset: ", line.from.offset)
-             | print("offset: ", line.from.offset, "-", line.to.offset)
-         } | line.from.line == line.to.line -> {
-            if line.from.column == line.to.column -> print(line.from.line, ":", line.from.column)
-             | print(line.from.line, ":", line.from.column, "-", line.to.column)
-         } | print(line.from.line, ":", line.from.column, "-", line.to.line, ":", line.to.column)
-         println(ansi.control.reset)
+         if typeof(value) == "Sequence" -> {
+            print(key, ": ", ansi.foreground.darkGray)
+            value |> each(fn (item, idx) {
+               if idx > 0 -> print(", ")
+               print(item)
+            })
+            print(ansi.control.reset)
+         } | print(key, ": ", ansi.foreground.darkGray, value, ansi.control.reset)
       })
-   }
+      println()
+
+      if typeof(stack) == "Sequence" -> {
+         stack |> each(fn (line) {
+            print("  ")
+            if line.file != () -> print(line.file, ": ") | print("script: ")
+
+            print(ansi.foreground.darkGray)
+            if line.from.line == () || line.to.line == () -> {
+               if line.from.offset == line.to.offset -> print("offset: ", line.from.offset)
+               | print("offset: ", line.from.offset, "-", line.to.offset)
+            } | line.from.line == line.to.line -> {
+               if line.from.column == line.to.column -> print(line.from.line, ":", line.from.column)
+               | print(line.from.line, ":", line.from.column, "-", line.to.column)
+            } | print(line.from.line, ":", line.from.column, "-", line.to.line, ":", line.to.column)
+            println(ansi.control.reset)
+         })
+      }
+   } | println(ansi.foreground.red, "Error: ", ansi.control.reset, "Signal: ", ansi.foreground.darkGray, err, ansi.control.reset)
 }
 
 let printResult(result) {
