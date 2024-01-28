@@ -26,6 +26,7 @@ const Op = enum(u8) {
     append_sequence_items_bang,
 
     op_eql,
+    op_neql,
 };
 
 pub const Compiler = struct {
@@ -60,6 +61,11 @@ pub const Compiler = struct {
                         try self.compileExpr(e.kind.binaryOp.left);
                         try self.compileExpr(e.kind.binaryOp.right);
                         try self.buffer.append(@intFromEnum(Op.op_eql));
+                    },
+                    .NotEqual => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.op_neql));
                     },
                     else => {
                         std.debug.panic("Unhandled: {}", .{e.kind.binaryOp.op});
@@ -218,6 +224,10 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
                 try runtime.opEql();
                 ip += 1;
             },
+            Op.op_neql => {
+                try runtime.opNotEql();
+                ip += 1;
+            },
 
             // else => unreachable,
         }
@@ -317,8 +327,8 @@ test "equality op" {
     try expectExprEqual("1 == 1", "true");
     try expectExprEqual("0 == 1", "false");
 
-    // try expectExprEqual("1 != 1", "false");
-    // try expectExprEqual("0 != 1", "true");
+    try expectExprEqual("1 != 1", "false");
+    try expectExprEqual("0 != 1", "true");
 
     // try expectExprEqual("0 < 1", "true");
     // try expectExprEqual("0 < 1.0", "true");

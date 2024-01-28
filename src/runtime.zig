@@ -367,6 +367,13 @@ pub const Runtime = struct {
 
         try self.pushBoolValue(V.eq(left, right));
     }
+
+    pub inline fn opNotEql(self: *Runtime) !void {
+        const right = self.pop();
+        const left = self.pop();
+
+        try self.pushBoolValue(!V.eq(left, right));
+    }
 };
 
 fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {
