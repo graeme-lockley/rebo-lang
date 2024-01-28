@@ -113,18 +113,18 @@ test "equality op" {
     try expectExprEqual("1.0 < 0", "false");
     try expectExprEqual("1.0 < 0.0", "false");
 
-    // try expectExprEqual("0 <= 1", "true");
-    // try expectExprEqual("0 <= 1.0", "true");
-    // try expectExprEqual("0.0 <= 1", "true");
-    // try expectExprEqual("0.0 <= 1.0", "true");
-    // try expectExprEqual("0 <= 0", "true");
-    // try expectExprEqual("0 <= 0.0", "true");
-    // try expectExprEqual("0.0 <= 0", "true");
-    // try expectExprEqual("0.0 <= 0.0", "true");
-    // try expectExprEqual("1 <= 0", "false");
-    // try expectExprEqual("1 <= 0.0", "false");
-    // try expectExprEqual("1.0 <= 0", "false");
-    // try expectExprEqual("1.0 <= 0.0", "false");
+    try expectExprEqual("0 <= 1", "true");
+    try expectExprEqual("0 <= 1.0", "true");
+    try expectExprEqual("0.0 <= 1", "true");
+    try expectExprEqual("0.0 <= 1.0", "true");
+    try expectExprEqual("0 <= 0", "true");
+    try expectExprEqual("0 <= 0.0", "true");
+    try expectExprEqual("0.0 <= 0", "true");
+    try expectExprEqual("0.0 <= 0.0", "true");
+    try expectExprEqual("1 <= 0", "false");
+    try expectExprEqual("1 <= 0.0", "false");
+    try expectExprEqual("1.0 <= 0", "false");
+    try expectExprEqual("1.0 <= 0.0", "false");
 
     // try expectExprEqual("0 > 1", "false");
     // try expectExprEqual("0 > 1.0", "false");

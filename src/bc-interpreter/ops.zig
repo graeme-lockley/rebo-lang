@@ -15,4 +15,5 @@ pub const Op = enum(u8) {
     equals,
     not_equals,
     less_than,
+    less_equal,
 };
