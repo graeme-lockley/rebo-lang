@@ -16,6 +16,8 @@ const Op = enum(u8) {
     push_char,
     push_int,
     push_false,
+    push_float,
+    push_string,
     push_true,
     push_unit,
 };
@@ -54,9 +56,19 @@ pub const Compiler = struct {
                 try self.buffer.append(@intFromEnum(Op.push_char));
                 try self.buffer.append(e.kind.literalChar);
             },
+            .literalFloat => {
+                try self.buffer.append(@intFromEnum(Op.push_float));
+                try self.appendFloat(e.kind.literalFloat);
+            },
             .literalInt => {
                 try self.buffer.append(@intFromEnum(Op.push_int));
                 try self.appendInt(e.kind.literalInt);
+            },
+            .literalString => {
+                try self.buffer.append(@intFromEnum(Op.push_string));
+                const s = e.kind.literalString.slice();
+                try self.appendInt(@intCast(s.len));
+                try self.buffer.appendSlice(s);
             },
             .literalVoid => try self.buffer.append(@intFromEnum(Op.push_unit)),
             else => {
@@ -64,6 +76,10 @@ pub const Compiler = struct {
                 unreachable;
             },
         }
+    }
+
+    fn appendFloat(self: *Compiler, v: V.FloatType) !void {
+        try self.appendInt(@as(V.IntType, @bitCast(v)));
     }
 
     fn appendInt(self: *Compiler, v: V.IntType) !void {
@@ -104,7 +120,7 @@ pub fn script(runtime: *MS.Runtime, input: []const u8) !void {
 }
 
 fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
-    var ip: u32 = 0;
+    var ip: usize = 0;
     while (true) {
         switch (@as(Op, @enumFromInt(bytecode[ip]))) {
             Op.ret => return,
@@ -116,9 +132,19 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
                 try runtime.pushBoolValue(false);
                 ip += 1;
             },
+            Op.push_float => {
+                try runtime.pushFloatValue(readFloat(bytecode, ip + 1));
+                ip += 9;
+            },
             Op.push_int => {
                 try runtime.pushIntValue(readInt(bytecode, ip + 1));
                 ip += 9;
+            },
+            Op.push_string => {
+                const len: usize = @intCast(readInt(bytecode, ip + 1));
+                const str = bytecode[ip + 9 .. ip + 9 + len];
+                try runtime.pushStringValue(str);
+                ip += 9 + len;
             },
             Op.push_true => {
                 try runtime.pushBoolValue(true);
@@ -133,7 +159,11 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
     }
 }
 
-fn readInt(bytecode: []const u8, ip: u32) V.IntType {
+fn readFloat(bytecode: []const u8, ip: usize) V.FloatType {
+    return @as(V.FloatType, @bitCast(readInt(bytecode, ip)));
+}
+
+fn readInt(bytecode: []const u8, ip: usize) V.IntType {
     const v: V.IntType = @bitCast(@as(u64, (bytecode[ip])) |
         (@as(u64, bytecode[ip + 1]) << 8) |
         (@as(u64, bytecode[ip + 2]) << 16) |
@@ -226,11 +256,26 @@ test "literal char" {
     try expectExprEqual("'\\x5'", "'\\x5'");
 }
 
+test "literal float" {
+    try expectExprEqual("1.0", "1");
+    try expectExprEqual("1.23", "1.23");
+
+    try expectExprEqual("1.0e5", "100000");
+    try expectExprEqual("1.0e-5", "0.00001");
+}
+
 test "literal int" {
     try expectExprEqual("0", "0");
     try expectExprEqual("-0", "0");
     try expectExprEqual("123", "123");
     try expectExprEqual("-123", "-123");
+}
+
+test "literal string" {
+    try expectExprEqual("\"\"", "\"\"");
+    try expectExprEqual("\"hello world\"", "\"hello world\"");
+    try expectExprEqual("\"\\n \\\\ \\\"\"", "\"\\n \\\\ \\\"\"");
+    try expectExprEqual("\"\\x32;\"", "\" \"");
 }
 
 test "literal unit" {
