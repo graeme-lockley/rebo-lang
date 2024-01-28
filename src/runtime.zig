@@ -1,8 +1,9 @@
 const std = @import("std");
 
-pub const AST = @import("./ast.zig");
-pub const SP = @import("./string_pool.zig");
-pub const V = @import("./value.zig");
+const AST = @import("./ast.zig");
+const ER = @import("./error-reporting.zig");
+const SP = @import("./string_pool.zig");
+const V = @import("./value.zig");
 
 const MAINTAIN_FREE_CHAIN = true;
 const INITIAL_HEAP_SIZE = 1;
@@ -121,6 +122,34 @@ pub const Runtime = struct {
         self.free = v.next;
 
         return v;
+    }
+
+    pub inline fn appendSequenceItemBang(self: *Runtime) !void {
+        const seq = self.peek(1);
+        const item = self.peek(0);
+
+        if (seq.isSequence()) {
+            try seq.v.SequenceKind.appendItem(item);
+            self.popn(1);
+        } else {
+            try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
+        }
+    }
+
+    pub inline fn appendSequenceItemsBang(self: *Runtime) !void {
+        const seq = self.peek(1);
+        const item = self.peek(0);
+
+        if (!seq.isSequence()) {
+            try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
+        }
+
+        if (!item.isSequence()) {
+            try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
+        }
+
+        try seq.v.SequenceKind.appendSlice(item.v.SequenceKind.items());
+        self.popn(1);
     }
 
     pub inline fn newBuiltinValue(self: *Runtime, body: V.BuiltinFunctionType) !*V.Value {

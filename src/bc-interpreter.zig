@@ -17,9 +17,13 @@ const Op = enum(u8) {
     push_int,
     push_false,
     push_float,
+    push_sequence,
     push_string,
     push_true,
     push_unit,
+
+    append_sequence_item_bang,
+    append_sequence_items_bang,
 };
 
 pub const Compiler = struct {
@@ -63,6 +67,18 @@ pub const Compiler = struct {
             .literalInt => {
                 try self.buffer.append(@intFromEnum(Op.push_int));
                 try self.appendInt(e.kind.literalInt);
+            },
+            .literalSequence => {
+                try self.buffer.append(@intFromEnum(Op.push_sequence));
+                for (e.kind.literalSequence) |item| {
+                    if (item == .value) {
+                        try self.compileExpr(item.value);
+                        try self.buffer.append(@intFromEnum(Op.append_sequence_item_bang));
+                    } else {
+                        try self.compileExpr(item.sequence);
+                        try self.buffer.append(@intFromEnum(Op.append_sequence_items_bang));
+                    }
+                }
             },
             .literalString => {
                 try self.buffer.append(@intFromEnum(Op.push_string));
@@ -140,6 +156,10 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
                 try runtime.pushIntValue(readInt(bytecode, ip + 1));
                 ip += 9;
             },
+            Op.push_sequence => {
+                try runtime.pushEmptySequenceValue();
+                ip += 1;
+            },
             Op.push_string => {
                 const len: usize = @intCast(readInt(bytecode, ip + 1));
                 const str = bytecode[ip + 9 .. ip + 9 + len];
@@ -154,6 +174,15 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
                 try runtime.pushUnitValue();
                 ip += 1;
             },
+            Op.append_sequence_item_bang => {
+                try runtime.appendSequenceItemBang();
+                ip += 1;
+            },
+            Op.append_sequence_items_bang => {
+                try runtime.appendSequenceItemsBang();
+                ip += 1;
+            },
+
             // else => unreachable,
         }
     }
@@ -269,6 +298,20 @@ test "literal int" {
     try expectExprEqual("-0", "0");
     try expectExprEqual("123", "123");
     try expectExprEqual("-123", "-123");
+}
+
+test "literal sequence" {
+    try expectExprEqual("[]", "[]");
+    try expectExprEqual("[1]", "[1]");
+    try expectExprEqual("[1, 2, 3]", "[1, 2, 3]");
+    try expectExprEqual("[1, [true, false], 3]", "[1, [true, false], 3]");
+
+    try expectExprEqual("[1, ...[], 3]", "[1, 3]");
+    try expectExprEqual("[1, ...[true], 3]", "[1, true, 3]");
+    try expectExprEqual("[1, ...[true, false], 3]", "[1, true, false, 3]");
+    try expectExprEqual("[...[true, false], 1, ...[true, false], 3, ...[true, false]]", "[true, false, 1, true, false, 3, true, false]");
+
+    // try expectExprEqual("let x = [true, false]; [...x, 1, ...x, 3, ...x]", "[true, false, 1, true, false, 3, true, false]");
 }
 
 test "literal string" {
