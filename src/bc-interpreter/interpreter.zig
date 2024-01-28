@@ -59,17 +59,17 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
                 try runtime.appendSequenceItemsBang(seqPosition, itemPosition);
                 ip += 1 + PositionTypeSize + PositionTypeSize;
             },
-            Op.op_eql => {
-                try runtime.opEql();
+            Op.equals => {
+                try runtime.equals();
                 ip += 1;
             },
-            Op.op_neql => {
-                try runtime.opNotEql();
+            Op.not_equals => {
+                try runtime.notEquals();
                 ip += 1;
             },
-            Op.op_lt => {
+            Op.less_than => {
                 const position = readPosition(bytecode, ip + 1);
-                try runtime.opLessThan(position);
+                try runtime.lessThan(position);
                 ip += 1 + PositionTypeSize;
             },
 

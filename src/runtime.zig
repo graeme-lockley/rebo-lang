@@ -361,21 +361,21 @@ pub const Runtime = struct {
         self.stack = std.ArrayList(*V.Value).init(self.allocator);
     }
 
-    pub inline fn opEql(self: *Runtime) !void {
+    pub inline fn equals(self: *Runtime) !void {
         const right = self.pop();
         const left = self.pop();
 
         try self.pushBoolValue(V.eq(left, right));
     }
 
-    pub inline fn opNotEql(self: *Runtime) !void {
+    pub inline fn notEquals(self: *Runtime) !void {
         const right = self.pop();
         const left = self.pop();
 
         try self.pushBoolValue(!V.eq(left, right));
     }
 
-    pub inline fn opLessThan(self: *Runtime, position: Errors.Position) !void {
+    pub inline fn lessThan(self: *Runtime, position: Errors.Position) !void {
         const right = self.pop();
         const left = self.pop();
 

@@ -36,18 +36,18 @@ pub const Compiler = struct {
                     .Equal => {
                         try self.compileExpr(e.kind.binaryOp.left);
                         try self.compileExpr(e.kind.binaryOp.right);
-                        try self.buffer.append(@intFromEnum(Op.op_eql));
+                        try self.buffer.append(@intFromEnum(Op.equals));
                     },
                     .LessThan => {
                         try self.compileExpr(e.kind.binaryOp.left);
                         try self.compileExpr(e.kind.binaryOp.right);
-                        try self.buffer.append(@intFromEnum(Op.op_lt));
+                        try self.buffer.append(@intFromEnum(Op.less_than));
                         try self.appendPosition(e.position);
                     },
                     .NotEqual => {
                         try self.compileExpr(e.kind.binaryOp.left);
                         try self.compileExpr(e.kind.binaryOp.right);
-                        try self.buffer.append(@intFromEnum(Op.op_neql));
+                        try self.buffer.append(@intFromEnum(Op.not_equals));
                     },
                     else => {
                         std.debug.panic("Unhandled: {}", .{e.kind.binaryOp.op});

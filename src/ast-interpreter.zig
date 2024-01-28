@@ -384,7 +384,7 @@ inline fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeE
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            try machine.runtime.opLessThan(e.position);
+            try machine.runtime.lessThan(e.position);
         },
         AST.Operator.LessEqual => {
             try evalExpr(machine, leftAST);
@@ -486,13 +486,13 @@ inline fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeE
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            try machine.runtime.opEql();
+            try machine.runtime.equals();
         },
         AST.Operator.NotEqual => {
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            try machine.runtime.opNotEql();
+            try machine.runtime.notEquals();
         },
         AST.Operator.And => {
             try evalExpr(machine, leftAST);

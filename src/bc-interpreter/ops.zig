@@ -12,7 +12,7 @@ pub const Op = enum(u8) {
     append_sequence_item_bang,
     append_sequence_items_bang,
 
-    op_eql,
-    op_neql,
-    op_lt,
+    equals,
+    not_equals,
+    less_than,
 };
