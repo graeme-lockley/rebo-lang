@@ -374,6 +374,36 @@ pub const Runtime = struct {
 
         try self.pushBoolValue(!V.eq(left, right));
     }
+
+    pub inline fn opLessThan(self: *Runtime, position: Errors.Position) !void {
+        const right = self.pop();
+        const left = self.pop();
+
+        switch (left.v) {
+            V.ValueValue.IntKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => try self.pushBoolValue(left.v.IntKind < right.v.IntKind),
+                    V.ValueValue.FloatKind => try self.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) < right.v.FloatKind),
+                    else => try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.LessThan, left.v, right.v),
+                }
+            },
+            V.ValueValue.FloatKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => try self.pushBoolValue(left.v.FloatKind < @as(V.FloatType, @floatFromInt(right.v.IntKind))),
+                    V.ValueValue.FloatKind => try self.pushBoolValue(left.v.FloatKind < right.v.FloatKind),
+                    else => try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.LessThan, left.v, right.v),
+                }
+            },
+            V.ValueValue.StringKind => {
+                if (right.v == V.ValueValue.StringKind) {
+                    try self.pushBoolValue(std.mem.lessThan(u8, left.v.StringKind.slice(), right.v.StringKind.slice()));
+                } else {
+                    try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.LessThan, left.v, right.v);
+                }
+            },
+            else => try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.LessThan, left.v, right.v),
+        }
+    }
 };
 
 fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {

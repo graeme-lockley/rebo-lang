@@ -27,6 +27,7 @@ const Op = enum(u8) {
 
     op_eql,
     op_neql,
+    op_lt,
 };
 
 pub const Compiler = struct {
@@ -61,6 +62,12 @@ pub const Compiler = struct {
                         try self.compileExpr(e.kind.binaryOp.left);
                         try self.compileExpr(e.kind.binaryOp.right);
                         try self.buffer.append(@intFromEnum(Op.op_eql));
+                    },
+                    .LessThan => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.op_lt));
+                        try self.appendPosition(e.position);
                     },
                     .NotEqual => {
                         try self.compileExpr(e.kind.binaryOp.left);
@@ -228,6 +235,11 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
                 try runtime.opNotEql();
                 ip += 1;
             },
+            Op.op_lt => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.opLessThan(position);
+                ip += 1 + PositionTypeSize;
+            },
 
             // else => unreachable,
         }
@@ -330,18 +342,18 @@ test "equality op" {
     try expectExprEqual("1 != 1", "false");
     try expectExprEqual("0 != 1", "true");
 
-    // try expectExprEqual("0 < 1", "true");
-    // try expectExprEqual("0 < 1.0", "true");
-    // try expectExprEqual("0.0 < 1", "true");
-    // try expectExprEqual("0.0 < 1.0", "true");
-    // try expectExprEqual("0 < 0", "false");
-    // try expectExprEqual("0 < 0.0", "false");
-    // try expectExprEqual("0.0 < 0", "false");
-    // try expectExprEqual("0.0 < 0.0", "false");
-    // try expectExprEqual("1 < 0", "false");
-    // try expectExprEqual("1 < 0.0", "false");
-    // try expectExprEqual("1.0 < 0", "false");
-    // try expectExprEqual("1.0 < 0.0", "false");
+    try expectExprEqual("0 < 1", "true");
+    try expectExprEqual("0 < 1.0", "true");
+    try expectExprEqual("0.0 < 1", "true");
+    try expectExprEqual("0.0 < 1.0", "true");
+    try expectExprEqual("0 < 0", "false");
+    try expectExprEqual("0 < 0.0", "false");
+    try expectExprEqual("0.0 < 0", "false");
+    try expectExprEqual("0.0 < 0.0", "false");
+    try expectExprEqual("1 < 0", "false");
+    try expectExprEqual("1 < 0.0", "false");
+    try expectExprEqual("1.0 < 0", "false");
+    try expectExprEqual("1.0 < 0.0", "false");
 
     // try expectExprEqual("0 <= 1", "true");
     // try expectExprEqual("0 <= 1.0", "true");
