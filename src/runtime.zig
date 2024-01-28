@@ -128,12 +128,12 @@ pub const Runtime = struct {
         const seq = self.peek(1);
         const item = self.peek(0);
 
-        if (seq.isSequence()) {
-            try seq.v.SequenceKind.appendItem(item);
-            self.popn(1);
-        } else {
+        if (!seq.isSequence()) {
             try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
         }
+
+        try seq.v.SequenceKind.appendItem(item);
+        self.popn(1);
     }
 
     pub inline fn appendSequenceItemsBang(self: *Runtime) !void {
@@ -145,7 +145,7 @@ pub const Runtime = struct {
         }
 
         if (!item.isSequence()) {
-            try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
+            try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.SequenceKind}, item.v);
         }
 
         try seq.v.SequenceKind.appendSlice(item.v.SequenceKind.items());

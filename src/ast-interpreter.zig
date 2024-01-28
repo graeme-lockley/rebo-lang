@@ -991,23 +991,16 @@ inline fn literalRecord(machine: *ASTInterpreter, e: *AST.Expression) Errors.Run
 
 inline fn literalSequence(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     try machine.runtime.pushEmptySequenceValue();
-    const seq = machine.runtime.peek(0);
 
     for (e.kind.literalSequence) |v| {
         switch (v) {
             .value => {
                 try evalExpr(machine, v.value);
-                try seq.v.SequenceKind.appendItem(machine.runtime.pop());
+                try machine.runtime.appendSequenceItemBang();
             },
             .sequence => {
                 try evalExpr(machine, v.sequence);
-                const vs = machine.runtime.pop();
-
-                if (vs.v != V.ValueValue.SequenceKind) {
-                    try ER.raiseExpectedTypeError(&machine.runtime, v.sequence.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, vs.v);
-                }
-
-                try seq.v.SequenceKind.appendSlice(vs.v.SequenceKind.items());
+                try machine.runtime.appendSequenceItemsBang();
             },
         }
     }
