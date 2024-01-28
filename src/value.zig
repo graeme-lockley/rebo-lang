@@ -48,6 +48,10 @@ pub const Value = struct {
         return self.v == .RecordKind;
     }
 
+    pub inline fn isSequence(self: *Value) bool {
+        return self.v == .SequenceKind;
+    }
+
     pub inline fn isString(self: *Value) bool {
         return self.v == .StringKind;
     }
