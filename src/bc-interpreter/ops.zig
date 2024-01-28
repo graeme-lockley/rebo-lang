@@ -18,4 +18,6 @@ pub const Op = enum(u8) {
     less_equal,
     greater_than,
     greater_equal,
+    add,
+    subtract,
 };

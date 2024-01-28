@@ -93,6 +93,26 @@ fn expectExprEqual(input: []const u8, expected: []const u8) !void {
     }
 }
 
+test "additive op" {
+    try expectExprEqual("1 + 1", "2");
+    try expectExprEqual("1 + 1.1", "2.1");
+    try expectExprEqual("1.1 + 1", "2.1");
+    try expectExprEqual("1.1 + 1.1", "2.2");
+    try expectExprEqual("1 + 2 + 3 + 4 + 5", "15");
+
+    try expectExprEqual("1 - 1", "0");
+    try expectExprEqual("1 - 1.0", "0");
+    try expectExprEqual("1.0 - 1", "0");
+    try expectExprEqual("1 - 1.0", "0");
+    try expectExprEqual("1 - 2 + 3 - 4 + 5", "3");
+
+    try expectExprEqual("\"hello\" + \" \" + \"world\"", "\"hello world\"");
+    try expectExprEqual("[1, 2, 3] + [] + [4, 5] + [6]", "[1, 2, 3, 4, 5, 6]");
+
+    // try expectError("1 + true");
+    // try expectError("1 - true");
+}
+
 test "equality op" {
     try expectExprEqual("1 == 1", "true");
     try expectExprEqual("0 == 1", "false");

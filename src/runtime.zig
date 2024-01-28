@@ -542,6 +542,109 @@ pub const Runtime = struct {
         }
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.GreaterEqual, left.v, right.v);
     }
+
+    pub inline fn add(self: *Runtime, position: Errors.Position) !void {
+        const right = self.peek(0);
+        const left = self.peek(1);
+
+        switch (left.v) {
+            V.ValueValue.IntKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => {
+                        self.popn(2);
+                        try self.pushIntValue(left.v.IntKind + right.v.IntKind);
+                        return;
+                    },
+                    V.ValueValue.FloatKind => {
+                        self.popn(2);
+                        try self.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) + right.v.FloatKind);
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            V.ValueValue.FloatKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => {
+                        self.popn(2);
+                        try self.pushFloatValue(left.v.FloatKind + @as(V.FloatType, @floatFromInt(right.v.IntKind)));
+                        return;
+                    },
+                    V.ValueValue.FloatKind => {
+                        self.popn(2);
+                        try self.pushFloatValue(left.v.FloatKind + right.v.FloatKind);
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            V.ValueValue.SequenceKind => {
+                switch (right.v) {
+                    V.ValueValue.SequenceKind => {
+                        try self.pushEmptySequenceValue();
+                        const seq = self.peek(0);
+                        try seq.v.SequenceKind.appendSlice(left.v.SequenceKind.items());
+                        try seq.v.SequenceKind.appendSlice(right.v.SequenceKind.items());
+                        self.popn(3);
+                        try self.push(seq);
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            V.ValueValue.StringKind => {
+                switch (right.v) {
+                    V.ValueValue.StringKind => {
+                        self.popn(2);
+
+                        const slices = [_][]const u8{ left.v.StringKind.slice(), right.v.StringKind.slice() };
+                        try self.pushOwnedStringValue(try std.mem.concat(self.allocator, u8, &slices));
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            else => {},
+        }
+
+        try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Plus, left.v, right.v);
+    }
+
+    pub inline fn subtract(self: *Runtime, position: Errors.Position) !void {
+        const right = self.pop();
+        const left = self.pop();
+
+        switch (left.v) {
+            V.ValueValue.IntKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => {
+                        try self.pushIntValue(left.v.IntKind - right.v.IntKind);
+                        return;
+                    },
+                    V.ValueValue.FloatKind => {
+                        try self.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) - right.v.FloatKind);
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            V.ValueValue.FloatKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => {
+                        try self.pushFloatValue(left.v.FloatKind - @as(V.FloatType, @floatFromInt(right.v.IntKind)));
+                        return;
+                    },
+                    V.ValueValue.FloatKind => {
+                        try self.pushFloatValue(left.v.FloatKind - right.v.FloatKind);
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            else => {},
+        }
+        try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Minus, left.v, right.v);
+    }
 };
 
 fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {

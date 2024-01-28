@@ -175,87 +175,13 @@ inline fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeE
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            const right = machine.runtime.peek(0);
-            const left = machine.runtime.peek(1);
-
-            switch (left.v) {
-                V.ValueValue.IntKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.runtime.popn(2);
-                            try machine.runtime.pushIntValue(left.v.IntKind + right.v.IntKind);
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.runtime.popn(2);
-                            try machine.runtime.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) + right.v.FloatKind);
-                        },
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.FloatKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            machine.runtime.popn(2);
-                            try machine.runtime.pushFloatValue(left.v.FloatKind + @as(V.FloatType, @floatFromInt(right.v.IntKind)));
-                        },
-                        V.ValueValue.FloatKind => {
-                            machine.runtime.popn(2);
-                            try machine.runtime.pushFloatValue(left.v.FloatKind + right.v.FloatKind);
-                        },
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.SequenceKind => {
-                    switch (right.v) {
-                        V.ValueValue.SequenceKind => {
-                            try machine.runtime.pushEmptySequenceValue();
-                            const seq = machine.runtime.peek(0);
-                            try seq.v.SequenceKind.appendSlice(left.v.SequenceKind.items());
-                            try seq.v.SequenceKind.appendSlice(right.v.SequenceKind.items());
-                            machine.runtime.popn(3);
-                            try machine.runtime.push(seq);
-                        },
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.StringKind => {
-                    switch (right.v) {
-                        V.ValueValue.StringKind => {
-                            machine.runtime.popn(2);
-
-                            const slices = [_][]const u8{ left.v.StringKind.slice(), right.v.StringKind.slice() };
-                            try machine.runtime.pushOwnedStringValue(try std.mem.concat(machine.runtime.allocator, u8, &slices));
-                        },
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-            }
+            try machine.runtime.add(e.position);
         },
         AST.Operator.Minus => {
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            const right = machine.pop();
-            const left = machine.pop();
-
-            switch (left.v) {
-                V.ValueValue.IntKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => try machine.runtime.pushIntValue(left.v.IntKind - right.v.IntKind),
-                        V.ValueValue.FloatKind => try machine.runtime.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) - right.v.FloatKind),
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.FloatKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => try machine.runtime.pushFloatValue(left.v.FloatKind - @as(V.FloatType, @floatFromInt(right.v.IntKind))),
-                        V.ValueValue.FloatKind => try machine.runtime.pushFloatValue(left.v.FloatKind - right.v.FloatKind),
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-            }
+            try machine.runtime.subtract(e.position);
         },
         AST.Operator.Times => {
             try evalExpr(machine, leftAST);

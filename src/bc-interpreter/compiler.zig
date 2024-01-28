@@ -67,6 +67,18 @@ pub const Compiler = struct {
                         try self.compileExpr(e.kind.binaryOp.right);
                         try self.buffer.append(@intFromEnum(Op.not_equals));
                     },
+                    .Plus => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.add));
+                        try self.appendPosition(e.position);
+                    },
+                    .Minus => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.subtract));
+                        try self.appendPosition(e.position);
+                    },
                     else => {
                         std.debug.panic("Unhandled: {}", .{e.kind.binaryOp.op});
                         unreachable;
