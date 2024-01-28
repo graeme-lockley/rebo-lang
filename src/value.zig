@@ -40,8 +40,8 @@ pub const Value = struct {
         }
     }
 
-    pub inline fn isUnit(self: *Value) bool {
-        return self.v == .UnitKind;
+    pub inline fn isInt(self: *Value) bool {
+        return self.v == .IntKind;
     }
 
     pub inline fn isRecord(self: *Value) bool {
@@ -54,6 +54,10 @@ pub const Value = struct {
 
     pub inline fn isString(self: *Value) bool {
         return self.v == .StringKind;
+    }
+
+    pub inline fn isUnit(self: *Value) bool {
+        return self.v == .UnitKind;
     }
 
     pub fn appendValue(self: *const Value, buffer: *std.ArrayList(u8), style: Style) !void {

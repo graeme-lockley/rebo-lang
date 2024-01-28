@@ -125,6 +125,24 @@ pub const Runtime = struct {
         return v;
     }
 
+    pub inline fn appendSequenceItem(self: *Runtime, seqPosition: Errors.Position) !void {
+        const seq = self.peek(1);
+        const item = self.peek(0);
+
+        if (!seq.isSequence()) {
+            try ER.raiseExpectedTypeError(self, seqPosition, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
+        }
+
+        try self.pushEmptySequenceValue();
+        const result = self.peek(0);
+
+        try result.v.SequenceKind.appendSlice(seq.v.SequenceKind.items());
+        try result.v.SequenceKind.appendItem(item);
+
+        self.popn(3);
+        try self.push(result);
+    }
+
     pub inline fn appendSequenceItemBang(self: *Runtime, seqPosition: Errors.Position) !void {
         const seq = self.peek(1);
         const item = self.peek(0);
@@ -135,6 +153,38 @@ pub const Runtime = struct {
 
         try seq.v.SequenceKind.appendItem(item);
         self.popn(1);
+    }
+
+    pub inline fn prependSequenceItem(self: *Runtime, seqPosition: Errors.Position) !void {
+        const item = self.peek(1);
+        const seq = self.peek(0);
+
+        if (!seq.isSequence()) {
+            try ER.raiseExpectedTypeError(self, seqPosition, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
+        }
+
+        try self.pushEmptySequenceValue();
+        const result = self.peek(0);
+
+        try result.v.SequenceKind.appendItem(item);
+        try result.v.SequenceKind.appendSlice(seq.v.SequenceKind.items());
+
+        self.popn(3);
+        try self.push(result);
+    }
+
+    pub inline fn prependSequenceItemBang(self: *Runtime, seqPosition: Errors.Position) !void {
+        const item = self.peek(1);
+        const seq = self.peek(0);
+
+        if (!seq.isSequence()) {
+            try ER.raiseExpectedTypeError(self, seqPosition, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
+        }
+
+        try seq.v.SequenceKind.prependItem(item);
+
+        self.popn(2);
+        try self.push(seq);
     }
 
     pub inline fn appendSequenceItemsBang(self: *Runtime, seqPosition: Errors.Position, itemPosition: Errors.Position) !void {
@@ -644,6 +694,152 @@ pub const Runtime = struct {
             else => {},
         }
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Minus, left.v, right.v);
+    }
+
+    pub inline fn multiply(self: *Runtime, position: Errors.Position) !void {
+        const right = self.pop();
+        const left = self.pop();
+
+        switch (left.v) {
+            V.ValueValue.IntKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => {
+                        try self.pushIntValue(left.v.IntKind * right.v.IntKind);
+                        return;
+                    },
+                    V.ValueValue.FloatKind => {
+                        try self.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) * right.v.FloatKind);
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            V.ValueValue.FloatKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => {
+                        try self.pushFloatValue(left.v.FloatKind * @as(V.FloatType, @floatFromInt(right.v.IntKind)));
+                        return;
+                    },
+                    V.ValueValue.FloatKind => {
+                        try self.pushFloatValue(left.v.FloatKind * right.v.FloatKind);
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            V.ValueValue.StringKind => {
+                if (right.v == V.ValueValue.IntKind) {
+                    const mem = try self.allocator.alloc(u8, left.v.StringKind.len() * @as(usize, @intCast(right.v.IntKind)));
+
+                    for (0..@intCast(right.v.IntKind)) |index| {
+                        std.mem.copyForwards(u8, mem[index * left.v.StringKind.len() ..], left.v.StringKind.slice());
+                    }
+
+                    try self.pushOwnedStringValue(mem);
+                    return;
+                }
+            },
+            else => {},
+        }
+        try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Times, left.v, right.v);
+    }
+
+    pub inline fn divide(self: *Runtime, position: Errors.Position) !void {
+        const right = self.pop();
+        const left = self.pop();
+
+        switch (left.v) {
+            V.ValueValue.IntKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => {
+                        if (right.v.IntKind == 0) {
+                            try ER.raiseNamedUserError(self, "DivideByZeroError", position);
+                        }
+                        try self.pushIntValue(@divTrunc(left.v.IntKind, right.v.IntKind));
+                        return;
+                    },
+                    V.ValueValue.FloatKind => {
+                        if (right.v.FloatKind == 0.0) {
+                            try ER.raiseNamedUserError(self, "DivideByZeroError", position);
+                        }
+                        try self.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) / right.v.FloatKind);
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            V.ValueValue.FloatKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => {
+                        if (right.v.IntKind == 0) {
+                            try ER.raiseNamedUserError(self, "DivideByZeroError", position);
+                        }
+                        try self.pushFloatValue(left.v.FloatKind / @as(V.FloatType, @floatFromInt(right.v.IntKind)));
+                        return;
+                    },
+                    V.ValueValue.FloatKind => {
+                        if (right.v.FloatKind == 0.0) {
+                            try ER.raiseNamedUserError(self, "DivideByZeroError", position);
+                        }
+                        try self.pushFloatValue(left.v.FloatKind / right.v.FloatKind);
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            else => {},
+        }
+        try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Divide, left.v, right.v);
+    }
+
+    pub inline fn power(self: *Runtime, position: Errors.Position) !void {
+        const right = self.pop();
+        const left = self.pop();
+
+        switch (left.v) {
+            V.ValueValue.IntKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => {
+                        try self.pushIntValue(std.math.pow(V.IntType, left.v.IntKind, right.v.IntKind));
+                        return;
+                    },
+                    V.ValueValue.FloatKind => {
+                        try self.pushFloatValue(std.math.pow(V.FloatType, @as(V.FloatType, @floatFromInt(left.v.IntKind)), right.v.FloatKind));
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            V.ValueValue.FloatKind => {
+                switch (right.v) {
+                    V.ValueValue.IntKind => {
+                        try self.pushFloatValue(std.math.pow(V.FloatType, left.v.FloatKind, @as(V.FloatType, @floatFromInt(right.v.IntKind))));
+                        return;
+                    },
+                    V.ValueValue.FloatKind => {
+                        try self.pushFloatValue(std.math.pow(V.FloatType, left.v.FloatKind, right.v.FloatKind));
+                        return;
+                    },
+                    else => {},
+                }
+            },
+            else => {},
+        }
+        try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Power, left.v, right.v);
+    }
+
+    pub inline fn modulo(self: *Runtime, position: Errors.Position) !void {
+        const right = self.pop();
+        const left = self.pop();
+
+        if (!left.isInt() or !right.isInt()) {
+            try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Modulo, left.v, right.v);
+        }
+        if (right.v.IntKind == 0) {
+            try ER.raiseNamedUserError(self, "DivideByZeroError", position);
+        }
+
+        try self.pushIntValue(@mod(left.v.IntKind, right.v.IntKind));
     }
 };
 

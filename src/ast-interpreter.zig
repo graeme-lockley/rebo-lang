@@ -187,124 +187,25 @@ inline fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeE
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            const right = machine.pop();
-            const left = machine.pop();
-
-            switch (left.v) {
-                V.ValueValue.IntKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => try machine.runtime.pushIntValue(left.v.IntKind * right.v.IntKind),
-                        V.ValueValue.FloatKind => try machine.runtime.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) * right.v.FloatKind),
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.FloatKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => try machine.runtime.pushFloatValue(left.v.FloatKind * @as(V.FloatType, @floatFromInt(right.v.IntKind))),
-                        V.ValueValue.FloatKind => try machine.runtime.pushFloatValue(left.v.FloatKind * right.v.FloatKind),
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.StringKind => {
-                    if (right.v == V.ValueValue.IntKind) {
-                        const mem = try machine.runtime.allocator.alloc(u8, left.v.StringKind.len() * @as(usize, @intCast(right.v.IntKind)));
-
-                        for (0..@intCast(right.v.IntKind)) |index| {
-                            std.mem.copyForwards(u8, mem[index * left.v.StringKind.len() ..], left.v.StringKind.slice());
-                        }
-
-                        try machine.runtime.pushOwnedStringValue(mem);
-                    } else {
-                        try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
-                    }
-                },
-                else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-            }
+            try machine.runtime.multiply(e.position);
         },
         AST.Operator.Divide => {
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            const right = machine.pop();
-            const left = machine.pop();
-
-            switch (left.v) {
-                V.ValueValue.IntKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            if (right.v.IntKind == 0) {
-                                try ER.raiseNamedUserError(&machine.runtime, "DivideByZeroError", e.position);
-                            }
-                            try machine.runtime.pushIntValue(@divTrunc(left.v.IntKind, right.v.IntKind));
-                        },
-                        V.ValueValue.FloatKind => {
-                            if (right.v.FloatKind == 0.0) {
-                                try ER.raiseNamedUserError(&machine.runtime, "DivideByZeroError", e.position);
-                            }
-                            try machine.runtime.pushFloatValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) / right.v.FloatKind);
-                        },
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.FloatKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => {
-                            if (right.v.IntKind == 0) {
-                                try ER.raiseNamedUserError(&machine.runtime, "DivideByZeroError", e.position);
-                            }
-                            try machine.runtime.pushFloatValue(left.v.FloatKind / @as(V.FloatType, @floatFromInt(right.v.IntKind)));
-                        },
-                        V.ValueValue.FloatKind => {
-                            if (right.v.FloatKind == 0.0) {
-                                try ER.raiseNamedUserError(&machine.runtime, "DivideByZeroError", e.position);
-                            }
-                            try machine.runtime.pushFloatValue(left.v.FloatKind / right.v.FloatKind);
-                        },
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-            }
+            try machine.runtime.divide(e.position);
         },
         AST.Operator.Power => {
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            const right = machine.pop();
-            const left = machine.pop();
-
-            switch (left.v) {
-                V.ValueValue.IntKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => try machine.runtime.pushIntValue(std.math.pow(V.IntType, left.v.IntKind, right.v.IntKind)),
-                        V.ValueValue.FloatKind => try machine.runtime.pushFloatValue(std.math.pow(V.FloatType, @as(V.FloatType, @floatFromInt(left.v.IntKind)), right.v.FloatKind)),
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.FloatKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => try machine.runtime.pushFloatValue(std.math.pow(V.FloatType, left.v.FloatKind, @as(V.FloatType, @floatFromInt(right.v.IntKind)))),
-                        V.ValueValue.FloatKind => try machine.runtime.pushFloatValue(std.math.pow(V.FloatType, left.v.FloatKind, right.v.FloatKind)),
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-            }
+            try machine.runtime.power(e.position);
         },
         AST.Operator.Modulo => {
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            const right = machine.pop();
-            const left = machine.pop();
-
-            if (left.v != V.ValueValue.IntKind or right.v != V.ValueValue.IntKind) {
-                try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
-            }
-            if (right.v.IntKind == 0) {
-                try ER.raiseNamedUserError(&machine.runtime, "DivideByZeroError", e.position);
-            }
-            try machine.runtime.pushIntValue(@mod(left.v.IntKind, right.v.IntKind));
+            try machine.runtime.modulo(e.position);
         },
         AST.Operator.LessThan => {
             try evalExpr(machine, leftAST);
@@ -384,62 +285,25 @@ inline fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeE
                 try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
             }
 
-            try machine.runtime.pushEmptySequenceValue();
-            const result = machine.runtime.peek(0);
-
-            try result.v.SequenceKind.appendSlice(left.v.SequenceKind.items());
-            try result.v.SequenceKind.appendItem(right);
-
-            machine.runtime.popn(3);
-            try machine.runtime.push(result);
+            try machine.runtime.appendSequenceItem(e.position);
         },
         AST.Operator.AppendUpdate => {
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
-            const left = machine.runtime.peek(1);
-            const right = machine.runtime.peek(0);
 
-            if (left.v != V.ValueValue.SequenceKind) {
-                try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
-            }
-
-            try left.v.SequenceKind.appendItem(right);
-
-            machine.runtime.popn(1);
+            try machine.runtime.appendSequenceItemBang(e.position);
         },
         AST.Operator.Prepend => {
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
-            const left = machine.runtime.peek(1);
-            const right = machine.runtime.peek(0);
 
-            if (right.v != V.ValueValue.SequenceKind) {
-                try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
-            }
-
-            try machine.runtime.pushEmptySequenceValue();
-            const result = machine.runtime.peek(0);
-
-            try result.v.SequenceKind.appendItem(left);
-            try result.v.SequenceKind.appendSlice(right.v.SequenceKind.items());
-
-            machine.runtime.popn(3);
-            try machine.runtime.push(result);
+            try machine.runtime.prependSequenceItem(e.position);
         },
         AST.Operator.PrependUpdate => {
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
-            const left = machine.runtime.peek(1);
-            const right = machine.runtime.peek(0);
 
-            if (right.v != V.ValueValue.SequenceKind) {
-                try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
-            }
-
-            try right.v.SequenceKind.prependItem(left);
-
-            machine.runtime.popn(2);
-            try machine.runtime.push(right);
+            try machine.runtime.prependSequenceItemBang(e.position);
         },
         AST.Operator.Hook => {
             try evalExpr(machine, leftAST);
