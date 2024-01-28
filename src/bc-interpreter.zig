@@ -14,6 +14,8 @@ const ER = @import("error-reporting.zig");
 const Op = enum(u8) {
     ret,
     push_int,
+    push_false,
+    push_true,
     push_unit,
 };
 
@@ -46,6 +48,7 @@ pub const Compiler = struct {
             .exprs => for (e.kind.exprs) |expr| {
                 try self.compileExpr(expr);
             },
+            .literalBool => try self.buffer.append(@intFromEnum(if (e.kind.literalBool) Op.push_true else Op.push_false)),
             .literalInt => {
                 try self.buffer.append(@intFromEnum(Op.push_int));
 
@@ -97,6 +100,10 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
     while (true) {
         switch (@as(Op, @enumFromInt(bytecode[ip]))) {
             Op.ret => return,
+            Op.push_false => {
+                try runtime.pushBoolValue(false);
+                ip += 1;
+            },
             Op.push_int => {
                 const v: V.IntType = @bitCast(@as(u64, (bytecode[ip + 1])) |
                     (@as(u64, bytecode[ip + 2]) << 8) |
@@ -108,6 +115,10 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
                     (@as(u64, bytecode[ip + 8]) << 56));
                 try runtime.pushIntValue(v);
                 ip += 9;
+            },
+            Op.push_true => {
+                try runtime.pushBoolValue(true);
+                ip += 1;
             },
             Op.push_unit => {
                 try runtime.pushUnitValue();
@@ -181,6 +192,11 @@ fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         std.log.err("Failed to deinit allocator\n", .{});
         return error.TestingError;
     }
+}
+
+test "literal bool" {
+    try expectExprEqual("true", "true");
+    try expectExprEqual("false", "false");
 }
 
 test "literal int" {
