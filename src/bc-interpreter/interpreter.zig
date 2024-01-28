@@ -77,6 +77,16 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
                 try runtime.lessEqual(position);
                 ip += 1 + PositionTypeSize;
             },
+            Op.greater_than => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.greaterThan(position);
+                ip += 1 + PositionTypeSize;
+            },
+            Op.greater_equal => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.greaterEqual(position);
+                ip += 1 + PositionTypeSize;
+            },
 
             // else => unreachable,
         }

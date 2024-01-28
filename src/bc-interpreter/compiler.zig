@@ -38,6 +38,18 @@ pub const Compiler = struct {
                         try self.compileExpr(e.kind.binaryOp.right);
                         try self.buffer.append(@intFromEnum(Op.equals));
                     },
+                    .GreaterThan => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.greater_than));
+                        try self.appendPosition(e.position);
+                    },
+                    .GreaterEqual => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.greater_equal));
+                        try self.appendPosition(e.position);
+                    },
                     .LessThan => {
                         try self.compileExpr(e.kind.binaryOp.left);
                         try self.compileExpr(e.kind.binaryOp.right);

@@ -396,65 +396,13 @@ inline fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeE
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            const right = machine.pop();
-            const left = machine.pop();
-
-            switch (left.v) {
-                V.ValueValue.IntKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => try machine.runtime.pushBoolValue(left.v.IntKind > right.v.IntKind),
-                        V.ValueValue.FloatKind => try machine.runtime.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) > right.v.FloatKind),
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.FloatKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => try machine.runtime.pushBoolValue(left.v.FloatKind > @as(V.FloatType, @floatFromInt(right.v.IntKind))),
-                        V.ValueValue.FloatKind => try machine.runtime.pushBoolValue(left.v.FloatKind > right.v.FloatKind),
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.StringKind => {
-                    if (right.v == V.ValueValue.StringKind) {
-                        try machine.runtime.pushBoolValue(std.mem.lessThan(u8, right.v.StringKind.slice(), left.v.StringKind.slice()));
-                    } else {
-                        try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
-                    }
-                },
-                else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-            }
+            try machine.runtime.greaterThan(e.position);
         },
         AST.Operator.GreaterEqual => {
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            const right = machine.pop();
-            const left = machine.pop();
-
-            switch (left.v) {
-                V.ValueValue.IntKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => try machine.runtime.pushBoolValue(left.v.IntKind >= right.v.IntKind),
-                        V.ValueValue.FloatKind => try machine.runtime.pushBoolValue(@as(V.FloatType, @floatFromInt(left.v.IntKind)) >= right.v.FloatKind),
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.FloatKind => {
-                    switch (right.v) {
-                        V.ValueValue.IntKind => try machine.runtime.pushBoolValue(left.v.FloatKind >= @as(V.FloatType, @floatFromInt(right.v.IntKind))),
-                        V.ValueValue.FloatKind => try machine.runtime.pushBoolValue(left.v.FloatKind >= right.v.FloatKind),
-                        else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-                    }
-                },
-                V.ValueValue.StringKind => {
-                    if (right.v == V.ValueValue.StringKind) {
-                        try machine.runtime.pushBoolValue(std.mem.lessThan(u8, right.v.StringKind.slice(), left.v.StringKind.slice()) or std.mem.eql(u8, right.v.StringKind.slice(), left.v.StringKind.slice()));
-                    } else {
-                        try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
-                    }
-                },
-                else => try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v),
-            }
+            try machine.runtime.greaterEqual(e.position);
         },
         AST.Operator.Equal => {
             try evalExpr(machine, leftAST);
