@@ -996,11 +996,11 @@ inline fn literalSequence(machine: *ASTInterpreter, e: *AST.Expression) Errors.R
         switch (v) {
             .value => {
                 try evalExpr(machine, v.value);
-                try machine.runtime.appendSequenceItemBang();
+                try machine.runtime.appendSequenceItemBang(e.position);
             },
             .sequence => {
                 try evalExpr(machine, v.sequence);
-                try machine.runtime.appendSequenceItemsBang();
+                try machine.runtime.appendSequenceItemsBang(e.position, v.sequence.position);
             },
         }
     }

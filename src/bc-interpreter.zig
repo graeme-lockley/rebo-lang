@@ -74,9 +74,12 @@ pub const Compiler = struct {
                     if (item == .value) {
                         try self.compileExpr(item.value);
                         try self.buffer.append(@intFromEnum(Op.append_sequence_item_bang));
+                        try self.appendPosition(e.position);
                     } else {
                         try self.compileExpr(item.sequence);
                         try self.buffer.append(@intFromEnum(Op.append_sequence_items_bang));
+                        try self.appendPosition(e.position);
+                        try self.appendPosition(item.sequence.position);
                     }
                 }
             },
@@ -117,6 +120,11 @@ pub const Compiler = struct {
         try self.buffer.append(v7);
         try self.buffer.append(v8);
     }
+
+    fn appendPosition(self: *Compiler, position: Errors.Position) !void {
+        try self.appendInt(@intCast(position.start));
+        try self.appendInt(@intCast(position.end));
+    }
 };
 
 pub fn compile(allocator: std.mem.Allocator, ast: *AST.Expression) ![]u8 {
@@ -135,6 +143,10 @@ pub fn script(runtime: *MS.Runtime, input: []const u8) !void {
     try eval(runtime, bytecode);
 }
 
+const IntTypeSize = 8;
+const FloatTypeSize = 8;
+const PositionTypeSize = 2 * IntTypeSize;
+
 fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
     var ip: usize = 0;
     while (true) {
@@ -150,11 +162,11 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
             },
             Op.push_float => {
                 try runtime.pushFloatValue(readFloat(bytecode, ip + 1));
-                ip += 9;
+                ip += 1 + FloatTypeSize;
             },
             Op.push_int => {
                 try runtime.pushIntValue(readInt(bytecode, ip + 1));
-                ip += 9;
+                ip += 1 + IntTypeSize;
             },
             Op.push_sequence => {
                 try runtime.pushEmptySequenceValue();
@@ -164,7 +176,7 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
                 const len: usize = @intCast(readInt(bytecode, ip + 1));
                 const str = bytecode[ip + 9 .. ip + 9 + len];
                 try runtime.pushStringValue(str);
-                ip += 9 + len;
+                ip += 1 + IntTypeSize + len;
             },
             Op.push_true => {
                 try runtime.pushBoolValue(true);
@@ -175,12 +187,17 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
                 ip += 1;
             },
             Op.append_sequence_item_bang => {
-                try runtime.appendSequenceItemBang();
-                ip += 1;
+                const seqPosition = readPosition(bytecode, ip + 1);
+
+                try runtime.appendSequenceItemBang(seqPosition);
+                ip += 1 + PositionTypeSize;
             },
             Op.append_sequence_items_bang => {
-                try runtime.appendSequenceItemsBang();
-                ip += 1;
+                const seqPosition = readPosition(bytecode, ip + 1);
+                const itemPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+
+                try runtime.appendSequenceItemsBang(seqPosition, itemPosition);
+                ip += 1 + PositionTypeSize + PositionTypeSize;
             },
 
             // else => unreachable,
@@ -203,6 +220,13 @@ fn readInt(bytecode: []const u8, ip: usize) V.IntType {
         (@as(u64, bytecode[ip + 7]) << 56));
 
     return v;
+}
+
+fn readPosition(bytecode: []const u8, ip: usize) Errors.Position {
+    return .{
+        .start = @intCast(readInt(bytecode, ip)),
+        .end = @intCast(readInt(bytecode, ip + 8)),
+    };
 }
 
 fn parse(runtime: *MS.Runtime, input: []const u8) !*AST.Expression {

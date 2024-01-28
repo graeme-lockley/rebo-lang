@@ -2,6 +2,7 @@ const std = @import("std");
 
 const AST = @import("./ast.zig");
 const ER = @import("./error-reporting.zig");
+const Errors = @import("./errors.zig");
 const SP = @import("./string_pool.zig");
 const V = @import("./value.zig");
 
@@ -124,28 +125,28 @@ pub const Runtime = struct {
         return v;
     }
 
-    pub inline fn appendSequenceItemBang(self: *Runtime) !void {
+    pub inline fn appendSequenceItemBang(self: *Runtime, seqPosition: Errors.Position) !void {
         const seq = self.peek(1);
         const item = self.peek(0);
 
         if (!seq.isSequence()) {
-            try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
+            try ER.raiseExpectedTypeError(self, seqPosition, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
         }
 
         try seq.v.SequenceKind.appendItem(item);
         self.popn(1);
     }
 
-    pub inline fn appendSequenceItemsBang(self: *Runtime) !void {
+    pub inline fn appendSequenceItemsBang(self: *Runtime, seqPosition: Errors.Position, itemPosition: Errors.Position) !void {
         const seq = self.peek(1);
         const item = self.peek(0);
 
         if (!seq.isSequence()) {
-            try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
+            try ER.raiseExpectedTypeError(self, seqPosition, &[_]V.ValueKind{V.ValueValue.SequenceKind}, seq.v);
         }
 
         if (!item.isSequence()) {
-            try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.SequenceKind}, item.v);
+            try ER.raiseExpectedTypeError(self, itemPosition, &[_]V.ValueKind{V.ValueValue.SequenceKind}, item.v);
         }
 
         try seq.v.SequenceKind.appendSlice(item.v.SequenceKind.items());
