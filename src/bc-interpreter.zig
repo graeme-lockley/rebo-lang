@@ -56,24 +56,7 @@ pub const Compiler = struct {
             },
             .literalInt => {
                 try self.buffer.append(@intFromEnum(Op.push_int));
-
-                const v1: u8 = @intCast(e.kind.literalInt & 0xff);
-                const v2: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff00))) >> 8);
-                const v3: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff0000))) >> 16);
-                const v4: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff000000))) >> 24);
-                const v5: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff00000000))) >> 32);
-                const v6: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff0000000000))) >> 40);
-                const v7: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt & 0xff000000000000))) >> 48);
-                const v8: u8 = @intCast((@as(u64, @bitCast(e.kind.literalInt))) >> 56);
-
-                try self.buffer.append(v1);
-                try self.buffer.append(v2);
-                try self.buffer.append(v3);
-                try self.buffer.append(v4);
-                try self.buffer.append(v5);
-                try self.buffer.append(v6);
-                try self.buffer.append(v7);
-                try self.buffer.append(v8);
+                try self.appendInt(e.kind.literalInt);
             },
             .literalVoid => try self.buffer.append(@intFromEnum(Op.push_unit)),
             else => {
@@ -81,6 +64,26 @@ pub const Compiler = struct {
                 unreachable;
             },
         }
+    }
+
+    fn appendInt(self: *Compiler, v: V.IntType) !void {
+        const v1: u8 = @intCast(v & 0xff);
+        const v2: u8 = @intCast((@as(u64, @bitCast(v & 0xff00))) >> 8);
+        const v3: u8 = @intCast((@as(u64, @bitCast(v & 0xff0000))) >> 16);
+        const v4: u8 = @intCast((@as(u64, @bitCast(v & 0xff000000))) >> 24);
+        const v5: u8 = @intCast((@as(u64, @bitCast(v & 0xff00000000))) >> 32);
+        const v6: u8 = @intCast((@as(u64, @bitCast(v & 0xff0000000000))) >> 40);
+        const v7: u8 = @intCast((@as(u64, @bitCast(v & 0xff000000000000))) >> 48);
+        const v8: u8 = @intCast((@as(u64, @bitCast(v))) >> 56);
+
+        try self.buffer.append(v1);
+        try self.buffer.append(v2);
+        try self.buffer.append(v3);
+        try self.buffer.append(v4);
+        try self.buffer.append(v5);
+        try self.buffer.append(v6);
+        try self.buffer.append(v7);
+        try self.buffer.append(v8);
     }
 };
 
@@ -114,15 +117,7 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
                 ip += 1;
             },
             Op.push_int => {
-                const v: V.IntType = @bitCast(@as(u64, (bytecode[ip + 1])) |
-                    (@as(u64, bytecode[ip + 2]) << 8) |
-                    (@as(u64, bytecode[ip + 3]) << 16) |
-                    (@as(u64, bytecode[ip + 4]) << 24) |
-                    (@as(u64, bytecode[ip + 5]) << 32) |
-                    (@as(u64, bytecode[ip + 6]) << 40) |
-                    (@as(u64, bytecode[ip + 7]) << 48) |
-                    (@as(u64, bytecode[ip + 8]) << 56));
-                try runtime.pushIntValue(v);
+                try runtime.pushIntValue(readInt(bytecode, ip + 1));
                 ip += 9;
             },
             Op.push_true => {
@@ -136,6 +131,19 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
             // else => unreachable,
         }
     }
+}
+
+fn readInt(bytecode: []const u8, ip: u32) V.IntType {
+    const v: V.IntType = @bitCast(@as(u64, (bytecode[ip])) |
+        (@as(u64, bytecode[ip + 1]) << 8) |
+        (@as(u64, bytecode[ip + 2]) << 16) |
+        (@as(u64, bytecode[ip + 3]) << 24) |
+        (@as(u64, bytecode[ip + 4]) << 32) |
+        (@as(u64, bytecode[ip + 5]) << 40) |
+        (@as(u64, bytecode[ip + 6]) << 48) |
+        (@as(u64, bytecode[ip + 7]) << 56));
+
+    return v;
 }
 
 fn parse(runtime: *MS.Runtime, input: []const u8) !*AST.Expression {
