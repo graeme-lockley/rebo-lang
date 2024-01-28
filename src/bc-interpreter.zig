@@ -13,6 +13,7 @@ const ER = @import("error-reporting.zig");
 
 const Op = enum(u8) {
     ret,
+    push_char,
     push_int,
     push_false,
     push_true,
@@ -49,6 +50,10 @@ pub const Compiler = struct {
                 try self.compileExpr(expr);
             },
             .literalBool => try self.buffer.append(@intFromEnum(if (e.kind.literalBool) Op.push_true else Op.push_false)),
+            .literalChar => {
+                try self.buffer.append(@intFromEnum(Op.push_char));
+                try self.buffer.append(e.kind.literalChar);
+            },
             .literalInt => {
                 try self.buffer.append(@intFromEnum(Op.push_int));
 
@@ -100,6 +105,10 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
     while (true) {
         switch (@as(Op, @enumFromInt(bytecode[ip]))) {
             Op.ret => return,
+            Op.push_char => {
+                try runtime.pushCharValue(bytecode[ip + 1]);
+                ip += 2;
+            },
             Op.push_false => {
                 try runtime.pushBoolValue(false);
                 ip += 1;
@@ -197,6 +206,16 @@ fn expectExprEqual(input: []const u8, expected: []const u8) !void {
 test "literal bool" {
     try expectExprEqual("true", "true");
     try expectExprEqual("false", "false");
+}
+
+test "literal char" {
+    try expectExprEqual("'x'", "'x'");
+    try expectExprEqual("'\\n'", "'\\n'");
+    try expectExprEqual("'\\''", "'\\''");
+    try expectExprEqual("'\\\\'", "'\\\\'");
+    try expectExprEqual("'\\x32'", "' '");
+    try expectExprEqual("'\\x10'", "'\\n'");
+    try expectExprEqual("'\\x5'", "'\\x5'");
 }
 
 test "literal int" {
