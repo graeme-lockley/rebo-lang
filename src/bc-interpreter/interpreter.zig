@@ -97,6 +97,41 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
                 try runtime.subtract(position);
                 ip += 1 + PositionTypeSize;
             },
+            Op.multiply => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.multiply(position);
+                ip += 1 + PositionTypeSize;
+            },
+            Op.divide => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.divide(position);
+                ip += 1 + PositionTypeSize;
+            },
+            Op.modulo => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.modulo(position);
+                ip += 1 + PositionTypeSize;
+            },
+            Op.seq_append => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.appendSequenceItem(position);
+                ip += 1 + PositionTypeSize;
+            },
+            Op.seq_append_bang => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.appendSequenceItemBang(position);
+                ip += 1 + PositionTypeSize;
+            },
+            Op.seq_prepend => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.prependSequenceItem(position);
+                ip += 1 + PositionTypeSize;
+            },
+            Op.seq_prepend_bang => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.prependSequenceItemBang(position);
+                ip += 1 + PositionTypeSize;
+            },
 
             // else => unreachable,
         }

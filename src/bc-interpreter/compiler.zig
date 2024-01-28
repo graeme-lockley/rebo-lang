@@ -79,6 +79,48 @@ pub const Compiler = struct {
                         try self.buffer.append(@intFromEnum(Op.subtract));
                         try self.appendPosition(e.position);
                     },
+                    .Times => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.multiply));
+                        try self.appendPosition(e.position);
+                    },
+                    .Divide => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.divide));
+                        try self.appendPosition(e.position);
+                    },
+                    .Modulo => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.modulo));
+                        try self.appendPosition(e.position);
+                    },
+                    .Append => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.seq_append));
+                        try self.appendPosition(e.position);
+                    },
+                    .AppendUpdate => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.seq_append_bang));
+                        try self.appendPosition(e.position);
+                    },
+                    .Prepend => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.seq_prepend));
+                        try self.appendPosition(e.position);
+                    },
+                    .PrependUpdate => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.seq_prepend_bang));
+                        try self.appendPosition(e.position);
+                    },
                     else => {
                         std.debug.panic("Unhandled: {}", .{e.kind.binaryOp.op});
                         unreachable;

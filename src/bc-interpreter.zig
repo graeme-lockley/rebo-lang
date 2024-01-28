@@ -173,6 +173,20 @@ test "equality op" {
     try expectExprEqual("1.0 >= 0.0", "true");
 }
 
+test "list append/prepend" {
+    try expectExprEqual("[1, 2] << 3", "[1, 2, 3]");
+    try expectExprEqual("[1, 2] <! 3", "[1, 2, 3]");
+
+    // try expectExprEqual("let x = [1, 2]; x << 3; x", "[1, 2]");
+    // try expectExprEqual("let x = [1, 2]; x <! 3; x", "[1, 2, 3]");
+
+    try expectExprEqual("1 >> [2, 3]", "[1, 2, 3]");
+    try expectExprEqual("1 >! [2, 3]", "[1, 2, 3]");
+
+    // try expectExprEqual("let x = [2, 3]; 1 >> x; x", "[2, 3]");
+    // try expectExprEqual("let x = [2, 3]; 1 >! x 3; x", "[1, 2, 3]");
+}
+
 test "literal bool" {
     try expectExprEqual("true", "true");
     try expectExprEqual("false", "false");
@@ -226,4 +240,30 @@ test "literal string" {
 
 test "literal unit" {
     try expectExprEqual("()", "()");
+}
+
+test "multiplicative op" {
+    try expectExprEqual("1 * 1", "1");
+    try expectExprEqual("1 * 1.1", "1.1");
+    try expectExprEqual("1.1 * 1", "1.1");
+    try expectExprEqual("1.1 * 1.1", "1.2100000000000002");
+    try expectExprEqual("1 * 2 * 3 * 4 * 5", "120");
+
+    try expectExprEqual("3 / 2", "1");
+    try expectExprEqual("3.0 / 2", "1.5");
+    try expectExprEqual("3 / 2.0", "1.5");
+    try expectExprEqual("3.0 / 2.0", "1.5");
+    try expectExprEqual("100 / 2", "50");
+    try expectExprEqual("100 / 10 / 2", "5");
+    try expectExprEqual("100 / (10 / 2)", "20");
+
+    try expectExprEqual("3 % 2", "1");
+    try expectExprEqual("5 % 3", "2");
+
+    // try expectError("1 * true");
+    // try expectError("1 / true");
+    // try expectError("100 / (10 / 0)");
+    // try expectError("100 / (10 / 0.0)");
+    // try expectError("100 / (10.0 / 0)");
+    // try expectError("100 / (10.0 / 0.0)");
 }

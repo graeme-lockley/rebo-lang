@@ -20,4 +20,11 @@ pub const Op = enum(u8) {
     greater_equal,
     add,
     subtract,
+    multiply,
+    divide,
+    modulo,
+    seq_append,
+    seq_append_bang,
+    seq_prepend,
+    seq_prepend_bang,
 };
