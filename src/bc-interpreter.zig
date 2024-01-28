@@ -24,6 +24,8 @@ const Op = enum(u8) {
 
     append_sequence_item_bang,
     append_sequence_items_bang,
+
+    op_eql,
 };
 
 pub const Compiler = struct {
@@ -52,6 +54,19 @@ pub const Compiler = struct {
 
     fn compileExpr(self: *Compiler, e: *AST.Expression) !void {
         switch (e.kind) {
+            .binaryOp => {
+                switch (e.kind.binaryOp.op) {
+                    .Equal => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.op_eql));
+                    },
+                    else => {
+                        std.debug.panic("Unhandled: {}", .{e.kind.binaryOp.op});
+                        unreachable;
+                    },
+                }
+            },
             .exprs => for (e.kind.exprs) |expr| {
                 try self.compileExpr(expr);
             },
@@ -199,6 +214,10 @@ fn eval(runtime: *MS.Runtime, bytecode: []const u8) !void {
                 try runtime.appendSequenceItemsBang(seqPosition, itemPosition);
                 ip += 1 + PositionTypeSize + PositionTypeSize;
             },
+            Op.op_eql => {
+                try runtime.opEql();
+                ip += 1;
+            },
 
             // else => unreachable,
         }
@@ -292,6 +311,66 @@ fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         std.log.err("Failed to deinit allocator\n", .{});
         return error.TestingError;
     }
+}
+
+test "equality op" {
+    try expectExprEqual("1 == 1", "true");
+    try expectExprEqual("0 == 1", "false");
+
+    // try expectExprEqual("1 != 1", "false");
+    // try expectExprEqual("0 != 1", "true");
+
+    // try expectExprEqual("0 < 1", "true");
+    // try expectExprEqual("0 < 1.0", "true");
+    // try expectExprEqual("0.0 < 1", "true");
+    // try expectExprEqual("0.0 < 1.0", "true");
+    // try expectExprEqual("0 < 0", "false");
+    // try expectExprEqual("0 < 0.0", "false");
+    // try expectExprEqual("0.0 < 0", "false");
+    // try expectExprEqual("0.0 < 0.0", "false");
+    // try expectExprEqual("1 < 0", "false");
+    // try expectExprEqual("1 < 0.0", "false");
+    // try expectExprEqual("1.0 < 0", "false");
+    // try expectExprEqual("1.0 < 0.0", "false");
+
+    // try expectExprEqual("0 <= 1", "true");
+    // try expectExprEqual("0 <= 1.0", "true");
+    // try expectExprEqual("0.0 <= 1", "true");
+    // try expectExprEqual("0.0 <= 1.0", "true");
+    // try expectExprEqual("0 <= 0", "true");
+    // try expectExprEqual("0 <= 0.0", "true");
+    // try expectExprEqual("0.0 <= 0", "true");
+    // try expectExprEqual("0.0 <= 0.0", "true");
+    // try expectExprEqual("1 <= 0", "false");
+    // try expectExprEqual("1 <= 0.0", "false");
+    // try expectExprEqual("1.0 <= 0", "false");
+    // try expectExprEqual("1.0 <= 0.0", "false");
+
+    // try expectExprEqual("0 > 1", "false");
+    // try expectExprEqual("0 > 1.0", "false");
+    // try expectExprEqual("0.0 > 1", "false");
+    // try expectExprEqual("0.0 > 1.0", "false");
+    // try expectExprEqual("0 > 0", "false");
+    // try expectExprEqual("0 > 0.0", "false");
+    // try expectExprEqual("0.0 > 0", "false");
+    // try expectExprEqual("0.0 > 0.0", "false");
+    // try expectExprEqual("1 > 0", "true");
+    // try expectExprEqual("1 > 0.0", "true");
+    // try expectExprEqual("1.0 > 0", "true");
+    // try expectExprEqual("1.0 > 0.0", "true");
+
+    // try expectExprEqual("0 >= 1", "false");
+    // try expectExprEqual("0 >= 1.0", "false");
+    // try expectExprEqual("0.0 >= 1", "false");
+    // try expectExprEqual("0.0 >= 1.0", "false");
+    // try expectExprEqual("0 >= 0", "true");
+    // try expectExprEqual("0 >= 0.0", "true");
+    // try expectExprEqual("0.0 >= 0", "true");
+    // try expectExprEqual("0.0 >= 0.0", "true");
+    // try expectExprEqual("1 >= 0", "true");
+    // try expectExprEqual("1 >= 0.0", "true");
+    // try expectExprEqual("1.0 >= 0", "true");
+    // try expectExprEqual("1.0 >= 0.0", "true");
 }
 
 test "literal bool" {

@@ -360,6 +360,13 @@ pub const Runtime = struct {
         self.stack.deinit();
         self.stack = std.ArrayList(*V.Value).init(self.allocator);
     }
+
+    pub inline fn opEql(self: *Runtime) !void {
+        const right = self.pop();
+        const left = self.pop();
+
+        try self.pushBoolValue(V.eq(left, right));
+    }
 };
 
 fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {

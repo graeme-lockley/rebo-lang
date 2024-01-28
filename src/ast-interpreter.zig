@@ -512,10 +512,7 @@ inline fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeE
             try evalExpr(machine, leftAST);
             try evalExpr(machine, rightAST);
 
-            const right = machine.pop();
-            const left = machine.pop();
-
-            try machine.runtime.pushBoolValue(V.eq(left, right));
+            try machine.runtime.opEql();
         },
         AST.Operator.NotEqual => {
             try evalExpr(machine, leftAST);
