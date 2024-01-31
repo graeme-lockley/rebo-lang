@@ -173,6 +173,12 @@ test "equality op" {
     try expectExprEqual("1.0 >= 0.0", "true");
 }
 
+test "hook op" {
+    try expectExprEqual("123 ? 0", "123");
+    try expectExprEqual("() ? 0", "0");
+    try expectExprEqual("0 ? 1", "0");
+}
+
 test "list append/prepend" {
     try expectExprEqual("[1, 2] << 3", "[1, 2, 3]");
     try expectExprEqual("[1, 2] <! 3", "[1, 2, 3]");
