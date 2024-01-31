@@ -121,6 +121,19 @@ pub const Compiler = struct {
                         try self.buffer.append(@intFromEnum(Op.seq_prepend_bang));
                         try self.appendPosition(e.position);
                     },
+                    .Hook => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.buffer.append(@intFromEnum(Op.duplicate));
+                        try self.buffer.append(@intFromEnum(Op.push_unit));
+                        try self.buffer.append(@intFromEnum(Op.equals));
+                        try self.buffer.append(@intFromEnum(Op.jmp_false));
+                        const patch = self.buffer.items.len;
+                        try self.appendInt(0);
+                        try self.appendPosition(e.kind.binaryOp.left.position);
+                        try self.buffer.append(@intFromEnum(Op.discard));
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.appendIntAt(@intCast(self.buffer.items.len), patch);
+                    },
                     else => {
                         std.debug.panic("Unhandled: {}", .{e.kind.binaryOp.op});
                         unreachable;
@@ -194,6 +207,26 @@ pub const Compiler = struct {
         try self.buffer.append(v6);
         try self.buffer.append(v7);
         try self.buffer.append(v8);
+    }
+
+    fn appendIntAt(self: *Compiler, v: V.IntType, offset: usize) !void {
+        const v1: u8 = @intCast(v & 0xff);
+        const v2: u8 = @intCast((@as(u64, @bitCast(v & 0xff00))) >> 8);
+        const v3: u8 = @intCast((@as(u64, @bitCast(v & 0xff0000))) >> 16);
+        const v4: u8 = @intCast((@as(u64, @bitCast(v & 0xff000000))) >> 24);
+        const v5: u8 = @intCast((@as(u64, @bitCast(v & 0xff00000000))) >> 32);
+        const v6: u8 = @intCast((@as(u64, @bitCast(v & 0xff0000000000))) >> 40);
+        const v7: u8 = @intCast((@as(u64, @bitCast(v & 0xff000000000000))) >> 48);
+        const v8: u8 = @intCast((@as(u64, @bitCast(v))) >> 56);
+
+        self.buffer.items[offset] = v1;
+        self.buffer.items[offset + 1] = v2;
+        self.buffer.items[offset + 2] = v3;
+        self.buffer.items[offset + 3] = v4;
+        self.buffer.items[offset + 4] = v5;
+        self.buffer.items[offset + 5] = v6;
+        self.buffer.items[offset + 6] = v7;
+        self.buffer.items[offset + 7] = v8;
     }
 
     fn appendPosition(self: *Compiler, position: Errors.Position) !void {

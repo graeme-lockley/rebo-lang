@@ -40,6 +40,10 @@ pub const Value = struct {
         }
     }
 
+    pub inline fn isBool(self: *Value) bool {
+        return self.v == .BoolKind;
+    }
+
     pub inline fn isInt(self: *Value) bool {
         return self.v == .IntKind;
     }

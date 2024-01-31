@@ -9,6 +9,13 @@ pub const Op = enum(u8) {
     push_true,
     push_unit,
 
+    jmp,
+    jmp_true,
+    jmp_false,
+
+    duplicate,
+    discard,
+
     append_sequence_item_bang,
     append_sequence_items_bang,
 

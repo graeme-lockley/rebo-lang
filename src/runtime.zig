@@ -841,6 +841,11 @@ pub const Runtime = struct {
 
         try self.pushIntValue(@mod(left.v.IntKind, right.v.IntKind));
     }
+
+    pub inline fn duplicate(self: *Runtime) !void {
+        const value = self.peek(0);
+        try self.push(value);
+    }
 };
 
 fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {

@@ -1,3 +1,4 @@
+const ER = @import("./../error-reporting.zig");
 const Errors = @import("./../errors.zig");
 const Runtime = @import("./../runtime.zig").Runtime;
 const Op = @import("./ops.zig").Op;
@@ -44,6 +45,41 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
             },
             Op.push_unit => {
                 try runtime.pushUnitValue();
+                ip += 1;
+            },
+            Op.jmp => ip = @intCast(readInt(bytecode, ip + 1)),
+            Op.jmp_true => {
+                const condition = runtime.pop();
+                if (!condition.isBool()) {
+                    const position = readPosition(bytecode, ip + 1 + IntTypeSize);
+                    try ER.raiseExpectedTypeError(runtime, position, &[_]V.ValueKind{V.ValueValue.BoolKind}, condition.v);
+                }
+
+                if (condition.v.BoolKind) {
+                    ip = @intCast(readInt(bytecode, ip + 1));
+                } else {
+                    ip += 1 + IntTypeSize + PositionTypeSize;
+                }
+            },
+            Op.jmp_false => {
+                const condition = runtime.pop();
+                if (!condition.isBool()) {
+                    const position = readPosition(bytecode, ip + 1 + IntTypeSize);
+                    try ER.raiseExpectedTypeError(runtime, position, &[_]V.ValueKind{V.ValueValue.BoolKind}, condition.v);
+                }
+
+                if (condition.v.BoolKind) {
+                    ip += 1 + IntTypeSize + PositionTypeSize;
+                } else {
+                    ip = @intCast(readInt(bytecode, ip + 1));
+                }
+            },
+            Op.duplicate => {
+                try runtime.duplicate();
+                ip += 1;
+            },
+            Op.discard => {
+                _ = runtime.pop();
                 ip += 1;
             },
             Op.append_sequence_item_bang => {
