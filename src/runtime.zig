@@ -203,6 +203,23 @@ pub const Runtime = struct {
         self.popn(1);
     }
 
+    pub inline fn setRecordItemBang(self: *Runtime, position: Errors.Position) !void {
+        const record = self.peek(2);
+        const key = self.peek(1);
+        const value = self.peek(0);
+
+        if (!record.isRecord()) {
+            try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
+        }
+        if (!key.isString()) {
+            try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.StringKind}, key.v);
+        }
+
+        try record.v.RecordKind.set(key.v.StringKind.value, value);
+
+        self.popn(2);
+    }
+
     pub inline fn newBuiltinValue(self: *Runtime, body: V.BuiltinFunctionType) !*V.Value {
         return try self.newValue(V.ValueValue{ .BuiltinKind = .{ .body = body } });
     }

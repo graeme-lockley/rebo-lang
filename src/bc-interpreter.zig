@@ -223,6 +223,21 @@ test "literal int" {
     try expectExprEqual("-123", "-123");
 }
 
+test "literal record" {
+    try expectExprEqual("{}", "{}");
+    try expectExprEqual("{name: 10}", "{name: 10}");
+
+    // try expectExprEqual("{a: 1, a: 2, a: 3}", "{a: 3}");
+    // try expectExprEqual("{a: 10, b: ()}", "{a: 10}");
+    // try expectExprEqual("{a: 10, b: 20, a: ()}", "{b: 20}");
+
+    // try expectExprEqual("rebo.lang.len({a: 10, ...{b: 20}})", "2");
+    // try expectExprEqual("{a: 10, ...{b: 20}}.a", "10");
+    // try expectExprEqual("{a: 10, ...{b: 20}}.b", "20");
+
+    // try expectError("{a:1,");
+}
+
 test "literal sequence" {
     try expectExprEqual("[]", "[]");
     try expectExprEqual("[1]", "[1]");

@@ -156,6 +156,35 @@ pub const Compiler = struct {
                 try self.buffer.append(@intFromEnum(Op.push_int));
                 try self.appendInt(e.kind.literalInt);
             },
+            .literalRecord => {
+                try self.buffer.append(@intFromEnum(Op.push_record));
+
+                for (e.kind.literalRecord) |entry| {
+                    switch (entry) {
+                        .value => {
+                            try self.appendPushLiteralString(entry.value.key.slice());
+                            try self.compileExpr(entry.value.value);
+                            try self.buffer.append(@intFromEnum(Op.set_record_item_bang));
+                            try self.appendPosition(e.position);
+                            try self.appendPosition(e.position);
+                        },
+                        .record => {
+                            unreachable;
+                            // try evalExpr(machine, entry.record);
+
+                            // const value = machine.runtime.pop();
+                            // if (value.v != V.ValueValue.RecordKind) {
+                            //     try ER.raiseExpectedTypeError(&machine.runtime, entry.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, value.v);
+                            // }
+
+                            // var iterator = value.v.RecordKind.iterator();
+                            // while (iterator.next()) |rv| {
+                            //     try map.v.RecordKind.set(rv.key_ptr.*, rv.value_ptr.*);
+                            // }
+                        },
+                    }
+                }
+            },
             .literalSequence => {
                 try self.buffer.append(@intFromEnum(Op.push_sequence));
                 for (e.kind.literalSequence) |item| {
@@ -171,12 +200,7 @@ pub const Compiler = struct {
                     }
                 }
             },
-            .literalString => {
-                try self.buffer.append(@intFromEnum(Op.push_string));
-                const s = e.kind.literalString.slice();
-                try self.appendInt(@intCast(s.len));
-                try self.buffer.appendSlice(s);
-            },
+            .literalString => try self.appendPushLiteralString(e.kind.literalString.slice()),
             .literalVoid => try self.buffer.append(@intFromEnum(Op.push_unit)),
             else => {
                 std.debug.panic("Unhandled: {}", .{e.kind});
@@ -227,6 +251,12 @@ pub const Compiler = struct {
         self.buffer.items[offset + 5] = v6;
         self.buffer.items[offset + 6] = v7;
         self.buffer.items[offset + 7] = v8;
+    }
+
+    fn appendPushLiteralString(self: *Compiler, s: []const u8) !void {
+        try self.buffer.append(@intFromEnum(Op.push_string));
+        try self.appendInt(@intCast(s.len));
+        try self.buffer.appendSlice(s);
     }
 
     fn appendPosition(self: *Compiler, position: Errors.Position) !void {

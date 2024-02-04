@@ -40,14 +40,14 @@ fn evalExpr(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!v
     }
 }
 
-inline fn evalExprInScope(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn evalExprInScope(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     if (e.kind == .exprs) try machine.runtime.pushScope();
     defer if (e.kind == .exprs) machine.runtime.popScope();
 
     try evalExpr(machine, e);
 }
 
-inline fn assignment(machine: *ASTInterpreter, lhs: *AST.Expression, value: *AST.Expression) Errors.RuntimeErrors!void {
+fn assignment(machine: *ASTInterpreter, lhs: *AST.Expression, value: *AST.Expression) Errors.RuntimeErrors!void {
     switch (lhs.kind) {
         .identifier => {
             try evalExpr(machine, value);
@@ -165,7 +165,7 @@ inline fn assignment(machine: *ASTInterpreter, lhs: *AST.Expression, value: *AST
     }
 }
 
-inline fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     const leftAST = e.kind.binaryOp.left;
     const op = e.kind.binaryOp.op;
     const rightAST = e.kind.binaryOp.right;
@@ -321,7 +321,7 @@ inline fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeE
     }
 }
 
-inline fn call(machine: *ASTInterpreter, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.RuntimeErrors!void {
+fn call(machine: *ASTInterpreter, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, calleeAST);
     for (argsAST) |arg| {
         try evalExpr(machine, arg);
@@ -333,7 +333,7 @@ inline fn call(machine: *ASTInterpreter, e: *AST.Expression, calleeAST: *AST.Exp
     };
 }
 
-pub inline fn callFn(machine: *ASTInterpreter, numberOfArgs: usize) Errors.RuntimeErrors!void {
+pub fn callFn(machine: *ASTInterpreter, numberOfArgs: usize) Errors.RuntimeErrors!void {
     const callee = machine.runtime.peek(@intCast(numberOfArgs));
 
     switch (callee.v) {
@@ -383,13 +383,13 @@ inline fn callUserFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
     try evalExpr(machine, callee.v.FunctionKind.body);
 }
 
-inline fn callBuiltinFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
+fn callBuiltinFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
     const callee = machine.runtime.peek(@intCast(numberOfArgs));
 
     try callee.v.BuiltinKind.body(machine, numberOfArgs);
 }
 
-inline fn catche(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn catche(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     const sp = machine.runtime.stack.items.len;
     evalExpr(machine, e.kind.catche.value) catch |err| {
         const value = machine.runtime.peek(0);
@@ -414,7 +414,7 @@ inline fn catche(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErr
     };
 }
 
-inline fn dot(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn dot(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.dot.record);
 
     const record = machine.runtime.pop();
@@ -430,7 +430,7 @@ inline fn dot(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors
     }
 }
 
-inline fn exprs(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn exprs(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     if (e.kind.exprs.len == 0) {
         try machine.runtime.pushUnitValue();
     } else {
@@ -448,12 +448,12 @@ inline fn exprs(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErro
     }
 }
 
-inline fn idDeclaration(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn idDeclaration(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.idDeclaration.value);
     try machine.runtime.addToScope(e.kind.idDeclaration.name, machine.runtime.peek(0));
 }
 
-inline fn identifier(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn identifier(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     if (machine.runtime.getFromScope(e.kind.identifier)) |result| {
         try machine.runtime.push(result);
     } else {
@@ -463,7 +463,7 @@ inline fn identifier(machine: *ASTInterpreter, e: *AST.Expression) Errors.Runtim
     }
 }
 
-inline fn ifte(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn ifte(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     for (e.kind.ifte) |case| {
         if (case.condition == null) {
             try evalExpr(machine, case.then);
@@ -483,7 +483,7 @@ inline fn ifte(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeError
     try machine.createVoidValue();
 }
 
-inline fn indexRange(machine: *ASTInterpreter, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) Errors.RuntimeErrors!void {
+fn indexRange(machine: *ASTInterpreter, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, exprA);
     const expr = machine.runtime.peek(0);
 
@@ -516,7 +516,7 @@ inline fn indexRange(machine: *ASTInterpreter, exprA: *AST.Expression, startA: ?
     try machine.runtime.push(result);
 }
 
-inline fn indexPoint(machine: *ASTInterpreter, point: ?*AST.Expression, def: V.IntType) Errors.RuntimeErrors!V.IntType {
+fn indexPoint(machine: *ASTInterpreter, point: ?*AST.Expression, def: V.IntType) Errors.RuntimeErrors!V.IntType {
     if (point == null) {
         return def;
     } else {
@@ -532,7 +532,7 @@ inline fn indexPoint(machine: *ASTInterpreter, point: ?*AST.Expression, def: V.I
     }
 }
 
-inline fn indexValue(machine: *ASTInterpreter, exprA: *AST.Expression, indexA: *AST.Expression) Errors.RuntimeErrors!void {
+fn indexValue(machine: *ASTInterpreter, exprA: *AST.Expression, indexA: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, exprA);
     const expr = machine.runtime.peek(0);
 
@@ -618,7 +618,7 @@ inline fn indexValue(machine: *ASTInterpreter, exprA: *AST.Expression, indexA: *
     }
 }
 
-inline fn literalFunction(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn literalFunction(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     var arguments = try machine.runtime.allocator.alloc(V.FunctionArgument, e.kind.literalFunction.params.len);
 
     for (e.kind.literalFunction.params, 0..) |param, index| {
@@ -640,17 +640,16 @@ inline fn literalFunction(machine: *ASTInterpreter, e: *AST.Expression) Errors.R
     }
 }
 
-inline fn literalRecord(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn literalRecord(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     try machine.runtime.pushEmptyRecordValue();
     var map = machine.topOfStack().?;
 
     for (e.kind.literalRecord) |entry| {
         switch (entry) {
             .value => {
+                try machine.runtime.pushStringPoolValue(entry.value.key);
                 try evalExpr(machine, entry.value.value);
-
-                const value = machine.runtime.pop();
-                try map.v.RecordKind.set(entry.value.key, value);
+                try machine.runtime.setRecordItemBang(e.position);
             },
             .record => {
                 try evalExpr(machine, entry.record);
@@ -669,7 +668,7 @@ inline fn literalRecord(machine: *ASTInterpreter, e: *AST.Expression) Errors.Run
     }
 }
 
-inline fn literalSequence(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn literalSequence(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     try machine.runtime.pushEmptySequenceValue();
 
     for (e.kind.literalSequence) |v| {
@@ -686,7 +685,7 @@ inline fn literalSequence(machine: *ASTInterpreter, e: *AST.Expression) Errors.R
     }
 }
 
-inline fn match(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn match(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.match.value);
 
     const value = machine.runtime.peek(0);
@@ -779,7 +778,7 @@ fn matchPattern(machine: *ASTInterpreter, p: *AST.Pattern, v: *V.Value) !bool {
     };
 }
 
-inline fn notOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn notOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.notOp.value);
 
     const v = machine.runtime.pop();
@@ -790,7 +789,7 @@ inline fn notOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErro
     try machine.runtime.pushBoolValue(!v.v.BoolKind);
 }
 
-inline fn patternDeclaration(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn patternDeclaration(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.patternDeclaration.value);
 
     const value: *V.Value = machine.runtime.peek(0);
@@ -800,14 +799,14 @@ inline fn patternDeclaration(machine: *ASTInterpreter, e: *AST.Expression) Error
     }
 }
 
-inline fn raise(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn raise(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(machine, e.kind.raise.expr);
     try ER.appendErrorPosition(&machine.runtime, e.position);
 
     return Errors.RuntimeErrors.InterpreterError;
 }
 
-inline fn whilee(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn whilee(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
     while (true) {
         try evalExpr(machine, e.kind.whilee.condition);
 

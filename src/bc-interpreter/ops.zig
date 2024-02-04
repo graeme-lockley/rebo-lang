@@ -4,6 +4,7 @@ pub const Op = enum(u8) {
     push_int,
     push_false,
     push_float,
+    push_record,
     push_sequence,
     push_string,
     push_true,
@@ -18,6 +19,9 @@ pub const Op = enum(u8) {
 
     append_sequence_item_bang,
     append_sequence_items_bang,
+
+    set_record_item_bang,
+    set_record_items_bang,
 
     equals,
     not_equals,

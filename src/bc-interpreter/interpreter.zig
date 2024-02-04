@@ -29,6 +29,10 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
                 try runtime.pushIntValue(readInt(bytecode, ip + 1));
                 ip += 1 + IntTypeSize;
             },
+            Op.push_record => {
+                try runtime.pushEmptyRecordValue();
+                ip += 1;
+            },
             Op.push_sequence => {
                 try runtime.pushEmptySequenceValue();
                 ip += 1;
@@ -89,6 +93,19 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
                 ip += 1 + PositionTypeSize;
             },
             Op.append_sequence_items_bang => {
+                const seqPosition = readPosition(bytecode, ip + 1);
+                const itemPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+
+                try runtime.appendSequenceItemsBang(seqPosition, itemPosition);
+                ip += 1 + PositionTypeSize + PositionTypeSize;
+            },
+            Op.set_record_item_bang => {
+                const position = readPosition(bytecode, ip + 1);
+
+                try runtime.setRecordItemBang(position);
+                ip += 1 + PositionTypeSize;
+            },
+            Op.set_record_items_bang => {
                 const seqPosition = readPosition(bytecode, ip + 1);
                 const itemPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
 
