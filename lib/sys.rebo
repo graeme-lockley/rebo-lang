@@ -15,11 +15,13 @@ let compile = rebo.os["bc.compile"]
 
 let eval(bc, s) = rebo.os["bc.eval"](bc, s ? scope())
 
+let padLeft(s, n) = " " * (n - len(s)) + s
+
 let dis(bc) {
    let ip = 0
 
    while ip < len(bc) -> {
-      print(ip, ": ")
+      print(ansi.foreground.lightGray, padLeft(str(ip), 6), ": ", ansi.control.reset)
 
       let op = int(bc[ip])
 
@@ -31,14 +33,14 @@ let dis(bc) {
 
          each(ops()[op][1], fn(i) {
             match i
-            | 'I' -> { print(" ", _readInt(bc, ip)) ; ip := ip + 8 }
-            | 'C' -> { print(" ", bc[ip]) ; ip := ip + 1 }
-            | 'F' -> { print(" ", _readFloat(bc, ip)) ; ip := ip + 8 }
-            | 'P' -> { print(" ", _position(bc, ip)) ; ip := ip + 16 }
+            | 'I' -> { print(" ", ansi.foreground.green, _readInt(bc, ip), ansi.control.reset) ; ip := ip + 8 }
+            | 'C' -> { print(" ", ansi.foreground.green, bc[ip], ansi.control.reset) ; ip := ip + 1 }
+            | 'F' -> { print(" ", ansi.foreground.green, _readFloat(bc, ip), ansi.control.reset) ; ip := ip + 8 }
+            | 'P' -> { print(" ", ansi.foreground.lightGray, _position(bc, ip), ansi.control.reset) ; ip := ip + 16 }
             | 'S' -> {
                let len = _readInt(bc, ip)
-               let str = bc[ip + 8:ip + 8 + len]
-               print(" ", str)
+               let s = bc[ip + 8:ip + 8 + len]
+               print(" ", ansi.foreground.green, str(s, true), ansi.control.reset)
                ip := ip + 8 + len
             }
          })
@@ -58,17 +60,6 @@ let _position(bc, ip) {
 
    if start == end -> str(start) 
     | (str(start) + "-" + str(end))
-}
-
-let findFile(name, path = ["."]) =
-   if len(path) == 0 -> ()
-    | _fexists(binHome() + "/" + path[0] + "/" + name) -> binHome() + "/" + path[0] + "/" + name
-    | findFile(name, path[1:])
-
-let _fexists(path) {
-   println("fexists: ", path)
-
-   fexists(path)
 }
 
 let _ops = ()
