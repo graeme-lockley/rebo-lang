@@ -73,11 +73,11 @@ pub const String = struct {
         }
     }
 
-    pub inline fn slice(this: *const String) []const u8 {
+    pub fn slice(this: *const String) []const u8 {
         return this.data;
     }
 
-    pub inline fn incRef(this: *String) void {
+    pub fn incRef(this: *String) void {
         if (this.count == std.math.maxInt(u32)) {
             this.count = 0;
         } else if (this.count > 0) {
@@ -85,12 +85,12 @@ pub const String = struct {
         }
     }
 
-    pub inline fn incRefR(this: *String) *String {
+    pub fn incRefR(this: *String) *String {
         this.incRef();
         return this;
     }
 
-    pub inline fn decRef(this: *String) void {
+    pub fn decRef(this: *String) void {
         if (this.count == 1) {
             const allocator = this.pool.allocator;
             this.deinit();
@@ -102,11 +102,11 @@ pub const String = struct {
         }
     }
 
-    pub inline fn len(this: *const String) usize {
+    pub fn len(this: *const String) usize {
         return this.data.len;
     }
 
-    pub inline fn startsWith(this: *const String, prefix: []const u8) bool {
+    pub fn startsWith(this: *const String, prefix: []const u8) bool {
         return this.data.len >= prefix.len and std.mem.eql(u8, this.data[0..prefix.len], prefix);
     }
 };

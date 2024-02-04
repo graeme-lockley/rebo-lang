@@ -347,7 +347,7 @@ pub fn callFn(machine: *ASTInterpreter, numberOfArgs: usize) Errors.RuntimeError
     try machine.runtime.push(result);
 }
 
-inline fn callUserFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
+fn callUserFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
     const enclosingScope = machine.runtime.scope().?;
 
     const callee = machine.runtime.peek(@intCast(numberOfArgs));

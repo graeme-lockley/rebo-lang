@@ -55,7 +55,7 @@ pub const Expression = struct {
     position: Errors.Position,
     count: u32,
 
-    inline fn init(kind: ExpressionKind, position: Errors.Position) Expression {
+    fn init(kind: ExpressionKind, position: Errors.Position) Expression {
         return Expression{
             .kind = kind,
             .position = position,
@@ -63,18 +63,18 @@ pub const Expression = struct {
         };
     }
 
-    pub inline fn create(allocator: std.mem.Allocator, kind: ExpressionKind, position: Errors.Position) !*Expression {
+    pub fn create(allocator: std.mem.Allocator, kind: ExpressionKind, position: Errors.Position) !*Expression {
         var expr = try allocator.create(Expression);
         expr.* = Expression.init(kind, position);
 
         return expr;
     }
 
-    pub inline fn destroy(self: *Expression, allocator: std.mem.Allocator) void {
+    pub fn destroy(self: *Expression, allocator: std.mem.Allocator) void {
         destroyExpr(allocator, self);
     }
 
-    pub inline fn incRef(this: *Expression) void {
+    pub fn incRef(this: *Expression) void {
         if (this.count == std.math.maxInt(u32)) {
             this.count = 0;
         } else if (this.count > 0) {
@@ -82,7 +82,7 @@ pub const Expression = struct {
         }
     }
 
-    pub inline fn incRefR(this: *Expression) *Expression {
+    pub fn incRefR(this: *Expression) *Expression {
         this.incRef();
 
         return this;
@@ -371,14 +371,14 @@ pub const Pattern = struct {
     kind: PatternKind,
     position: Errors.Position,
 
-    inline fn init(kind: PatternKind, position: Errors.Position) Pattern {
+    fn init(kind: PatternKind, position: Errors.Position) Pattern {
         return Pattern{
             .kind = kind,
             .position = position,
         };
     }
 
-    pub inline fn create(allocator: std.mem.Allocator, kind: PatternKind, position: Errors.Position) !*Pattern {
+    pub fn create(allocator: std.mem.Allocator, kind: PatternKind, position: Errors.Position) !*Pattern {
         var expr = try allocator.create(Pattern);
         expr.* = Pattern.init(kind, position);
 

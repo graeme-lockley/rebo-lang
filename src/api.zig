@@ -18,7 +18,7 @@ pub const API = struct {
         try self.interpreter.reset();
     }
 
-    pub inline fn allocator(self: *API) std.mem.Allocator {
+    pub fn allocator(self: *API) std.mem.Allocator {
         return self.interpreter.runtime.allocator;
     }
 

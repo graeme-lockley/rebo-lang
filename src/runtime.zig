@@ -104,7 +104,7 @@ pub const Runtime = struct {
         self.free = null;
     }
 
-    pub inline fn newValue(self: *Runtime, vv: V.ValueValue) !*V.Value {
+    pub fn newValue(self: *Runtime, vv: V.ValueValue) !*V.Value {
         const v = if (self.free == null) try self.allocator.create(V.Value) else self.nextFreeValue();
         self.memory_size += 1;
         self.allocations += 1;
@@ -125,7 +125,7 @@ pub const Runtime = struct {
         return v;
     }
 
-    pub inline fn appendSequenceItem(self: *Runtime, seqPosition: Errors.Position) !void {
+    pub fn appendSequenceItem(self: *Runtime, seqPosition: Errors.Position) !void {
         const seq = self.peek(1);
         const item = self.peek(0);
 
@@ -143,7 +143,7 @@ pub const Runtime = struct {
         try self.push(result);
     }
 
-    pub inline fn appendSequenceItemBang(self: *Runtime, seqPosition: Errors.Position) !void {
+    pub fn appendSequenceItemBang(self: *Runtime, seqPosition: Errors.Position) !void {
         const seq = self.peek(1);
         const item = self.peek(0);
 
@@ -155,7 +155,7 @@ pub const Runtime = struct {
         self.popn(1);
     }
 
-    pub inline fn prependSequenceItem(self: *Runtime, seqPosition: Errors.Position) !void {
+    pub fn prependSequenceItem(self: *Runtime, seqPosition: Errors.Position) !void {
         const item = self.peek(1);
         const seq = self.peek(0);
 
@@ -173,7 +173,7 @@ pub const Runtime = struct {
         try self.push(result);
     }
 
-    pub inline fn prependSequenceItemBang(self: *Runtime, seqPosition: Errors.Position) !void {
+    pub fn prependSequenceItemBang(self: *Runtime, seqPosition: Errors.Position) !void {
         const item = self.peek(1);
         const seq = self.peek(0);
 
@@ -187,7 +187,7 @@ pub const Runtime = struct {
         try self.push(seq);
     }
 
-    pub inline fn appendSequenceItemsBang(self: *Runtime, seqPosition: Errors.Position, itemPosition: Errors.Position) !void {
+    pub fn appendSequenceItemsBang(self: *Runtime, seqPosition: Errors.Position, itemPosition: Errors.Position) !void {
         const seq = self.peek(1);
         const item = self.peek(0);
 
@@ -203,7 +203,7 @@ pub const Runtime = struct {
         self.popn(1);
     }
 
-    pub inline fn setRecordItemBang(self: *Runtime, position: Errors.Position) !void {
+    pub fn setRecordItemBang(self: *Runtime, position: Errors.Position) !void {
         const record = self.peek(2);
         const key = self.peek(1);
         const value = self.peek(0);
@@ -220,47 +220,47 @@ pub const Runtime = struct {
         self.popn(2);
     }
 
-    pub inline fn newBuiltinValue(self: *Runtime, body: V.BuiltinFunctionType) !*V.Value {
+    pub fn newBuiltinValue(self: *Runtime, body: V.BuiltinFunctionType) !*V.Value {
         return try self.newValue(V.ValueValue{ .BuiltinKind = .{ .body = body } });
     }
 
-    pub inline fn newFileValue(self: *Runtime, file: std.fs.File) !*V.Value {
+    pub fn newFileValue(self: *Runtime, file: std.fs.File) !*V.Value {
         return try self.newValue(V.ValueValue{ .FileKind = V.FileValue.init(file) });
     }
 
-    pub inline fn newIntValue(self: *Runtime, v: V.IntType) !*V.Value {
+    pub fn newIntValue(self: *Runtime, v: V.IntType) !*V.Value {
         return try self.newValue(V.ValueValue{ .IntKind = v });
     }
 
-    pub inline fn newRecordValue(self: *Runtime) !*V.Value {
+    pub fn newRecordValue(self: *Runtime) !*V.Value {
         return try self.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(self.allocator) });
     }
 
-    pub inline fn newScopeValue(self: *Runtime, parent: ?*V.Value) !*V.Value {
+    pub fn newScopeValue(self: *Runtime, parent: ?*V.Value) !*V.Value {
         return try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, parent) });
     }
 
-    pub inline fn newEmptySequenceValue(self: *Runtime) !*V.Value {
+    pub fn newEmptySequenceValue(self: *Runtime) !*V.Value {
         return try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
     }
 
-    pub inline fn newStreamValue(self: *Runtime, v: std.net.Stream) !*V.Value {
+    pub fn newStreamValue(self: *Runtime, v: std.net.Stream) !*V.Value {
         return try self.newValue(V.ValueValue{ .StreamKind = V.StreamValue.init(v) });
     }
 
-    pub inline fn newStringPoolValue(self: *Runtime, v: *SP.String) !*V.Value {
+    pub fn newStringPoolValue(self: *Runtime, v: *SP.String) !*V.Value {
         return try self.newValue(V.ValueValue{ .StringKind = V.StringValue.initPool(v) });
     }
 
-    pub inline fn newStringValue(self: *Runtime, v: []const u8) !*V.Value {
+    pub fn newStringValue(self: *Runtime, v: []const u8) !*V.Value {
         return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.init(self.stringPool, v) });
     }
 
-    pub inline fn newOwnedStringValue(self: *Runtime, v: []u8) !*V.Value {
+    pub fn newOwnedStringValue(self: *Runtime, v: []u8) !*V.Value {
         return try self.newValue(V.ValueValue{ .StringKind = try V.StringValue.initOwned(self.stringPool, v) });
     }
 
-    pub inline fn pushValue(self: *Runtime, vv: V.ValueValue) !*V.Value {
+    pub fn pushValue(self: *Runtime, vv: V.ValueValue) !*V.Value {
         const v = try self.newValue(vv);
 
         try self.stack.append(v);
@@ -270,7 +270,7 @@ pub const Runtime = struct {
         return v;
     }
 
-    pub inline fn pushBoolValue(self: *Runtime, b: bool) !void {
+    pub fn pushBoolValue(self: *Runtime, b: bool) !void {
         if (b and self.trueValue != null) {
             _ = try self.push(self.trueValue.?);
             return;
@@ -282,59 +282,59 @@ pub const Runtime = struct {
         }
     }
 
-    pub inline fn pushEmptyRecordValue(self: *Runtime) !void {
+    pub fn pushEmptyRecordValue(self: *Runtime) !void {
         try self.push(try self.newRecordValue());
     }
 
-    pub inline fn pushCharValue(self: *Runtime, v: u8) !void {
+    pub fn pushCharValue(self: *Runtime, v: u8) !void {
         _ = try self.pushValue(V.ValueValue{ .CharKind = v });
     }
 
-    pub inline fn pushFloatValue(self: *Runtime, v: V.FloatType) !void {
+    pub fn pushFloatValue(self: *Runtime, v: V.FloatType) !void {
         _ = try self.pushValue(V.ValueValue{ .FloatKind = v });
     }
 
-    pub inline fn pushIntValue(self: *Runtime, v: V.IntType) !void {
+    pub fn pushIntValue(self: *Runtime, v: V.IntType) !void {
         _ = try self.push(try self.newIntValue(v));
     }
 
-    pub inline fn pushScopeValue(self: *Runtime, parent: ?*V.Value) !void {
+    pub fn pushScopeValue(self: *Runtime, parent: ?*V.Value) !void {
         _ = try self.push(try self.newScopeValue(parent));
     }
 
-    pub inline fn pushEmptySequenceValue(self: *Runtime) !void {
+    pub fn pushEmptySequenceValue(self: *Runtime) !void {
         _ = try self.push(try self.newEmptySequenceValue());
     }
 
-    pub inline fn pushStringPoolValue(self: *Runtime, v: *SP.String) !void {
+    pub fn pushStringPoolValue(self: *Runtime, v: *SP.String) !void {
         _ = try self.push(try self.newStringPoolValue(v));
     }
 
-    pub inline fn pushStringValue(self: *Runtime, v: []const u8) !void {
+    pub fn pushStringValue(self: *Runtime, v: []const u8) !void {
         _ = try self.push(try self.newStringValue(v));
     }
 
-    pub inline fn pushOwnedStringValue(self: *Runtime, v: []u8) !void {
+    pub fn pushOwnedStringValue(self: *Runtime, v: []u8) !void {
         _ = try self.push(try self.newOwnedStringValue(v));
     }
 
-    pub inline fn pushUnitValue(self: *Runtime) !void {
+    pub fn pushUnitValue(self: *Runtime) !void {
         _ = try self.push(self.unitValue.?);
     }
 
-    pub inline fn pop(self: *Runtime) *V.Value {
+    pub fn pop(self: *Runtime) *V.Value {
         return self.stack.pop();
     }
 
-    pub inline fn popn(self: *Runtime, n: usize) void {
+    pub fn popn(self: *Runtime, n: usize) void {
         self.stack.items.len -= n;
     }
 
-    pub inline fn push(self: *Runtime, v: *V.Value) !void {
+    pub fn push(self: *Runtime, v: *V.Value) !void {
         try self.stack.append(v);
     }
 
-    pub inline fn peek(self: *Runtime, n: usize) *V.Value {
+    pub fn peek(self: *Runtime, n: usize) *V.Value {
         return self.stack.items[self.stack.items.len - n - 1];
     }
 
@@ -346,7 +346,7 @@ pub const Runtime = struct {
         }
     }
 
-    pub inline fn scope(self: *Runtime) ?*V.Value {
+    pub fn scope(self: *Runtime) ?*V.Value {
         if (self.scopes.items.len == 0) {
             return null;
         } else {
@@ -354,65 +354,65 @@ pub const Runtime = struct {
         }
     }
 
-    pub inline fn topScope(self: *Runtime) *V.Value {
+    pub fn topScope(self: *Runtime) *V.Value {
         return self.scopes.items[0];
     }
 
-    pub inline fn openScope(self: *Runtime) !void {
+    pub fn openScope(self: *Runtime) !void {
         try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, self.scope()) }));
     }
 
-    pub inline fn openScopeFrom(self: *Runtime, outerScope: ?*V.Value) !void {
+    pub fn openScopeFrom(self: *Runtime, outerScope: ?*V.Value) !void {
         if (outerScope != null and outerScope.?.v != V.ValueKind.ScopeKind) unreachable;
 
         try self.scopes.append(try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, outerScope) }));
     }
 
-    pub inline fn openScopeUsing(self: *Runtime, outerScope: *V.Value) !void {
+    pub fn openScopeUsing(self: *Runtime, outerScope: *V.Value) !void {
         if (outerScope.v != V.ValueKind.ScopeKind) unreachable;
 
         try self.scopes.append(outerScope);
     }
 
-    pub inline fn restoreScope(self: *Runtime) void {
+    pub fn restoreScope(self: *Runtime) void {
         _ = self.scopes.pop();
     }
 
-    pub inline fn pushScope(self: *Runtime) !void {
+    pub fn pushScope(self: *Runtime) !void {
         self.scopes.items[self.scopes.items.len - 1] = try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, self.scopes.items[self.scopes.items.len - 1]) });
     }
 
-    pub inline fn popScope(self: *Runtime) void {
+    pub fn popScope(self: *Runtime) void {
         self.scopes.items[self.scopes.items.len - 1] = self.scopes.items[self.scopes.items.len - 1].v.ScopeKind.parent.?;
     }
 
-    pub inline fn addToScope(self: *Runtime, name: *SP.String, value: *V.Value) !void {
+    pub fn addToScope(self: *Runtime, name: *SP.String, value: *V.Value) !void {
         try self.scope().?.v.ScopeKind.set(name, value);
     }
 
-    pub inline fn addU8ToScope(self: *Runtime, name: []const u8, value: *V.Value) !void {
+    pub fn addU8ToScope(self: *Runtime, name: []const u8, value: *V.Value) !void {
         const spName = try self.stringPool.intern(name);
         defer spName.decRef();
 
         try self.scope().?.v.ScopeKind.set(spName, value);
     }
 
-    pub inline fn addArrayValueToScope(self: *Runtime, name: *SP.String, values: []*V.Value) !void {
+    pub fn addArrayValueToScope(self: *Runtime, name: *SP.String, values: []*V.Value) !void {
         const value = try self.newValue(V.ValueValue{ .SequenceKind = try V.SequenceValue.init(self.allocator) });
         try value.v.SequenceKind.appendSlice(values);
 
         try self.scope().?.v.ScopeKind.set(name, value);
     }
 
-    pub inline fn updateInScope(self: *Runtime, name: *SP.String, value: *V.Value) !bool {
+    pub fn updateInScope(self: *Runtime, name: *SP.String, value: *V.Value) !bool {
         return try self.scope().?.v.ScopeKind.update(name, value);
     }
 
-    pub inline fn getFromScope(self: *Runtime, name: *SP.String) ?*V.Value {
+    pub fn getFromScope(self: *Runtime, name: *SP.String) ?*V.Value {
         return self.scope().?.v.ScopeKind.get(name);
     }
 
-    pub inline fn getU8FromScope(self: *Runtime, name: []const u8) !?*V.Value {
+    pub fn getU8FromScope(self: *Runtime, name: []const u8) !?*V.Value {
         const spName = try self.stringPool.intern(name);
         defer spName.decRef();
 
@@ -428,21 +428,21 @@ pub const Runtime = struct {
         self.stack = std.ArrayList(*V.Value).init(self.allocator);
     }
 
-    pub inline fn equals(self: *Runtime) !void {
+    pub fn equals(self: *Runtime) !void {
         const right = self.pop();
         const left = self.pop();
 
         try self.pushBoolValue(V.eq(left, right));
     }
 
-    pub inline fn notEquals(self: *Runtime) !void {
+    pub fn notEquals(self: *Runtime) !void {
         const right = self.pop();
         const left = self.pop();
 
         try self.pushBoolValue(!V.eq(left, right));
     }
 
-    pub inline fn lessThan(self: *Runtime, position: Errors.Position) !void {
+    pub fn lessThan(self: *Runtime, position: Errors.Position) !void {
         const right = self.pop();
         const left = self.pop();
 
@@ -484,7 +484,7 @@ pub const Runtime = struct {
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.LessThan, left.v, right.v);
     }
 
-    pub inline fn lessEqual(self: *Runtime, position: Errors.Position) !void {
+    pub fn lessEqual(self: *Runtime, position: Errors.Position) !void {
         const right = self.pop();
         const left = self.pop();
 
@@ -526,7 +526,7 @@ pub const Runtime = struct {
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.LessEqual, left.v, right.v);
     }
 
-    pub inline fn greaterThan(self: *Runtime, position: Errors.Position) !void {
+    pub fn greaterThan(self: *Runtime, position: Errors.Position) !void {
         const right = self.pop();
         const left = self.pop();
 
@@ -568,7 +568,7 @@ pub const Runtime = struct {
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.GreaterThan, left.v, right.v);
     }
 
-    pub inline fn greaterEqual(self: *Runtime, position: Errors.Position) !void {
+    pub fn greaterEqual(self: *Runtime, position: Errors.Position) !void {
         const right = self.pop();
         const left = self.pop();
 
@@ -610,7 +610,7 @@ pub const Runtime = struct {
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.GreaterEqual, left.v, right.v);
     }
 
-    pub inline fn add(self: *Runtime, position: Errors.Position) !void {
+    pub fn add(self: *Runtime, position: Errors.Position) !void {
         const right = self.peek(0);
         const left = self.peek(1);
 
@@ -677,7 +677,7 @@ pub const Runtime = struct {
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Plus, left.v, right.v);
     }
 
-    pub inline fn subtract(self: *Runtime, position: Errors.Position) !void {
+    pub fn subtract(self: *Runtime, position: Errors.Position) !void {
         const right = self.pop();
         const left = self.pop();
 
@@ -713,7 +713,7 @@ pub const Runtime = struct {
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Minus, left.v, right.v);
     }
 
-    pub inline fn multiply(self: *Runtime, position: Errors.Position) !void {
+    pub fn multiply(self: *Runtime, position: Errors.Position) !void {
         const right = self.pop();
         const left = self.pop();
 
@@ -761,7 +761,7 @@ pub const Runtime = struct {
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Times, left.v, right.v);
     }
 
-    pub inline fn divide(self: *Runtime, position: Errors.Position) !void {
+    pub fn divide(self: *Runtime, position: Errors.Position) !void {
         const right = self.pop();
         const left = self.pop();
 
@@ -809,7 +809,7 @@ pub const Runtime = struct {
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Divide, left.v, right.v);
     }
 
-    pub inline fn power(self: *Runtime, position: Errors.Position) !void {
+    pub fn power(self: *Runtime, position: Errors.Position) !void {
         const right = self.pop();
         const left = self.pop();
 
@@ -845,7 +845,7 @@ pub const Runtime = struct {
         try ER.raiseIncompatibleOperandTypesError(self, position, AST.Operator.Power, left.v, right.v);
     }
 
-    pub inline fn modulo(self: *Runtime, position: Errors.Position) !void {
+    pub fn modulo(self: *Runtime, position: Errors.Position) !void {
         const right = self.pop();
         const left = self.pop();
 
@@ -859,7 +859,7 @@ pub const Runtime = struct {
         try self.pushIntValue(@mod(left.v.IntKind, right.v.IntKind));
     }
 
-    pub inline fn duplicate(self: *Runtime) !void {
+    pub fn duplicate(self: *Runtime) !void {
         const value = self.peek(0);
         try self.push(value);
     }
@@ -977,7 +977,7 @@ pub fn force_gc(state: *Runtime) GCResult {
     return GCResult{ .capacity = state.memory_capacity, .oldSize = old_size, .newSize = state.memory_size, .duration = end_time - start_time };
 }
 
-inline fn gc(state: *Runtime) void {
+fn gc(state: *Runtime) void {
     if (state.memory_size > state.memory_capacity) {
         // _ = force_gc(state);
         const gcResult = force_gc(state);

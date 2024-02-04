@@ -93,7 +93,7 @@ pub fn raiseMatchError(runtime: *Runtime.Runtime, position: Errors.Position, val
     return Errors.RuntimeErrors.InterpreterError;
 }
 
-pub inline fn appendErrorPosition(runtime: *Runtime.Runtime, position: ?Errors.Position) !void {
+pub fn appendErrorPosition(runtime: *Runtime.Runtime, position: ?Errors.Position) !void {
     if (position != null) {
         try appendErrorStackItem(runtime, Errors.StackItem{ .src = try src(runtime), .position = position.? });
     }

@@ -40,27 +40,27 @@ pub const Value = struct {
         }
     }
 
-    pub inline fn isBool(self: *Value) bool {
+    pub fn isBool(self: *Value) bool {
         return self.v == .BoolKind;
     }
 
-    pub inline fn isInt(self: *Value) bool {
+    pub fn isInt(self: *Value) bool {
         return self.v == .IntKind;
     }
 
-    pub inline fn isRecord(self: *Value) bool {
+    pub fn isRecord(self: *Value) bool {
         return self.v == .RecordKind;
     }
 
-    pub inline fn isSequence(self: *Value) bool {
+    pub fn isSequence(self: *Value) bool {
         return self.v == .SequenceKind;
     }
 
-    pub inline fn isString(self: *Value) bool {
+    pub fn isString(self: *Value) bool {
         return self.v == .StringKind;
     }
 
-    pub inline fn isUnit(self: *Value) bool {
+    pub fn isUnit(self: *Value) bool {
         return self.v == .UnitKind;
     }
 
@@ -425,7 +425,7 @@ pub const RecordValue = struct {
         self.items.deinit();
     }
 
-    pub inline fn set(self: *RecordValue, key: *SP.String, value: *Value) !void {
+    pub fn set(self: *RecordValue, key: *SP.String, value: *Value) !void {
         if (value.v == ValueKind.UnitKind) {
             const old = self.items.fetchRemove(key);
 
@@ -439,33 +439,33 @@ pub const RecordValue = struct {
         }
     }
 
-    pub inline fn setU8(self: *RecordValue, stringPool: *SP.StringPool, key: []const u8, value: *Value) !void {
+    pub fn setU8(self: *RecordValue, stringPool: *SP.StringPool, key: []const u8, value: *Value) !void {
         const spKey = try stringPool.intern(key);
         defer spKey.decRef();
 
         return self.set(spKey, value);
     }
 
-    pub inline fn get(self: *const RecordValue, key: *SP.String) ?*Value {
+    pub fn get(self: *const RecordValue, key: *SP.String) ?*Value {
         return self.items.get(key);
     }
 
-    pub inline fn getU8(self: *const RecordValue, stringPool: *SP.StringPool, key: []const u8) !?*Value {
+    pub fn getU8(self: *const RecordValue, stringPool: *SP.StringPool, key: []const u8) !?*Value {
         const spKey = try stringPool.intern(key);
         defer spKey.decRef();
 
         return self.items.get(spKey);
     }
 
-    pub inline fn count(self: *const RecordValue) usize {
+    pub fn count(self: *const RecordValue) usize {
         return self.items.count();
     }
 
-    pub inline fn iterator(self: *const RecordValue) std.AutoHashMap(*SP.String, *Value).Iterator {
+    pub fn iterator(self: *const RecordValue) std.AutoHashMap(*SP.String, *Value).Iterator {
         return self.items.iterator();
     }
 
-    pub inline fn keyIterator(self: *const RecordValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
+    pub fn keyIterator(self: *const RecordValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
         return self.items.keyIterator();
     }
 };
@@ -490,7 +490,7 @@ pub const ScopeValue = struct {
         self.values.deinit();
     }
 
-    pub inline fn set(self: *ScopeValue, key: *SP.String, value: *Value) !void {
+    pub fn set(self: *ScopeValue, key: *SP.String, value: *Value) !void {
         if (self.values.getKey(key)) |oldKey| {
             try self.values.put(oldKey, value);
         } else {
@@ -498,7 +498,7 @@ pub const ScopeValue = struct {
         }
     }
 
-    pub inline fn update(self: *ScopeValue, key: *SP.String, value: *Value) !bool {
+    pub fn update(self: *ScopeValue, key: *SP.String, value: *Value) !bool {
         var runner: ?*ScopeValue = self;
 
         while (true) {
@@ -518,7 +518,7 @@ pub const ScopeValue = struct {
         }
     }
 
-    pub inline fn get(self: *const ScopeValue, key: *SP.String) ?*Value {
+    pub fn get(self: *const ScopeValue, key: *SP.String) ?*Value {
         var runner: ?*const ScopeValue = self;
 
         while (true) {
@@ -538,11 +538,11 @@ pub const ScopeValue = struct {
         return self.values.count();
     }
 
-    pub inline fn keyIterator(self: *const ScopeValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
+    pub fn keyIterator(self: *const ScopeValue) std.AutoHashMap(*SP.String, *Value).KeyIterator {
         return self.values.keyIterator();
     }
 
-    pub inline fn delete(self: *ScopeValue, key: *SP.String) !?*Value {
+    pub fn delete(self: *ScopeValue, key: *SP.String) !?*Value {
         const value = self.values.get(key);
 
         if (self.values.getKey(key)) |oldKey| {
@@ -569,46 +569,46 @@ pub const SequenceValue = struct {
         self.values.deinit();
     }
 
-    pub inline fn appendItem(self: *SequenceValue, value: *Value) !void {
+    pub fn appendItem(self: *SequenceValue, value: *Value) !void {
         try self.values.append(value);
     }
 
-    pub inline fn prependItem(self: *SequenceValue, value: *Value) !void {
+    pub fn prependItem(self: *SequenceValue, value: *Value) !void {
         try self.values.insert(0, value);
     }
 
-    pub inline fn appendSlice(self: *SequenceValue, values: []const *Value) !void {
+    pub fn appendSlice(self: *SequenceValue, values: []const *Value) !void {
         try self.values.appendSlice(values);
     }
 
-    pub inline fn replaceSlice(self: *SequenceValue, values: []*Value) !void {
+    pub fn replaceSlice(self: *SequenceValue, values: []*Value) !void {
         self.values.clearAndFree();
         try self.values.appendSlice(values);
     }
 
-    pub inline fn replaceRange(self: *SequenceValue, start: usize, end: usize, values: []*Value) !void {
+    pub fn replaceRange(self: *SequenceValue, start: usize, end: usize, values: []*Value) !void {
         try self.values.replaceRange(start, end - start, values);
     }
 
-    pub inline fn removeRange(self: *SequenceValue, start: usize, end: usize) !void {
+    pub fn removeRange(self: *SequenceValue, start: usize, end: usize) !void {
         const values = &[_]*Value{};
 
         try self.values.replaceRange(start, end - start, values);
     }
 
-    pub inline fn len(self: *const SequenceValue) usize {
+    pub fn len(self: *const SequenceValue) usize {
         return self.values.items.len;
     }
 
-    pub inline fn items(self: *const SequenceValue) []*Value {
+    pub fn items(self: *const SequenceValue) []*Value {
         return self.values.items;
     }
 
-    pub inline fn at(self: *const SequenceValue, i: usize) *Value {
+    pub fn at(self: *const SequenceValue, i: usize) *Value {
         return self.values.items[i];
     }
 
-    pub inline fn set(self: *const SequenceValue, i: usize, v: *Value) void {
+    pub fn set(self: *const SequenceValue, i: usize, v: *Value) void {
         self.values.items[i] = v;
     }
 };
@@ -655,11 +655,11 @@ pub const StringValue = struct {
         self.value.decRef();
     }
 
-    pub inline fn slice(self: *const StringValue) []const u8 {
+    pub fn slice(self: *const StringValue) []const u8 {
         return self.value.slice();
     }
 
-    pub inline fn len(self: *const StringValue) usize {
+    pub fn len(self: *const StringValue) usize {
         return self.value.len();
     }
 };
