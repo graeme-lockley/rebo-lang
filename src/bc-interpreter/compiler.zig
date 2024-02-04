@@ -166,7 +166,6 @@ pub const Compiler = struct {
                             try self.compileExpr(entry.value.value);
                             try self.buffer.append(@intFromEnum(Op.set_record_item_bang));
                             try self.appendPosition(e.position);
-                            try self.appendPosition(e.position);
                         },
                         .record => {
                             unreachable;

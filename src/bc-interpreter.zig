@@ -18,6 +18,10 @@ pub fn compile(allocator: std.mem.Allocator, ast: *AST.Expression) ![]u8 {
     return try compiler.compile(ast);
 }
 
+pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
+    try Interpreter.eval(runtime, bytecode);
+}
+
 pub fn script(runtime: *Runtime, input: []const u8) !void {
     const ast = try parse(runtime, input);
     defer ast.destroy(runtime.allocator);
@@ -28,7 +32,7 @@ pub fn script(runtime: *Runtime, input: []const u8) !void {
     try Interpreter.eval(runtime, bytecode);
 }
 
-fn parse(runtime: *Runtime, input: []const u8) !*AST.Expression {
+pub fn parse(runtime: *Runtime, input: []const u8) !*AST.Expression {
     var l = Lexer.Lexer.init(runtime.allocator);
 
     l.initBuffer("test", input) catch |err| {
@@ -227,9 +231,9 @@ test "literal record" {
     try expectExprEqual("{}", "{}");
     try expectExprEqual("{name: 10}", "{name: 10}");
 
-    // try expectExprEqual("{a: 1, a: 2, a: 3}", "{a: 3}");
-    // try expectExprEqual("{a: 10, b: ()}", "{a: 10}");
-    // try expectExprEqual("{a: 10, b: 20, a: ()}", "{b: 20}");
+    try expectExprEqual("{a: 1, a: 2, a: 3}", "{a: 3}");
+    try expectExprEqual("{a: 10, b: ()}", "{a: 10}");
+    try expectExprEqual("{a: 10, b: 20, a: ()}", "{b: 20}");
 
     // try expectExprEqual("rebo.lang.len({a: 10, ...{b: 20}})", "2");
     // try expectExprEqual("{a: 10, ...{b: 20}}.a", "10");

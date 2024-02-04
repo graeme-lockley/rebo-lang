@@ -191,11 +191,11 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
     }
 }
 
-fn readFloat(bytecode: []const u8, ip: usize) V.FloatType {
+pub fn readFloat(bytecode: []const u8, ip: usize) V.FloatType {
     return @as(V.FloatType, @bitCast(readInt(bytecode, ip)));
 }
 
-fn readInt(bytecode: []const u8, ip: usize) V.IntType {
+pub fn readInt(bytecode: []const u8, ip: usize) V.IntType {
     const v: V.IntType = @bitCast(@as(u64, (bytecode[ip])) |
         (@as(u64, bytecode[ip + 1]) << 8) |
         (@as(u64, bytecode[ip + 2]) << 16) |

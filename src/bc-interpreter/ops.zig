@@ -1,27 +1,27 @@
 pub const Op = enum(u8) {
     ret,
-    push_char,
-    push_int,
+    push_char, // C
+    push_int, // I
     push_false,
-    push_float,
+    push_float, // F
     push_record,
-    push_sequence,
-    push_string,
+    push_sequence, //
+    push_string, // S
     push_true,
     push_unit,
 
-    jmp,
-    jmp_true,
-    jmp_false,
+    jmp, // I
+    jmp_true, // IP
+    jmp_false, // IP
 
     duplicate,
     discard,
 
-    append_sequence_item_bang,
-    append_sequence_items_bang,
+    append_sequence_item_bang, // P
+    append_sequence_items_bang, // P
 
-    set_record_item_bang,
-    set_record_items_bang,
+    set_record_item_bang, // P
+    set_record_items_bang, // P
 
     equals,
     not_equals,
