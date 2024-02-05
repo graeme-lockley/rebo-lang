@@ -220,6 +220,25 @@ pub const Runtime = struct {
         self.popn(2);
     }
 
+    pub fn setRecordItemsBang(self: *Runtime, position: Errors.Position) !void {
+        const record = self.peek(1);
+        const value = self.peek(0);
+
+        if (!record.isRecord()) {
+            try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
+        }
+        if (!value.isRecord()) {
+            try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.StringKind}, value.v);
+        }
+
+        var iterator = value.v.RecordKind.iterator();
+        while (iterator.next()) |rv| {
+            try record.v.RecordKind.set(rv.key_ptr.*, rv.value_ptr.*);
+        }
+
+        self.popn(1);
+    }
+
     pub fn newBuiltinValue(self: *Runtime, body: V.BuiltinFunctionType) !*V.Value {
         return try self.newValue(V.ValueValue{ .BuiltinKind = .{ .body = body } });
     }

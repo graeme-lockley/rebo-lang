@@ -106,11 +106,10 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
                 ip += 1 + PositionTypeSize;
             },
             Op.set_record_items_bang => {
-                const seqPosition = readPosition(bytecode, ip + 1);
-                const itemPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+                const position = readPosition(bytecode, ip + 1);
 
-                try runtime.appendSequenceItemsBang(seqPosition, itemPosition);
-                ip += 1 + PositionTypeSize + PositionTypeSize;
+                try runtime.setRecordItemsBang(position);
+                ip += 1 + PositionTypeSize;
             },
             Op.equals => {
                 try runtime.equals();

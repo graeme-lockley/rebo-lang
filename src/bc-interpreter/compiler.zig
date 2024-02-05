@@ -168,18 +168,9 @@ pub const Compiler = struct {
                             try self.appendPosition(e.position);
                         },
                         .record => {
-                            unreachable;
-                            // try evalExpr(machine, entry.record);
-
-                            // const value = machine.runtime.pop();
-                            // if (value.v != V.ValueValue.RecordKind) {
-                            //     try ER.raiseExpectedTypeError(&machine.runtime, entry.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, value.v);
-                            // }
-
-                            // var iterator = value.v.RecordKind.iterator();
-                            // while (iterator.next()) |rv| {
-                            //     try map.v.RecordKind.set(rv.key_ptr.*, rv.value_ptr.*);
-                            // }
+                            try self.compileExpr(entry.record);
+                            try self.buffer.append(@intFromEnum(Op.set_record_items_bang));
+                            try self.appendPosition(e.position);
                         },
                     }
                 }

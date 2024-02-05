@@ -1,6 +1,7 @@
 let sys = import("sys")
 
-let content = "{a: 1, b: 2, c: 3}"
-sys.dis(sys.compile(content))
+let content = "{a: 1, b: 2, c: 3, ...{d: 4}}"
+let bc = sys.compile(content)
 
-println("Result: ", sys.eval(sys.compile(content)))
+sys.dis(bc)
+println("Result: ", sys.eval(bc))
