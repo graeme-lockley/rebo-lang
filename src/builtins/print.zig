@@ -4,7 +4,7 @@ const Helper = @import("./helper.zig");
 fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
     switch (v.v) {
         .BoolKind => try stdout.print("{s}", .{if (v.v.BoolKind) "true" else "false"}),
-        .BuiltinKind => try stdout.print("fn(...)", .{}),
+        .BuiltinFunctionKind => try stdout.print("fn(...)", .{}),
         .CharKind => try stdout.print("{c}", .{v.v.CharKind}),
         .FileKind => try stdout.print("file: {d}", .{v.v.FileKind.file.handle}),
         .FloatKind => try stdout.print("{d}", .{v.v.FloatKind}),

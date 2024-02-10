@@ -27,7 +27,7 @@ pub const Value = struct {
 
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         switch (self.v) {
-            .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FloatKind, .UnitKind => {},
+            .BoolKind, .BuiltinFunctionKind, .CharKind, .IntKind, .FloatKind, .UnitKind => {},
             .FileKind => self.v.FileKind.deinit(),
             .FunctionKind => self.v.FunctionKind.deinit(allocator),
             .HttpClientKind => self.v.HttpClientKind.deinit(allocator),
@@ -67,7 +67,7 @@ pub const Value = struct {
     pub fn appendValue(self: *const Value, buffer: *std.ArrayList(u8), style: Style) !void {
         switch (self.v) {
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
-            .BuiltinKind => try buffer.appendSlice("fn(...)"),
+            .BuiltinFunctionKind => try buffer.appendSlice("fn(...)"),
             .CharKind => {
                 switch (style) {
                     Style.Pretty => switch (self.v.CharKind) {
@@ -212,7 +212,7 @@ pub const ValueKind = enum {
     IntKind,
     FloatKind,
     BoolKind,
-    BuiltinKind,
+    BuiltinFunctionKind,
     CharKind,
     FileKind,
     FunctionKind,
@@ -228,7 +228,7 @@ pub const ValueKind = enum {
     pub fn toString(self: ValueKind) []const u8 {
         return switch (self) {
             ValueKind.BoolKind => "Bool",
-            ValueKind.BuiltinKind => "Function",
+            ValueKind.BuiltinFunctionKind => "Function",
             ValueKind.CharKind => "Char",
             ValueKind.FileKind => "File",
             ValueKind.FunctionKind => "Function",
@@ -248,7 +248,7 @@ pub const ValueKind = enum {
 
 pub const ValueValue = union(ValueKind) {
     BoolKind: bool,
-    BuiltinKind: BuiltinValue,
+    BuiltinFunctionKind: BuiltinFunctionValue,
     CharKind: u8,
     FileKind: FileValue,
     FloatKind: FloatType,
@@ -264,7 +264,7 @@ pub const ValueValue = union(ValueKind) {
     UnitKind: void,
 };
 
-pub const BuiltinValue = struct {
+pub const BuiltinFunctionValue = struct {
     body: BuiltinFunctionType,
 };
 
@@ -678,7 +678,7 @@ pub fn eq(a: *Value, b: *Value) bool {
 
     switch (a.v) {
         .BoolKind => return a.v.BoolKind == b.v.BoolKind,
-        .BuiltinKind => return @intFromPtr(a) == @intFromPtr(b),
+        .BuiltinFunctionKind => return @intFromPtr(a) == @intFromPtr(b),
         .CharKind => return a.v.CharKind == b.v.CharKind,
         .FileKind => return a.v.FileKind.file.handle == b.v.FileKind.file.handle,
         .FunctionKind => return @intFromPtr(a) == @intFromPtr(b),

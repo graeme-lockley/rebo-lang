@@ -240,7 +240,7 @@ pub const Runtime = struct {
     }
 
     pub fn newBuiltinValue(self: *Runtime, body: V.BuiltinFunctionType) !*V.Value {
-        return try self.newValue(V.ValueValue{ .BuiltinKind = .{ .body = body } });
+        return try self.newValue(V.ValueValue{ .BuiltinFunctionKind = .{ .body = body } });
     }
 
     pub fn newFileValue(self: *Runtime, file: std.fs.File) !*V.Value {
@@ -898,7 +898,7 @@ fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {
     v.colour = colour;
 
     switch (v.v) {
-        .BoolKind, .BuiltinKind, .CharKind, .IntKind, .FileKind, .FloatKind, .StreamKind, .StringKind, .UnitKind => {},
+        .BoolKind, .BuiltinFunctionKind, .CharKind, .IntKind, .FileKind, .FloatKind, .StreamKind, .StringKind, .UnitKind => {},
         .FunctionKind => {
             markValue(v.v.FunctionKind.scope, colour);
             for (v.v.FunctionKind.arguments) |argument| {

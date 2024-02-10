@@ -338,7 +338,7 @@ pub fn callFn(machine: *ASTInterpreter, numberOfArgs: usize) Errors.RuntimeError
 
     switch (callee.v) {
         V.ValueValue.FunctionKind => try callUserFn(machine, numberOfArgs),
-        V.ValueValue.BuiltinKind => try callBuiltinFn(machine, numberOfArgs),
+        V.ValueValue.BuiltinFunctionKind => try callBuiltinFn(machine, numberOfArgs),
         else => try ER.raiseExpectedTypeError(&machine.runtime, null, &[_]V.ValueKind{V.ValueValue.FunctionKind}, callee.v),
     }
 
@@ -386,7 +386,7 @@ fn callUserFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
 fn callBuiltinFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
     const callee = machine.runtime.peek(@intCast(numberOfArgs));
 
-    try callee.v.BuiltinKind.body(machine, numberOfArgs);
+    try callee.v.BuiltinFunctionKind.body(machine, numberOfArgs);
 }
 
 fn catche(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
