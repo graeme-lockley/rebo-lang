@@ -2,12 +2,12 @@ const std = @import("std");
 
 const AST = @import("./ast.zig");
 const Errors = @import("./errors.zig");
-const ASTInterpreter = @import("./ast-interpreter.zig").ASTInterpreter;
+const Runtime = @import("./runtime.zig").Runtime;
 const SP = @import("./string_pool.zig");
 
 pub const IntType = i64;
 pub const FloatType = f64;
-pub const BuiltinFunctionType = *const fn (ASTInterpreter: *ASTInterpreter, numberOfArguments: usize) Errors.RuntimeErrors!void;
+pub const BuiltinFunctionType = *const fn (runtime: *Runtime, numberOfArguments: usize) Errors.RuntimeErrors!void;
 
 pub const Colour = enum(u2) {
     Black = 0,

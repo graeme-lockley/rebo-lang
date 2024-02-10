@@ -1,15 +1,15 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn float(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
+pub fn float(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueKind.StringKind});
-    const d = if (numberOfArgs > 1) machine.runtime.peek(numberOfArgs - 2) else machine.runtime.unitValue.?;
+    const d = if (numberOfArgs > 1) machine.peek(numberOfArgs - 2) else machine.unitValue.?;
 
     const literalFloat = std.fmt.parseFloat(Helper.FloatType, v.v.StringKind.slice()) catch {
-        try machine.runtime.push(d);
+        try machine.push(d);
         return;
     };
-    try machine.runtime.pushFloatValue(literalFloat);
+    try machine.pushFloatValue(literalFloat);
 }
 
 test "float" {

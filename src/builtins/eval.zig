@@ -15,17 +15,17 @@ fn booleanOption(stringPool: *Helper.StringPool, options: *Helper.Value, name: [
     return option.?.v.BoolKind;
 }
 
-pub fn eval(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
+pub fn eval(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const code = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
     const scope = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{Helper.ValueValue.ScopeKind});
 
-    try machine.runtime.openScopeUsing(scope);
-    defer machine.runtime.restoreScope();
+    try machine.openScopeUsing(scope);
+    defer machine.restoreScope();
 
-    machine.execute("eval", code.v.StringKind.slice()) catch {
+    Helper.M.execute(machine, "eval", code.v.StringKind.slice()) catch {
         const record = machine.topOfStack().?;
         if (record.v == Helper.ValueValue.RecordKind) {
-            try record.v.RecordKind.setU8(machine.runtime.stringPool, "content", code);
+            try record.v.RecordKind.setU8(machine.stringPool, "content", code);
         }
 
         return Helper.Errors.RuntimeErrors.InterpreterError;

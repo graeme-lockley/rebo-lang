@@ -135,7 +135,7 @@ fn runPrelude(rebo: *API) !void {
         try errorHandler(err, rebo);
     };
 
-    try rebo.interpreter.runtime.pushScope();
+    try rebo.runtime.pushScope();
 }
 
 fn prelude(rebo: *API) ![]u8 {
@@ -194,7 +194,7 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         var rebo = try API.init(allocator);
         defer rebo.deinit();
 
-        try rebo.interpreter.runtime.openScope();
+        try rebo.runtime.openScope();
 
         rebo.script(input) catch |err| {
             std.log.err("Error: {}: {s}\n", .{ err, input });
@@ -236,7 +236,7 @@ fn expectError(input: []const u8) !void {
         var rebo = try API.init(allocator);
         defer rebo.deinit();
 
-        try rebo.interpreter.runtime.openScope();
+        try rebo.runtime.openScope();
 
         rebo.script(input) catch {
             return;

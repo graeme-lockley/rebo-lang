@@ -10,310 +10,312 @@ const Parser = @import("./parser.zig");
 const SP = @import("./string_pool.zig");
 const V = @import("./value.zig");
 
-fn evalExpr(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+const Runtime = MS.Runtime;
+
+pub fn evalExpr(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     switch (e.kind) {
-        .assignment => try assignment(machine, e.kind.assignment.lhs, e.kind.assignment.value),
-        .binaryOp => try binaryOp(machine, e),
-        .call => try call(machine, e, e.kind.call.callee, e.kind.call.args),
-        .catche => try catche(machine, e),
-        .dot => try dot(machine, e),
-        .exprs => try exprs(machine, e),
-        .idDeclaration => try idDeclaration(machine, e),
-        .identifier => try identifier(machine, e),
-        .ifte => try ifte(machine, e),
-        .indexRange => try indexRange(machine, e.kind.indexRange.expr, e.kind.indexRange.start, e.kind.indexRange.end),
-        .indexValue => try indexValue(machine, e.kind.indexValue.expr, e.kind.indexValue.index),
-        .literalBool => try machine.createBoolValue(e.kind.literalBool),
-        .literalChar => try machine.runtime.pushCharValue(e.kind.literalChar),
-        .literalFloat => try machine.runtime.pushFloatValue(e.kind.literalFloat),
-        .literalFunction => try literalFunction(machine, e),
-        .literalInt => try machine.createIntValue(e.kind.literalInt),
-        .literalRecord => try literalRecord(machine, e),
-        .literalSequence => try literalSequence(machine, e),
-        .literalString => try machine.runtime.pushStringPoolValue(e.kind.literalString),
-        .literalVoid => try machine.createVoidValue(),
-        .match => try match(machine, e),
-        .notOp => try notOp(machine, e),
-        .patternDeclaration => try patternDeclaration(machine, e),
-        .raise => try raise(machine, e),
-        .whilee => try whilee(machine, e),
+        .assignment => try assignment(runtime, e.kind.assignment.lhs, e.kind.assignment.value),
+        .binaryOp => try binaryOp(runtime, e),
+        .call => try call(runtime, e, e.kind.call.callee, e.kind.call.args),
+        .catche => try catche(runtime, e),
+        .dot => try dot(runtime, e),
+        .exprs => try exprs(runtime, e),
+        .idDeclaration => try idDeclaration(runtime, e),
+        .identifier => try identifier(runtime, e),
+        .ifte => try ifte(runtime, e),
+        .indexRange => try indexRange(runtime, e.kind.indexRange.expr, e.kind.indexRange.start, e.kind.indexRange.end),
+        .indexValue => try indexValue(runtime, e.kind.indexValue.expr, e.kind.indexValue.index),
+        .literalBool => try runtime.pushBoolValue(e.kind.literalBool),
+        .literalChar => try runtime.pushCharValue(e.kind.literalChar),
+        .literalFloat => try runtime.pushFloatValue(e.kind.literalFloat),
+        .literalFunction => try literalFunction(runtime, e),
+        .literalInt => try runtime.pushIntValue(e.kind.literalInt),
+        .literalRecord => try literalRecord(runtime, e),
+        .literalSequence => try literalSequence(runtime, e),
+        .literalString => try runtime.pushStringPoolValue(e.kind.literalString),
+        .literalVoid => try runtime.pushUnitValue(),
+        .match => try match(runtime, e),
+        .notOp => try notOp(runtime, e),
+        .patternDeclaration => try patternDeclaration(runtime, e),
+        .raise => try raise(runtime, e),
+        .whilee => try whilee(runtime, e),
     }
 }
 
-fn evalExprInScope(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    if (e.kind == .exprs) try machine.runtime.pushScope();
-    defer if (e.kind == .exprs) machine.runtime.popScope();
+fn evalExprInScope(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    if (e.kind == .exprs) try runtime.pushScope();
+    defer if (e.kind == .exprs) runtime.popScope();
 
-    try evalExpr(machine, e);
+    try evalExpr(runtime, e);
 }
 
-fn assignment(machine: *ASTInterpreter, lhs: *AST.Expression, value: *AST.Expression) Errors.RuntimeErrors!void {
+fn assignment(runtime: *Runtime, lhs: *AST.Expression, value: *AST.Expression) Errors.RuntimeErrors!void {
     switch (lhs.kind) {
         .identifier => {
-            try evalExpr(machine, value);
+            try evalExpr(runtime, value);
 
-            if (!(try machine.runtime.updateInScope(lhs.kind.identifier, machine.runtime.peek(0)))) {
-                const rec = try ER.pushNamedUserError(&machine.runtime, "UnknownIdentifierError", lhs.position);
-                try rec.v.RecordKind.setU8(machine.runtime.stringPool, "identifier", try machine.runtime.newStringPoolValue(lhs.kind.identifier));
+            if (!(try runtime.updateInScope(lhs.kind.identifier, runtime.peek(0)))) {
+                const rec = try ER.pushNamedUserError(runtime, "UnknownIdentifierError", lhs.position);
+                try rec.v.RecordKind.setU8(runtime.stringPool, "identifier", try runtime.newStringPoolValue(lhs.kind.identifier));
                 return Errors.RuntimeErrors.InterpreterError;
             }
         },
         .dot => {
-            try evalExpr(machine, lhs.kind.dot.record);
-            const record = machine.runtime.peek(0);
+            try evalExpr(runtime, lhs.kind.dot.record);
+            const record = runtime.peek(0);
 
             if (record.v != V.ValueValue.RecordKind) {
-                try ER.raiseExpectedTypeError(&machine.runtime, lhs.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
+                try ER.raiseExpectedTypeError(runtime, lhs.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
             }
-            try evalExpr(machine, value);
+            try evalExpr(runtime, value);
 
-            try record.v.RecordKind.set(lhs.kind.dot.field, machine.runtime.peek(0));
+            try record.v.RecordKind.set(lhs.kind.dot.field, runtime.peek(0));
 
-            const v = machine.runtime.pop();
-            _ = machine.runtime.pop();
-            try machine.runtime.push(v);
+            const v = runtime.pop();
+            _ = runtime.pop();
+            try runtime.push(v);
         },
         .indexRange => {
-            try evalExpr(machine, lhs.kind.indexRange.expr);
-            const sequence = machine.runtime.peek(0);
+            try evalExpr(runtime, lhs.kind.indexRange.expr);
+            const sequence = runtime.peek(0);
             if (sequence.v != V.ValueValue.SequenceKind) {
-                try ER.raiseExpectedTypeError(&machine.runtime, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v);
+                try ER.raiseExpectedTypeError(runtime, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v);
             }
 
             const seqLen = sequence.v.SequenceKind.len();
 
-            const start: V.IntType = clamp(try indexPoint(machine, lhs.kind.indexRange.start, 0), 0, @intCast(seqLen));
-            const end: V.IntType = clamp(try indexPoint(machine, lhs.kind.indexRange.end, @intCast(seqLen)), start, @intCast(seqLen));
+            const start: V.IntType = clamp(try indexPoint(runtime, lhs.kind.indexRange.start, 0), 0, @intCast(seqLen));
+            const end: V.IntType = clamp(try indexPoint(runtime, lhs.kind.indexRange.end, @intCast(seqLen)), start, @intCast(seqLen));
 
-            try evalExpr(machine, value);
-            const v = machine.runtime.peek(0);
+            try evalExpr(runtime, value);
+            const v = runtime.peek(0);
 
             switch (v.v) {
                 V.ValueValue.SequenceKind => try sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), v.v.SequenceKind.items()),
                 V.ValueValue.UnitKind => try sequence.v.SequenceKind.removeRange(@intCast(start), @intCast(end)),
-                else => try ER.raiseExpectedTypeError(&machine.runtime, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, v.v),
+                else => try ER.raiseExpectedTypeError(runtime, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, v.v),
             }
-            machine.runtime.popn(2);
-            try machine.runtime.push(v);
+            runtime.popn(2);
+            try runtime.push(v);
         },
         .indexValue => {
             const exprA = lhs.kind.indexValue.expr;
             const indexA = lhs.kind.indexValue.index;
 
-            try evalExpr(machine, exprA);
-            const expr = machine.runtime.peek(0);
+            try evalExpr(runtime, exprA);
+            const expr = runtime.peek(0);
 
             switch (expr.v) {
                 V.ValueValue.ScopeKind => {
-                    try evalExpr(machine, indexA);
-                    const index = machine.runtime.peek(0);
+                    try evalExpr(runtime, indexA);
+                    const index = runtime.peek(0);
 
                     if (index.v != V.ValueValue.StringKind) {
-                        try ER.raiseExpectedTypeError(&machine.runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                        try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
                     }
 
-                    try evalExpr(machine, value);
+                    try evalExpr(runtime, value);
 
-                    if (!(try expr.v.ScopeKind.update(index.v.StringKind.value, machine.runtime.peek(0)))) {
-                        const rec = try ER.pushNamedUserError(&machine.runtime, "UnknownIdentifierError", indexA.position);
-                        try rec.v.RecordKind.setU8(machine.runtime.stringPool, "identifier", index);
+                    if (!(try expr.v.ScopeKind.update(index.v.StringKind.value, runtime.peek(0)))) {
+                        const rec = try ER.pushNamedUserError(runtime, "UnknownIdentifierError", indexA.position);
+                        try rec.v.RecordKind.setU8(runtime.stringPool, "identifier", index);
                         return Errors.RuntimeErrors.InterpreterError;
                     }
                 },
                 V.ValueValue.SequenceKind => {
-                    try evalExpr(machine, indexA);
-                    const index = machine.runtime.peek(0);
+                    try evalExpr(runtime, indexA);
+                    const index = runtime.peek(0);
 
                     if (index.v != V.ValueValue.IntKind) {
-                        try ER.raiseExpectedTypeError(&machine.runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                        try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
                     }
 
-                    try evalExpr(machine, value);
+                    try evalExpr(runtime, value);
 
                     const seq = expr.v.SequenceKind;
                     const idx = index.v.IntKind;
 
                     if (idx < 0 or idx >= seq.len()) {
-                        try ER.raiseIndexOutOfRangeError(&machine.runtime, indexA.position, idx, @intCast(seq.len()));
+                        try ER.raiseIndexOutOfRangeError(runtime, indexA.position, idx, @intCast(seq.len()));
                     } else {
-                        seq.set(@intCast(idx), machine.runtime.peek(0));
+                        seq.set(@intCast(idx), runtime.peek(0));
                     }
                 },
                 V.ValueValue.RecordKind => {
-                    try evalExpr(machine, indexA);
-                    const index = machine.runtime.peek(0);
+                    try evalExpr(runtime, indexA);
+                    const index = runtime.peek(0);
 
                     if (index.v != V.ValueValue.StringKind) {
-                        try ER.raiseExpectedTypeError(&machine.runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                        try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
                     }
 
-                    try evalExpr(machine, value);
+                    try evalExpr(runtime, value);
 
-                    try expr.v.RecordKind.set(index.v.StringKind.value, machine.runtime.peek(0));
+                    try expr.v.RecordKind.set(index.v.StringKind.value, runtime.peek(0));
                 },
                 else => {
-                    machine.runtime.popn(1);
-                    try ER.raiseExpectedTypeError(&machine.runtime, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.ScopeKind, V.ValueValue.SequenceKind }, expr.v);
+                    runtime.popn(1);
+                    try ER.raiseExpectedTypeError(runtime, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.ScopeKind, V.ValueValue.SequenceKind }, expr.v);
                 },
             }
 
-            const v = machine.runtime.pop();
-            machine.runtime.popn(2);
-            try machine.runtime.push(v);
+            const v = runtime.pop();
+            runtime.popn(2);
+            try runtime.push(v);
         },
-        else => try ER.raiseNamedUserError(&machine.runtime, "InvalidLHSError", lhs.position),
+        else => try ER.raiseNamedUserError(runtime, "InvalidLHSError", lhs.position),
     }
 }
 
-fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn binaryOp(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     const leftAST = e.kind.binaryOp.left;
     const op = e.kind.binaryOp.op;
     const rightAST = e.kind.binaryOp.right;
 
     switch (op) {
         AST.Operator.Plus => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.add(e.position);
+            try runtime.add(e.position);
         },
         AST.Operator.Minus => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.subtract(e.position);
+            try runtime.subtract(e.position);
         },
         AST.Operator.Times => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.multiply(e.position);
+            try runtime.multiply(e.position);
         },
         AST.Operator.Divide => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.divide(e.position);
+            try runtime.divide(e.position);
         },
         AST.Operator.Power => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.power(e.position);
+            try runtime.power(e.position);
         },
         AST.Operator.Modulo => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.modulo(e.position);
+            try runtime.modulo(e.position);
         },
         AST.Operator.LessThan => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.lessThan(e.position);
+            try runtime.lessThan(e.position);
         },
         AST.Operator.LessEqual => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.lessEqual(e.position);
+            try runtime.lessEqual(e.position);
         },
         AST.Operator.GreaterThan => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.greaterThan(e.position);
+            try runtime.greaterThan(e.position);
         },
         AST.Operator.GreaterEqual => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.greaterEqual(e.position);
+            try runtime.greaterEqual(e.position);
         },
         AST.Operator.Equal => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.equals();
+            try runtime.equals();
         },
         AST.Operator.NotEqual => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.notEquals();
+            try runtime.notEquals();
         },
         AST.Operator.And => {
-            try evalExpr(machine, leftAST);
+            try evalExpr(runtime, leftAST);
 
-            const left = machine.runtime.peek(0);
+            const left = runtime.peek(0);
             if (left.v != V.ValueValue.BoolKind) {
-                try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, V.ValueKind.BoolKind);
+                try ER.raiseIncompatibleOperandTypesError(runtime, e.position, e.kind.binaryOp.op, left.v, V.ValueKind.BoolKind);
             } else if (left.v.BoolKind) {
-                _ = machine.pop();
-                try evalExpr(machine, rightAST);
-                const right = machine.runtime.peek(0);
+                _ = runtime.pop();
+                try evalExpr(runtime, rightAST);
+                const right = runtime.peek(0);
 
                 if (right.v != V.ValueValue.BoolKind) {
-                    try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    try ER.raiseIncompatibleOperandTypesError(runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
                 }
             }
         },
         AST.Operator.Or => {
-            try evalExpr(machine, leftAST);
+            try evalExpr(runtime, leftAST);
 
-            const left = machine.runtime.peek(0);
+            const left = runtime.peek(0);
             if (left.v != V.ValueValue.BoolKind) {
-                try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, V.ValueKind.BoolKind);
+                try ER.raiseIncompatibleOperandTypesError(runtime, e.position, e.kind.binaryOp.op, left.v, V.ValueKind.BoolKind);
             } else if (!left.v.BoolKind) {
-                _ = machine.pop();
-                try evalExpr(machine, rightAST);
-                const right = machine.runtime.peek(0);
+                _ = runtime.pop();
+                try evalExpr(runtime, rightAST);
+                const right = runtime.peek(0);
 
                 if (right.v != V.ValueValue.BoolKind) {
-                    try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
+                    try ER.raiseIncompatibleOperandTypesError(runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
                 }
             }
         },
         AST.Operator.Append => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
-            const left = machine.runtime.peek(1);
-            const right = machine.runtime.peek(0);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
+            const left = runtime.peek(1);
+            const right = runtime.peek(0);
 
             if (left.v != V.ValueValue.SequenceKind) {
-                try ER.raiseIncompatibleOperandTypesError(&machine.runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
+                try ER.raiseIncompatibleOperandTypesError(runtime, e.position, e.kind.binaryOp.op, left.v, right.v);
             }
 
-            try machine.runtime.appendSequenceItem(e.position);
+            try runtime.appendSequenceItem(e.position);
         },
         AST.Operator.AppendUpdate => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.appendSequenceItemBang(e.position);
+            try runtime.appendSequenceItemBang(e.position);
         },
         AST.Operator.Prepend => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.prependSequenceItem(e.position);
+            try runtime.prependSequenceItem(e.position);
         },
         AST.Operator.PrependUpdate => {
-            try evalExpr(machine, leftAST);
-            try evalExpr(machine, rightAST);
+            try evalExpr(runtime, leftAST);
+            try evalExpr(runtime, rightAST);
 
-            try machine.runtime.prependSequenceItemBang(e.position);
+            try runtime.prependSequenceItemBang(e.position);
         },
         AST.Operator.Hook => {
-            try evalExpr(machine, leftAST);
+            try evalExpr(runtime, leftAST);
 
-            const left = machine.runtime.peek(0);
+            const left = runtime.peek(0);
 
             if (left.v == V.ValueValue.UnitKind) {
-                _ = machine.runtime.pop();
+                _ = runtime.pop();
 
-                try evalExpr(machine, rightAST);
+                try evalExpr(runtime, rightAST);
             }
         },
 
@@ -321,118 +323,118 @@ fn binaryOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!v
     }
 }
 
-fn call(machine: *ASTInterpreter, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.RuntimeErrors!void {
-    try evalExpr(machine, calleeAST);
+fn call(runtime: *Runtime, e: *AST.Expression, calleeAST: *AST.Expression, argsAST: []*AST.Expression) Errors.RuntimeErrors!void {
+    try evalExpr(runtime, calleeAST);
     for (argsAST) |arg| {
-        try evalExpr(machine, arg);
+        try evalExpr(runtime, arg);
     }
 
-    callFn(machine, argsAST.len) catch |err| {
-        try ER.appendErrorPosition(&machine.runtime, Errors.Position{ .start = calleeAST.position.start, .end = e.position.end });
+    callFn(runtime, argsAST.len) catch |err| {
+        try ER.appendErrorPosition(runtime, Errors.Position{ .start = calleeAST.position.start, .end = e.position.end });
         return err;
     };
 }
 
-pub fn callFn(machine: *ASTInterpreter, numberOfArgs: usize) Errors.RuntimeErrors!void {
-    const callee = machine.runtime.peek(@intCast(numberOfArgs));
+pub fn callFn(runtime: *Runtime, numberOfArgs: usize) Errors.RuntimeErrors!void {
+    const callee = runtime.peek(@intCast(numberOfArgs));
 
     switch (callee.v) {
-        V.ValueValue.ASTFunctionKind => try callUserFn(machine, numberOfArgs),
-        V.ValueValue.BuiltinFunctionKind => try callBuiltinFn(machine, numberOfArgs),
-        else => try ER.raiseExpectedTypeError(&machine.runtime, null, &[_]V.ValueKind{V.ValueValue.ASTFunctionKind}, callee.v),
+        V.ValueValue.ASTFunctionKind => try callUserFn(runtime, numberOfArgs),
+        V.ValueValue.BuiltinFunctionKind => try callBuiltinFn(runtime, numberOfArgs),
+        else => try ER.raiseExpectedTypeError(runtime, null, &[_]V.ValueKind{V.ValueValue.ASTFunctionKind}, callee.v),
     }
 
-    const result = machine.runtime.pop();
-    machine.runtime.popn(@intCast(numberOfArgs + 1));
-    try machine.runtime.push(result);
+    const result = runtime.pop();
+    runtime.popn(@intCast(numberOfArgs + 1));
+    try runtime.push(result);
 }
 
-fn callUserFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
-    const enclosingScope = machine.runtime.scope().?;
+fn callUserFn(runtime: *Runtime, numberOfArgs: usize) !void {
+    const enclosingScope = runtime.scope().?;
 
-    const callee = machine.runtime.peek(@intCast(numberOfArgs));
+    const callee = runtime.peek(@intCast(numberOfArgs));
 
-    try machine.runtime.openScopeFrom(callee.v.ASTFunctionKind.scope);
-    defer machine.runtime.restoreScope();
+    try runtime.openScopeFrom(callee.v.ASTFunctionKind.scope);
+    defer runtime.restoreScope();
 
-    try machine.runtime.addU8ToScope("__caller_scope__", enclosingScope);
+    try runtime.addU8ToScope("__caller_scope__", enclosingScope);
 
     var lp: usize = 0;
     const maxArgs = @min(numberOfArgs, callee.v.ASTFunctionKind.arguments.len);
-    const sp = machine.runtime.stack.items.len - numberOfArgs;
+    const sp = runtime.stack.items.len - numberOfArgs;
     while (lp < maxArgs) {
-        try machine.runtime.addToScope(callee.v.ASTFunctionKind.arguments[lp].name, machine.runtime.stack.items[sp + lp]);
+        try runtime.addToScope(callee.v.ASTFunctionKind.arguments[lp].name, runtime.stack.items[sp + lp]);
         lp += 1;
     }
     while (lp < callee.v.ASTFunctionKind.arguments.len) {
-        const value = callee.v.ASTFunctionKind.arguments[lp].default orelse machine.runtime.unitValue.?;
+        const value = callee.v.ASTFunctionKind.arguments[lp].default orelse runtime.unitValue.?;
 
-        try machine.runtime.addToScope(callee.v.ASTFunctionKind.arguments[lp].name, value);
+        try runtime.addToScope(callee.v.ASTFunctionKind.arguments[lp].name, value);
         lp += 1;
     }
 
     if (callee.v.ASTFunctionKind.restOfArguments != null) {
         if (numberOfArgs > callee.v.ASTFunctionKind.arguments.len) {
-            const rest = machine.runtime.stack.items[sp + callee.v.ASTFunctionKind.arguments.len ..];
-            try machine.runtime.addArrayValueToScope(callee.v.ASTFunctionKind.restOfArguments.?, rest);
+            const rest = runtime.stack.items[sp + callee.v.ASTFunctionKind.arguments.len ..];
+            try runtime.addArrayValueToScope(callee.v.ASTFunctionKind.restOfArguments.?, rest);
         } else {
-            try machine.runtime.addToScope(callee.v.ASTFunctionKind.restOfArguments.?, try machine.runtime.newEmptySequenceValue());
+            try runtime.addToScope(callee.v.ASTFunctionKind.restOfArguments.?, try runtime.newEmptySequenceValue());
         }
     }
 
-    try evalExpr(machine, callee.v.ASTFunctionKind.body);
+    try evalExpr(runtime, callee.v.ASTFunctionKind.body);
 }
 
-fn callBuiltinFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
-    const callee = machine.runtime.peek(@intCast(numberOfArgs));
+fn callBuiltinFn(runtime: *Runtime, numberOfArgs: usize) !void {
+    const callee = runtime.peek(@intCast(numberOfArgs));
 
-    try callee.v.BuiltinFunctionKind.body(machine, numberOfArgs);
+    try callee.v.BuiltinFunctionKind.body(runtime, numberOfArgs);
 }
 
-fn catche(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    const sp = machine.runtime.stack.items.len;
-    evalExpr(machine, e.kind.catche.value) catch |err| {
-        const value = machine.runtime.peek(0);
+fn catche(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    const sp = runtime.stack.items.len;
+    evalExpr(runtime, e.kind.catche.value) catch |err| {
+        const value = runtime.peek(0);
 
         for (e.kind.catche.cases) |case| {
-            try machine.runtime.pushScope();
+            try runtime.pushScope();
 
-            const matched = try matchPattern(machine, case.pattern, value);
+            const matched = try matchPattern(runtime, case.pattern, value);
             if (matched) {
-                const result = evalExpr(machine, case.body);
+                const result = evalExpr(runtime, case.body);
 
-                machine.runtime.popScope();
-                const v = machine.runtime.pop();
-                machine.runtime.stack.items.len = sp;
-                try machine.runtime.push(v);
+                runtime.popScope();
+                const v = runtime.pop();
+                runtime.stack.items.len = sp;
+                try runtime.push(v);
 
                 return result;
             }
-            machine.runtime.popScope();
+            runtime.popScope();
         }
         return err;
     };
 }
 
-fn dot(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try evalExpr(machine, e.kind.dot.record);
+fn dot(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try evalExpr(runtime, e.kind.dot.record);
 
-    const record = machine.runtime.pop();
+    const record = runtime.pop();
 
     if (record.v != V.ValueValue.RecordKind) {
-        try ER.raiseExpectedTypeError(&machine.runtime, e.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
+        try ER.raiseExpectedTypeError(runtime, e.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
     }
 
     if (record.v.RecordKind.get(e.kind.dot.field)) |value| {
-        try machine.runtime.push(value);
+        try runtime.push(value);
     } else {
-        try machine.runtime.pushUnitValue();
+        try runtime.pushUnitValue();
     }
 }
 
-fn exprs(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn exprs(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     if (e.kind.exprs.len == 0) {
-        try machine.runtime.pushUnitValue();
+        try runtime.pushUnitValue();
     } else {
         var isFirst = true;
 
@@ -440,193 +442,193 @@ fn exprs(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void
             if (isFirst) {
                 isFirst = false;
             } else {
-                _ = machine.runtime.pop();
+                _ = runtime.pop();
             }
 
-            try evalExprInScope(machine, expr);
+            try evalExprInScope(runtime, expr);
         }
     }
 }
 
-fn idDeclaration(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try evalExpr(machine, e.kind.idDeclaration.value);
-    try machine.runtime.addToScope(e.kind.idDeclaration.name, machine.runtime.peek(0));
+fn idDeclaration(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try evalExpr(runtime, e.kind.idDeclaration.value);
+    try runtime.addToScope(e.kind.idDeclaration.name, runtime.peek(0));
 }
 
-fn identifier(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    if (machine.runtime.getFromScope(e.kind.identifier)) |result| {
-        try machine.runtime.push(result);
+fn identifier(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    if (runtime.getFromScope(e.kind.identifier)) |result| {
+        try runtime.push(result);
     } else {
-        const rec = try ER.pushNamedUserError(&machine.runtime, "UnknownIdentifierError", e.position);
-        try rec.v.RecordKind.setU8(machine.runtime.stringPool, "identifier", try machine.runtime.newStringPoolValue(e.kind.identifier));
+        const rec = try ER.pushNamedUserError(runtime, "UnknownIdentifierError", e.position);
+        try rec.v.RecordKind.setU8(runtime.stringPool, "identifier", try runtime.newStringPoolValue(e.kind.identifier));
         return Errors.RuntimeErrors.InterpreterError;
     }
 }
 
-fn ifte(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn ifte(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     for (e.kind.ifte) |case| {
         if (case.condition == null) {
-            try evalExpr(machine, case.then);
+            try evalExpr(runtime, case.then);
             return;
         }
 
-        try evalExpr(machine, case.condition.?);
+        try evalExpr(runtime, case.condition.?);
 
-        const condition = machine.runtime.pop();
+        const condition = runtime.pop();
 
         if (condition.v == V.ValueValue.BoolKind and condition.v.BoolKind) {
-            try evalExpr(machine, case.then);
+            try evalExpr(runtime, case.then);
             return;
         }
     }
 
-    try machine.createVoidValue();
+    try runtime.pushUnitValue();
 }
 
-fn indexRange(machine: *ASTInterpreter, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) Errors.RuntimeErrors!void {
-    try evalExpr(machine, exprA);
-    const expr = machine.runtime.peek(0);
+fn indexRange(runtime: *Runtime, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) Errors.RuntimeErrors!void {
+    try evalExpr(runtime, exprA);
+    const expr = runtime.peek(0);
 
     switch (expr.v) {
         V.ValueValue.SequenceKind => {
             const seq = expr.v.SequenceKind;
 
-            const start: V.IntType = clamp(try indexPoint(machine, startA, 0), 0, @intCast(seq.len()));
-            const end: V.IntType = clamp(try indexPoint(machine, endA, @intCast(seq.len())), start, @intCast(seq.len()));
+            const start: V.IntType = clamp(try indexPoint(runtime, startA, 0), 0, @intCast(seq.len()));
+            const end: V.IntType = clamp(try indexPoint(runtime, endA, @intCast(seq.len())), start, @intCast(seq.len()));
 
-            try machine.runtime.pushEmptySequenceValue();
-            try machine.runtime.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]);
+            try runtime.pushEmptySequenceValue();
+            try runtime.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]);
         },
         V.ValueValue.StringKind => {
             const str = expr.v.StringKind.slice();
 
-            const start: V.IntType = clamp(try indexPoint(machine, startA, 0), 0, @intCast(str.len));
-            const end: V.IntType = clamp(try indexPoint(machine, endA, @intCast(str.len)), start, @intCast(str.len));
+            const start: V.IntType = clamp(try indexPoint(runtime, startA, 0), 0, @intCast(str.len));
+            const end: V.IntType = clamp(try indexPoint(runtime, endA, @intCast(str.len)), start, @intCast(str.len));
 
-            try machine.runtime.pushStringValue(str[@intCast(start)..@intCast(end)]);
+            try runtime.pushStringValue(str[@intCast(start)..@intCast(end)]);
         },
         else => {
-            machine.runtime.popn(1);
-            try ER.raiseExpectedTypeError(&machine.runtime, exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
+            runtime.popn(1);
+            try ER.raiseExpectedTypeError(runtime, exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
         },
     }
 
-    const result = machine.runtime.pop();
-    _ = machine.runtime.pop();
-    try machine.runtime.push(result);
+    const result = runtime.pop();
+    _ = runtime.pop();
+    try runtime.push(result);
 }
 
-fn indexPoint(machine: *ASTInterpreter, point: ?*AST.Expression, def: V.IntType) Errors.RuntimeErrors!V.IntType {
+fn indexPoint(runtime: *Runtime, point: ?*AST.Expression, def: V.IntType) Errors.RuntimeErrors!V.IntType {
     if (point == null) {
         return def;
     } else {
-        try evalExpr(machine, point.?);
-        const pointV = machine.runtime.peek(0);
+        try evalExpr(runtime, point.?);
+        const pointV = runtime.peek(0);
         if (pointV.v != V.ValueValue.IntKind) {
-            try ER.raiseExpectedTypeError(&machine.runtime, point.?.position, &[_]V.ValueKind{V.ValueValue.IntKind}, pointV.v);
+            try ER.raiseExpectedTypeError(runtime, point.?.position, &[_]V.ValueKind{V.ValueValue.IntKind}, pointV.v);
         }
 
         const v = pointV.v.IntKind;
-        _ = machine.runtime.pop();
+        _ = runtime.pop();
         return v;
     }
 }
 
-fn indexValue(machine: *ASTInterpreter, exprA: *AST.Expression, indexA: *AST.Expression) Errors.RuntimeErrors!void {
-    try evalExpr(machine, exprA);
-    const expr = machine.runtime.peek(0);
+fn indexValue(runtime: *Runtime, exprA: *AST.Expression, indexA: *AST.Expression) Errors.RuntimeErrors!void {
+    try evalExpr(runtime, exprA);
+    const expr = runtime.peek(0);
 
     switch (expr.v) {
         V.ValueValue.RecordKind => {
-            try evalExpr(machine, indexA);
-            const index = machine.runtime.peek(0);
+            try evalExpr(runtime, indexA);
+            const index = runtime.peek(0);
 
             if (index.v != V.ValueValue.StringKind) {
-                try ER.raiseExpectedTypeError(&machine.runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
             }
 
-            machine.runtime.popn(2);
+            runtime.popn(2);
 
             const value = expr.v.RecordKind.get(index.v.StringKind.value);
 
             if (value == null) {
-                try machine.runtime.pushUnitValue();
+                try runtime.pushUnitValue();
             } else {
-                try machine.runtime.push(value.?);
+                try runtime.push(value.?);
             }
         },
         V.ValueValue.ScopeKind => {
-            try evalExpr(machine, indexA);
-            const index = machine.runtime.peek(0);
+            try evalExpr(runtime, indexA);
+            const index = runtime.peek(0);
 
             if (index.v != V.ValueValue.StringKind) {
-                try ER.raiseExpectedTypeError(&machine.runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
             }
 
-            machine.runtime.popn(2);
+            runtime.popn(2);
 
             const value = expr.v.ScopeKind.get(index.v.StringKind.value);
 
             if (value == null) {
-                try machine.runtime.pushUnitValue();
+                try runtime.pushUnitValue();
             } else {
-                try machine.runtime.push(value.?);
+                try runtime.push(value.?);
             }
         },
         V.ValueValue.SequenceKind => {
-            try evalExpr(machine, indexA);
-            const index = machine.runtime.peek(0);
+            try evalExpr(runtime, indexA);
+            const index = runtime.peek(0);
 
             if (index.v != V.ValueValue.IntKind) {
-                try ER.raiseExpectedTypeError(&machine.runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
             }
 
-            machine.runtime.popn(2);
+            runtime.popn(2);
 
             const seq = expr.v.SequenceKind;
             const idx = index.v.IntKind;
 
             if (idx < 0 or idx >= seq.len()) {
-                try machine.runtime.pushUnitValue();
+                try runtime.pushUnitValue();
             } else {
-                try machine.runtime.push(seq.at(@intCast(idx)));
+                try runtime.push(seq.at(@intCast(idx)));
             }
         },
         V.ValueValue.StringKind => {
-            try evalExpr(machine, indexA);
-            const index = machine.runtime.peek(0);
+            try evalExpr(runtime, indexA);
+            const index = runtime.peek(0);
 
             if (index.v != V.ValueValue.IntKind) {
-                try ER.raiseExpectedTypeError(&machine.runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
             }
 
-            machine.runtime.popn(2);
+            runtime.popn(2);
 
             const str = expr.v.StringKind.slice();
             const idx = index.v.IntKind;
 
             if (idx < 0 or idx >= str.len) {
-                try machine.runtime.pushUnitValue();
+                try runtime.pushUnitValue();
             } else {
-                try machine.runtime.pushCharValue(str[@intCast(idx)]);
+                try runtime.pushCharValue(str[@intCast(idx)]);
             }
         },
         else => {
-            machine.runtime.popn(1);
-            try ER.raiseExpectedTypeError(&machine.runtime, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
+            runtime.popn(1);
+            try ER.raiseExpectedTypeError(runtime, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
         },
     }
 }
 
-fn literalFunction(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    var arguments = try machine.runtime.allocator.alloc(V.FunctionArgument, e.kind.literalFunction.params.len);
+fn literalFunction(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    var arguments = try runtime.allocator.alloc(V.FunctionArgument, e.kind.literalFunction.params.len);
 
     for (e.kind.literalFunction.params, 0..) |param, index| {
         arguments[index] = V.FunctionArgument{ .name = param.name.incRefR(), .default = null };
     }
 
-    _ = try machine.runtime.pushValue(V.ValueValue{ .ASTFunctionKind = V.ASTFunctionValue{
-        .scope = machine.runtime.scope(),
+    _ = try runtime.pushValue(V.ValueValue{ .ASTFunctionKind = V.ASTFunctionValue{
+        .scope = runtime.scope(),
         .arguments = arguments,
         .restOfArguments = if (e.kind.literalFunction.restOfParams == null) null else e.kind.literalFunction.restOfParams.?.incRefR(),
         .body = e.kind.literalFunction.body.incRefR(),
@@ -634,29 +636,29 @@ fn literalFunction(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeE
 
     for (e.kind.literalFunction.params, 0..) |param, index| {
         if (param.default != null) {
-            try evalExpr(machine, param.default.?);
-            arguments[index].default = machine.pop();
+            try evalExpr(runtime, param.default.?);
+            arguments[index].default = runtime.pop();
         }
     }
 }
 
-fn literalRecord(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try machine.runtime.pushEmptyRecordValue();
-    var map = machine.topOfStack().?;
+fn literalRecord(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try runtime.pushEmptyRecordValue();
+    var map = runtime.topOfStack().?;
 
     for (e.kind.literalRecord) |entry| {
         switch (entry) {
             .value => {
-                try machine.runtime.pushStringPoolValue(entry.value.key);
-                try evalExpr(machine, entry.value.value);
-                try machine.runtime.setRecordItemBang(e.position);
+                try runtime.pushStringPoolValue(entry.value.key);
+                try evalExpr(runtime, entry.value.value);
+                try runtime.setRecordItemBang(e.position);
             },
             .record => {
-                try evalExpr(machine, entry.record);
+                try evalExpr(runtime, entry.record);
 
-                const value = machine.runtime.pop();
+                const value = runtime.pop();
                 if (value.v != V.ValueValue.RecordKind) {
-                    try ER.raiseExpectedTypeError(&machine.runtime, entry.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, value.v);
+                    try ER.raiseExpectedTypeError(runtime, entry.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, value.v);
                 }
 
                 var iterator = value.v.RecordKind.iterator();
@@ -668,53 +670,53 @@ fn literalRecord(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErr
     }
 }
 
-fn literalSequence(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try machine.runtime.pushEmptySequenceValue();
+fn literalSequence(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try runtime.pushEmptySequenceValue();
 
     for (e.kind.literalSequence) |v| {
         switch (v) {
             .value => {
-                try evalExpr(machine, v.value);
-                try machine.runtime.appendSequenceItemBang(e.position);
+                try evalExpr(runtime, v.value);
+                try runtime.appendSequenceItemBang(e.position);
             },
             .sequence => {
-                try evalExpr(machine, v.sequence);
-                try machine.runtime.appendSequenceItemsBang(e.position, v.sequence.position);
+                try evalExpr(runtime, v.sequence);
+                try runtime.appendSequenceItemsBang(e.position, v.sequence.position);
             },
         }
     }
 }
 
-fn match(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try evalExpr(machine, e.kind.match.value);
+fn match(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try evalExpr(runtime, e.kind.match.value);
 
-    const value = machine.runtime.peek(0);
+    const value = runtime.peek(0);
 
     for (e.kind.match.cases) |case| {
-        try machine.runtime.pushScope();
+        try runtime.pushScope();
 
-        const matched = try matchPattern(machine, case.pattern, value);
+        const matched = try matchPattern(runtime, case.pattern, value);
         if (matched) {
-            const result = evalExpr(machine, case.body);
+            const result = evalExpr(runtime, case.body);
 
-            machine.runtime.popScope();
-            const v = machine.runtime.pop();
-            _ = machine.runtime.pop();
-            try machine.runtime.push(v);
+            runtime.popScope();
+            const v = runtime.pop();
+            _ = runtime.pop();
+            try runtime.push(v);
 
             return result;
         }
-        machine.runtime.popScope();
+        runtime.popScope();
     }
 
-    try ER.raiseMatchError(&machine.runtime, e.position, value);
+    try ER.raiseMatchError(runtime, e.position, value);
 }
 
-fn matchPattern(machine: *ASTInterpreter, p: *AST.Pattern, v: *V.Value) !bool {
+fn matchPattern(runtime: *Runtime, p: *AST.Pattern, v: *V.Value) !bool {
     return switch (p.kind) {
         .identifier => {
             if (!std.mem.eql(u8, p.kind.identifier.slice(), "_")) {
-                try machine.runtime.addToScope(p.kind.identifier, v);
+                try runtime.addToScope(p.kind.identifier, v);
             }
             return true;
         },
@@ -734,14 +736,14 @@ fn matchPattern(machine: *ASTInterpreter, p: *AST.Pattern, v: *V.Value) !bool {
                 if (value == null) return false;
 
                 if (entry.pattern == null) {
-                    try machine.runtime.addToScope(if (entry.id == null) entry.key else entry.id.?, value.?);
-                } else if (entry.pattern != null and !try matchPattern(machine, entry.pattern.?, value.?)) {
+                    try runtime.addToScope(if (entry.id == null) entry.key else entry.id.?, value.?);
+                } else if (entry.pattern != null and !try matchPattern(runtime, entry.pattern.?, value.?)) {
                     return false;
                 }
             }
 
             if (p.kind.record.id != null) {
-                try machine.runtime.addToScope(p.kind.record.id.?, v);
+                try runtime.addToScope(p.kind.record.id.?, v);
             }
 
             return true;
@@ -756,20 +758,20 @@ fn matchPattern(machine: *ASTInterpreter, p: *AST.Pattern, v: *V.Value) !bool {
 
             var index: u8 = 0;
             while (index < p.kind.sequence.patterns.len) {
-                if (!try matchPattern(machine, p.kind.sequence.patterns[index], seq.at(index))) return false;
+                if (!try matchPattern(runtime, p.kind.sequence.patterns[index], seq.at(index))) return false;
                 index += 1;
             }
 
             if (p.kind.sequence.restOfPatterns != null and !std.mem.eql(u8, p.kind.sequence.restOfPatterns.?.slice(), "_")) {
-                var newSeq = try V.SequenceValue.init(machine.runtime.allocator);
+                var newSeq = try V.SequenceValue.init(runtime.allocator);
                 if (seq.len() > p.kind.sequence.patterns.len) {
                     try newSeq.appendSlice(seq.items()[p.kind.sequence.patterns.len..]);
                 }
-                try machine.runtime.addToScope(p.kind.sequence.restOfPatterns.?, try machine.runtime.newValue(V.ValueValue{ .SequenceKind = newSeq }));
+                try runtime.addToScope(p.kind.sequence.restOfPatterns.?, try runtime.newValue(V.ValueValue{ .SequenceKind = newSeq }));
             }
 
             if (p.kind.sequence.id != null) {
-                try machine.runtime.addToScope(p.kind.sequence.id.?, v);
+                try runtime.addToScope(p.kind.sequence.id.?, v);
             }
 
             return true;
@@ -778,131 +780,85 @@ fn matchPattern(machine: *ASTInterpreter, p: *AST.Pattern, v: *V.Value) !bool {
     };
 }
 
-fn notOp(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try evalExpr(machine, e.kind.notOp.value);
+fn notOp(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try evalExpr(runtime, e.kind.notOp.value);
 
-    const v = machine.runtime.pop();
+    const v = runtime.pop();
     if (v.v != V.ValueValue.BoolKind) {
-        try ER.raiseExpectedTypeError(&machine.runtime, e.position, &[_]V.ValueKind{V.ValueValue.BoolKind}, v.v);
+        try ER.raiseExpectedTypeError(runtime, e.position, &[_]V.ValueKind{V.ValueValue.BoolKind}, v.v);
     }
 
-    try machine.runtime.pushBoolValue(!v.v.BoolKind);
+    try runtime.pushBoolValue(!v.v.BoolKind);
 }
 
-fn patternDeclaration(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try evalExpr(machine, e.kind.patternDeclaration.value);
+fn patternDeclaration(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try evalExpr(runtime, e.kind.patternDeclaration.value);
 
-    const value: *V.Value = machine.runtime.peek(0);
+    const value: *V.Value = runtime.peek(0);
 
-    if (!try matchPattern(machine, e.kind.patternDeclaration.pattern, value)) {
-        try ER.raiseMatchError(&machine.runtime, e.position, value);
+    if (!try matchPattern(runtime, e.kind.patternDeclaration.pattern, value)) {
+        try ER.raiseMatchError(runtime, e.position, value);
     }
 }
 
-fn raise(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
-    try evalExpr(machine, e.kind.raise.expr);
-    try ER.appendErrorPosition(&machine.runtime, e.position);
+fn raise(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
+    try evalExpr(runtime, e.kind.raise.expr);
+    try ER.appendErrorPosition(runtime, e.position);
 
     return Errors.RuntimeErrors.InterpreterError;
 }
 
-fn whilee(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeErrors!void {
+fn whilee(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     while (true) {
-        try evalExpr(machine, e.kind.whilee.condition);
+        try evalExpr(runtime, e.kind.whilee.condition);
 
-        const condition = machine.runtime.pop();
+        const condition = runtime.pop();
 
         if (condition.v != V.ValueValue.BoolKind or !condition.v.BoolKind) {
             break;
         }
 
-        try evalExpr(machine, e.kind.whilee.body);
+        try evalExpr(runtime, e.kind.whilee.body);
 
-        _ = machine.runtime.pop();
+        _ = runtime.pop();
     }
 
-    try machine.createVoidValue();
+    try runtime.pushUnitValue();
 }
 
-pub const ASTInterpreter = struct {
-    runtime: MS.Runtime,
+pub fn parse(self: *Runtime, name: []const u8, buffer: []const u8) !*AST.Expression {
+    const allocator = self.allocator;
 
-    pub fn init(allocator: std.mem.Allocator) !ASTInterpreter {
-        return ASTInterpreter{
-            .runtime = try MS.Runtime.init(allocator),
-        };
-    }
+    var l = Lexer.Lexer.init(allocator);
 
-    pub fn deinit(self: *ASTInterpreter) void {
-        self.runtime.deinit();
-    }
+    l.initBuffer(name, buffer) catch |err| {
+        var e = l.grabErr().?;
+        defer e.deinit();
 
-    pub fn createVoidValue(self: *ASTInterpreter) !void {
-        try self.runtime.pushUnitValue();
-    }
+        try ER.parserErrorHandler(self, err, e);
+        return Errors.RuntimeErrors.InterpreterError;
+    };
 
-    pub fn createBoolValue(self: *ASTInterpreter, v: bool) !void {
-        try self.runtime.pushBoolValue(v);
-    }
+    var p = Parser.Parser.init(self.stringPool, l);
 
-    pub fn createIntValue(self: *ASTInterpreter, v: V.IntType) !void {
-        try self.runtime.pushIntValue(v);
-    }
+    const ast = p.module() catch |err| {
+        var e = p.grabErr().?;
+        defer e.deinit();
 
-    pub fn createSequenceValue(self: *ASTInterpreter, size: usize) !void {
-        return self.runtime.pushSequenceValue(size);
-    }
+        try ER.parserErrorHandler(self, err, e);
+        return Errors.RuntimeErrors.InterpreterError;
+    };
+    errdefer AST.destroy(allocator, ast);
 
-    pub fn eval(self: *ASTInterpreter, e: *AST.Expression) !void {
-        try evalExpr(self, e);
-    }
+    return ast;
+}
 
-    pub fn parse(self: *ASTInterpreter, name: []const u8, buffer: []const u8) !*AST.Expression {
-        const allocator = self.runtime.allocator;
+pub fn execute(self: *Runtime, name: []const u8, buffer: []const u8) !void {
+    const ast = try parse(self, name, buffer);
+    defer ast.destroy(self.allocator);
 
-        var l = Lexer.Lexer.init(allocator);
-
-        l.initBuffer(name, buffer) catch |err| {
-            var e = l.grabErr().?;
-            defer e.deinit();
-
-            try ER.parserErrorHandler(&self.runtime, err, e);
-            return Errors.RuntimeErrors.InterpreterError;
-        };
-
-        var p = Parser.Parser.init(self.runtime.stringPool, l);
-
-        const ast = p.module() catch |err| {
-            var e = p.grabErr().?;
-            defer e.deinit();
-
-            try ER.parserErrorHandler(&self.runtime, err, e);
-            return Errors.RuntimeErrors.InterpreterError;
-        };
-        errdefer AST.destroy(allocator, ast);
-
-        return ast;
-    }
-
-    pub fn execute(self: *ASTInterpreter, name: []const u8, buffer: []const u8) !void {
-        const ast = try self.parse(name, buffer);
-        defer ast.destroy(self.runtime.allocator);
-
-        try self.eval(ast);
-    }
-
-    pub fn pop(self: *ASTInterpreter) *V.Value {
-        return self.runtime.pop();
-    }
-
-    pub fn topOfStack(self: *ASTInterpreter) ?*V.Value {
-        return self.runtime.topOfStack();
-    }
-
-    pub fn reset(self: *ASTInterpreter) !void {
-        try self.runtime.reset();
-    }
-};
+    try evalExpr(self, ast);
+}
 
 fn clamp(value: V.IntType, min: V.IntType, max: V.IntType) V.IntType {
     if (value < min) {

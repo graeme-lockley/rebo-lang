@@ -1,24 +1,24 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn keys(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
+pub fn keys(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.ScopeKind });
 
-    try machine.runtime.pushEmptySequenceValue();
+    try machine.pushEmptySequenceValue();
 
-    const seq = machine.runtime.peek(0);
+    const seq = machine.peek(0);
 
     switch (v.v) {
         Helper.ValueValue.RecordKind => {
             var iterator = v.v.RecordKind.keyIterator();
             while (iterator.next()) |item| {
-                try seq.v.SequenceKind.appendItem(try machine.runtime.newStringPoolValue(item.*));
+                try seq.v.SequenceKind.appendItem(try machine.newStringPoolValue(item.*));
             }
         },
         Helper.ValueValue.ScopeKind => {
             var iterator = v.v.ScopeKind.keyIterator();
             while (iterator.next()) |item| {
-                try seq.v.SequenceKind.appendItem(try machine.runtime.newStringPoolValue(item.*));
+                try seq.v.SequenceKind.appendItem(try machine.newStringPoolValue(item.*));
             }
         },
         else => unreachable,

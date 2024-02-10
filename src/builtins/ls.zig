@@ -1,16 +1,16 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub fn ls(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
+pub fn ls(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.StringKind, Helper.ValueValue.UnitKind });
 
     const path = if (v.v == Helper.ValueKind.StringKind) v.v.StringKind.slice() else "./";
-    try machine.runtime.pushEmptySequenceValue();
+    try machine.pushEmptySequenceValue();
 
     var dir = std.fs.cwd().openIterableDir(path, .{}) catch |err| return Helper.raiseOsError(machine, "ls", err);
     defer dir.close();
 
-    const result = machine.runtime.peek(0);
+    const result = machine.peek(0);
 
     var it = dir.iterate();
     while (it.next() catch |err| return Helper.raiseOsError(machine, "ls", err)) |entry| {
@@ -18,10 +18,10 @@ pub fn ls(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
             continue;
         }
 
-        const record = try machine.runtime.newRecordValue();
+        const record = try machine.newRecordValue();
         try result.v.SequenceKind.appendItem(record);
 
-        try record.v.RecordKind.setU8(machine.runtime.stringPool, "name", try machine.runtime.newStringValue(entry.name));
+        try record.v.RecordKind.setU8(machine.stringPool, "name", try machine.newStringValue(entry.name));
 
         const kind = switch (entry.kind) {
             std.fs.IterableDir.Entry.Kind.block_device => "block_device",
@@ -36,6 +36,6 @@ pub fn ls(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
             std.fs.IterableDir.Entry.Kind.unknown => "unknown",
             std.fs.IterableDir.Entry.Kind.whiteout => "whiteout",
         };
-        try record.v.RecordKind.setU8(machine.runtime.stringPool, "kind", try machine.runtime.newStringValue(kind));
+        try record.v.RecordKind.setU8(machine.stringPool, "kind", try machine.newStringValue(kind));
     }
 }

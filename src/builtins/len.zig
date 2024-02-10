@@ -1,13 +1,13 @@
 const Helper = @import("./helper.zig");
 
-pub fn len(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
+pub fn len(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const v = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.RecordKind, Helper.ValueValue.ScopeKind, Helper.ValueValue.SequenceKind, Helper.ValueValue.StringKind });
 
     switch (v.v) {
-        Helper.ValueValue.RecordKind => try machine.runtime.pushIntValue(@intCast(v.v.RecordKind.count())),
-        Helper.ValueValue.ScopeKind => try machine.runtime.pushIntValue(@intCast(v.v.ScopeKind.count())),
-        Helper.ValueValue.SequenceKind => try machine.runtime.pushIntValue(@intCast(v.v.SequenceKind.len())),
-        Helper.ValueValue.StringKind => try machine.runtime.pushIntValue(@intCast(v.v.StringKind.len())),
+        Helper.ValueValue.RecordKind => try machine.pushIntValue(@intCast(v.v.RecordKind.count())),
+        Helper.ValueValue.ScopeKind => try machine.pushIntValue(@intCast(v.v.ScopeKind.count())),
+        Helper.ValueValue.SequenceKind => try machine.pushIntValue(@intCast(v.v.SequenceKind.len())),
+        Helper.ValueValue.StringKind => try machine.pushIntValue(@intCast(v.v.StringKind.len())),
         else => unreachable,
     }
 }

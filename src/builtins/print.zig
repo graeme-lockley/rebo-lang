@@ -123,29 +123,29 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
     }
 }
 
-fn printSequence(machine: *Helper.ASTInterpreter, stdout: std.fs.File.Writer, numberOfArgs: usize) !void {
+fn printSequence(machine: *Helper.Runtime, stdout: std.fs.File.Writer, numberOfArgs: usize) !void {
     var i: usize = 1;
     while (i <= numberOfArgs) {
-        const v = machine.runtime.peek(numberOfArgs - i);
+        const v = machine.peek(numberOfArgs - i);
         try printValue(stdout, v);
 
         i += 1;
     }
 }
 
-pub fn print(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
+pub fn print(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const stdout = std.io.getStdOut().writer();
 
     printSequence(machine, stdout, numberOfArgs) catch {};
 
-    try machine.runtime.pushUnitValue();
+    try machine.pushUnitValue();
 }
 
-pub fn println(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
+pub fn println(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const stdout = std.io.getStdOut().writer();
 
     printSequence(machine, stdout, numberOfArgs) catch {};
     stdout.print("\n", .{}) catch {};
 
-    try machine.runtime.pushUnitValue();
+    try machine.pushUnitValue();
 }

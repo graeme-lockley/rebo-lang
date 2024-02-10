@@ -6,6 +6,8 @@ const Errors = @import("./errors.zig");
 const SP = @import("./string_pool.zig");
 const V = @import("./value.zig");
 
+const evalAST = @import("./ast-interpreter.zig").evalExpr;
+
 const MAINTAIN_FREE_CHAIN = true;
 const INITIAL_HEAP_SIZE = 1;
 const HEAP_GROW_THRESHOLD = 0.25;
@@ -881,6 +883,62 @@ pub const Runtime = struct {
     pub fn duplicate(self: *Runtime) !void {
         const value = self.peek(0);
         try self.push(value);
+    }
+
+    pub fn callFn(self: *Runtime, numberOfArgs: usize) Errors.RuntimeErrors!void {
+        const callee = self.peek(@intCast(numberOfArgs));
+
+        switch (callee.v) {
+            V.ValueValue.ASTFunctionKind => try callUserFn(self, numberOfArgs),
+            V.ValueValue.BuiltinFunctionKind => try callBuiltinFn(self, numberOfArgs),
+            else => try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.ASTFunctionKind}, callee.v),
+        }
+
+        const result = self.pop();
+        self.popn(@intCast(numberOfArgs + 1));
+        try self.push(result);
+    }
+
+    fn callUserFn(self: *Runtime, numberOfArgs: usize) !void {
+        const enclosingScope = self.scope().?;
+
+        const callee = self.peek(@intCast(numberOfArgs));
+
+        try self.openScopeFrom(callee.v.ASTFunctionKind.scope);
+        defer self.restoreScope();
+
+        try self.addU8ToScope("__caller_scope__", enclosingScope);
+
+        var lp: usize = 0;
+        const maxArgs = @min(numberOfArgs, callee.v.ASTFunctionKind.arguments.len);
+        const sp = self.stack.items.len - numberOfArgs;
+        while (lp < maxArgs) {
+            try self.addToScope(callee.v.ASTFunctionKind.arguments[lp].name, self.stack.items[sp + lp]);
+            lp += 1;
+        }
+        while (lp < callee.v.ASTFunctionKind.arguments.len) {
+            const value = callee.v.ASTFunctionKind.arguments[lp].default orelse self.unitValue.?;
+
+            try self.addToScope(callee.v.ASTFunctionKind.arguments[lp].name, value);
+            lp += 1;
+        }
+
+        if (callee.v.ASTFunctionKind.restOfArguments != null) {
+            if (numberOfArgs > callee.v.ASTFunctionKind.arguments.len) {
+                const rest = self.stack.items[sp + callee.v.ASTFunctionKind.arguments.len ..];
+                try self.addArrayValueToScope(callee.v.ASTFunctionKind.restOfArguments.?, rest);
+            } else {
+                try self.addToScope(callee.v.ASTFunctionKind.restOfArguments.?, try self.newEmptySequenceValue());
+            }
+        }
+
+        try evalAST(self, callee.v.ASTFunctionKind.body);
+    }
+
+    fn callBuiltinFn(self: *Runtime, numberOfArgs: usize) !void {
+        const callee = self.peek(@intCast(numberOfArgs));
+
+        try callee.v.BuiltinFunctionKind.body(self, numberOfArgs);
     }
 };
 
