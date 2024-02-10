@@ -1,9 +1,10 @@
 pub const Op = enum(u8) {
     ret,
     push_char, // C
-    push_int, // I
     push_false,
     push_float, // F
+    push_identifier, // SP
+    push_int, // I
     push_record,
     push_sequence, //
     push_string, // S
@@ -13,6 +14,8 @@ pub const Op = enum(u8) {
     jmp, // I
     jmp_true, // IP
     jmp_false, // IP
+
+    call, // IP
 
     duplicate,
     discard,

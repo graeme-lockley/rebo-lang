@@ -25,6 +25,23 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
                 try runtime.pushFloatValue(readFloat(bytecode, ip + 1));
                 ip += 1 + FloatTypeSize;
             },
+            Op.push_identifier => {
+                const len: usize = @intCast(readInt(bytecode, ip + 1));
+                const str = bytecode[ip + 9 .. ip + 9 + len];
+                const name = try runtime.stringPool.intern(str);
+                defer name.decRef();
+
+                if (runtime.getFromScope(name)) |result| {
+                    try runtime.push(result);
+                } else {
+                    const position = readPosition(bytecode, ip + 1 + IntTypeSize + len);
+                    const rec = try ER.pushNamedUserError(runtime, "UnknownIdentifierError", position);
+                    try rec.v.RecordKind.setU8(runtime.stringPool, "identifier", try runtime.newStringPoolValue(name));
+                    return Errors.RuntimeErrors.InterpreterError;
+                }
+
+                ip += 1 + IntTypeSize + len + PositionTypeSize;
+            },
             Op.push_int => {
                 try runtime.pushIntValue(readInt(bytecode, ip + 1));
                 ip += 1 + IntTypeSize;
@@ -77,6 +94,17 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
                 } else {
                     ip = @intCast(readInt(bytecode, ip + 1));
                 }
+            },
+            Op.call => {
+                const numArgs = readInt(bytecode, ip + 1);
+
+                runtime.callFn(@intCast(numArgs)) catch |err| {
+                    const position = readPosition(bytecode, ip + 1 + IntTypeSize);
+                    try ER.appendErrorPosition(runtime, position);
+                    return err;
+                };
+
+                ip += 1 + IntTypeSize + PositionTypeSize;
             },
             Op.duplicate => {
                 try runtime.duplicate();
@@ -212,4 +240,9 @@ fn readPosition(bytecode: []const u8, ip: usize) Errors.Position {
         .start = @intCast(readInt(bytecode, ip)),
         .end = @intCast(readInt(bytecode, ip + 8)),
     };
+}
+
+fn readString(bytecode: []const u8, ip: usize) []const u8 {
+    const len: usize = @intCast(readInt(bytecode, ip));
+    return bytecode[ip + 9 .. ip + 9 + len];
 }

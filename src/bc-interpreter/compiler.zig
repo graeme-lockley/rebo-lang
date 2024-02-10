@@ -140,8 +140,22 @@ pub const Compiler = struct {
                     },
                 }
             },
+            .call => {
+                try self.compileExpr(e.kind.call.callee);
+                for (e.kind.call.args) |arg| {
+                    try self.compileExpr(arg);
+                }
+                try self.buffer.append(@intFromEnum(Op.call));
+                try self.appendInt(@intCast(e.kind.call.args.len));
+                try self.appendPosition(e.position);
+            },
             .exprs => for (e.kind.exprs) |expr| {
                 try self.compileExpr(expr);
+            },
+            .identifier => {
+                try self.buffer.append(@intFromEnum(Op.push_identifier));
+                try self.appendString(e.kind.identifier.slice());
+                try self.appendPosition(e.position);
             },
             .literalBool => try self.buffer.append(@intFromEnum(if (e.kind.literalBool) Op.push_true else Op.push_false)),
             .literalChar => {
@@ -245,6 +259,10 @@ pub const Compiler = struct {
 
     fn appendPushLiteralString(self: *Compiler, s: []const u8) !void {
         try self.buffer.append(@intFromEnum(Op.push_string));
+        try self.appendString(s);
+    }
+
+    fn appendString(self: *Compiler, s: []const u8) !void {
         try self.appendInt(@intCast(s.len));
         try self.buffer.appendSlice(s);
     }

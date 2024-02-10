@@ -131,6 +131,7 @@ fn expectError(input: []const u8) !void {
 
 test "assignment expression" {
     // try expectExprEqual("let x = 10; x := x + 1", "11");
+    // try expectExprEqual("let x = 10; x := x + 1", "11");
     // try expectExprEqual("let x = 10; x := x + 1; x", "11");
     // try expectExprEqual("(fn (x = 0) = { x := x + 1 })(10)", "11");
     // try expectExprEqual("let count = 0; let inc() = count := count + 1; inc(); inc(); inc()", "3");
@@ -178,7 +179,7 @@ test "call expression" {
     // try expectExprEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()", "4");
     // try expectExprEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)(3)", "36");
 
-    // try expectError("20(10)");
+    try expectError("20(10)");
     // try expectError("(fn(f) = (fn (g) = (fn(n) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()");
 }
 
