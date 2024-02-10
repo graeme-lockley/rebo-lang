@@ -898,26 +898,34 @@ fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {
     v.colour = colour;
 
     switch (v.v) {
-        .BoolKind, .BuiltinFunctionKind, .CharKind, .IntKind, .FileKind, .FloatKind, .StreamKind, .StringKind, .UnitKind => {},
-        .FunctionKind => {
-            markValue(v.v.FunctionKind.scope, colour);
-            for (v.v.FunctionKind.arguments) |argument| {
+        .ASTFunctionKind => {
+            markValue(v.v.ASTFunctionKind.scope, colour);
+            for (v.v.ASTFunctionKind.arguments) |argument| {
                 if (argument.default != null) {
                     markValue(argument.default.?, colour);
                 }
             }
         },
+        .BCFunctionKind => {
+            markValue(v.v.BCFunctionKind.scope, colour);
+            for (v.v.BCFunctionKind.arguments) |argument| {
+                if (argument.default != null) {
+                    markValue(argument.default.?, colour);
+                }
+            }
+        },
+        .BoolKind, .BuiltinFunctionKind, .CharKind, .IntKind, .FileKind, .FloatKind, .StreamKind, .StringKind, .UnitKind => {},
         .HttpClientKind => {},
         .HttpClientRequestKind => {},
-        .ScopeKind => markScope(&v.v.ScopeKind, colour),
-        .SequenceKind => for (v.v.SequenceKind.items()) |item| {
-            markValue(item, colour);
-        },
         .RecordKind => {
             var iterator = v.v.RecordKind.iterator();
             while (iterator.next()) |entry| {
                 markValue(entry.value_ptr.*, colour);
             }
+        },
+        .ScopeKind => markScope(&v.v.ScopeKind, colour),
+        .SequenceKind => for (v.v.SequenceKind.items()) |item| {
+            markValue(item, colour);
         },
     }
 }

@@ -4,7 +4,7 @@ const Helper = @import("./helper.zig");
 pub fn listen(machine: *Helper.ASTInterpreter, numberOfArgs: usize) !void {
     const host = (try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind})).v.StringKind.slice();
     const port = (try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{Helper.ValueValue.IntKind})).v.IntKind;
-    const cb = (try Helper.getArgument(machine, numberOfArgs, 2, &[_]Helper.ValueKind{Helper.ValueValue.FunctionKind})).v.FunctionKind;
+    const cb = (try Helper.getArgument(machine, numberOfArgs, 2, &[_]Helper.ValueKind{Helper.ValueValue.ASTFunctionKind})).v.ASTFunctionKind;
 
     var server = std.net.StreamServer.init(.{});
     server.reuse_address = true;

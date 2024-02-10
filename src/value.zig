@@ -27,9 +27,10 @@ pub const Value = struct {
 
     pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
         switch (self.v) {
+            .ASTFunctionKind => self.v.ASTFunctionKind.deinit(allocator),
+            .BCFunctionKind => self.v.BCFunctionKind.deinit(allocator),
             .BoolKind, .BuiltinFunctionKind, .CharKind, .IntKind, .FloatKind, .UnitKind => {},
             .FileKind => self.v.FileKind.deinit(),
-            .FunctionKind => self.v.FunctionKind.deinit(allocator),
             .HttpClientKind => self.v.HttpClientKind.deinit(allocator),
             .HttpClientRequestKind => self.v.HttpClientRequestKind.deinit(allocator),
             .SequenceKind => self.v.SequenceKind.deinit(),
@@ -66,6 +67,52 @@ pub const Value = struct {
 
     pub fn appendValue(self: *const Value, buffer: *std.ArrayList(u8), style: Style) !void {
         switch (self.v) {
+            .ASTFunctionKind => {
+                try buffer.appendSlice("fn(");
+                for (self.v.ASTFunctionKind.arguments, 0..) |argument, i| {
+                    if (i != 0) {
+                        try buffer.appendSlice(", ");
+                    }
+
+                    try buffer.appendSlice(argument.name.slice());
+                    if (argument.default) |default| {
+                        try buffer.appendSlice(" = ");
+                        try default.appendValue(buffer, style);
+                    }
+                }
+                if (self.v.ASTFunctionKind.restOfArguments != null) {
+                    if (self.v.ASTFunctionKind.arguments.len > 0) {
+                        try buffer.appendSlice(", ");
+                    }
+
+                    try buffer.appendSlice("...");
+                    try buffer.appendSlice(self.v.ASTFunctionKind.restOfArguments.?.slice());
+                }
+                try buffer.append(')');
+            },
+            .BCFunctionKind => {
+                try buffer.appendSlice("fn(");
+                for (self.v.BCFunctionKind.arguments, 0..) |argument, i| {
+                    if (i != 0) {
+                        try buffer.appendSlice(", ");
+                    }
+
+                    try buffer.appendSlice(argument.name.slice());
+                    if (argument.default) |default| {
+                        try buffer.appendSlice(" = ");
+                        try default.appendValue(buffer, style);
+                    }
+                }
+                if (self.v.BCFunctionKind.restOfArguments != null) {
+                    if (self.v.BCFunctionKind.arguments.len > 0) {
+                        try buffer.appendSlice(", ");
+                    }
+
+                    try buffer.appendSlice("...");
+                    try buffer.appendSlice(self.v.BCFunctionKind.restOfArguments.?.slice());
+                }
+                try buffer.append(')');
+            },
             .BoolKind => try buffer.appendSlice(if (self.v.BoolKind) "true" else "false"),
             .BuiltinFunctionKind => try buffer.appendSlice("fn(...)"),
             .CharKind => {
@@ -82,29 +129,6 @@ pub const Value = struct {
             },
             .FileKind => try std.fmt.format(buffer.writer(), "<file: {d} {s}>", .{ self.v.FileKind.file.handle, if (self.v.FileKind.isOpen) "open" else "closed" }),
             .FloatKind => try std.fmt.format(buffer.writer(), "{d}", .{self.v.FloatKind}),
-            .FunctionKind => {
-                try buffer.appendSlice("fn(");
-                for (self.v.FunctionKind.arguments, 0..) |argument, i| {
-                    if (i != 0) {
-                        try buffer.appendSlice(", ");
-                    }
-
-                    try buffer.appendSlice(argument.name.slice());
-                    if (argument.default) |default| {
-                        try buffer.appendSlice(" = ");
-                        try default.appendValue(buffer, style);
-                    }
-                }
-                if (self.v.FunctionKind.restOfArguments != null) {
-                    if (self.v.FunctionKind.arguments.len > 0) {
-                        try buffer.appendSlice(", ");
-                    }
-
-                    try buffer.appendSlice("...");
-                    try buffer.appendSlice(self.v.FunctionKind.restOfArguments.?.slice());
-                }
-                try buffer.append(')');
-            },
             .HttpClientKind => try buffer.appendSlice("<http client>"),
             .HttpClientRequestKind => try std.fmt.format(buffer.writer(), "<http client response {s}>", .{@tagName(self.v.HttpClientRequestKind.state)}),
             .IntKind => try std.fmt.format(buffer.writer(), "{d}", .{self.v.IntKind}),
@@ -126,7 +150,6 @@ pub const Value = struct {
                 }
                 try buffer.append('}');
             },
-            .StreamKind => try std.fmt.format(buffer.writer(), "<stream: {d} {s}>", .{ self.v.StreamKind.stream.handle, if (self.v.StreamKind.isOpen) "open" else "closed" }),
             .ScopeKind => {
                 var first = true;
                 var runner: ?*const Value = self;
@@ -178,6 +201,7 @@ pub const Value = struct {
                     try v.appendValue(buffer, style);
                 },
             },
+            .StreamKind => try std.fmt.format(buffer.writer(), "<stream: {d} {s}>", .{ self.v.StreamKind.stream.handle, if (self.v.StreamKind.isOpen) "open" else "closed" }),
             .StringKind => switch (style) {
                 Style.Pretty => {
                     try buffer.append('"');
@@ -209,29 +233,31 @@ pub const Value = struct {
 };
 
 pub const ValueKind = enum {
-    IntKind,
-    FloatKind,
+    ASTFunctionKind,
+    BCFunctionKind,
     BoolKind,
     BuiltinFunctionKind,
     CharKind,
     FileKind,
-    FunctionKind,
+    FloatKind,
     HttpClientKind,
     HttpClientRequestKind,
+    IntKind,
+    RecordKind,
     SequenceKind,
     StreamKind,
     StringKind,
-    RecordKind,
     ScopeKind,
     UnitKind,
 
     pub fn toString(self: ValueKind) []const u8 {
         return switch (self) {
             ValueKind.BoolKind => "Bool",
+            ValueKind.BCFunctionKind => "Function",
             ValueKind.BuiltinFunctionKind => "Function",
             ValueKind.CharKind => "Char",
             ValueKind.FileKind => "File",
-            ValueKind.FunctionKind => "Function",
+            ValueKind.ASTFunctionKind => "Function",
             ValueKind.FloatKind => "Float",
             ValueKind.HttpClientKind => "HttpClient",
             ValueKind.HttpClientRequestKind => "HttpClientRequest",
@@ -247,12 +273,13 @@ pub const ValueKind = enum {
 };
 
 pub const ValueValue = union(ValueKind) {
+    ASTFunctionKind: ASTFunctionValue,
+    BCFunctionKind: BCFunctionValue,
     BoolKind: bool,
     BuiltinFunctionKind: BuiltinFunctionValue,
     CharKind: u8,
     FileKind: FileValue,
     FloatKind: FloatType,
-    FunctionKind: FunctionValue,
     IntKind: IntType,
     HttpClientKind: HttpClientValue,
     HttpClientRequestKind: HttpClientRequestValue,
@@ -262,6 +289,51 @@ pub const ValueValue = union(ValueKind) {
     StreamKind: StreamValue,
     StringKind: StringValue,
     UnitKind: void,
+};
+
+pub const ASTFunctionValue = struct {
+    scope: ?*Value,
+    arguments: []FunctionArgument,
+    restOfArguments: ?*SP.String,
+    body: *AST.Expression,
+
+    pub fn deinit(self: *ASTFunctionValue, allocator: std.mem.Allocator) void {
+        for (self.arguments) |*argument| {
+            argument.deinit();
+        }
+        if (self.restOfArguments != null) {
+            self.restOfArguments.?.decRef();
+        }
+        allocator.free(self.arguments);
+        self.body.destroy(allocator);
+    }
+};
+
+pub const FunctionArgument = struct {
+    name: *SP.String,
+    default: ?*Value,
+
+    pub fn deinit(self: *FunctionArgument) void {
+        self.name.decRef();
+    }
+};
+
+pub const BCFunctionValue = struct {
+    scope: ?*Value,
+    arguments: []FunctionArgument,
+    restOfArguments: ?*SP.String,
+    body: []u8,
+
+    pub fn deinit(self: *BCFunctionValue, allocator: std.mem.Allocator) void {
+        for (self.arguments) |*argument| {
+            argument.deinit();
+        }
+        if (self.restOfArguments != null) {
+            self.restOfArguments.?.decRef();
+        }
+        allocator.free(self.arguments);
+        allocator.free(self.body);
+    }
 };
 
 pub const BuiltinFunctionValue = struct {
@@ -288,33 +360,6 @@ pub const FileValue = struct {
             self.file.close();
             self.isOpen = false;
         }
-    }
-};
-
-pub const FunctionValue = struct {
-    scope: ?*Value,
-    arguments: []FunctionArgument,
-    restOfArguments: ?*SP.String,
-    body: *AST.Expression,
-
-    pub fn deinit(self: *FunctionValue, allocator: std.mem.Allocator) void {
-        for (self.arguments) |*argument| {
-            argument.deinit();
-        }
-        if (self.restOfArguments != null) {
-            self.restOfArguments.?.decRef();
-        }
-        allocator.free(self.arguments);
-        self.body.destroy(allocator);
-    }
-};
-
-pub const FunctionArgument = struct {
-    name: *SP.String,
-    default: ?*Value,
-
-    pub fn deinit(self: *FunctionArgument) void {
-        self.name.decRef();
     }
 };
 
@@ -677,26 +722,16 @@ pub fn eq(a: *Value, b: *Value) bool {
     }
 
     switch (a.v) {
+        .ASTFunctionKind => return @intFromPtr(a) == @intFromPtr(b),
+        .BCFunctionKind => return @intFromPtr(a) == @intFromPtr(b),
         .BoolKind => return a.v.BoolKind == b.v.BoolKind,
         .BuiltinFunctionKind => return @intFromPtr(a) == @intFromPtr(b),
         .CharKind => return a.v.CharKind == b.v.CharKind,
         .FileKind => return a.v.FileKind.file.handle == b.v.FileKind.file.handle,
-        .FunctionKind => return @intFromPtr(a) == @intFromPtr(b),
         .IntKind => return a.v.IntKind == b.v.IntKind,
         .FloatKind => return a.v.FloatKind == b.v.FloatKind,
         .HttpClientKind => unreachable,
         .HttpClientRequestKind => unreachable,
-        .SequenceKind => {
-            if (a.v.SequenceKind.len() != b.v.SequenceKind.len()) return false;
-
-            for (a.v.SequenceKind.items(), 0..) |v, i| {
-                if (!eq(v, b.v.SequenceKind.at(i))) return false;
-            }
-
-            return true;
-        },
-        .StreamKind => return a.v.StreamKind.stream.handle == b.v.StreamKind.stream.handle,
-        .StringKind => return a.v.StringKind.value == b.v.StringKind.value,
         .RecordKind => {
             if (a.v.RecordKind.count() != b.v.RecordKind.count()) return false;
 
@@ -723,6 +758,17 @@ pub fn eq(a: *Value, b: *Value) bool {
 
             return true;
         },
+        .SequenceKind => {
+            if (a.v.SequenceKind.len() != b.v.SequenceKind.len()) return false;
+
+            for (a.v.SequenceKind.items(), 0..) |v, i| {
+                if (!eq(v, b.v.SequenceKind.at(i))) return false;
+            }
+
+            return true;
+        },
+        .StreamKind => return a.v.StreamKind.stream.handle == b.v.StreamKind.stream.handle,
+        .StringKind => return a.v.StringKind.value == b.v.StringKind.value,
         .UnitKind => return true,
     }
 }

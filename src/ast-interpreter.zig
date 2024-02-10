@@ -337,9 +337,9 @@ pub fn callFn(machine: *ASTInterpreter, numberOfArgs: usize) Errors.RuntimeError
     const callee = machine.runtime.peek(@intCast(numberOfArgs));
 
     switch (callee.v) {
-        V.ValueValue.FunctionKind => try callUserFn(machine, numberOfArgs),
+        V.ValueValue.ASTFunctionKind => try callUserFn(machine, numberOfArgs),
         V.ValueValue.BuiltinFunctionKind => try callBuiltinFn(machine, numberOfArgs),
-        else => try ER.raiseExpectedTypeError(&machine.runtime, null, &[_]V.ValueKind{V.ValueValue.FunctionKind}, callee.v),
+        else => try ER.raiseExpectedTypeError(&machine.runtime, null, &[_]V.ValueKind{V.ValueValue.ASTFunctionKind}, callee.v),
     }
 
     const result = machine.runtime.pop();
@@ -352,35 +352,35 @@ fn callUserFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
 
     const callee = machine.runtime.peek(@intCast(numberOfArgs));
 
-    try machine.runtime.openScopeFrom(callee.v.FunctionKind.scope);
+    try machine.runtime.openScopeFrom(callee.v.ASTFunctionKind.scope);
     defer machine.runtime.restoreScope();
 
     try machine.runtime.addU8ToScope("__caller_scope__", enclosingScope);
 
     var lp: usize = 0;
-    const maxArgs = @min(numberOfArgs, callee.v.FunctionKind.arguments.len);
+    const maxArgs = @min(numberOfArgs, callee.v.ASTFunctionKind.arguments.len);
     const sp = machine.runtime.stack.items.len - numberOfArgs;
     while (lp < maxArgs) {
-        try machine.runtime.addToScope(callee.v.FunctionKind.arguments[lp].name, machine.runtime.stack.items[sp + lp]);
+        try machine.runtime.addToScope(callee.v.ASTFunctionKind.arguments[lp].name, machine.runtime.stack.items[sp + lp]);
         lp += 1;
     }
-    while (lp < callee.v.FunctionKind.arguments.len) {
-        const value = callee.v.FunctionKind.arguments[lp].default orelse machine.runtime.unitValue.?;
+    while (lp < callee.v.ASTFunctionKind.arguments.len) {
+        const value = callee.v.ASTFunctionKind.arguments[lp].default orelse machine.runtime.unitValue.?;
 
-        try machine.runtime.addToScope(callee.v.FunctionKind.arguments[lp].name, value);
+        try machine.runtime.addToScope(callee.v.ASTFunctionKind.arguments[lp].name, value);
         lp += 1;
     }
 
-    if (callee.v.FunctionKind.restOfArguments != null) {
-        if (numberOfArgs > callee.v.FunctionKind.arguments.len) {
-            const rest = machine.runtime.stack.items[sp + callee.v.FunctionKind.arguments.len ..];
-            try machine.runtime.addArrayValueToScope(callee.v.FunctionKind.restOfArguments.?, rest);
+    if (callee.v.ASTFunctionKind.restOfArguments != null) {
+        if (numberOfArgs > callee.v.ASTFunctionKind.arguments.len) {
+            const rest = machine.runtime.stack.items[sp + callee.v.ASTFunctionKind.arguments.len ..];
+            try machine.runtime.addArrayValueToScope(callee.v.ASTFunctionKind.restOfArguments.?, rest);
         } else {
-            try machine.runtime.addToScope(callee.v.FunctionKind.restOfArguments.?, try machine.runtime.newEmptySequenceValue());
+            try machine.runtime.addToScope(callee.v.ASTFunctionKind.restOfArguments.?, try machine.runtime.newEmptySequenceValue());
         }
     }
 
-    try evalExpr(machine, callee.v.FunctionKind.body);
+    try evalExpr(machine, callee.v.ASTFunctionKind.body);
 }
 
 fn callBuiltinFn(machine: *ASTInterpreter, numberOfArgs: usize) !void {
@@ -625,7 +625,7 @@ fn literalFunction(machine: *ASTInterpreter, e: *AST.Expression) Errors.RuntimeE
         arguments[index] = V.FunctionArgument{ .name = param.name.incRefR(), .default = null };
     }
 
-    _ = try machine.runtime.pushValue(V.ValueValue{ .FunctionKind = V.FunctionValue{
+    _ = try machine.runtime.pushValue(V.ValueValue{ .ASTFunctionKind = V.ASTFunctionValue{
         .scope = machine.runtime.scope(),
         .arguments = arguments,
         .restOfArguments = if (e.kind.literalFunction.restOfParams == null) null else e.kind.literalFunction.restOfParams.?.incRefR(),

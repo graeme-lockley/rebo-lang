@@ -3,14 +3,9 @@ const Helper = @import("./helper.zig");
 
 fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
     switch (v.v) {
-        .BoolKind => try stdout.print("{s}", .{if (v.v.BoolKind) "true" else "false"}),
-        .BuiltinFunctionKind => try stdout.print("fn(...)", .{}),
-        .CharKind => try stdout.print("{c}", .{v.v.CharKind}),
-        .FileKind => try stdout.print("file: {d}", .{v.v.FileKind.file.handle}),
-        .FloatKind => try stdout.print("{d}", .{v.v.FloatKind}),
-        .FunctionKind => {
+        .ASTFunctionKind => {
             try stdout.print("fn(", .{});
-            for (v.v.FunctionKind.arguments, 0..) |argument, i| {
+            for (v.v.ASTFunctionKind.arguments, 0..) |argument, i| {
                 if (i != 0) {
                     try stdout.print(", ", .{});
                 }
@@ -21,15 +16,42 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
                     try printValue(stdout, argument.default.?);
                 }
             }
-            if (v.v.FunctionKind.restOfArguments != null) {
-                if (v.v.FunctionKind.arguments.len > 0) {
+            if (v.v.ASTFunctionKind.restOfArguments != null) {
+                if (v.v.ASTFunctionKind.arguments.len > 0) {
                     try stdout.print(", ", .{});
                 }
 
-                try stdout.print("...{s}", .{v.v.FunctionKind.restOfArguments.?.slice()});
+                try stdout.print("...{s}", .{v.v.ASTFunctionKind.restOfArguments.?.slice()});
             }
             try stdout.print(")", .{});
         },
+        .BCFunctionKind => {
+            try stdout.print("fn(", .{});
+            for (v.v.BCFunctionKind.arguments, 0..) |argument, i| {
+                if (i != 0) {
+                    try stdout.print(", ", .{});
+                }
+
+                try stdout.print("{s}", .{argument.name.slice()});
+                if (argument.default != null) {
+                    try stdout.print(" = ", .{});
+                    try printValue(stdout, argument.default.?);
+                }
+            }
+            if (v.v.BCFunctionKind.restOfArguments != null) {
+                if (v.v.BCFunctionKind.arguments.len > 0) {
+                    try stdout.print(", ", .{});
+                }
+
+                try stdout.print("...{s}", .{v.v.BCFunctionKind.restOfArguments.?.slice()});
+            }
+            try stdout.print(")", .{});
+        },
+        .BoolKind => try stdout.print("{s}", .{if (v.v.BoolKind) "true" else "false"}),
+        .BuiltinFunctionKind => try stdout.print("fn(...)", .{}),
+        .CharKind => try stdout.print("{c}", .{v.v.CharKind}),
+        .FileKind => try stdout.print("file: {d}", .{v.v.FileKind.file.handle}),
+        .FloatKind => try stdout.print("{d}", .{v.v.FloatKind}),
         .HttpClientKind => try stdout.print("<http client>", .{}),
         .HttpClientRequestKind => try stdout.print("<http client response {s}>", .{@tagName(v.v.HttpClientRequestKind.state)}),
         .IntKind => try stdout.print("{d}", .{v.v.IntKind}),
