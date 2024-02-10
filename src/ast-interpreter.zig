@@ -329,66 +329,10 @@ fn call(runtime: *Runtime, e: *AST.Expression, calleeAST: *AST.Expression, argsA
         try evalExpr(runtime, arg);
     }
 
-    callFn(runtime, argsAST.len) catch |err| {
+    runtime.callFn(argsAST.len) catch |err| {
         try ER.appendErrorPosition(runtime, Errors.Position{ .start = calleeAST.position.start, .end = e.position.end });
         return err;
     };
-}
-
-pub fn callFn(runtime: *Runtime, numberOfArgs: usize) Errors.RuntimeErrors!void {
-    const callee = runtime.peek(@intCast(numberOfArgs));
-
-    switch (callee.v) {
-        V.ValueValue.ASTFunctionKind => try callUserFn(runtime, numberOfArgs),
-        V.ValueValue.BuiltinFunctionKind => try callBuiltinFn(runtime, numberOfArgs),
-        else => try ER.raiseExpectedTypeError(runtime, null, &[_]V.ValueKind{V.ValueValue.ASTFunctionKind}, callee.v),
-    }
-
-    const result = runtime.pop();
-    runtime.popn(@intCast(numberOfArgs + 1));
-    try runtime.push(result);
-}
-
-fn callUserFn(runtime: *Runtime, numberOfArgs: usize) !void {
-    const enclosingScope = runtime.scope().?;
-
-    const callee = runtime.peek(@intCast(numberOfArgs));
-
-    try runtime.openScopeFrom(callee.v.ASTFunctionKind.scope);
-    defer runtime.restoreScope();
-
-    try runtime.addU8ToScope("__caller_scope__", enclosingScope);
-
-    var lp: usize = 0;
-    const maxArgs = @min(numberOfArgs, callee.v.ASTFunctionKind.arguments.len);
-    const sp = runtime.stack.items.len - numberOfArgs;
-    while (lp < maxArgs) {
-        try runtime.addToScope(callee.v.ASTFunctionKind.arguments[lp].name, runtime.stack.items[sp + lp]);
-        lp += 1;
-    }
-    while (lp < callee.v.ASTFunctionKind.arguments.len) {
-        const value = callee.v.ASTFunctionKind.arguments[lp].default orelse runtime.unitValue.?;
-
-        try runtime.addToScope(callee.v.ASTFunctionKind.arguments[lp].name, value);
-        lp += 1;
-    }
-
-    if (callee.v.ASTFunctionKind.restOfArguments != null) {
-        if (numberOfArgs > callee.v.ASTFunctionKind.arguments.len) {
-            const rest = runtime.stack.items[sp + callee.v.ASTFunctionKind.arguments.len ..];
-            try runtime.addArrayValueToScope(callee.v.ASTFunctionKind.restOfArguments.?, rest);
-        } else {
-            try runtime.addToScope(callee.v.ASTFunctionKind.restOfArguments.?, try runtime.newEmptySequenceValue());
-        }
-    }
-
-    try evalExpr(runtime, callee.v.ASTFunctionKind.body);
-}
-
-fn callBuiltinFn(runtime: *Runtime, numberOfArgs: usize) !void {
-    const callee = runtime.peek(@intCast(numberOfArgs));
-
-    try callee.v.BuiltinFunctionKind.body(runtime, numberOfArgs);
 }
 
 fn catche(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {

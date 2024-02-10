@@ -63,7 +63,7 @@ pub const API = struct {
     }
 
     pub fn call(self: *API, numberOfArgs: usize) !void {
-        try ASTInterpreter.callFn(&self.runtime, numberOfArgs);
+        try self.runtime.callFn(numberOfArgs);
     }
 
     pub fn pop(self: *API) void {
