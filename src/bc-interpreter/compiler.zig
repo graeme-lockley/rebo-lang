@@ -155,6 +155,11 @@ pub const Compiler = struct {
                 }
                 try self.compileExpr(expr);
             },
+            .idDeclaration => {
+                try self.compileExpr(e.kind.idDeclaration.value);
+                try self.appendPushLiteralString(e.kind.idDeclaration.name.slice());
+                try self.buffer.append(@intFromEnum(Op.bind));
+            },
             .identifier => {
                 try self.buffer.append(@intFromEnum(Op.push_identifier));
                 try self.appendString(e.kind.identifier.slice());

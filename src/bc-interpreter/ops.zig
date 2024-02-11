@@ -17,6 +17,8 @@ pub const Op = enum(u8) {
     jmp_false, // IP
 
     call, // IP
+    bind,
+    assign,
 
     duplicate,
     discard,

@@ -978,6 +978,33 @@ pub const Runtime = struct {
 
         try callee.v.BuiltinFunctionKind.body(self, numberOfArgs);
     }
+
+    pub fn bind(self: *Runtime) !void {
+        const v = self.peek(1);
+        const n = self.peek(0);
+
+        if (n.isString()) {
+            try self.addToScope(n.v.StringKind.value, v);
+            self.popn(1);
+        } else {
+            try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.StringKind}, n.v);
+        }
+    }
+
+    pub fn assign(self: *Runtime) !void {
+        const v = self.peek(1);
+        const n = self.peek(0);
+
+        if (!n.isString()) {
+            try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.StringKind}, n.v);
+        } else if (!(try self.updateInScope(n.v.StringKind.value, v))) {
+            const rec = try ER.pushNamedUserError(self, "UnknownIdentifierError", null);
+            try rec.v.RecordKind.setU8(self.stringPool, "identifier", n);
+            return Errors.RuntimeErrors.InterpreterError;
+        } else {
+            self.popn(1);
+        }
+    }
 };
 
 fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {

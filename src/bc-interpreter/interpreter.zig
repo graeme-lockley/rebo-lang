@@ -111,6 +111,14 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
 
                 ip += 1 + IntTypeSize + PositionTypeSize;
             },
+            Op.bind => {
+                try runtime.bind();
+                ip += 1;
+            },
+            Op.assign => {
+                try runtime.assign();
+                ip += 1;
+            },
             Op.duplicate => {
                 try runtime.duplicate();
                 ip += 1;

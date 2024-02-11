@@ -53,12 +53,8 @@ fn assignment(runtime: *Runtime, lhs: *AST.Expression, value: *AST.Expression) E
     switch (lhs.kind) {
         .identifier => {
             try evalExpr(runtime, value);
-
-            if (!(try runtime.updateInScope(lhs.kind.identifier, runtime.peek(0)))) {
-                const rec = try ER.pushNamedUserError(runtime, "UnknownIdentifierError", lhs.position);
-                try rec.v.RecordKind.setU8(runtime.stringPool, "identifier", try runtime.newStringPoolValue(lhs.kind.identifier));
-                return Errors.RuntimeErrors.InterpreterError;
-            }
+            try runtime.pushStringPoolValue(lhs.kind.identifier);
+            try runtime.assign();
         },
         .dot => {
             try evalExpr(runtime, lhs.kind.dot.record);
@@ -396,7 +392,8 @@ fn exprs(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
 
 fn idDeclaration(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(runtime, e.kind.idDeclaration.value);
-    try runtime.addToScope(e.kind.idDeclaration.name, runtime.peek(0));
+    try runtime.pushStringPoolValue(e.kind.idDeclaration.name);
+    try runtime.bind();
 }
 
 fn identifier(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {

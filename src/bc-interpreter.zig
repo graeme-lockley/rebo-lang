@@ -456,14 +456,14 @@ test "list append/prepend" {
     try expectExprEqual("[1, 2] << 3", "[1, 2, 3]");
     try expectExprEqual("[1, 2] <! 3", "[1, 2, 3]");
 
-    // try expectExprEqual("let x = [1, 2]; x << 3; x", "[1, 2]");
-    // try expectExprEqual("let x = [1, 2]; x <! 3; x", "[1, 2, 3]");
+    try expectExprEqual("let x = [1, 2]; x << 3; x", "[1, 2]");
+    try expectExprEqual("let x = [1, 2]; x <! 3; x", "[1, 2, 3]");
 
     try expectExprEqual("1 >> [2, 3]", "[1, 2, 3]");
     try expectExprEqual("1 >! [2, 3]", "[1, 2, 3]");
 
-    // try expectExprEqual("let x = [2, 3]; 1 >> x; x", "[2, 3]");
-    // try expectExprEqual("let x = [2, 3]; 1 >! x 3; x", "[1, 2, 3]");
+    try expectExprEqual("let x = [2, 3]; 1 >> x; x", "[2, 3]");
+    try expectExprEqual("let x = [2, 3]; 1 >! x 3; x", "[1, 2, 3]");
 }
 
 test "parenthesis" {
@@ -476,19 +476,19 @@ test "parenthesis" {
 
 test "let declaration" {
     try expectExprEqual("1; 2; 3; 1;", "1");
-    // try expectExprEqual("let a = 1; a;", "1");
+    try expectExprEqual("let a = 1; a", "1");
 
-    // try expectExprEqual("let add(a = 0, b = 0) = a + b; add();", "0");
-    // try expectExprEqual("let add(a = 0, b = 0) = a + b; add(1);", "1");
-    // try expectExprEqual("let add(a = 0, b = 0) = a + b; add(1, 2);", "3");
-    // try expectExprEqual("let add(a = 0, b = 0) = a + b; add(1, 2, 3);", "3");
-    // try expectExprEqual("let add(a = 0, b = 0) = a + b; add;", "fn(a = 0, b = 0)");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; add();", "0");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; add(1);", "1");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; add(1, 2);", "3");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; add(1, 2, 3);", "3");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; add;", "fn(a = 0, b = 0)");
 
-    // try expectExprEqual("let args(...x) = x; args;", "fn(...x)");
-    // try expectExprEqual("let args(...x) = x; args();", "[]");
-    // try expectExprEqual("let args(...x) = x; args(1, 2, 3);", "[1, 2, 3]");
+    try expectExprEqual("let args(...x) = x; args;", "fn(...x)");
+    try expectExprEqual("let args(...x) = x; args();", "[]");
+    try expectExprEqual("let args(...x) = x; args(1, 2, 3);", "[1, 2, 3]");
 
-    // try expectExprEqual("let add(a = 0, b = 0) = a + b; let fun(x = add(1, 2)) = x * x; fun();", "9");
+    try expectExprEqual("let add(a = 0, b = 0) = a + b; let fun(x = add(1, 2)) = x * x; fun();", "9");
 }
 
 test "if" {
