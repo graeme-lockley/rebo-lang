@@ -1,14 +1,16 @@
+const std = @import("std");
+
 const ER = @import("./../error-reporting.zig");
 const Errors = @import("./../errors.zig");
 const Runtime = @import("./../runtime.zig").Runtime;
 const Op = @import("./ops.zig").Op;
 const V = @import("./../value.zig");
 
-const IntTypeSize = 8;
-const FloatTypeSize = 8;
-const PositionTypeSize = 2 * IntTypeSize;
+const IntTypeSize: usize = 8;
+const FloatTypeSize: usize = 8;
+const PositionTypeSize: usize = 2 * IntTypeSize;
 
-pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
+pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
     var ip: usize = 0;
     while (true) {
         switch (@as(Op, @enumFromInt(bytecode[ip]))) {
@@ -45,6 +47,9 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
             Op.push_int => {
                 try runtime.pushIntValue(readInt(bytecode, ip + 1));
                 ip += 1 + IntTypeSize;
+            },
+            Op.push_function => {
+                ip = try pushFunction(runtime, bytecode, ip);
             },
             Op.push_record => {
                 try runtime.pushEmptyRecordValue();
@@ -244,5 +249,53 @@ fn readPosition(bytecode: []const u8, ip: usize) Errors.Position {
 
 fn readString(bytecode: []const u8, ip: usize) []const u8 {
     const len: usize = @intCast(readInt(bytecode, ip));
-    return bytecode[ip + 9 .. ip + 9 + len];
+    return bytecode[ip + 8 .. ip + 8 + len];
+}
+
+inline fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize {
+    var ip = ipStart;
+
+    const numberOfParameters: usize = @intCast(readInt(bytecode, ip + 1));
+    ip = ip + 1 + IntTypeSize;
+
+    var parameters: []V.FunctionArgument = try runtime.allocator.alloc(V.FunctionArgument, numberOfParameters);
+    errdefer runtime.allocator.free(parameters);
+
+    const sp = runtime.stack.items.len;
+
+    for (0..numberOfParameters) |index| {
+        const name = readString(bytecode, ip);
+        const code = readString(bytecode, ip + IntTypeSize + name.len);
+
+        if (code.len == 0) {
+            parameters[index] = V.FunctionArgument{ .name = try runtime.stringPool.intern(name), .default = null };
+        } else {
+            try eval(runtime, code);
+            const v = runtime.peek(0);
+            const vv = try v.toString(runtime.allocator, V.Style.Pretty);
+            defer runtime.allocator.free(vv);
+
+            parameters[index] = V.FunctionArgument{ .name = try runtime.stringPool.intern(name), .default = runtime.peek(0) };
+        }
+
+        ip += IntTypeSize + name.len + IntTypeSize + code.len;
+    }
+
+    const restName = readString(bytecode, ip);
+    ip += IntTypeSize + restName.len;
+
+    const body = readString(bytecode, ip);
+    ip += IntTypeSize + body.len;
+
+    const result = try runtime.pushValue(V.ValueValue{ .BCFunctionKind = V.BCFunctionValue{
+        .scope = runtime.scope(),
+        .arguments = parameters,
+        .restOfArguments = if (restName.len == 0) null else try runtime.stringPool.intern(restName),
+        .body = try runtime.allocator.dupe(u8, body),
+    } });
+
+    runtime.popn(runtime.stack.items.len - sp);
+    try runtime.push(result);
+
+    return ip;
 }

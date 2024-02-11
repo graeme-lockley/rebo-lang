@@ -1,6 +1,6 @@
 let sys = import("sys")
 
-let content = "len([1, 2, 3])"
+let content = "(fn(n, d) n ? d)(1, 10)"
 let bc = sys.compile(content)
 
 sys.dis(bc)

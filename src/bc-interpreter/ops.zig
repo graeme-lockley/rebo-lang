@@ -5,6 +5,7 @@ pub const Op = enum(u8) {
     push_float, // F
     push_identifier, // SP
     push_int, // I
+    push_function, // B
     push_record,
     push_sequence, //
     push_string, // S
@@ -28,17 +29,17 @@ pub const Op = enum(u8) {
 
     equals,
     not_equals,
-    less_than,
-    less_equal,
-    greater_than,
-    greater_equal,
-    add,
-    subtract,
-    multiply,
-    divide,
-    modulo,
-    seq_append,
-    seq_append_bang,
-    seq_prepend,
-    seq_prepend_bang,
+    less_than, // P
+    less_equal, // P
+    greater_than, // P
+    greater_equal, // P
+    add, // P
+    subtract, // P
+    multiply, // P
+    divide, // P
+    modulo, // P
+    seq_append, // P
+    seq_append_bang, // P
+    seq_prepend, // P
+    seq_prepend_bang, // P
 };

@@ -29,7 +29,7 @@ pub const Compiler = struct {
         return self.buffer.toOwnedSlice();
     }
 
-    fn compileExpr(self: *Compiler, e: *AST.Expression) !void {
+    fn compileExpr(self: *Compiler, e: *AST.Expression) Errors.RuntimeErrors!void {
         switch (e.kind) {
             .binaryOp => {
                 switch (e.kind.binaryOp.op) {
@@ -166,6 +166,24 @@ pub const Compiler = struct {
                 try self.buffer.append(@intFromEnum(Op.push_float));
                 try self.appendFloat(e.kind.literalFloat);
             },
+            .literalFunction => {
+                try self.buffer.append(@intFromEnum(Op.push_function));
+                try self.appendInt(@intCast(e.kind.literalFunction.params.len));
+                for (e.kind.literalFunction.params) |param| {
+                    try self.appendString(param.name.slice());
+                    if (param.default) |d| {
+                        try self.compileCodeBlock(d);
+                    } else {
+                        try self.appendInt(0);
+                    }
+                }
+                if (e.kind.literalFunction.restOfParams) |rest| {
+                    try self.appendString(rest.slice());
+                } else {
+                    try self.appendInt(0);
+                }
+                try self.compileCodeBlock(e.kind.literalFunction.body);
+            },
             .literalInt => {
                 try self.buffer.append(@intFromEnum(Op.push_int));
                 try self.appendInt(e.kind.literalInt);
@@ -211,6 +229,19 @@ pub const Compiler = struct {
                 unreachable;
             },
         }
+    }
+
+    fn compileCodeBlock(self: *Compiler, block: *AST.Expression) !void {
+        // std.io.getStdOut().writer().print("Compiling code block: ip: {d}\n", .{self.buffer.items.len}) catch {};
+
+        var compiler = Compiler.init(self.allocator);
+        defer compiler.deinit();
+
+        const bc = try compiler.compile(block);
+        defer self.allocator.free(bc);
+
+        try self.appendInt(@intCast(bc.len));
+        try self.buffer.appendSlice(bc);
     }
 
     fn appendFloat(self: *Compiler, v: V.FloatType) !void {

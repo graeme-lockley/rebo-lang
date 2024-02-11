@@ -14,6 +14,7 @@ const Interpreter = @import("./bc-interpreter/interpreter.zig");
 
 pub fn compile(allocator: std.mem.Allocator, ast: *AST.Expression) ![]u8 {
     var compiler = Compiler.init(allocator);
+    defer compiler.deinit();
 
     return try compiler.compile(ast);
 }
@@ -253,22 +254,22 @@ test "literal float" {
 }
 
 test "literal function" {
-    // try expectExprEqual("fn() = 1", "fn()");
-    // try expectExprEqual("fn(a) = a + 1", "fn(a)");
-    // try expectExprEqual("fn(a = 1, b = 2, c = 3) = a + b + c", "fn(a = 1, b = 2, c = 3)");
+    try expectExprEqual("fn() = 1", "fn()");
+    try expectExprEqual("fn(a) = a + 1", "fn(a)");
+    try expectExprEqual("fn(a = 1, b = 2, c = 3) = a + b + c", "fn(a = 1, b = 2, c = 3)");
 
-    // try expectExprEqual("(fn(n) = (fn (m) = n + m))(1)(2)", "3");
+    try expectExprEqual("(fn(n) = (fn (m) = n + m))(1)(2)", "3");
 
-    // try expectExprEqual("(fn(a = 1, b = 2, ...c) = [a, b] + c)()", "[1, 2]");
-    // try expectExprEqual("(fn(a = 1, b = 2, ...c) = [a, b] + c)(10)", "[10, 2]");
-    // try expectExprEqual("(fn(a = 1, b = 2, ...c) = [a, b] + c)(10, 20)", "[10, 20]");
-    // try expectExprEqual("(fn(a = 1, b = 2, ...c) = [a, b] + c)(10, 20, 30)", "[10, 20, 30]");
-    // try expectExprEqual("(fn(a = 1, b = 2, ...c) = [a, b] + c)(10, 20, 30, 40)", "[10, 20, 30, 40]");
-    // try expectExprEqual("(fn(...x) = x)()", "[]");
-    // try expectExprEqual("(fn(...x) = x)(1)", "[1]");
-    // try expectExprEqual("(fn(...x) = x)(1, 2, 3)", "[1, 2, 3]");
+    try expectExprEqual("(fn(a = 1, b = 2, ...c) = [a, b] + c)()", "[1, 2]");
+    try expectExprEqual("(fn(a = 1, b = 2, ...c) = [a, b] + c)(10)", "[10, 2]");
+    try expectExprEqual("(fn(a = 1, b = 2, ...c) = [a, b] + c)(10, 20)", "[10, 20]");
+    try expectExprEqual("(fn(a = 1, b = 2, ...c) = [a, b] + c)(10, 20, 30)", "[10, 20, 30]");
+    try expectExprEqual("(fn(a = 1, b = 2, ...c) = [a, b] + c)(10, 20, 30, 40)", "[10, 20, 30, 40]");
+    try expectExprEqual("(fn(...x) = x)()", "[]");
+    try expectExprEqual("(fn(...x) = x)(1)", "[1]");
+    try expectExprEqual("(fn(...x) = x)(1, 2, 3)", "[1, 2, 3]");
 
-    // try expectError("fn(a = 1, b = 2, c = 3) = ");
+    try expectError("fn(a = 1, b = 2, c = 3) = ");
 }
 
 test "literal int" {
@@ -452,14 +453,14 @@ test "hook op" {
 }
 
 test "list append/prepend" {
-    // try expectExprEqual("[1, 2] << 3", "[1, 2, 3]");
-    // try expectExprEqual("[1, 2] <! 3", "[1, 2, 3]");
+    try expectExprEqual("[1, 2] << 3", "[1, 2, 3]");
+    try expectExprEqual("[1, 2] <! 3", "[1, 2, 3]");
 
     // try expectExprEqual("let x = [1, 2]; x << 3; x", "[1, 2]");
     // try expectExprEqual("let x = [1, 2]; x <! 3; x", "[1, 2, 3]");
 
-    // try expectExprEqual("1 >> [2, 3]", "[1, 2, 3]");
-    // try expectExprEqual("1 >! [2, 3]", "[1, 2, 3]");
+    try expectExprEqual("1 >> [2, 3]", "[1, 2, 3]");
+    try expectExprEqual("1 >! [2, 3]", "[1, 2, 3]");
 
     // try expectExprEqual("let x = [2, 3]; 1 >> x; x", "[2, 3]");
     // try expectExprEqual("let x = [2, 3]; 1 >! x 3; x", "[1, 2, 3]");

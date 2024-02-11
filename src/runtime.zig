@@ -7,6 +7,7 @@ const SP = @import("./string_pool.zig");
 const V = @import("./value.zig");
 
 const evalAST = @import("./ast-interpreter.zig").evalExpr;
+const evalBC = @import("./bc-interpreter.zig").eval;
 
 const MAINTAIN_FREE_CHAIN = true;
 const INITIAL_HEAP_SIZE = 1;
@@ -889,7 +890,8 @@ pub const Runtime = struct {
         const callee = self.peek(@intCast(numberOfArgs));
 
         switch (callee.v) {
-            V.ValueValue.ASTFunctionKind => try callUserFn(self, numberOfArgs),
+            V.ValueValue.ASTFunctionKind => try callASTFn(self, numberOfArgs),
+            V.ValueValue.BCFunctionKind => try callBCFn(self, numberOfArgs),
             V.ValueValue.BuiltinFunctionKind => try callBuiltinFn(self, numberOfArgs),
             else => try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.ASTFunctionKind}, callee.v),
         }
@@ -899,7 +901,7 @@ pub const Runtime = struct {
         try self.push(result);
     }
 
-    fn callUserFn(self: *Runtime, numberOfArgs: usize) !void {
+    fn callASTFn(self: *Runtime, numberOfArgs: usize) !void {
         const enclosingScope = self.scope().?;
 
         const callee = self.peek(@intCast(numberOfArgs));
@@ -933,6 +935,42 @@ pub const Runtime = struct {
         }
 
         try evalAST(self, callee.v.ASTFunctionKind.body);
+    }
+
+    fn callBCFn(self: *Runtime, numberOfArgs: usize) !void {
+        const enclosingScope = self.scope().?;
+
+        const callee = self.peek(@intCast(numberOfArgs));
+
+        try self.openScopeFrom(callee.v.BCFunctionKind.scope);
+        defer self.restoreScope();
+
+        try self.addU8ToScope("__caller_scope__", enclosingScope);
+
+        var lp: usize = 0;
+        const maxArgs = @min(numberOfArgs, callee.v.BCFunctionKind.arguments.len);
+        const sp = self.stack.items.len - numberOfArgs;
+        while (lp < maxArgs) {
+            try self.addToScope(callee.v.BCFunctionKind.arguments[lp].name, self.stack.items[sp + lp]);
+            lp += 1;
+        }
+        while (lp < callee.v.BCFunctionKind.arguments.len) {
+            const value = callee.v.BCFunctionKind.arguments[lp].default orelse self.unitValue.?;
+
+            try self.addToScope(callee.v.BCFunctionKind.arguments[lp].name, value);
+            lp += 1;
+        }
+
+        if (callee.v.BCFunctionKind.restOfArguments != null) {
+            if (numberOfArgs > callee.v.BCFunctionKind.arguments.len) {
+                const rest = self.stack.items[sp + callee.v.BCFunctionKind.arguments.len ..];
+                try self.addArrayValueToScope(callee.v.BCFunctionKind.restOfArguments.?, rest);
+            } else {
+                try self.addToScope(callee.v.BCFunctionKind.restOfArguments.?, try self.newEmptySequenceValue());
+            }
+        }
+
+        try evalBC(self, callee.v.BCFunctionKind.body);
     }
 
     fn callBuiltinFn(self: *Runtime, numberOfArgs: usize) !void {

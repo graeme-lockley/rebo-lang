@@ -17,11 +17,11 @@ let eval(bc, s) = rebo.os["bc.eval"](bc, s ? scope())
 
 let padLeft(s, n) = " " * (n - len(s)) + s
 
-let dis(bc) {
+let dis(bc, indent = "") {
    let ip = 0
 
    while ip < len(bc) -> {
-      print(ansi.foreground.lightGray, padLeft(str(ip), 6), ": ", ansi.control.reset)
+      print(indent, ansi.foreground.lightGray, padLeft(str(ip), 6), ": ", ansi.control.reset)
 
       let op = int(bc[ip])
 
@@ -38,10 +38,43 @@ let dis(bc) {
             | 'F' -> { print(" ", ansi.foreground.green, _readFloat(bc, ip), ansi.control.reset) ; ip := ip + 8 }
             | 'P' -> { print(" ", ansi.foreground.lightGray, _position(bc, ip), ansi.control.reset) ; ip := ip + 16 }
             | 'S' -> {
-               let len = _readInt(bc, ip)
-               let s = bc[ip + 8:ip + 8 + len]
+               let s = _readString(bc, ip)
                print(" ", ansi.foreground.green, str(s, true), ansi.control.reset)
-               ip := ip + 8 + len
+               ip := _advanceOverString(ip, s)
+            }
+            | 'B' -> {
+               let args = _readInt(bc, ip)
+               ip := ip + 8
+               while args > 0 -> {
+                  let name = _readString(bc, ip)
+                  ip := _advanceOverString(ip, name)
+
+                  println()
+                  print(indent, "          .", name)
+
+                  let default = _readString(bc, ip)
+                  ip := _advanceOverString(ip, default)
+
+                  if len(default) > 0 -> {
+                     println()
+                     dis(default, indent + "        ")
+                  }
+
+                  args := args - 1
+               }
+
+               let restName = _readString(bc, ip)
+               ip := _advanceOverString(ip, restName)
+               if len(restName) > 0 -> {
+                  println()
+                  print(indent, "          ...", restName)
+               }
+
+               let body = _readString(bc, ip)
+               ip := _advanceOverString(ip, body)
+
+               println()
+               dis(body, indent + "    ")
             }
          })
 
@@ -53,6 +86,13 @@ let dis(bc) {
 let _readInt = rebo.os["bc.readInt"]
 
 let _readFloat = rebo.os["bc.readFloat"]
+
+let _readString(bc, ip) {
+   let len = _readInt(bc, ip)
+   bc[ip + 8:ip + 8 + len]
+}
+
+let _advanceOverString(ip, str) = ip + 8 + len(str)
 
 let _position(bc, ip) {
    let start = _readInt(bc, ip)
