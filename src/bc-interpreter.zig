@@ -475,7 +475,7 @@ test "parenthesis" {
 }
 
 test "let declaration" {
-    // try expectExprEqual("1; 2; 3; 1;", "1");
+    try expectExprEqual("1; 2; 3; 1;", "1");
     // try expectExprEqual("let a = 1; a;", "1");
 
     // try expectExprEqual("let add(a = 0, b = 0) = a + b; add();", "0");
