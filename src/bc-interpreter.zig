@@ -167,21 +167,21 @@ test "assignment expression" {
 }
 
 test "call expression" {
-    // try expectExprEqual("(fn() = 1)()", "1");
-    // try expectExprEqual("(fn() = 1)(1, 2, 3)", "1");
-    // try expectExprEqual("(fn(n) = n + 1)(10, 20, 30)", "11");
+    try expectExprEqual("(fn() = 1)()", "1");
+    try expectExprEqual("(fn() = 1)(1, 2, 3)", "1");
+    try expectExprEqual("(fn(n) = n + 1)(10, 20, 30)", "11");
 
-    // try expectExprEqual("(fn(n = 0, m = 1) = n + m)()", "1");
-    // try expectExprEqual("(fn(n = 0, m = 1) = n + m)(10)", "11");
-    // try expectExprEqual("(fn(n = 0, m = 1) = n + m)(10, 20)", "30");
-    // try expectExprEqual("(fn(n = 0, m = 1) = n + m)(10, 20, 40)", "30");
+    try expectExprEqual("(fn(n = 0, m = 1) = n + m)()", "1");
+    try expectExprEqual("(fn(n = 0, m = 1) = n + m)(10)", "11");
+    try expectExprEqual("(fn(n = 0, m = 1) = n + m)(10, 20)", "30");
+    try expectExprEqual("(fn(n = 0, m = 1) = n + m)(10, 20, 40)", "30");
 
-    // try expectExprEqual("(fn(f, g) = (fn(n) = f(g(n))))(fn(n) = n * n, fn(n) = n + n)(3)", "36");
-    // try expectExprEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()", "4");
-    // try expectExprEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)(3)", "36");
+    try expectExprEqual("(fn(f, g) = (fn(n) = f(g(n))))(fn(n) = n * n, fn(n) = n + n)(3)", "36");
+    try expectExprEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()", "4");
+    try expectExprEqual("(fn(f) = (fn (g) = (fn(n=1) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)(3)", "36");
 
     try expectError("20(10)");
-    // try expectError("(fn(f) = (fn (g) = (fn(n) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()");
+    try expectError("(fn(f) = (fn (g) = (fn(n) = f(g(n)))))(fn(n) = n * n)(fn(n) = n + n)()");
 }
 
 test "dot expression" {
