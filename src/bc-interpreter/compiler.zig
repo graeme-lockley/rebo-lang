@@ -165,6 +165,46 @@ pub const Compiler = struct {
                 try self.appendString(e.kind.identifier.slice());
                 try self.appendPosition(e.position);
             },
+            .ifte => {
+                var previousPatch: ?usize = null;
+                var endPatches = std.ArrayList(usize).init(self.allocator);
+                defer {
+                    for (endPatches.items) |patch| {
+                        self.appendIntAt(@intCast(self.buffer.items.len), patch) catch {};
+                    }
+                    endPatches.deinit();
+                }
+
+                for (e.kind.ifte) |case| {
+                    if (previousPatch != null) {
+                        try self.appendIntAt(@intCast(self.buffer.items.len), previousPatch.?);
+                        previousPatch = null;
+                    }
+
+                    if (case.condition == null) {
+                        try self.compileExpr(case.then);
+                        try self.buffer.append(@intFromEnum(Op.jmp));
+                        try endPatches.append(self.buffer.items.len);
+                        try self.appendInt(0);
+                    } else {
+                        try self.compileExpr(case.condition.?);
+                        try self.buffer.append(@intFromEnum(Op.jmp_false));
+                        previousPatch = self.buffer.items.len;
+                        try self.appendInt(0);
+                        try self.appendPosition(case.condition.?.position);
+
+                        try self.compileExpr(case.then);
+                        try self.buffer.append(@intFromEnum(Op.jmp));
+                        try endPatches.append(self.buffer.items.len);
+                        try self.appendInt(0);
+                    }
+                }
+
+                if (previousPatch != null) {
+                    try self.appendIntAt(@intCast(self.buffer.items.len), previousPatch.?);
+                }
+                try self.buffer.append(@intFromEnum(Op.push_unit));
+            },
             .literalBool => try self.buffer.append(@intFromEnum(if (e.kind.literalBool) Op.push_true else Op.push_false)),
             .literalChar => {
                 try self.buffer.append(@intFromEnum(Op.push_char));
