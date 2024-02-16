@@ -468,77 +468,7 @@ fn indexPoint(runtime: *Runtime, point: ?*AST.Expression, def: V.IntType) Errors
 fn indexValue(runtime: *Runtime, exprA: *AST.Expression, indexA: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(runtime, exprA);
     try evalExpr(runtime, indexA);
-    const expr = runtime.peek(1);
-    const index = runtime.peek(0);
-
-    switch (expr.v) {
-        V.ValueValue.RecordKind => {
-            if (index.v != V.ValueValue.StringKind) {
-                try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
-            }
-
-            runtime.popn(2);
-
-            const value = expr.v.RecordKind.get(index.v.StringKind.value);
-
-            if (value == null) {
-                try runtime.pushUnitValue();
-            } else {
-                try runtime.push(value.?);
-            }
-        },
-        V.ValueValue.ScopeKind => {
-            if (index.v != V.ValueValue.StringKind) {
-                try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
-            }
-
-            runtime.popn(2);
-
-            const value = expr.v.ScopeKind.get(index.v.StringKind.value);
-
-            if (value == null) {
-                try runtime.pushUnitValue();
-            } else {
-                try runtime.push(value.?);
-            }
-        },
-        V.ValueValue.SequenceKind => {
-            if (index.v != V.ValueValue.IntKind) {
-                try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
-            }
-
-            runtime.popn(2);
-
-            const seq = expr.v.SequenceKind;
-            const idx = index.v.IntKind;
-
-            if (idx < 0 or idx >= seq.len()) {
-                try runtime.pushUnitValue();
-            } else {
-                try runtime.push(seq.at(@intCast(idx)));
-            }
-        },
-        V.ValueValue.StringKind => {
-            if (index.v != V.ValueValue.IntKind) {
-                try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
-            }
-
-            runtime.popn(2);
-
-            const str = expr.v.StringKind.slice();
-            const idx = index.v.IntKind;
-
-            if (idx < 0 or idx >= str.len) {
-                try runtime.pushUnitValue();
-            } else {
-                try runtime.pushCharValue(str[@intCast(idx)]);
-            }
-        },
-        else => {
-            runtime.popn(2);
-            try ER.raiseExpectedTypeError(runtime, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
-        },
-    }
+    try runtime.indexValue(exprA.position, indexA.position);
 }
 
 fn literalFunction(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {

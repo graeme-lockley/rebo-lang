@@ -899,6 +899,80 @@ pub const Runtime = struct {
         }
     }
 
+    pub fn indexValue(self: *Runtime, exprPosition: Errors.Position, indexPosition: Errors.Position) !void {
+        const expr = self.peek(1);
+        const index = self.peek(0);
+
+        switch (expr.v) {
+            V.ValueValue.RecordKind => {
+                if (index.v != V.ValueValue.StringKind) {
+                    try ER.raiseExpectedTypeError(self, indexPosition, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                }
+
+                self.popn(2);
+
+                const value = expr.v.RecordKind.get(index.v.StringKind.value);
+
+                if (value == null) {
+                    try self.pushUnitValue();
+                } else {
+                    try self.push(value.?);
+                }
+            },
+            V.ValueValue.ScopeKind => {
+                if (index.v != V.ValueValue.StringKind) {
+                    try ER.raiseExpectedTypeError(self, indexPosition, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                }
+
+                self.popn(2);
+
+                const value = expr.v.ScopeKind.get(index.v.StringKind.value);
+
+                if (value == null) {
+                    try self.pushUnitValue();
+                } else {
+                    try self.push(value.?);
+                }
+            },
+            V.ValueValue.SequenceKind => {
+                if (index.v != V.ValueValue.IntKind) {
+                    try ER.raiseExpectedTypeError(self, indexPosition, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                }
+
+                self.popn(2);
+
+                const seq = expr.v.SequenceKind;
+                const idx = index.v.IntKind;
+
+                if (idx < 0 or idx >= seq.len()) {
+                    try self.pushUnitValue();
+                } else {
+                    try self.push(seq.at(@intCast(idx)));
+                }
+            },
+            V.ValueValue.StringKind => {
+                if (index.v != V.ValueValue.IntKind) {
+                    try ER.raiseExpectedTypeError(self, indexPosition, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                }
+
+                self.popn(2);
+
+                const str = expr.v.StringKind.slice();
+                const idx = index.v.IntKind;
+
+                if (idx < 0 or idx >= str.len) {
+                    try self.pushUnitValue();
+                } else {
+                    try self.pushCharValue(str[@intCast(idx)]);
+                }
+            },
+            else => {
+                self.popn(2);
+                try ER.raiseExpectedTypeError(self, exprPosition, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
+            },
+        }
+    }
+
     pub fn duplicate(self: *Runtime) !void {
         const value = self.peek(0);
         try self.push(value);
