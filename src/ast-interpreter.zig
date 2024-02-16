@@ -358,18 +358,8 @@ fn catche(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
 
 fn dot(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(runtime, e.kind.dot.record);
-
-    const record = runtime.pop();
-
-    if (record.v != V.ValueValue.RecordKind) {
-        try ER.raiseExpectedTypeError(runtime, e.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
-    }
-
-    if (record.v.RecordKind.get(e.kind.dot.field)) |value| {
-        try runtime.push(value);
-    } else {
-        try runtime.pushUnitValue();
-    }
+    try runtime.pushStringPoolValue(e.kind.dot.field);
+    try runtime.dot(e.position);
 }
 
 fn exprs(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {

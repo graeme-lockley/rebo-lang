@@ -881,6 +881,24 @@ pub const Runtime = struct {
         try self.pushIntValue(@mod(left.v.IntKind, right.v.IntKind));
     }
 
+    pub fn dot(self: *Runtime, position: Errors.Position) !void {
+        const field = self.pop();
+        const record = self.pop();
+
+        if (!record.isRecord()) {
+            try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
+        }
+        if (!field.isString()) {
+            try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.StringKind}, field.v);
+        }
+
+        if (record.v.RecordKind.get(field.v.StringKind.value)) |value| {
+            try self.push(value);
+        } else {
+            try self.pushUnitValue();
+        }
+    }
+
     pub fn duplicate(self: *Runtime) !void {
         const value = self.peek(0);
         try self.push(value);

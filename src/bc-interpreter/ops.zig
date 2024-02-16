@@ -44,4 +44,5 @@ pub const Op = enum(u8) {
     seq_append_bang, // P
     seq_prepend, // P
     seq_prepend_bang, // P
+    dot, // P
 };

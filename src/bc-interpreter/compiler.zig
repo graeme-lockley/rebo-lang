@@ -149,6 +149,12 @@ pub const Compiler = struct {
                 try self.appendInt(@intCast(e.kind.call.args.len));
                 try self.appendPosition(e.position);
             },
+            .dot => {
+                try self.compileExpr(e.kind.dot.record);
+                try self.appendPushLiteralString(e.kind.dot.field.slice());
+                try self.buffer.append(@intFromEnum(Op.dot));
+                try self.appendPosition(e.position);
+            },
             .exprs => for (e.kind.exprs, 0..) |expr, index| {
                 if (index > 0) {
                     try self.buffer.append(@intFromEnum(Op.discard));

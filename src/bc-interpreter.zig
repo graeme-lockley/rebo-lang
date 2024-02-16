@@ -185,12 +185,12 @@ test "call expression" {
 }
 
 test "dot expression" {
-    // try expectExprEqual("{}.a", "()");
-    // try expectExprEqual("{a: 10}.a", "10");
-    // try expectExprEqual("{a: 10, b: 20, c: 30, a: 40}.a", "40");
-    // try expectExprEqual("{a: {x: 1, y: 2}}.a.x", "1");
+    try expectExprEqual("{}.a", "()");
+    try expectExprEqual("{a: 10}.a", "10");
+    try expectExprEqual("{a: 10, b: 20, c: 30, a: 40}.a", "40");
+    try expectExprEqual("{a: {x: 1, y: 2}}.a.x", "1");
 
-    // try expectError("{a: 10}.20");
+    try expectError("{a: 10}.20");
 }
 
 test "index range" {

@@ -225,6 +225,11 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                 try runtime.prependSequenceItemBang(position);
                 ip += 1 + PositionTypeSize;
             },
+            .dot => {
+                const position = readPosition(bytecode, ip + 1);
+                try runtime.dot(position);
+                ip += 1 + PositionTypeSize;
+            },
 
             // else => unreachable,
         }
