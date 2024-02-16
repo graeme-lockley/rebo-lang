@@ -467,13 +467,12 @@ fn indexPoint(runtime: *Runtime, point: ?*AST.Expression, def: V.IntType) Errors
 
 fn indexValue(runtime: *Runtime, exprA: *AST.Expression, indexA: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(runtime, exprA);
-    const expr = runtime.peek(0);
+    try evalExpr(runtime, indexA);
+    const expr = runtime.peek(1);
+    const index = runtime.peek(0);
 
     switch (expr.v) {
         V.ValueValue.RecordKind => {
-            try evalExpr(runtime, indexA);
-            const index = runtime.peek(0);
-
             if (index.v != V.ValueValue.StringKind) {
                 try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
             }
@@ -489,9 +488,6 @@ fn indexValue(runtime: *Runtime, exprA: *AST.Expression, indexA: *AST.Expression
             }
         },
         V.ValueValue.ScopeKind => {
-            try evalExpr(runtime, indexA);
-            const index = runtime.peek(0);
-
             if (index.v != V.ValueValue.StringKind) {
                 try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
             }
@@ -507,9 +503,6 @@ fn indexValue(runtime: *Runtime, exprA: *AST.Expression, indexA: *AST.Expression
             }
         },
         V.ValueValue.SequenceKind => {
-            try evalExpr(runtime, indexA);
-            const index = runtime.peek(0);
-
             if (index.v != V.ValueValue.IntKind) {
                 try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
             }
@@ -526,9 +519,6 @@ fn indexValue(runtime: *Runtime, exprA: *AST.Expression, indexA: *AST.Expression
             }
         },
         V.ValueValue.StringKind => {
-            try evalExpr(runtime, indexA);
-            const index = runtime.peek(0);
-
             if (index.v != V.ValueValue.IntKind) {
                 try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
             }
@@ -545,7 +535,7 @@ fn indexValue(runtime: *Runtime, exprA: *AST.Expression, indexA: *AST.Expression
             }
         },
         else => {
-            runtime.popn(1);
+            runtime.popn(2);
             try ER.raiseExpectedTypeError(runtime, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
         },
     }
