@@ -230,6 +230,12 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                 try runtime.dot(position);
                 ip += 1 + PositionTypeSize;
             },
+            .index => {
+                const exprPosition = readPosition(bytecode, ip + 1);
+                const indexPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+                try runtime.indexValue(exprPosition, indexPosition);
+                ip += 1 + PositionTypeSize + PositionTypeSize;
+            },
 
             // else => unreachable,
         }

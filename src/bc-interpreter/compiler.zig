@@ -211,6 +211,13 @@ pub const Compiler = struct {
                 }
                 try self.buffer.append(@intFromEnum(Op.push_unit));
             },
+            .indexValue => {
+                try self.compileExpr(e.kind.indexValue.expr);
+                try self.compileExpr(e.kind.indexValue.index);
+                try self.buffer.append(@intFromEnum(Op.index));
+                try self.appendPosition(e.kind.indexValue.expr.position);
+                try self.appendPosition(e.kind.indexValue.index.position);
+            },
             .literalBool => try self.buffer.append(@intFromEnum(if (e.kind.literalBool) Op.push_true else Op.push_false)),
             .literalChar => {
                 try self.buffer.append(@intFromEnum(Op.push_char));
