@@ -30,7 +30,7 @@ let timeTrial(n) {
 }
 
 let padLeft(n, s) =
-    (" " * (n - len(s))) + s
+    " " * (n - len(s)) + s
 
 range(1, 25)
     |> map(timeTrial)
