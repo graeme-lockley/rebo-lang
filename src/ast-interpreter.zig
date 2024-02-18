@@ -418,35 +418,20 @@ fn ifte(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
 
 fn indexRange(runtime: *Runtime, exprA: *AST.Expression, startA: ?*AST.Expression, endA: ?*AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(runtime, exprA);
-    const expr = runtime.peek(0);
 
-    switch (expr.v) {
-        V.ValueValue.SequenceKind => {
-            const seq = expr.v.SequenceKind;
-
-            const start: V.IntType = clamp(try indexPoint(runtime, startA, 0), 0, @intCast(seq.len()));
-            const end: V.IntType = clamp(try indexPoint(runtime, endA, @intCast(seq.len())), start, @intCast(seq.len()));
-
-            try runtime.pushEmptySequenceValue();
-            try runtime.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]);
-        },
-        V.ValueValue.StringKind => {
-            const str = expr.v.StringKind.slice();
-
-            const start: V.IntType = clamp(try indexPoint(runtime, startA, 0), 0, @intCast(str.len));
-            const end: V.IntType = clamp(try indexPoint(runtime, endA, @intCast(str.len)), start, @intCast(str.len));
-
-            try runtime.pushStringValue(str[@intCast(start)..@intCast(end)]);
-        },
-        else => {
-            runtime.popn(1);
-            try ER.raiseExpectedTypeError(runtime, exprA.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
-        },
+    if (startA == null) {
+        if (endA == null) {} else {
+            try evalExpr(runtime, endA.?);
+            try runtime.indexRangeTo(exprA.position, endA.?.position);
+        }
+    } else if (endA == null) {
+        try evalExpr(runtime, startA.?);
+        try runtime.indexRangeFrom(exprA.position, startA.?.position);
+    } else {
+        try evalExpr(runtime, startA.?);
+        try evalExpr(runtime, endA.?);
+        try runtime.indexRange(exprA.position, startA.?.position, endA.?.position);
     }
-
-    const result = runtime.pop();
-    _ = runtime.pop();
-    try runtime.push(result);
 }
 
 fn indexPoint(runtime: *Runtime, point: ?*AST.Expression, def: V.IntType) Errors.RuntimeErrors!V.IntType {
