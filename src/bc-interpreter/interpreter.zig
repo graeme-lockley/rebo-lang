@@ -236,6 +236,28 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                 try runtime.indexValue(exprPosition, indexPosition);
                 ip += 1 + PositionTypeSize + PositionTypeSize;
             },
+            .range => {
+                const exprPosition = readPosition(bytecode, ip + 1);
+                const startPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+                const endPosition = readPosition(bytecode, ip + 1 + PositionTypeSize + PositionTypeSize);
+                try runtime.indexRange(exprPosition, startPosition, endPosition);
+
+                ip += 1 + PositionTypeSize + PositionTypeSize + PositionTypeSize;
+            },
+            .rangeFrom => {
+                const exprPosition = readPosition(bytecode, ip + 1);
+                const startPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+                try runtime.indexRangeFrom(exprPosition, startPosition);
+
+                ip += 1 + PositionTypeSize + PositionTypeSize;
+            },
+            .rangeTo => {
+                const exprPosition = readPosition(bytecode, ip + 1);
+                const endPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+                try runtime.indexRangeTo(exprPosition, endPosition);
+
+                ip += 1 + PositionTypeSize + PositionTypeSize;
+            },
 
             // else => unreachable,
         }

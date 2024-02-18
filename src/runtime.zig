@@ -899,6 +899,112 @@ pub const Runtime = struct {
         }
     }
 
+    pub fn indexRange(self: *Runtime, exprPosition: Errors.Position, indexStartPosition: Errors.Position, indexEndPosition: Errors.Position) !void {
+        const expr = self.peek(2);
+        const indexStart = self.peek(1);
+        const indexEnd = self.peek(0);
+
+        switch (expr.v) {
+            V.ValueValue.SequenceKind => {
+                const seq = expr.v.SequenceKind;
+
+                const start: V.IntType = try self.indexPoint(indexStart, indexStartPosition, 0, @intCast(seq.len()));
+                const end: V.IntType = try self.indexPoint(indexEnd, indexEndPosition, start, @intCast(seq.len()));
+
+                try self.pushEmptySequenceValue();
+                try self.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..@intCast(end)]);
+            },
+            V.ValueValue.StringKind => {
+                const str = expr.v.StringKind.slice();
+
+                const start: V.IntType = try self.indexPoint(indexStart, indexStartPosition, 0, @intCast(str.len));
+                const end: V.IntType = try self.indexPoint(indexEnd, indexEndPosition, start, @intCast(str.len));
+
+                try self.pushStringValue(str[@intCast(start)..@intCast(end)]);
+            },
+            else => {
+                try ER.raiseExpectedTypeError(self, exprPosition, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
+            },
+        }
+
+        const result = self.pop();
+        self.popn(3);
+        try self.push(result);
+    }
+
+    pub fn indexRangeTo(self: *Runtime, exprPosition: Errors.Position, indexEndPosition: Errors.Position) !void {
+        const expr = self.peek(1);
+        const indexEnd = self.peek(0);
+
+        switch (expr.v) {
+            V.ValueValue.SequenceKind => {
+                const seq = expr.v.SequenceKind;
+
+                const end: V.IntType = try self.indexPoint(indexEnd, indexEndPosition, 0, @intCast(seq.len()));
+
+                try self.pushEmptySequenceValue();
+                try self.peek(0).v.SequenceKind.appendSlice(seq.items()[0..@intCast(end)]);
+            },
+            V.ValueValue.StringKind => {
+                const str = expr.v.StringKind.slice();
+
+                const end: V.IntType = try self.indexPoint(indexEnd, indexEndPosition, 0, @intCast(str.len));
+
+                try self.pushStringValue(str[0..@intCast(end)]);
+            },
+            else => {
+                try ER.raiseExpectedTypeError(self, exprPosition, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
+            },
+        }
+
+        const result = self.pop();
+        self.popn(2);
+        try self.push(result);
+    }
+
+    pub fn indexRangeFrom(self: *Runtime, exprPosition: Errors.Position, indexStartPosition: Errors.Position) !void {
+        const expr = self.peek(1);
+        const indexStart = self.peek(0);
+
+        switch (expr.v) {
+            V.ValueValue.SequenceKind => {
+                const seq = expr.v.SequenceKind;
+                const seqLen: usize = @intCast(seq.len());
+
+                const start: V.IntType = try self.indexPoint(indexStart, indexStartPosition, 0, @intCast(seqLen));
+
+                try self.pushEmptySequenceValue();
+                try self.peek(0).v.SequenceKind.appendSlice(seq.items()[@intCast(start)..seqLen]);
+            },
+            V.ValueValue.StringKind => {
+                const str = expr.v.StringKind.slice();
+                const strLen: usize = str.len;
+
+                const start: V.IntType = try self.indexPoint(indexStart, indexStartPosition, 0, @intCast(strLen));
+
+                try self.pushStringValue(str[@intCast(start)..strLen]);
+            },
+            else => {
+                try ER.raiseExpectedTypeError(self, exprPosition, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
+            },
+        }
+
+        const result = self.pop();
+        self.popn(2);
+        try self.push(result);
+    }
+
+    fn indexPoint(self: *Runtime, v: *V.Value, position: Errors.Position, min: V.IntType, max: V.IntType) !V.IntType {
+        if (v.isInt()) {
+            if (v.v.IntKind < min) return min;
+            if (v.v.IntKind > max) return max;
+            return v.v.IntKind;
+        } else {
+            try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.IntKind}, v.v);
+            return 0;
+        }
+    }
+
     pub fn indexValue(self: *Runtime, exprPosition: Errors.Position, indexPosition: Errors.Position) !void {
         const expr = self.peek(1);
         const index = self.peek(0);

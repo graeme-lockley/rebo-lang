@@ -211,6 +211,30 @@ pub const Compiler = struct {
                 }
                 try self.buffer.append(@intFromEnum(Op.push_unit));
             },
+            .indexRange => {
+                try self.compileExpr(e.kind.indexRange.expr);
+
+                if (e.kind.indexRange.start == null) {
+                    if (e.kind.indexRange.end == null) {} else {
+                        try self.compileExpr(e.kind.indexRange.end.?);
+                        try self.buffer.append(@intFromEnum(Op.rangeTo));
+                        try self.appendPosition(e.kind.indexRange.expr.position);
+                        try self.appendPosition(e.kind.indexRange.end.?.position);
+                    }
+                } else if (e.kind.indexRange.end == null) {
+                    try self.compileExpr(e.kind.indexRange.start.?);
+                    try self.buffer.append(@intFromEnum(Op.rangeFrom));
+                    try self.appendPosition(e.kind.indexRange.expr.position);
+                    try self.appendPosition(e.kind.indexRange.start.?.position);
+                } else {
+                    try self.compileExpr(e.kind.indexRange.start.?);
+                    try self.compileExpr(e.kind.indexRange.end.?);
+                    try self.buffer.append(@intFromEnum(Op.range));
+                    try self.appendPosition(e.kind.indexRange.expr.position);
+                    try self.appendPosition(e.kind.indexRange.start.?.position);
+                    try self.appendPosition(e.kind.indexRange.end.?.position);
+                }
+            },
             .indexValue => {
                 try self.compileExpr(e.kind.indexValue.expr);
                 try self.compileExpr(e.kind.indexValue.index);

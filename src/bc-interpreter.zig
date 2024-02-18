@@ -194,21 +194,21 @@ test "dot expression" {
 }
 
 test "index range" {
-    // try expectExprEqual("[1, 2, 3, 4, 5, 6][0:1]", "[1]");
-    // try expectExprEqual("[1, 2, 3, 4, 5, 6][0:2]", "[1, 2]");
-    // try expectExprEqual("[1, 2, 3, 4, 5, 6][:2]", "[1, 2]");
-    // try expectExprEqual("[1, 2, 3, 4, 5, 6][-110:2]", "[1, 2]");
-    // try expectExprEqual("[1, 2, 3, 4, 5, 6][3:]", "[4, 5, 6]");
-    // try expectExprEqual("[1, 2, 3, 4, 5, 6][:3]", "[1, 2, 3]");
-    // try expectExprEqual("[1, 2, 3, 4, 5, 6][:]", "[1, 2, 3, 4, 5, 6]");
+    try expectExprEqual("[1, 2, 3, 4, 5, 6][0:1]", "[1]");
+    try expectExprEqual("[1, 2, 3, 4, 5, 6][0:2]", "[1, 2]");
+    try expectExprEqual("[1, 2, 3, 4, 5, 6][:2]", "[1, 2]");
+    try expectExprEqual("[1, 2, 3, 4, 5, 6][-110:2]", "[1, 2]");
+    try expectExprEqual("[1, 2, 3, 4, 5, 6][3:]", "[4, 5, 6]");
+    try expectExprEqual("[1, 2, 3, 4, 5, 6][:3]", "[1, 2, 3]");
+    try expectExprEqual("[1, 2, 3, 4, 5, 6][:]", "[1, 2, 3, 4, 5, 6]");
 
-    // try expectExprEqual("\"hellos\"[0:1]", "\"h\"");
-    // try expectExprEqual("\"hellos\"[0:2]", "\"he\"");
-    // try expectExprEqual("\"hellos\"[:2]", "\"he\"");
-    // try expectExprEqual("\"hellos\"[-110:2]", "\"he\"");
-    // try expectExprEqual("\"hellos\"[3:]", "\"los\"");
-    // try expectExprEqual("\"hellos\"[:3]", "\"hel\"");
-    // try expectExprEqual("\"hellos\"[:]", "\"hellos\"");
+    try expectExprEqual("\"hellos\"[0:1]", "\"h\"");
+    try expectExprEqual("\"hellos\"[0:2]", "\"he\"");
+    try expectExprEqual("\"hellos\"[:2]", "\"he\"");
+    try expectExprEqual("\"hellos\"[-110:2]", "\"he\"");
+    try expectExprEqual("\"hellos\"[3:]", "\"los\"");
+    try expectExprEqual("\"hellos\"[:3]", "\"hel\"");
+    try expectExprEqual("\"hellos\"[:]", "\"hellos\"");
 }
 
 test "index value" {

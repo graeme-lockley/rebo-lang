@@ -46,4 +46,7 @@ pub const Op = enum(u8) {
     seq_prepend_bang, // P
     dot, // P
     index, // PP
+    range, // PPP
+    rangeTo, // PP
+    rangeFrom, // PP
 };
