@@ -33,6 +33,14 @@ pub const Compiler = struct {
         switch (e.kind) {
             .assignment => {
                 switch (e.kind.assignment.lhs.kind) {
+                    .dot => {
+                        try self.compileExpr(e.kind.assignment.lhs.kind.dot.record);
+                        try self.appendPushLiteralString(e.kind.assignment.lhs.kind.dot.field.slice());
+                        try self.compileExpr(e.kind.assignment.value);
+                        try self.buffer.append(@intFromEnum(Op.assign_dot));
+                        try self.appendPosition(e.kind.assignment.lhs.kind.dot.record.position);
+                        try self.appendPosition(e.position);
+                    },
                     .identifier => {
                         try self.appendPushLiteralString(e.kind.assignment.lhs.kind.identifier.slice());
                         try self.compileExpr(e.kind.assignment.value);

@@ -1214,6 +1214,24 @@ pub const Runtime = struct {
         }
     }
 
+    pub fn assignDot(self: *Runtime, recordPosition: Errors.Position, namePosition: Errors.Position) !void {
+        const record = self.peek(2);
+        const name = self.peek(1);
+        const value = self.peek(0);
+
+        if (!record.isRecord()) {
+            try ER.raiseExpectedTypeError(self, recordPosition, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
+        }
+        if (!name.isString()) {
+            try ER.raiseExpectedTypeError(self, namePosition, &[_]V.ValueKind{V.ValueValue.StringKind}, record.v);
+        }
+
+        try record.v.RecordKind.set(name.v.StringKind.value, value);
+
+        self.popn(3);
+        try self.push(value);
+    }
+
     pub fn assignIndex(self: *Runtime, exprPosition: Errors.Position, indexPosition: Errors.Position) !void {
         const expr = self.peek(2);
         const index = self.peek(1);

@@ -115,6 +115,12 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                 try runtime.bind();
                 ip += 1;
             },
+            .assign_dot => {
+                const exprPosition = readPosition(bytecode, ip + 1);
+                const namePosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+                try runtime.assignIndex(exprPosition, namePosition);
+                ip += 1 + PositionTypeSize + PositionTypeSize;
+            },
             .assign_identifier => {
                 try runtime.assignIdentifier();
                 ip += 1;

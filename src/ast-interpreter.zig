@@ -58,18 +58,9 @@ fn assignment(runtime: *Runtime, lhs: *AST.Expression, value: *AST.Expression) E
         },
         .dot => {
             try evalExpr(runtime, lhs.kind.dot.record);
-            const record = runtime.peek(0);
-
-            if (record.v != V.ValueValue.RecordKind) {
-                try ER.raiseExpectedTypeError(runtime, lhs.kind.dot.record.position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
-            }
+            try runtime.pushStringPoolValue(lhs.kind.dot.field);
             try evalExpr(runtime, value);
-
-            try record.v.RecordKind.set(lhs.kind.dot.field, runtime.peek(0));
-
-            const v = runtime.pop();
-            _ = runtime.pop();
-            try runtime.push(v);
+            try runtime.assignDot(lhs.kind.dot.record.position, lhs.position);
         },
         .indexRange => {
             try evalExpr(runtime, lhs.kind.indexRange.expr);

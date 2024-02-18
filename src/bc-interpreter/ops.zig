@@ -18,6 +18,7 @@ pub const Op = enum(u8) {
 
     call, // IP
     bind,
+    assign_dot, // PP
     assign_identifier,
     assign_index, // PP
 
