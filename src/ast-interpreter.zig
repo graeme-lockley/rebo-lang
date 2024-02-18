@@ -54,7 +54,7 @@ fn assignment(runtime: *Runtime, lhs: *AST.Expression, value: *AST.Expression) E
         .identifier => {
             try runtime.pushStringPoolValue(lhs.kind.identifier);
             try evalExpr(runtime, value);
-            try runtime.assign();
+            try runtime.assignIdentifier();
         },
         .dot => {
             try evalExpr(runtime, lhs.kind.dot.record);

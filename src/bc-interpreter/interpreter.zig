@@ -115,8 +115,8 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                 try runtime.bind();
                 ip += 1;
             },
-            Op.assign => {
-                try runtime.assign();
+            Op.assign_identifier => {
+                try runtime.assignIdentifier();
                 ip += 1;
             },
             Op.duplicate => {

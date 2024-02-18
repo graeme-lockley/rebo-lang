@@ -18,7 +18,7 @@ pub const Op = enum(u8) {
 
     call, // IP
     bind,
-    assign,
+    assign_identifier,
 
     duplicate,
     discard,

@@ -1198,7 +1198,7 @@ pub const Runtime = struct {
         }
     }
 
-    pub fn assign(self: *Runtime) !void {
+    pub fn assignIdentifier(self: *Runtime) !void {
         const n = self.peek(1);
         const v = self.peek(0);
 

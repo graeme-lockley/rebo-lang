@@ -36,7 +36,7 @@ pub const Compiler = struct {
                     .identifier => {
                         try self.appendPushLiteralString(e.kind.assignment.lhs.kind.identifier.slice());
                         try self.compileExpr(e.kind.assignment.value);
-                        try self.buffer.append(@intFromEnum(Op.assign));
+                        try self.buffer.append(@intFromEnum(Op.assign_identifier));
                     },
                     else => {
                         std.debug.panic("Unhandled assignment: {}", .{e.kind.assignment.lhs.kind});
