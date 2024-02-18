@@ -1199,8 +1199,8 @@ pub const Runtime = struct {
     }
 
     pub fn assign(self: *Runtime) !void {
-        const v = self.peek(1);
-        const n = self.peek(0);
+        const n = self.peek(1);
+        const v = self.peek(0);
 
         if (!n.isString()) {
             try ER.raiseExpectedTypeError(self, null, &[_]V.ValueKind{V.ValueValue.StringKind}, n.v);
@@ -1209,7 +1209,8 @@ pub const Runtime = struct {
             try rec.v.RecordKind.setU8(self.stringPool, "identifier", n);
             return Errors.RuntimeErrors.InterpreterError;
         } else {
-            self.popn(1);
+            self.popn(2);
+            try self.push(v);
         }
     }
 };

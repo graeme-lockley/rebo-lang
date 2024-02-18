@@ -31,6 +31,17 @@ pub const Compiler = struct {
 
     fn compileExpr(self: *Compiler, e: *AST.Expression) Errors.RuntimeErrors!void {
         switch (e.kind) {
+            .assignment => {
+                switch (e.kind.assignment.lhs.kind) {
+                    .identifier => {
+                        try self.appendPushLiteralString(e.kind.assignment.lhs.kind.identifier.slice());
+                        try self.compileExpr(e.kind.assignment.value);
+                        try self.buffer.append(@intFromEnum(Op.assign));
+                    },
+                    else => unreachable,
+                    // try ER.raiseNamedUserError(runtime, "InvalidLHSError", lhs.position),
+                }
+            },
             .binaryOp => {
                 switch (e.kind.binaryOp.op) {
                     .Equal => {
