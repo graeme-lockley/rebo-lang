@@ -1213,6 +1213,54 @@ pub const Runtime = struct {
             try self.push(v);
         }
     }
+
+    pub fn assignIndex(self: *Runtime, exprPosition: Errors.Position, indexPosition: Errors.Position) !void {
+        const expr = self.peek(2);
+        const index = self.peek(1);
+        const value = self.peek(0);
+
+        switch (expr.v) {
+            V.ValueValue.ScopeKind => {
+                if (!index.isString()) {
+                    try ER.raiseExpectedTypeError(self, indexPosition, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                }
+
+                if (!(try expr.v.ScopeKind.update(index.v.StringKind.value, value))) {
+                    const rec = try ER.pushNamedUserError(self, "UnknownIdentifierError", indexPosition);
+                    try rec.v.RecordKind.setU8(self.stringPool, "identifier", index);
+                    return Errors.RuntimeErrors.InterpreterError;
+                }
+            },
+            V.ValueValue.SequenceKind => {
+                if (!index.isInt()) {
+                    try ER.raiseExpectedTypeError(self, indexPosition, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                }
+
+                const seq = expr.v.SequenceKind;
+                const idx = index.v.IntKind;
+
+                if (idx < 0 or idx >= seq.len()) {
+                    try ER.raiseIndexOutOfRangeError(self, indexPosition, idx, @intCast(seq.len()));
+                } else {
+                    seq.set(@intCast(idx), value);
+                }
+            },
+            V.ValueValue.RecordKind => {
+                if (!index.isString()) {
+                    try ER.raiseExpectedTypeError(self, indexPosition, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
+                }
+
+                try expr.v.RecordKind.set(index.v.StringKind.value, value);
+            },
+            else => {
+                self.popn(1);
+                try ER.raiseExpectedTypeError(self, exprPosition, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.ScopeKind, V.ValueValue.SequenceKind }, expr.v);
+            },
+        }
+
+        self.popn(3);
+        try self.push(value);
+    }
 };
 
 fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {

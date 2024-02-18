@@ -99,65 +99,9 @@ fn assignment(runtime: *Runtime, lhs: *AST.Expression, value: *AST.Expression) E
             const indexA = lhs.kind.indexValue.index;
 
             try evalExpr(runtime, exprA);
-            const expr = runtime.peek(0);
-
-            switch (expr.v) {
-                V.ValueValue.ScopeKind => {
-                    try evalExpr(runtime, indexA);
-                    const index = runtime.peek(0);
-
-                    if (index.v != V.ValueValue.StringKind) {
-                        try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
-                    }
-
-                    try evalExpr(runtime, value);
-
-                    if (!(try expr.v.ScopeKind.update(index.v.StringKind.value, runtime.peek(0)))) {
-                        const rec = try ER.pushNamedUserError(runtime, "UnknownIdentifierError", indexA.position);
-                        try rec.v.RecordKind.setU8(runtime.stringPool, "identifier", index);
-                        return Errors.RuntimeErrors.InterpreterError;
-                    }
-                },
-                V.ValueValue.SequenceKind => {
-                    try evalExpr(runtime, indexA);
-                    const index = runtime.peek(0);
-
-                    if (index.v != V.ValueValue.IntKind) {
-                        try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
-                    }
-
-                    try evalExpr(runtime, value);
-
-                    const seq = expr.v.SequenceKind;
-                    const idx = index.v.IntKind;
-
-                    if (idx < 0 or idx >= seq.len()) {
-                        try ER.raiseIndexOutOfRangeError(runtime, indexA.position, idx, @intCast(seq.len()));
-                    } else {
-                        seq.set(@intCast(idx), runtime.peek(0));
-                    }
-                },
-                V.ValueValue.RecordKind => {
-                    try evalExpr(runtime, indexA);
-                    const index = runtime.peek(0);
-
-                    if (index.v != V.ValueValue.StringKind) {
-                        try ER.raiseExpectedTypeError(runtime, indexA.position, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
-                    }
-
-                    try evalExpr(runtime, value);
-
-                    try expr.v.RecordKind.set(index.v.StringKind.value, runtime.peek(0));
-                },
-                else => {
-                    runtime.popn(1);
-                    try ER.raiseExpectedTypeError(runtime, exprA.position, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.ScopeKind, V.ValueValue.SequenceKind }, expr.v);
-                },
-            }
-
-            const v = runtime.pop();
-            runtime.popn(2);
-            try runtime.push(v);
+            try evalExpr(runtime, indexA);
+            try evalExpr(runtime, value);
+            try runtime.assignIndex(exprA.position, indexA.position);
         },
         else => try ER.raiseNamedUserError(runtime, "InvalidLHSError", lhs.position),
     }
