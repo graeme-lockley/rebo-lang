@@ -321,23 +321,23 @@ test "literal unit" {
 }
 
 test "boolean op" {
-    // try expectExprEqual("true && true", "true");
-    // try expectExprEqual("false && true", "false");
-    // try expectExprEqual("true && false", "false");
-    // try expectExprEqual("false && false", "false");
+    try expectExprEqual("true && true", "true");
+    try expectExprEqual("false && true", "false");
+    try expectExprEqual("true && false", "false");
+    try expectExprEqual("false && false", "false");
 
-    // try expectExprEqual("true && true && true", "true");
+    try expectExprEqual("true && true && true", "true");
 
-    // try expectExprEqual("false && (1/0)", "false");
+    try expectExprEqual("false && (1/0)", "false");
 
-    // try expectExprEqual("true || true", "true");
-    // try expectExprEqual("false || true", "true");
-    // try expectExprEqual("true || false", "true");
-    // try expectExprEqual("false || false", "false");
+    try expectExprEqual("true || true", "true");
+    try expectExprEqual("false || true", "true");
+    try expectExprEqual("true || false", "true");
+    try expectExprEqual("false || false", "false");
 
-    // try expectExprEqual("false || false || true", "true");
+    try expectExprEqual("false || false || true", "true");
 
-    // try expectExprEqual("true || (1/0)", "true");
+    try expectExprEqual("true || (1/0)", "true");
 }
 
 test "equality op" {

@@ -134,6 +134,34 @@ pub const Compiler = struct {
                         try self.compileExpr(e.kind.binaryOp.right);
                         try self.buffer.append(@intFromEnum(Op.not_equals));
                     },
+                    .And => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.buffer.append(@intFromEnum(Op.jmp_false));
+                        const patch1 = self.buffer.items.len;
+                        try self.appendInt(0);
+                        try self.appendPosition(e.kind.binaryOp.left.position);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.jmp));
+                        const patch2 = self.buffer.items.len;
+                        try self.appendInt(0);
+                        try self.appendIntAt(@intCast(self.buffer.items.len), patch1);
+                        try self.buffer.append(@intFromEnum(Op.push_false));
+                        try self.appendIntAt(@intCast(self.buffer.items.len), patch2);
+                    },
+                    .Or => {
+                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.buffer.append(@intFromEnum(Op.jmp_true));
+                        const patch1 = self.buffer.items.len;
+                        try self.appendInt(0);
+                        try self.appendPosition(e.kind.binaryOp.left.position);
+                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.buffer.append(@intFromEnum(Op.jmp));
+                        const patch2 = self.buffer.items.len;
+                        try self.appendInt(0);
+                        try self.appendIntAt(@intCast(self.buffer.items.len), patch1);
+                        try self.buffer.append(@intFromEnum(Op.push_true));
+                        try self.appendIntAt(@intCast(self.buffer.items.len), patch2);
+                    },
                     .Plus => {
                         try self.compileExpr(e.kind.binaryOp.left);
                         try self.compileExpr(e.kind.binaryOp.right);
