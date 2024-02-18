@@ -619,12 +619,7 @@ fn matchPattern(runtime: *Runtime, p: *AST.Pattern, v: *V.Value) !bool {
 fn notOp(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(runtime, e.kind.notOp.value);
 
-    const v = runtime.pop();
-    if (v.v != V.ValueValue.BoolKind) {
-        try ER.raiseExpectedTypeError(runtime, e.position, &[_]V.ValueKind{V.ValueValue.BoolKind}, v.v);
-    }
-
-    try runtime.pushBoolValue(!v.v.BoolKind);
+    try runtime.not(e.position);
 }
 
 fn patternDeclaration(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {

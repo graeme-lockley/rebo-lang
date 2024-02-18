@@ -1079,6 +1079,15 @@ pub const Runtime = struct {
         }
     }
 
+    pub fn not(self: *Runtime, position: Errors.Position) !void {
+        const v = self.pop();
+        if (!v.isBool()) {
+            try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.BoolKind}, v.v);
+        }
+
+        try self.pushBoolValue(!v.v.BoolKind);
+    }
+
     pub fn duplicate(self: *Runtime) !void {
         const value = self.peek(0);
         try self.push(value);

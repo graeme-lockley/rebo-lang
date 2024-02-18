@@ -309,6 +309,11 @@ pub const Compiler = struct {
             },
             .literalString => try self.appendPushLiteralString(e.kind.literalString.slice()),
             .literalVoid => try self.buffer.append(@intFromEnum(Op.push_unit)),
+            .notOp => {
+                try self.compileExpr(e.kind.notOp.value);
+                try self.buffer.append(@intFromEnum(Op.not));
+                try self.appendPosition(e.position);
+            },
             else => {
                 std.debug.panic("Unhandled: {}", .{e.kind});
                 unreachable;

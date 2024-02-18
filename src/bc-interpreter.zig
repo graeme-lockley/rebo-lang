@@ -499,10 +499,10 @@ test "if" {
 }
 
 test "not" {
-    // try expectExprEqual("!true", "false");
-    // try expectExprEqual("!false", "true");
+    try expectExprEqual("!true", "false");
+    try expectExprEqual("!false", "true");
 
-    // try expectError("!()");
+    try expectError("!()");
 }
 
 test "catch-raise" {

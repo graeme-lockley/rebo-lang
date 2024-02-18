@@ -258,6 +258,11 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
 
                 ip += 1 + PositionTypeSize + PositionTypeSize;
             },
+            .not => {
+                const exprPosition = readPosition(bytecode, ip + 1);
+                try runtime.not(exprPosition);
+                ip += 1 + PositionTypeSize;
+            },
 
             // else => unreachable,
         }

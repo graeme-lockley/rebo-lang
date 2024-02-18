@@ -49,4 +49,5 @@ pub const Op = enum(u8) {
     range, // PPP
     rangeTo, // PP
     rangeFrom, // PP
+    not, // P
 };
