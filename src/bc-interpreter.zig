@@ -133,10 +133,9 @@ fn expectError(input: []const u8) !void {
 test "assignment expression" {
     try expectExprEqual("let x = 10; x := x + 1", "11");
 
-    // try expectExprEqual("let x = 10; x := x + 1", "11");
-    // try expectExprEqual("let x = 10; x := x + 1; x", "11");
-    // try expectExprEqual("(fn (x = 0) = { x := x + 1 })(10)", "11");
-    // try expectExprEqual("let count = 0; let inc() = count := count + 1; inc(); inc(); inc()", "3");
+    try expectExprEqual("let x = 10; x := x + 1; x", "11");
+    try expectExprEqual("(fn (x = 0) = { x := x + 1 })(10)", "11");
+    try expectExprEqual("let count = 0; let inc() = count := count + 1; inc(); inc(); inc()", "3");
 
     // try expectExprEqual("let count = 0; rebo.lang.scope()[\"count\"] := 10", "10");
     // try expectError("let count = 0; rebo.lang.scope()[\"counting\"] := 10");
