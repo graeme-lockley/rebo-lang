@@ -18,9 +18,14 @@ pub const Op = enum(u8) {
 
     call, // IP
     bind,
+
     assign_dot, // PP
     assign_identifier,
     assign_index, // PP
+    assign_range, // PPPP
+    assign_range_all, // PP
+    assign_range_from, // PPP
+    assign_range_to, // PPP
 
     duplicate,
     discard,

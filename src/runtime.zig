@@ -1279,6 +1279,93 @@ pub const Runtime = struct {
         self.popn(3);
         try self.push(value);
     }
+
+    pub fn assignRange(self: *Runtime, sequencePosition: Errors.Position, fromPosition: Errors.Position, toPosition: Errors.Position, valuePosition: Errors.Position) !void {
+        const sequence = self.peek(3);
+        const from = self.peek(2);
+        const to = self.peek(1);
+        const value = self.peek(0);
+
+        if (!sequence.isSequence()) {
+            try ER.raiseExpectedTypeError(self, sequencePosition, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v);
+        }
+
+        const seqLen = sequence.v.SequenceKind.len();
+
+        const start: V.IntType = try self.indexPoint(from, fromPosition, 0, @intCast(seqLen));
+        const end: V.IntType = try self.indexPoint(to, toPosition, start, @intCast(seqLen));
+
+        switch (value.v) {
+            V.ValueValue.SequenceKind => try sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), value.v.SequenceKind.items()),
+            V.ValueValue.UnitKind => try sequence.v.SequenceKind.removeRange(@intCast(start), @intCast(end)),
+            else => try ER.raiseExpectedTypeError(self, valuePosition, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, value.v),
+        }
+        self.popn(4);
+        try self.push(value);
+    }
+
+    pub fn assignRangeAll(self: *Runtime, sequencePosition: Errors.Position, valuePosition: Errors.Position) !void {
+        const sequence = self.peek(1);
+        const value = self.peek(0);
+
+        if (!sequence.isSequence()) {
+            try ER.raiseExpectedTypeError(self, sequencePosition, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v);
+        }
+
+        const seqLen = sequence.v.SequenceKind.len();
+
+        switch (value.v) {
+            V.ValueValue.SequenceKind => try sequence.v.SequenceKind.replaceRange(0, @intCast(seqLen), value.v.SequenceKind.items()),
+            V.ValueValue.UnitKind => try sequence.v.SequenceKind.removeRange(0, @intCast(seqLen)),
+            else => try ER.raiseExpectedTypeError(self, valuePosition, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, value.v),
+        }
+        self.popn(2);
+        try self.push(value);
+    }
+
+    pub fn assignRangeFrom(self: *Runtime, sequencePosition: Errors.Position, fromPosition: Errors.Position, valuePosition: Errors.Position) !void {
+        const sequence = self.peek(2);
+        const from = self.peek(1);
+        const value = self.peek(0);
+
+        if (!sequence.isSequence()) {
+            try ER.raiseExpectedTypeError(self, sequencePosition, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v);
+        }
+
+        const seqLen = sequence.v.SequenceKind.len();
+
+        const start: V.IntType = try self.indexPoint(from, fromPosition, 0, @intCast(seqLen));
+
+        switch (value.v) {
+            V.ValueValue.SequenceKind => try sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(seqLen), value.v.SequenceKind.items()),
+            V.ValueValue.UnitKind => try sequence.v.SequenceKind.removeRange(@intCast(start), @intCast(seqLen)),
+            else => try ER.raiseExpectedTypeError(self, valuePosition, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, value.v),
+        }
+        self.popn(3);
+        try self.push(value);
+    }
+
+    pub fn assignRangeTo(self: *Runtime, sequencePosition: Errors.Position, toPosition: Errors.Position, valuePosition: Errors.Position) !void {
+        const sequence = self.peek(2);
+        const to = self.peek(1);
+        const value = self.peek(0);
+
+        if (!sequence.isSequence()) {
+            try ER.raiseExpectedTypeError(self, sequencePosition, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v);
+        }
+
+        const seqLen = sequence.v.SequenceKind.len();
+
+        const end: V.IntType = try self.indexPoint(to, toPosition, 0, @intCast(seqLen));
+
+        switch (value.v) {
+            V.ValueValue.SequenceKind => try sequence.v.SequenceKind.replaceRange(0, @intCast(end), value.v.SequenceKind.items()),
+            V.ValueValue.UnitKind => try sequence.v.SequenceKind.removeRange(0, @intCast(end)),
+            else => try ER.raiseExpectedTypeError(self, valuePosition, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, value.v),
+        }
+        self.popn(3);
+        try self.push(value);
+    }
 };
 
 fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {

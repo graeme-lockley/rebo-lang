@@ -131,6 +131,38 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                 try runtime.assignIndex(exprPosition, indexPosition);
                 ip += 1 + PositionTypeSize + PositionTypeSize;
             },
+            .assign_range => {
+                const exprPosition = readPosition(bytecode, ip + 1);
+                const fromPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+                const toPosition = readPosition(bytecode, ip + 1 + PositionTypeSize + PositionTypeSize);
+                const valuePosition = readPosition(bytecode, ip + 1 + PositionTypeSize + PositionTypeSize + PositionTypeSize);
+
+                try runtime.assignRange(exprPosition, fromPosition, toPosition, valuePosition);
+                ip += 1 + PositionTypeSize + PositionTypeSize + PositionTypeSize + PositionTypeSize;
+            },
+            .assign_range_all => {
+                const exprPosition = readPosition(bytecode, ip + 1);
+                const valuePosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+
+                try runtime.assignRangeAll(exprPosition, valuePosition);
+                ip += 1 + PositionTypeSize + PositionTypeSize;
+            },
+            .assign_range_from => {
+                const exprPosition = readPosition(bytecode, ip + 1);
+                const fromPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+                const valuePosition = readPosition(bytecode, ip + 1 + PositionTypeSize + PositionTypeSize);
+
+                try runtime.assignRangeFrom(exprPosition, fromPosition, valuePosition);
+                ip += 1 + PositionTypeSize + PositionTypeSize + PositionTypeSize;
+            },
+            .assign_range_to => {
+                const exprPosition = readPosition(bytecode, ip + 1);
+                const toPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
+                const valuePosition = readPosition(bytecode, ip + 1 + PositionTypeSize + PositionTypeSize);
+
+                try runtime.assignRangeTo(exprPosition, toPosition, valuePosition);
+                ip += 1 + PositionTypeSize + PositionTypeSize + PositionTypeSize;
+            },
             Op.duplicate => {
                 try runtime.duplicate();
                 ip += 1;

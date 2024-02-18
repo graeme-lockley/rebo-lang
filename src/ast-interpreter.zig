@@ -63,27 +63,29 @@ fn assignment(runtime: *Runtime, lhs: *AST.Expression, value: *AST.Expression) E
             try runtime.assignDot(lhs.kind.dot.record.position, lhs.position);
         },
         .indexRange => {
-            try evalExpr(runtime, lhs.kind.indexRange.expr);
-            const sequence = runtime.peek(0);
-            if (sequence.v != V.ValueValue.SequenceKind) {
-                try ER.raiseExpectedTypeError(runtime, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{V.ValueValue.SequenceKind}, sequence.v);
+            if (lhs.kind.indexRange.start == null) {
+                if (lhs.kind.indexRange.end == null) {
+                    try evalExpr(runtime, lhs.kind.indexRange.expr);
+                    try evalExpr(runtime, value);
+                    try runtime.assignRangeAll(lhs.kind.indexRange.expr.position, value.position);
+                } else {
+                    try evalExpr(runtime, lhs.kind.indexRange.expr);
+                    try evalExpr(runtime, lhs.kind.indexRange.end.?);
+                    try evalExpr(runtime, value);
+                    try runtime.assignRangeTo(lhs.kind.indexRange.expr.position, lhs.kind.indexRange.end.?.position, value.position);
+                }
+            } else if (lhs.kind.indexRange.end == null) {
+                try evalExpr(runtime, lhs.kind.indexRange.expr);
+                try evalExpr(runtime, lhs.kind.indexRange.start.?);
+                try evalExpr(runtime, value);
+                try runtime.assignRangeFrom(lhs.kind.indexRange.expr.position, lhs.kind.indexRange.start.?.position, value.position);
+            } else {
+                try evalExpr(runtime, lhs.kind.indexRange.expr);
+                try evalExpr(runtime, lhs.kind.indexRange.start.?);
+                try evalExpr(runtime, lhs.kind.indexRange.end.?);
+                try evalExpr(runtime, value);
+                try runtime.assignRange(lhs.kind.indexRange.expr.position, lhs.kind.indexRange.start.?.position, lhs.kind.indexRange.end.?.position, value.position);
             }
-
-            const seqLen = sequence.v.SequenceKind.len();
-
-            const start: V.IntType = clamp(try indexPoint(runtime, lhs.kind.indexRange.start, 0), 0, @intCast(seqLen));
-            const end: V.IntType = clamp(try indexPoint(runtime, lhs.kind.indexRange.end, @intCast(seqLen)), start, @intCast(seqLen));
-
-            try evalExpr(runtime, value);
-            const v = runtime.peek(0);
-
-            switch (v.v) {
-                V.ValueValue.SequenceKind => try sequence.v.SequenceKind.replaceRange(@intCast(start), @intCast(end), v.v.SequenceKind.items()),
-                V.ValueValue.UnitKind => try sequence.v.SequenceKind.removeRange(@intCast(start), @intCast(end)),
-                else => try ER.raiseExpectedTypeError(runtime, lhs.kind.indexRange.expr.position, &[_]V.ValueKind{ V.ValueValue.SequenceKind, V.ValueValue.UnitKind }, v.v),
-            }
-            runtime.popn(2);
-            try runtime.push(v);
         },
         .indexValue => {
             const exprA = lhs.kind.indexValue.expr;
