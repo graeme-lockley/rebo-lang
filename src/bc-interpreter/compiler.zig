@@ -38,7 +38,10 @@ pub const Compiler = struct {
                         try self.compileExpr(e.kind.assignment.value);
                         try self.buffer.append(@intFromEnum(Op.assign));
                     },
-                    else => unreachable,
+                    else => {
+                        std.debug.panic("Unhandled assignment: {}", .{e.kind.assignment.lhs.kind});
+                        unreachable;
+                    },
                     // try ER.raiseNamedUserError(runtime, "InvalidLHSError", lhs.position),
                 }
             },
