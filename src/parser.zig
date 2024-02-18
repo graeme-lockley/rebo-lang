@@ -747,6 +747,7 @@ pub const Parser = struct {
                 return self.functionTail(fnToken.start);
             },
             Lexer.TokenKind.Bang => {
+                const notToken = self.currentToken();
                 try self.skipToken();
                 const value = try self.qualifier();
                 errdefer value.destroy(self.allocator);
@@ -754,7 +755,7 @@ pub const Parser = struct {
                 return try AST.Expression.create(
                     self.allocator,
                     AST.ExpressionKind{ .notOp = AST.NotOpExpression{ .value = value } },
-                    Errors.Position{ .start = self.currentToken().start, .end = value.position.end },
+                    Errors.Position{ .start = notToken.start, .end = value.position.end },
                 );
             },
             else => {
