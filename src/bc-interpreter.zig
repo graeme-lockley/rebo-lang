@@ -137,8 +137,8 @@ test "assignment expression" {
     try expectExprEqual("(fn (x = 0) = { x := x + 1 })(10)", "11");
     try expectExprEqual("let count = 0; let inc() = count := count + 1; inc(); inc(); inc()", "3");
 
-    // try expectExprEqual("let count = 0; rebo.lang.scope()[\"count\"] := 10", "10");
-    // try expectError("let count = 0; rebo.lang.scope()[\"counting\"] := 10");
+    try expectExprEqual("let count = 0; rebo.lang.scope()[\"count\"] := 10", "10");
+    try expectError("let count = 0; rebo.lang.scope()[\"counting\"] := 10");
 
     // try expectExprEqual("let x = {a: 10, b: 20}; x.a := x.a + 1", "11");
     // try expectExprEqual("let x = {a: 10, b: 20}; x.a := x.a + 1; [x.a, x.b]", "[11, 20]");
@@ -153,8 +153,8 @@ test "assignment expression" {
     // try expectExprEqual("let x = {a: 10, b: 20}; x[\"a\"] := (); x", "{b: 20}");
     // try expectExprEqual("let x = {b: 20}; x[\"a\"] := (); x", "{b: 20}");
 
-    // try expectExprEqual("let v = [1, 2, 3, 4]; v[1] := 11", "11");
-    // try expectExprEqual("let v = [1, 2, 3, 4]; v[1] := 11; v", "[1, 11, 3, 4]");
+    try expectExprEqual("let v = [1, 2, 3, 4]; v[1] := 11", "11");
+    try expectExprEqual("let v = [1, 2, 3, 4]; v[1] := 11; v", "[1, 11, 3, 4]");
 
     // try expectExprEqual("let v = [1, 2, 3, 4]; v[1:2] := [11, 12, 13]; v", "[1, 11, 12, 13, 3, 4]");
     // try expectExprEqual("let v = [1, 2, 3, 4]; v[:2] := [11, 12, 13]; v", "[11, 12, 13, 3, 4]");
@@ -162,8 +162,8 @@ test "assignment expression" {
     // try expectExprEqual("let v = [1, 2, 3, 4]; v[:] := [11, 12, 13]; v", "[11, 12, 13]");
     // try expectExprEqual("let v = [1, 2, 3, 4]; v[:] := [11, 12, 13]", "[11, 12, 13]");
 
-    // try expectError("let v = [1, 2, 3, 4]; v[4] := 11");
-    // try expectError("let v = [1, 2, 3, 4]; v[-1] := 11");
+    try expectError("let v = [1, 2, 3, 4]; v[4] := 11");
+    try expectError("let v = [1, 2, 3, 4]; v[-1] := 11");
 }
 
 test "call expression" {

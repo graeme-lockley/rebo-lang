@@ -38,6 +38,14 @@ pub const Compiler = struct {
                         try self.compileExpr(e.kind.assignment.value);
                         try self.buffer.append(@intFromEnum(Op.assign_identifier));
                     },
+                    .indexValue => {
+                        try self.compileExpr(e.kind.assignment.lhs.kind.indexValue.expr);
+                        try self.compileExpr(e.kind.assignment.lhs.kind.indexValue.index);
+                        try self.compileExpr(e.kind.assignment.value);
+                        try self.buffer.append(@intFromEnum(Op.assign_index));
+                        try self.appendPosition(e.kind.assignment.lhs.kind.indexValue.expr.position);
+                        try self.appendPosition(e.kind.assignment.lhs.kind.indexValue.index.position);
+                    },
                     else => {
                         std.debug.panic("Unhandled assignment: {}", .{e.kind.assignment.lhs.kind});
                         unreachable;
