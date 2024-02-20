@@ -643,6 +643,10 @@ test "catch-raise" {
     try expectExprEqual("{{ raise \"Bye\" } catch \"Hello\" -> 1} catch \"Bye\" -> 2", "2");
 }
 
+test "match" {
+    try expectExprEqual("match () | () -> true | _ -> false", "true");
+}
+
 test "bytecode" {
     const BC = @import("bc-interpreter.zig");
 

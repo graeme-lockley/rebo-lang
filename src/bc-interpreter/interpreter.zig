@@ -100,6 +100,14 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                     ip = @intCast(readInt(bytecode, ip + 1));
                 }
             },
+            .open_scope => {
+                try runtime.openScope();
+                ip += 1;
+            },
+            .close_scope => {
+                runtime.popScope();
+                ip += 1;
+            },
             Op.call => {
                 const numArgs = readInt(bytecode, ip + 1);
 

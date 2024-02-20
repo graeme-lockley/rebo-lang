@@ -404,6 +404,49 @@ pub const Compiler = struct {
             },
             .literalString => try self.appendPushLiteralString(e.kind.literalString.slice()),
             .literalVoid => try self.buffer.append(@intFromEnum(Op.push_unit)),
+            .match => {
+                var patches = std.ArrayList(usize).init(self.allocator);
+                defer patches.deinit();
+
+                var casePatch: ?usize = null;
+
+                try self.compileExpr(e.kind.match.value);
+
+                for (e.kind.match.cases) |case| {
+                    if (casePatch != null) {
+                        try self.appendIntAt(@intCast(self.buffer.items.len), casePatch.?);
+                        casePatch = null;
+                    }
+
+                    try self.buffer.append(@intFromEnum(Op.open_scope));
+                    try self.compilePattern(case.pattern);
+                    try self.buffer.append(@intFromEnum(Op.jmp_false));
+                    casePatch = self.buffer.items.len;
+                    try self.appendInt(0);
+                    try self.appendPosition(case.pattern.position);
+                    try self.buffer.append(@intFromEnum(Op.discard));
+                    try self.compileExpr(case.body);
+                    try self.buffer.append(@intFromEnum(Op.close_scope));
+                    try self.buffer.append(@intFromEnum(Op.jmp));
+                    try patches.append(@intCast(self.buffer.items.len));
+                    try self.appendInt(0);
+                }
+
+                if (casePatch != null) {
+                    try self.appendIntAt(@intCast(self.buffer.items.len), casePatch.?);
+                    casePatch = null;
+                }
+                try self.buffer.append(@intFromEnum(Op.discard));
+                if (e.kind.match.elseCase) |elseCase| {
+                    try self.compileExpr(elseCase);
+                    // } else {
+                    //     unreachable;
+                }
+
+                for (patches.items) |patch| {
+                    try self.appendIntAt(@intCast(self.buffer.items.len), patch);
+                }
+            },
             .notOp => {
                 try self.compileExpr(e.kind.notOp.value);
                 try self.buffer.append(@intFromEnum(Op.not));
@@ -411,6 +454,28 @@ pub const Compiler = struct {
             },
             else => {
                 std.debug.panic("Unhandled: {}", .{e.kind});
+                unreachable;
+            },
+        }
+    }
+
+    fn compilePattern(self: *Compiler, pattern: *AST.Pattern) !void {
+        switch (pattern.kind) {
+            .identifier => {
+                if (!std.mem.eql(u8, pattern.kind.identifier.slice(), "_")) {
+                    try self.buffer.append(@intFromEnum(Op.duplicate));
+                    try self.appendPushLiteralString(pattern.kind.identifier.slice());
+                    try self.buffer.append(@intFromEnum(Op.bind));
+                }
+                try self.buffer.append(@intFromEnum(Op.push_true));
+            },
+            .void => {
+                try self.buffer.append(@intFromEnum(Op.duplicate));
+                try self.buffer.append(@intFromEnum(Op.push_unit));
+                try self.buffer.append(@intFromEnum(Op.equals));
+            },
+            else => {
+                std.debug.panic("Unhandled pattern: {}", .{pattern.kind});
                 unreachable;
             },
         }
