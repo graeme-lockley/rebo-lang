@@ -669,6 +669,12 @@ test "match" {
     try expectExprEqual("match 1.0 | true -> \"true\" | false -> \"false\" | 1.0 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"one\"");
     try expectExprEqual("match 2.0 | true -> \"true\" | false -> \"false\" | 1.0 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"two\"");
     try expectExprEqual("match 3.0 | true -> \"true\" | false -> \"false\" | 1.0 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"other\"");
+
+    try expectExprEqual("match 1 | 1 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"one\"");
+    try expectExprEqual("match 1.0 | 1 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"one\"");
+    try expectExprEqual("match 2 | 1 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"two\"");
+    try expectExprEqual("match 2.0 | 1 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"two\"");
+    try expectExprEqual("match 3 | 1 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"other\"");
 }
 
 test "bytecode" {
