@@ -663,6 +663,12 @@ test "match" {
     try expectExprEqual("match \"\\\"\" | \"a\" -> \"a\" | \"\\n\" -> \"newline\" | \"\\\\\" -> \"backslash\" | \"'\" -> \"single-quote\" | \"\\\"\" -> \"double-quote\" | \"\\x13;\" -> \"linefeed\" | \"hello world\" -> \"greeting\" | _ -> \"other\"", "\"double-quote\"");
     try expectExprEqual("match \"\\x13;\" | \"a\" -> \"a\" | \"\\n\" -> \"newline\" | \"\\\\\" -> \"backslash\" | \"'\" -> \"single-quote\" | \"\\\"\" -> \"double-quote\" | \"\\x13;\" -> \"linefeed\" | \"hello world\" -> \"greeting\" | _ -> \"other\"", "\"linefeed\"");
     try expectExprEqual("match \"hello worlds\" | \"a\" -> \"a\" | \"\\n\" -> \"newline\" | \"\\\\\" -> \"backslash\" | \"'\" -> \"single-quote\" | \"\\\"\" -> \"double-quote\" | \"\\x13;\" -> \"linefeed\" | \"hello world\" -> \"greeting\" | _ -> \"other\"", "\"other\"");
+
+    try expectExprEqual("match true | true -> \"true\" | false -> \"false\" | 1.0 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"true\"");
+    try expectExprEqual("match false | true -> \"true\" | false -> \"false\" | 1.0 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"false\"");
+    try expectExprEqual("match 1.0 | true -> \"true\" | false -> \"false\" | 1.0 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"one\"");
+    try expectExprEqual("match 2.0 | true -> \"true\" | false -> \"false\" | 1.0 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"two\"");
+    try expectExprEqual("match 3.0 | true -> \"true\" | false -> \"false\" | 1.0 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"other\"");
 }
 
 test "bytecode" {

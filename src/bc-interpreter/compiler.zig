@@ -471,10 +471,21 @@ pub const Compiler = struct {
                 }
                 try self.buffer.append(@intFromEnum(Op.push_true));
             },
+            .literalBool => {
+                try self.buffer.append(@intFromEnum(Op.duplicate));
+                try self.buffer.append(@intFromEnum(if (pattern.kind.literalBool) Op.push_true else Op.push_false));
+                try self.buffer.append(@intFromEnum(Op.equals));
+            },
             .literalChar => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.push_char));
                 try self.buffer.append(pattern.kind.literalChar);
+                try self.buffer.append(@intFromEnum(Op.equals));
+            },
+            .literalFloat => {
+                try self.buffer.append(@intFromEnum(Op.duplicate));
+                try self.buffer.append(@intFromEnum(Op.push_float));
+                try self.appendFloat(pattern.kind.literalFloat);
                 try self.buffer.append(@intFromEnum(Op.equals));
             },
             .literalInt => {
