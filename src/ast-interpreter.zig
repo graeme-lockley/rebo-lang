@@ -549,7 +549,7 @@ fn matchPattern(runtime: *Runtime, p: *AST.Pattern, v: *V.Value) !bool {
 
             return true;
         },
-        .void => return v.v == V.ValueValue.UnitKind,
+        .unit => return v.v == V.ValueValue.UnitKind,
     };
 }
 

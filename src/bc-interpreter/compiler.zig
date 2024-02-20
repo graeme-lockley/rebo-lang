@@ -469,7 +469,7 @@ pub const Compiler = struct {
                 }
                 try self.buffer.append(@intFromEnum(Op.push_true));
             },
-            .void => {
+            .unit => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.push_unit));
                 try self.buffer.append(@intFromEnum(Op.equals));

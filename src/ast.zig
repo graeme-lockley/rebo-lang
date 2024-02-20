@@ -399,7 +399,7 @@ pub const PatternKind = union(enum) {
     literalString: *SP.String,
     record: RecordPattern,
     sequence: SequencePattern,
-    void: void,
+    unit: void,
 };
 
 pub const SequencePattern = struct {
@@ -456,7 +456,7 @@ pub const RecordPatternEntry = struct {
 fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
     switch (pattern.kind) {
         .identifier => pattern.kind.identifier.decRef(),
-        .literalChar, .literalFloat, .literalInt, .literalBool, .void => {},
+        .literalChar, .literalFloat, .literalInt, .literalBool, .unit => {},
         .literalString => pattern.kind.literalString.decRef(),
         .record => pattern.kind.record.deinit(allocator),
         .sequence => pattern.kind.sequence.deinit(allocator),
