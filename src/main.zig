@@ -655,6 +655,14 @@ test "match" {
     try expectExprEqual("match '\\'' | 'a' -> \"a\" | '\\n' -> \"newline\" | '\\\\' -> \"backslash\" | '\\'' -> \"single-quote\" | '\\x13' -> \"linefeed\"| _ -> \"other\"", "\"single-quote\"");
     try expectExprEqual("match '\\x13' | 'a' -> \"a\" | '\\n' -> \"newline\" | '\\\\' -> \"backslash\" | '\\'' -> \"single-quote\" | '\\x13' -> \"linefeed\"| _ -> \"other\"", "\"linefeed\"");
     try expectExprEqual("match 'z' | 'a' -> \"a\" | '\\n' -> \"newline\" | '\\\\' -> \"backslash\" | '\\'' -> \"single-quote\" | '\\x13' -> \"linefeed\"| _ -> \"other\"", "\"other\"");
+
+    try expectExprEqual("match \"a\" | \"a\" -> \"a\" | \"\\n\" -> \"newline\" | \"\\\\\" -> \"backslash\" | \"'\" -> \"single-quote\" | \"\\\"\" -> \"double-quote\" | \"\\x13;\" -> \"linefeed\" | \"hello world\" -> \"greeting\" | _ -> \"other\"", "\"a\"");
+    try expectExprEqual("match \"\\n\" | \"a\" -> \"a\" | \"\\n\" -> \"newline\" | \"\\\\\" -> \"backslash\" | \"'\" -> \"single-quote\" | \"\\\"\" -> \"double-quote\" | \"\\x13;\" -> \"linefeed\" | \"hello world\" -> \"greeting\" | _ -> \"other\"", "\"newline\"");
+    try expectExprEqual("match \"\\\\\" | \"a\" -> \"a\" | \"\\n\" -> \"newline\" | \"\\\\\" -> \"backslash\" | \"'\" -> \"single-quote\" | \"\\\"\" -> \"double-quote\" | \"\\x13;\" -> \"linefeed\" | \"hello world\" -> \"greeting\" | _ -> \"other\"", "\"backslash\"");
+    try expectExprEqual("match \"'\" | \"a\" -> \"a\" | \"\\n\" -> \"newline\" | \"\\\\\" -> \"backslash\" | \"'\" -> \"single-quote\" | \"\\\"\" -> \"double-quote\" | \"\\x13;\" -> \"linefeed\" | \"hello world\" -> \"greeting\" | _ -> \"other\"", "\"single-quote\"");
+    try expectExprEqual("match \"\\\"\" | \"a\" -> \"a\" | \"\\n\" -> \"newline\" | \"\\\\\" -> \"backslash\" | \"'\" -> \"single-quote\" | \"\\\"\" -> \"double-quote\" | \"\\x13;\" -> \"linefeed\" | \"hello world\" -> \"greeting\" | _ -> \"other\"", "\"double-quote\"");
+    try expectExprEqual("match \"\\x13;\" | \"a\" -> \"a\" | \"\\n\" -> \"newline\" | \"\\\\\" -> \"backslash\" | \"'\" -> \"single-quote\" | \"\\\"\" -> \"double-quote\" | \"\\x13;\" -> \"linefeed\" | \"hello world\" -> \"greeting\" | _ -> \"other\"", "\"linefeed\"");
+    try expectExprEqual("match \"hello worlds\" | \"a\" -> \"a\" | \"\\n\" -> \"newline\" | \"\\\\\" -> \"backslash\" | \"'\" -> \"single-quote\" | \"\\\"\" -> \"double-quote\" | \"\\x13;\" -> \"linefeed\" | \"hello world\" -> \"greeting\" | _ -> \"other\"", "\"other\"");
 }
 
 test "bytecode" {

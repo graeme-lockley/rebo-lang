@@ -416,6 +416,7 @@ pub const Compiler = struct {
                     if (casePatch != null) {
                         try self.appendIntAt(@intCast(self.buffer.items.len), casePatch.?);
                         casePatch = null;
+                        try self.buffer.append(@intFromEnum(Op.close_scope));
                     }
 
                     try self.buffer.append(@intFromEnum(Op.open_scope));
@@ -435,6 +436,7 @@ pub const Compiler = struct {
                 if (casePatch != null) {
                     try self.appendIntAt(@intCast(self.buffer.items.len), casePatch.?);
                     casePatch = null;
+                    try self.buffer.append(@intFromEnum(Op.close_scope));
                 }
                 try self.buffer.append(@intFromEnum(Op.discard));
                 if (e.kind.match.elseCase) |elseCase| {
@@ -479,6 +481,11 @@ pub const Compiler = struct {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.push_int));
                 try self.appendInt(pattern.kind.literalInt);
+                try self.buffer.append(@intFromEnum(Op.equals));
+            },
+            .literalString => {
+                try self.buffer.append(@intFromEnum(Op.duplicate));
+                try self.appendPushLiteralString(pattern.kind.literalString.slice());
                 try self.buffer.append(@intFromEnum(Op.equals));
             },
             .unit => {
