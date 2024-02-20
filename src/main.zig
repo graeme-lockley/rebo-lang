@@ -645,6 +645,9 @@ test "catch-raise" {
 
 test "match" {
     try expectExprEqual("match () | () -> true | _ -> false", "true");
+    try expectExprEqual("match 1 | () -> true | _ -> false", "false");
+    try expectExprEqual("match 1 | 0 -> \"zero\" | 1 -> \"one\" | _ -> \"many\"", "\"one\"");
+    try expectExprEqual("match 99 | 0 -> \"zero\" | 1 -> \"one\" | _ -> \"many\"", "\"many\"");
 }
 
 test "bytecode" {

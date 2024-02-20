@@ -469,6 +469,12 @@ pub const Compiler = struct {
                 }
                 try self.buffer.append(@intFromEnum(Op.push_true));
             },
+            .literalInt => {
+                try self.buffer.append(@intFromEnum(Op.duplicate));
+                try self.buffer.append(@intFromEnum(Op.push_int));
+                try self.appendInt(pattern.kind.literalInt);
+                try self.buffer.append(@intFromEnum(Op.equals));
+            },
             .unit => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.push_unit));
