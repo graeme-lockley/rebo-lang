@@ -563,6 +563,19 @@ pub const Compiler = struct {
                         try self.buffer.append(@intFromEnum(Op.discard));
                     }
                 }
+
+                if (pattern.kind.sequence.restOfPatterns != null and !std.mem.eql(u8, pattern.kind.sequence.restOfPatterns.?.slice(), "_")) {
+                    try self.buffer.append(@intFromEnum(Op.duplicate));
+                    try self.buffer.append(@intFromEnum(Op.push_int));
+                    try self.appendInt(@intCast(pattern.kind.sequence.patterns.len));
+                    try self.buffer.append(@intFromEnum(Op.rangeFrom));
+                    try self.appendPosition(pattern.position);
+                    try self.appendPosition(pattern.position);
+                    try self.appendPushLiteralString(pattern.kind.sequence.restOfPatterns.?.slice());
+                    try self.buffer.append(@intFromEnum(Op.bind));
+                    try self.buffer.append(@intFromEnum(Op.discard));
+                }
+
                 if (nestedCasePatches.items.len > 0) {
                     try self.buffer.append(@intFromEnum(Op.jmp));
                     const patch = self.buffer.items.len;
