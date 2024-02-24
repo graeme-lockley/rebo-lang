@@ -675,6 +675,12 @@ test "match" {
     try expectExprEqual("match 2 | 1 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"two\"");
     try expectExprEqual("match 2.0 | 1 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"two\"");
     try expectExprEqual("match 3 | 1 -> \"one\" | 2.0 -> \"two\" | _ -> \"other\"", "\"other\"");
+
+    try expectExprEqual("match [] | [] -> \"empty\" | [_] -> \"one\" | [_, _] -> \"two\" | [_, _, _] -> \"three\" | _ -> \"lots\"", "\"empty\"");
+    try expectExprEqual("match [1] | [] -> \"empty\" | [_] -> \"one\" | [_, _] -> \"two\" | [_, _, _] -> \"three\" | _ -> \"lots\"", "\"one\"");
+    try expectExprEqual("match [1, 2] | [] -> \"empty\" | [_] -> \"one\" | [_, _] -> \"two\" | [_, _, _] -> \"three\" | _ -> \"lots\"", "\"two\"");
+    try expectExprEqual("match [1, 2, 3] | [] -> \"empty\" | [_] -> \"one\" | [_, _] -> \"two\" | [_, _, _] -> \"three\" | _ -> \"lots\"", "\"three\"");
+    try expectExprEqual("match [1, 2, 3, 4] | [] -> \"empty\" | [_] -> \"one\" | [_, _] -> \"two\" | [_, _, _] -> \"three\" | _ -> \"lots\"", "\"lots\"");
 }
 
 test "bytecode" {

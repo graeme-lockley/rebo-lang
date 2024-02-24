@@ -16,6 +16,11 @@ pub const Op = enum(u8) {
     jmp_true, // IP
     jmp_false, // IP
 
+    is_sequence,
+
+    seq_len,
+    seq_at, // I
+
     open_scope,
     close_scope,
 
