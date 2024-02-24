@@ -111,8 +111,10 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                 ip += 1;
             },
             .seq_at => {
-                ip += 1;
-                unreachable;
+                const idx = readInt(bytecode, ip + 1);
+                const v = runtime.pop();
+                try runtime.push(if (v.isSequence()) v.v.SequenceKind.at(@intCast(idx)) else runtime.unitValue.?);
+                ip += 1 + IntTypeSize;
             },
             .open_scope => {
                 try runtime.openScope();
@@ -133,7 +135,7 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
 
                 ip += 1 + IntTypeSize + PositionTypeSize;
             },
-            Op.bind => {
+            .bind => {
                 try runtime.bind();
                 ip += 1;
             },

@@ -425,10 +425,6 @@ pub const Compiler = struct {
 
                     try self.buffer.append(@intFromEnum(Op.open_scope));
                     try self.compilePattern(case.pattern, &casePatches);
-                    try self.buffer.append(@intFromEnum(Op.jmp_false));
-                    try casePatches.append(self.buffer.items.len);
-                    try self.appendInt(0);
-                    try self.appendPosition(case.pattern.position);
                     try self.buffer.append(@intFromEnum(Op.discard));
                     try self.compileExpr(case.body);
                     try self.buffer.append(@intFromEnum(Op.close_scope));
@@ -476,36 +472,61 @@ pub const Compiler = struct {
                     try self.buffer.append(@intFromEnum(Op.duplicate));
                     try self.appendPushLiteralString(pattern.kind.identifier.slice());
                     try self.buffer.append(@intFromEnum(Op.bind));
+                    try self.buffer.append(@intFromEnum(Op.discard));
                 }
-                try self.buffer.append(@intFromEnum(Op.push_true));
             },
             .literalBool => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(if (pattern.kind.literalBool) Op.push_true else Op.push_false));
                 try self.buffer.append(@intFromEnum(Op.equals));
+
+                try self.buffer.append(@intFromEnum(Op.jmp_false));
+                try casePatches.append(self.buffer.items.len);
+                try self.appendInt(0);
+                try self.appendPosition(pattern.position);
             },
             .literalChar => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.push_char));
                 try self.buffer.append(pattern.kind.literalChar);
                 try self.buffer.append(@intFromEnum(Op.equals));
+
+                try self.buffer.append(@intFromEnum(Op.jmp_false));
+                try casePatches.append(self.buffer.items.len);
+                try self.appendInt(0);
+                try self.appendPosition(pattern.position);
             },
             .literalFloat => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.push_float));
                 try self.appendFloat(pattern.kind.literalFloat);
                 try self.buffer.append(@intFromEnum(Op.equals));
+
+                try self.buffer.append(@intFromEnum(Op.jmp_false));
+                try casePatches.append(self.buffer.items.len);
+                try self.appendInt(0);
+                try self.appendPosition(pattern.position);
             },
             .literalInt => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.push_int));
                 try self.appendInt(pattern.kind.literalInt);
                 try self.buffer.append(@intFromEnum(Op.equals));
+
+                try self.buffer.append(@intFromEnum(Op.jmp_false));
+                try casePatches.append(self.buffer.items.len);
+                try self.appendInt(0);
+                try self.appendPosition(pattern.position);
             },
             .literalString => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.appendPushLiteralString(pattern.kind.literalString.slice());
                 try self.buffer.append(@intFromEnum(Op.equals));
+
+                try self.buffer.append(@intFromEnum(Op.jmp_false));
+                try casePatches.append(self.buffer.items.len);
+                try self.appendInt(0);
+                try self.appendPosition(pattern.position);
             },
             .sequence => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
@@ -529,12 +550,44 @@ pub const Compiler = struct {
                 try self.appendInt(0);
                 try self.appendPosition(pattern.position);
 
-                try self.buffer.append(@intFromEnum(Op.push_true));
+                var nestedCasePatches = std.ArrayList(usize).init(self.allocator);
+                defer nestedCasePatches.deinit();
+
+                for (pattern.kind.sequence.patterns, 0..) |p, idx| {
+                    if (p.kind != .identifier or !std.mem.eql(u8, p.kind.identifier.slice(), "_")) {
+                        try self.buffer.append(@intFromEnum(Op.duplicate));
+                        try self.buffer.append(@intFromEnum(Op.seq_at));
+                        try self.appendInt(@intCast(idx));
+                        try self.compilePattern(p, &nestedCasePatches);
+                        try self.buffer.append(@intFromEnum(Op.discard));
+                    }
+                }
+                if (nestedCasePatches.items.len > 0) {
+                    try self.buffer.append(@intFromEnum(Op.jmp));
+                    const patch = self.buffer.items.len;
+                    try self.appendInt(0);
+
+                    for (nestedCasePatches.items) |p| {
+                        try self.appendIntAt(@intCast(self.buffer.items.len), p);
+                    }
+
+                    try self.buffer.append(@intFromEnum(Op.discard));
+                    try self.buffer.append(@intFromEnum(Op.jmp));
+                    try casePatches.append(self.buffer.items.len);
+                    try self.appendInt(0);
+
+                    try self.appendIntAt(@intCast(self.buffer.items.len), patch);
+                }
             },
             .unit => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.push_unit));
                 try self.buffer.append(@intFromEnum(Op.equals));
+
+                try self.buffer.append(@intFromEnum(Op.jmp_false));
+                try casePatches.append(self.buffer.items.len);
+                try self.appendInt(0);
+                try self.appendPosition(pattern.position);
             },
             else => {
                 std.debug.panic("Unhandled pattern: {}", .{pattern.kind});
