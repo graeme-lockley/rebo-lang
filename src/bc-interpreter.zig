@@ -567,4 +567,7 @@ test "match" {
     try expectExprEqual("match [1, 2, 3, 4, 5, 6, 7] | [1, 2, 3, 4, ...stuff] -> stuff | [9, ...stuff] -> stuff | stuff -> stuff", "[5, 6, 7]");
     try expectExprEqual("match [9, 5, 6, 7] | [1, 2, 3, 4, ...stuff] -> stuff | [9, ...stuff] -> stuff | stuff -> stuff", "[5, 6, 7]");
     try expectExprEqual("match [5, 6, 7] | [1, 2, 3, 4, ...stuff] -> stuff | [9, ...stuff] -> stuff | stuff -> stuff", "[5, 6, 7]");
+
+    try expectExprEqual("match [1, 2, 3, 4, 5] | [1, 2, ...] @ stuff -> stuff | _ -> []", "[1, 2, 3, 4, 5]");
+    try expectExprEqual("match [1] | [1, 2, ...] @ stuff -> stuff | _ -> []", "[]");
 }

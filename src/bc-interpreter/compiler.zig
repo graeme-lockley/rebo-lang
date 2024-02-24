@@ -576,6 +576,11 @@ pub const Compiler = struct {
                     try self.buffer.append(@intFromEnum(Op.discard));
                 }
 
+                if (pattern.kind.sequence.id != null) {
+                    try self.appendPushLiteralString(pattern.kind.sequence.id.?.slice());
+                    try self.buffer.append(@intFromEnum(Op.bind));
+                }
+
                 if (nestedCasePatches.items.len > 0) {
                     try self.buffer.append(@intFromEnum(Op.jmp));
                     const patch = self.buffer.items.len;
