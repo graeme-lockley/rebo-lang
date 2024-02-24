@@ -559,4 +559,8 @@ test "match" {
     try expectExprEqual("match [1, \"2\", 3] | [1, x, 3] -> \"one \" + x + \" three\" | [1, x, 3, 4] -> \"one \" + x + \" three four\" | _ -> \"other\"", "\"one 2 three\"");
     try expectExprEqual("match [1, \"2\", 3, 4] | [1, x, 3] -> \"one \" + x + \" three\" | [1, x, 3, 4] -> \"one \" + x + \" three four\" | _ -> \"other\"", "\"one 2 three four\"");
     try expectExprEqual("match [1, \"2\", 3, 4, 5] | [1, x, 3] -> \"one \" + x + \" three\" | [1, x, 3, 4] -> \"one \" + x + \" three four\" | _ -> \"other\"", "\"other\"");
+
+    try expectExprEqual("match [1, 2, 3] | [1, 2, 3, 4, ...] -> \"one two three four ...\" | [1, 2, 3, ...] -> \"one two three ...\" | _ -> \"other\"", "\"one two three ...\"");
+    try expectExprEqual("match [1, 2, 3, 4] | [1, 2, 3, 4, ...] -> \"one two three four ...\" | [1, 2, 3, ...] -> \"one two three ...\" | _ -> \"other\"", "\"one two three four ...\"");
+    try expectExprEqual("match [1, 2, 3, 4, 5] | [1, 2, 3, 4, ...] -> \"one two three four ...\" | [1, 2, 3, ...] -> \"one two three ...\" | _ -> \"other\"", "\"one two three four ...\"");
 }

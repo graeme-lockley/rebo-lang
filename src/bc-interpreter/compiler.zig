@@ -544,6 +544,7 @@ pub const Compiler = struct {
                     try self.buffer.append(@intFromEnum(Op.equals));
                 } else {
                     try self.buffer.append(@intFromEnum(Op.greater_equal));
+                    try self.appendPosition(pattern.position);
                 }
                 try self.buffer.append(@intFromEnum(Op.jmp_false));
                 try casePatches.append(self.buffer.items.len);
