@@ -551,7 +551,11 @@ pub const Compiler = struct {
                     try doubleNestedCasePatches.append(self.buffer.items.len);
                     try self.appendInt(0);
                     try self.appendPosition(pattern.position);
-                    try self.appendPushLiteralString(entry.key.slice());
+                    if (entry.id) |id| {
+                        try self.appendPushLiteralString(id.slice());
+                    } else {
+                        try self.appendPushLiteralString(entry.key.slice());
+                    }
                     try self.buffer.append(@intFromEnum(Op.bind));
                     try self.buffer.append(@intFromEnum(Op.discard));
                 }

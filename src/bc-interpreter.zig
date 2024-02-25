@@ -576,4 +576,7 @@ test "match" {
 
     try expectExprEqual("match {a: 1} | {a} -> a | _ -> 0", "1");
     try expectExprEqual("match {a: 1, b: 2} | {a, b} -> a + b | _ -> 0", "3");
+
+    try expectExprEqual("match {a: 1, b: 2} | {a @ xName, b @ yName} -> xName + yName | _ -> 0", "3");
+    try expectExprEqual("match {a: 1, b: 2} | {\"a\" @ xName, \"b\" @ yName} -> xName + yName | _ -> 0", "3");
 }
