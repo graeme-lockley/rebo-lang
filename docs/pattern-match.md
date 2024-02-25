@@ -265,7 +265,7 @@ Having worked through sequence pattern matching let's now take a look at record 
 "empty"
 ```
 
-Okay the last example was a bit of a  surprise.  The reason for this is to see record pattern matching as not an attempt at being exhaustive but rather as a way to match against a record that has a particular fields.
+Okay the last example was a bit of a  surprise.  The reason for this is to see record pattern matching as not an attempt at being exhaustive but rather as a way to match against a record that has particular fields.
 
 Using pattern matching is possible to bind values from the record.
 
