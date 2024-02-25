@@ -530,13 +530,6 @@ pub const Compiler = struct {
             },
             .sequence => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
-                try self.buffer.append(@intFromEnum(Op.is_sequence));
-                try self.buffer.append(@intFromEnum(Op.jmp_false));
-                try casePatches.append(self.buffer.items.len);
-                try self.appendInt(0);
-                try self.appendPosition(pattern.position);
-
-                try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.seq_len));
                 try self.buffer.append(@intFromEnum(Op.push_int));
                 try self.appendInt(@intCast(pattern.kind.sequence.patterns.len));
