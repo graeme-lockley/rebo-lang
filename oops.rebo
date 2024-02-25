@@ -20,7 +20,7 @@ let timeTrial(n) {
 
     if v1 != v2 -> raise { kind: "Mismatch", fib1: v1, fib2: v2 }
 
-    println("n: ", n, ", fib(n) = ", n, ", Fib1: ", t2 - t1, "ms, Fib2: ", t4 - t3, "ms, ratio: ", if t2 - t1 > 0 -> (0.0 + t4 - t3) / (0.0 + t2 - t1) | "∞")
+    println("n: ", n, ", fib(n) = ", v1, ", Fib1: ", t2 - t1, "ms, Fib2: ", t4 - t3, "ms, ratio: ", if t2 - t1 > 0 -> (0.0 + t4 - t3) / (0.0 + t2 - t1) | "∞")
 
     {
         n: n,
