@@ -570,4 +570,7 @@ test "match" {
 
     try expectExprEqual("match [1, 2, 3, 4, 5] | [1, 2, ...] @ stuff -> stuff | _ -> []", "[1, 2, 3, 4, 5]");
     try expectExprEqual("match [1] | [1, 2, ...] @ stuff -> stuff | _ -> []", "[]");
+
+    try expectExprEqual("match {} | {} -> \"empty\" | _ -> \"not empty\"", "\"empty\"");
+    try expectExprEqual("match {a: 1} | {} -> \"empty\" | _ -> \"not empty\"", "\"empty\"");
 }

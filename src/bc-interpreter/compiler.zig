@@ -528,6 +528,14 @@ pub const Compiler = struct {
                 try self.appendInt(0);
                 try self.appendPosition(pattern.position);
             },
+            .record => {
+                try self.buffer.append(@intFromEnum(Op.duplicate));
+                try self.buffer.append(@intFromEnum(Op.is_record));
+                try self.buffer.append(@intFromEnum(Op.jmp_false));
+                try casePatches.append(self.buffer.items.len);
+                try self.appendInt(0);
+                try self.appendPosition(pattern.position);
+            },
             .sequence => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.seq_len));
@@ -600,10 +608,6 @@ pub const Compiler = struct {
                 try casePatches.append(self.buffer.items.len);
                 try self.appendInt(0);
                 try self.appendPosition(pattern.position);
-            },
-            else => {
-                std.debug.panic("Unhandled pattern: {}", .{pattern.kind});
-                unreachable;
             },
         }
     }

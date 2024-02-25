@@ -100,6 +100,11 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                     ip = @intCast(readInt(bytecode, ip + 1));
                 }
             },
+            .is_record => {
+                const v = runtime.pop();
+                try runtime.pushBoolValue(v.isRecord());
+                ip += 1;
+            },
             .seq_len => {
                 const v = runtime.pop();
                 try runtime.pushIntValue(if (v.isSequence()) @intCast(v.v.SequenceKind.len()) else 0);
