@@ -529,12 +529,49 @@ pub const Compiler = struct {
                 try self.appendPosition(pattern.position);
             },
             .record => {
+                var doubleNestedCasePatches = std.ArrayList(usize).init(self.allocator);
+                defer doubleNestedCasePatches.deinit();
+
                 try self.buffer.append(@intFromEnum(Op.duplicate));
                 try self.buffer.append(@intFromEnum(Op.is_record));
                 try self.buffer.append(@intFromEnum(Op.jmp_false));
                 try casePatches.append(self.buffer.items.len);
                 try self.appendInt(0);
                 try self.appendPosition(pattern.position);
+
+                for (pattern.kind.record.entries) |entry| {
+                    try self.buffer.append(@intFromEnum(Op.duplicate));
+                    try self.appendPushLiteralString(entry.key.slice());
+                    try self.buffer.append(@intFromEnum(Op.dot));
+                    try self.appendPosition(pattern.position);
+                    try self.buffer.append(@intFromEnum(Op.duplicate));
+                    try self.buffer.append(@intFromEnum(Op.push_unit));
+                    try self.buffer.append(@intFromEnum(Op.equals));
+                    try self.buffer.append(@intFromEnum(Op.jmp_true));
+                    try doubleNestedCasePatches.append(self.buffer.items.len);
+                    try self.appendInt(0);
+                    try self.appendPosition(pattern.position);
+                    try self.appendPushLiteralString(entry.key.slice());
+                    try self.buffer.append(@intFromEnum(Op.bind));
+                    try self.buffer.append(@intFromEnum(Op.discard));
+                }
+
+                if (doubleNestedCasePatches.items.len > 0) {
+                    try self.buffer.append(@intFromEnum(Op.jmp));
+                    const patch = self.buffer.items.len;
+                    try self.appendInt(0);
+
+                    for (doubleNestedCasePatches.items) |p| {
+                        try self.appendIntAt(@intCast(self.buffer.items.len), p);
+                    }
+
+                    try self.buffer.append(@intFromEnum(Op.discard));
+                    try self.buffer.append(@intFromEnum(Op.jmp));
+                    try casePatches.append(self.buffer.items.len);
+                    try self.appendInt(0);
+
+                    try self.appendIntAt(@intCast(self.buffer.items.len), patch);
+                }
             },
             .sequence => {
                 try self.buffer.append(@intFromEnum(Op.duplicate));

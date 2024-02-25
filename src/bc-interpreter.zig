@@ -573,4 +573,7 @@ test "match" {
 
     try expectExprEqual("match {} | {} -> \"empty\" | _ -> \"not empty\"", "\"empty\"");
     try expectExprEqual("match {a: 1} | {} -> \"empty\" | _ -> \"not empty\"", "\"empty\"");
+
+    try expectExprEqual("match {a: 1} | {a} -> a | _ -> 0", "1");
+    try expectExprEqual("match {a: 1, b: 2} | {a, b} -> a + b | _ -> 0", "3");
 }
