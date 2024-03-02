@@ -551,12 +551,15 @@ pub const Compiler = struct {
                     try doubleNestedCasePatches.append(self.buffer.items.len);
                     try self.appendInt(0);
                     try self.appendPosition(pattern.position);
-                    if (entry.id) |id| {
+                    if (entry.pattern) |p| {
+                        try self.compilePattern(p, &doubleNestedCasePatches);
+                    } else if (entry.id) |id| {
                         try self.appendPushLiteralString(id.slice());
+                        try self.buffer.append(@intFromEnum(Op.bind));
                     } else {
                         try self.appendPushLiteralString(entry.key.slice());
+                        try self.buffer.append(@intFromEnum(Op.bind));
                     }
-                    try self.buffer.append(@intFromEnum(Op.bind));
                     try self.buffer.append(@intFromEnum(Op.discard));
                 }
 

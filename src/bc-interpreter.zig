@@ -579,4 +579,9 @@ test "match" {
 
     try expectExprEqual("match {a: 1, b: 2} | {a @ xName, b @ yName} -> xName + yName | _ -> 0", "3");
     try expectExprEqual("match {a: 1, b: 2} | {\"a\" @ xName, \"b\" @ yName} -> xName + yName | _ -> 0", "3");
+
+    try expectExprEqual("match {a: 1, b: 2} | {a: 2, b} -> b * 2 | {a: 1, b} -> b * 3 | {b} -> b * 4", "6");
+    try expectExprEqual("match {a: 2, b: 2} | {a: 2, b} -> b * 2 | {a: 1, b} -> b * 3 | {b} -> b * 4", "4");
+    try expectExprEqual("match {a: 10, b: 2} | {a: 2, b} -> b * 2 | {a: 1, b} -> b * 3 | {b} -> b * 4", "8");
+    try expectExprEqual("match {b: 2} | {a: 2, b} -> b * 2 | {a: 1, b} -> b * 3 | {b} -> b * 4", "8");
 }
