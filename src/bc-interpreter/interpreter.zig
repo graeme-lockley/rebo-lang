@@ -100,6 +100,9 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                     ip = @intCast(readInt(bytecode, ip + 1));
                 }
             },
+            .raise => {
+                return Errors.RuntimeErrors.InterpreterError;
+            },
             .is_record => {
                 const v = runtime.pop();
                 try runtime.pushBoolValue(v.isRecord());

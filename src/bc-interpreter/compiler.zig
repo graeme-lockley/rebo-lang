@@ -458,6 +458,21 @@ pub const Compiler = struct {
                 try self.buffer.append(@intFromEnum(Op.not));
                 try self.appendPosition(e.position);
             },
+            .patternDeclaration => {
+                var casePatches = std.ArrayList(usize).init(self.allocator);
+                defer casePatches.deinit();
+
+                try self.compileExpr(e.kind.patternDeclaration.value);
+                try self.compilePattern(e.kind.patternDeclaration.pattern, &casePatches);
+                try self.buffer.append(@intFromEnum(Op.jmp));
+                const patch = self.buffer.items.len;
+                try self.appendInt(0);
+
+                try self.buffer.append(@intFromEnum(Op.push_record));
+                try self.buffer.append(@intFromEnum(Op.raise));
+
+                try self.appendIntAt(@intCast(self.buffer.items.len), patch);
+            },
             else => {
                 std.debug.panic("Unhandled: {}", .{e.kind});
                 unreachable;

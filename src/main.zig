@@ -622,6 +622,12 @@ test "let declaration" {
     try expectExprEqual("let add(a = 0, b = 0) = a + b; let fun(x = add(1, 2)) = x * x; fun();", "9");
 }
 
+test "let pattern declaration" {
+    try expectExprEqual("let [x, y] = [1, 2]", "[1, 2]");
+    try expectExprEqual("let [x, y] = [1, 2] ; x", "1");
+    try expectExprEqual("let [x, y] = [1, 2] ; y", "2");
+}
+
 test "if" {
     try expectExprEqual("if true -> 1 | 0", "1");
     try expectExprEqual("if false -> 1 | 0", "0");
