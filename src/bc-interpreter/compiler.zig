@@ -244,6 +244,7 @@ pub const Compiler = struct {
                 try self.appendInt(@intCast(e.kind.call.args.len));
                 try self.appendPosition(e.position);
             },
+            .catche => unreachable,
             .dot => {
                 try self.compileExpr(e.kind.dot.record);
                 try self.appendPushLiteralString(e.kind.dot.field.slice());
@@ -473,8 +474,11 @@ pub const Compiler = struct {
 
                 try self.appendIntAt(@intCast(self.buffer.items.len), patch);
             },
-            else => {
-                std.debug.panic("Unhandled: {}", .{e.kind});
+            .raise => {
+                try self.compileExpr(e.kind.raise.expr);
+                try self.buffer.append(@intFromEnum(Op.raise));
+            },
+            .whilee => {
                 unreachable;
             },
         }
