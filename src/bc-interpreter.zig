@@ -584,4 +584,8 @@ test "match" {
     try expectExprEqual("match {a: 2, b: 2} | {a: 2, b} -> b * 2 | {a: 1, b} -> b * 3 | {b} -> b * 4", "4");
     try expectExprEqual("match {a: 10, b: 2} | {a: 2, b} -> b * 2 | {a: 1, b} -> b * 3 | {b} -> b * 4", "8");
     try expectExprEqual("match {b: 2} | {a: 2, b} -> b * 2 | {a: 1, b} -> b * 3 | {b} -> b * 4", "8");
+
+    try expectExprEqual("match {a: {x: 1, y: 2}, b: [1, 2]} | {a: {x, y}, b: [1, y']} -> x + 100 * (y + y') | {a: {x, y}, b: [x', y']} -> x + x' + 100 * (x' + y') | {a: {x, y}, b: [x', y'], c} -> x + x' + c * (x' + y')", "401");
+    try expectExprEqual("match {a: {x: 1, y: 2}, b: [2, 3]} | {a: {x, y}, b: [1, y']} -> x + 100 * (y + y') | {a: {x, y}, b: [x', y']} -> x + x' + 100 * (x' + y') | {a: {x, y}, b: [x', y'], c} -> x + x' + c * (x' + y')", "503");
+    try expectExprEqual("match {a: {x: 1, y: 2}, b: [2, 3], c: 100} | {a: {x, y}, b: [1, y']} -> x + 100 * (y + y') | {a: {x, y}, b: [x', y']} -> x + x' + 100 * (x' + y') | {a: {x, y}, b: [x', y'], c} -> x + x' + c * (x' + y')", "503");
 }
