@@ -494,7 +494,41 @@ pub const Compiler = struct {
                 const patch = self.buffer.items.len;
                 try self.appendInt(0);
 
+                for (casePatches.items) |ptch| {
+                    try self.appendIntAt(@intCast(self.buffer.items.len), ptch);
+                }
+
                 try self.buffer.append(@intFromEnum(Op.push_record));
+                try self.appendPushLiteralString("kind");
+                try self.appendPushLiteralString("MatchError");
+                try self.buffer.append(@intFromEnum(Op.set_record_item_bang));
+                try self.appendPosition(e.position);
+                try self.buffer.append(@intFromEnum(Op.swap));
+                try self.appendPushLiteralString("value");
+                try self.buffer.append(@intFromEnum(Op.swap));
+                try self.buffer.append(@intFromEnum(Op.set_record_item_bang));
+                try self.appendPosition(e.position);
+
+                try self.buffer.append(@intFromEnum(Op.push_identifier));
+                try self.appendString("rebo");
+                try self.appendPosition(e.position);
+                try self.appendPushLiteralString("lang");
+                try self.buffer.append(@intFromEnum(Op.dot));
+                try self.appendPosition(e.position);
+                try self.appendPushLiteralString("stack.append.position!");
+                try self.buffer.append(@intFromEnum(Op.index));
+                try self.appendPosition(e.position);
+                try self.appendPosition(e.position);
+                try self.buffer.append(@intFromEnum(Op.push_int));
+                try self.appendInt(@intCast(e.position.start));
+                try self.buffer.append(@intFromEnum(Op.push_int));
+                try self.appendInt(@intCast(e.position.end));
+                try self.buffer.append(@intFromEnum(Op.call));
+                try self.appendInt(2);
+                try self.appendPosition(e.position);
+
+                try self.buffer.append(@intFromEnum(Op.discard));
+
                 try self.buffer.append(@intFromEnum(Op.raise));
 
                 try self.appendIntAt(@intCast(self.buffer.items.len), patch);
