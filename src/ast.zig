@@ -212,7 +212,6 @@ pub const LiteralSequenceValue = union(enum) {
 pub const MatchExpression = struct {
     value: *Expression,
     cases: []MatchCase,
-    elseCase: ?*Expression,
 };
 
 pub const MatchCase = struct {
@@ -346,9 +345,6 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
                     c.deinit(allocator);
                 }
                 allocator.free(expr.kind.match.cases);
-                if (expr.kind.match.elseCase != null) {
-                    destroyExpr(allocator, expr.kind.match.elseCase.?);
-                }
             },
             .notOp => destroyExpr(allocator, expr.kind.notOp.value),
             .patternDeclaration => expr.kind.patternDeclaration.deinit(allocator),

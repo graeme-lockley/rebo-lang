@@ -39,6 +39,7 @@ pub const Op = enum(u8) {
 
     duplicate,
     discard,
+    swap,
 
     append_sequence_item_bang, // P
     append_sequence_items_bang, // P
@@ -67,4 +68,6 @@ pub const Op = enum(u8) {
     rangeTo, // PP
     rangeFrom, // PP
     not, // P
+
+    debug, // IS
 };

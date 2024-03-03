@@ -1198,6 +1198,16 @@ pub const Runtime = struct {
         }
     }
 
+    pub fn swap(self: *Runtime) !void {
+        const a = self.peek(1);
+        const b = self.peek(0);
+
+        self.popn(2);
+
+        try self.push(b);
+        try self.push(a);
+    }
+
     pub fn assignIdentifier(self: *Runtime) !void {
         const n = self.peek(1);
         const v = self.peek(0);
@@ -1543,6 +1553,7 @@ fn setupRebo(state: *Runtime) !void {
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope.open", try state.newBuiltinValue(@import("builtins/scope.zig").open));
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope.super", try state.newBuiltinValue(@import("builtins/scope.zig").super));
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope.super.assign!", try state.newBuiltinValue(@import("builtins/scope.zig").assign));
+    try reboLang.v.RecordKind.setU8(state.stringPool, "stack.append.position!", try state.newBuiltinValue(@import("builtins/errors.zig").appendPosition));
     try reboLang.v.RecordKind.setU8(state.stringPool, "str", try state.newBuiltinValue(@import("builtins/str.zig").str));
     try reboLang.v.RecordKind.setU8(state.stringPool, "typeof", try state.newBuiltinValue(@import("builtins/typeof.zig").typeof));
 

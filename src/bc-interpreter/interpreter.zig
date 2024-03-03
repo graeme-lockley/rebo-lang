@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const Debug = @import("./../debug.zig");
 const ER = @import("./../error-reporting.zig");
 const Errors = @import("./../errors.zig");
 const Runtime = @import("./../runtime.zig").Runtime;
@@ -100,9 +101,7 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                     ip = @intCast(readInt(bytecode, ip + 1));
                 }
             },
-            .raise => {
-                return Errors.RuntimeErrors.InterpreterError;
-            },
+            .raise => return Errors.RuntimeErrors.InterpreterError,
             .is_record => {
                 const v = runtime.pop();
                 try runtime.pushBoolValue(v.isRecord());
@@ -196,6 +195,10 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
             },
             Op.discard => {
                 _ = runtime.pop();
+                ip += 1;
+            },
+            .swap => {
+                try runtime.swap();
                 ip += 1;
             },
             Op.append_sequence_item_bang => {
@@ -333,6 +336,16 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                 const exprPosition = readPosition(bytecode, ip + 1);
                 try runtime.not(exprPosition);
                 ip += 1 + PositionTypeSize;
+            },
+            .debug => {
+                const depth = readInt(bytecode, ip + 1);
+
+                const len: usize = @intCast(readInt(bytecode, ip + 1 + IntTypeSize));
+                const msg = bytecode[ip + 1 + IntTypeSize + IntTypeSize .. ip + 1 + IntTypeSize + IntTypeSize + len];
+
+                Debug.showStack(runtime, @intCast(depth), msg) catch {};
+
+                ip += 1 + IntTypeSize + IntTypeSize + len;
             },
 
             // else => unreachable,

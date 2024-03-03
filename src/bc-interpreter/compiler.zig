@@ -95,7 +95,6 @@ pub const Compiler = struct {
                         std.debug.panic("Unhandled assignment: {}", .{e.kind.assignment.lhs.kind});
                         unreachable;
                     },
-                    // try ER.raiseNamedUserError(runtime, "InvalidLHSError", lhs.position),
                 }
             },
             .binaryOp => {
@@ -443,12 +442,38 @@ pub const Compiler = struct {
                 }
                 casePatches.clearRetainingCapacity();
 
+                try self.buffer.append(@intFromEnum(Op.push_record));
+                try self.appendPushLiteralString("kind");
+                try self.appendPushLiteralString("MatchError");
+                try self.buffer.append(@intFromEnum(Op.set_record_item_bang));
+                try self.appendPosition(e.position);
+                try self.buffer.append(@intFromEnum(Op.swap));
+                try self.appendPushLiteralString("value");
+                try self.buffer.append(@intFromEnum(Op.swap));
+                try self.buffer.append(@intFromEnum(Op.set_record_item_bang));
+                try self.appendPosition(e.position);
+
+                try self.buffer.append(@intFromEnum(Op.push_identifier));
+                try self.appendString("rebo");
+                try self.appendPosition(e.position);
+                try self.appendPushLiteralString("lang");
+                try self.buffer.append(@intFromEnum(Op.dot));
+                try self.appendPosition(e.position);
+                try self.appendPushLiteralString("stack.append.position!");
+                try self.buffer.append(@intFromEnum(Op.index));
+                try self.appendPosition(e.position);
+                try self.appendPosition(e.position);
+                try self.buffer.append(@intFromEnum(Op.push_int));
+                try self.appendInt(@intCast(e.position.start));
+                try self.buffer.append(@intFromEnum(Op.push_int));
+                try self.appendInt(@intCast(e.position.end));
+                try self.buffer.append(@intFromEnum(Op.call));
+                try self.appendInt(2);
+                try self.appendPosition(e.position);
+
                 try self.buffer.append(@intFromEnum(Op.discard));
-                if (e.kind.match.elseCase) |elseCase| {
-                    try self.compileExpr(elseCase);
-                    // } else {
-                    //     unreachable;
-                }
+
+                try self.buffer.append(@intFromEnum(Op.raise));
 
                 for (patches.items) |patch| {
                     try self.appendIntAt(@intCast(self.buffer.items.len), patch);
@@ -686,6 +711,12 @@ pub const Compiler = struct {
 
         try self.appendInt(@intCast(bc.len));
         try self.buffer.appendSlice(bc);
+    }
+
+    fn appendDebug(self: *Compiler, stackDepth: usize, msg: []const u8) !void {
+        try self.buffer.append(@intFromEnum(Op.debug));
+        try self.appendInt(@intCast(stackDepth));
+        try self.appendString(msg);
     }
 
     fn appendFloat(self: *Compiler, v: V.FloatType) !void {
