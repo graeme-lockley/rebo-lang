@@ -12,7 +12,11 @@ const FloatTypeSize: usize = 8;
 const PositionTypeSize: usize = 2 * IntTypeSize;
 
 pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
-    var ip: usize = 0;
+    try evalBlock(runtime, bytecode, 0);
+}
+
+fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.RuntimeErrors!void {
+    var ip: usize = startIp;
     while (true) {
         switch (@as(Op, @enumFromInt(bytecode[ip]))) {
             Op.ret => return,
@@ -102,6 +106,14 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
                 }
             },
             .raise => return Errors.RuntimeErrors.InterpreterError,
+            .catche => {
+                const ipStart = ip;
+
+                ip = @intCast(readInt(bytecode, ip + 1));
+                evalBlock(runtime, bytecode, ipStart + 1 + IntTypeSize + IntTypeSize) catch {
+                    ip = @intCast(readInt(bytecode, ipStart + 1 + IntTypeSize));
+                };
+            },
             .is_record => {
                 const v = runtime.pop();
                 try runtime.pushBoolValue(v.isRecord());

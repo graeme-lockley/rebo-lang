@@ -17,6 +17,7 @@ pub const Op = enum(u8) {
     jmp_false, // IP
 
     raise,
+    catche, // II
 
     is_record,
 

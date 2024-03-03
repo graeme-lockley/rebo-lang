@@ -243,7 +243,58 @@ pub const Compiler = struct {
                 try self.appendInt(@intCast(e.kind.call.args.len));
                 try self.appendPosition(e.position);
             },
-            .catche => unreachable,
+            .catche => {
+                var patches = std.ArrayList(usize).init(self.allocator);
+                defer patches.deinit();
+
+                var casePatches = std.ArrayList(usize).init(self.allocator);
+                defer casePatches.deinit();
+
+                try self.buffer.append(@intFromEnum(Op.catche));
+                const noExceptionPatch = self.buffer.items.len;
+                try self.appendInt(0);
+                const exceptionPatch = self.buffer.items.len;
+                try self.appendInt(0);
+                try self.compileExpr(e.kind.catche.value);
+                try self.buffer.append(@intFromEnum(Op.ret));
+                try self.appendIntAt(@intCast(self.buffer.items.len), exceptionPatch);
+
+                for (e.kind.catche.cases) |case| {
+                    for (casePatches.items) |patch| {
+                        try self.appendIntAt(@intCast(self.buffer.items.len), patch);
+                    }
+
+                    if (casePatches.items.len > 0) {
+                        try self.buffer.append(@intFromEnum(Op.close_scope));
+                    }
+                    casePatches.clearRetainingCapacity();
+
+                    try self.buffer.append(@intFromEnum(Op.open_scope));
+                    try self.compilePattern(case.pattern, &casePatches);
+                    try self.buffer.append(@intFromEnum(Op.discard));
+                    try self.compileExpr(case.body);
+                    try self.buffer.append(@intFromEnum(Op.close_scope));
+                    try self.buffer.append(@intFromEnum(Op.jmp));
+                    try patches.append(@intCast(self.buffer.items.len));
+                    try self.appendInt(0);
+                }
+
+                for (casePatches.items) |patch| {
+                    try self.appendIntAt(@intCast(self.buffer.items.len), patch);
+                }
+
+                if (casePatches.items.len > 0) {
+                    try self.buffer.append(@intFromEnum(Op.close_scope));
+                }
+
+                try self.buffer.append(@intFromEnum(Op.raise));
+
+                for (patches.items) |patch| {
+                    try self.appendIntAt(@intCast(self.buffer.items.len), patch);
+                }
+
+                try self.appendIntAt(@intCast(self.buffer.items.len), noExceptionPatch);
+            },
             .dot => {
                 try self.compileExpr(e.kind.dot.record);
                 try self.appendPushLiteralString(e.kind.dot.field.slice());
@@ -440,7 +491,6 @@ pub const Compiler = struct {
                 if (casePatches.items.len > 0) {
                     try self.buffer.append(@intFromEnum(Op.close_scope));
                 }
-                casePatches.clearRetainingCapacity();
 
                 try self.buffer.append(@intFromEnum(Op.push_record));
                 try self.appendPushLiteralString("kind");
