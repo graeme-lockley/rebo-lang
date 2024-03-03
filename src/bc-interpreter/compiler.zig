@@ -588,7 +588,16 @@ pub const Compiler = struct {
                 try self.buffer.append(@intFromEnum(Op.raise));
             },
             .whilee => {
-                unreachable;
+                const start = self.buffer.items.len;
+                try self.compileExpr(e.kind.whilee.condition);
+                try self.buffer.append(@intFromEnum(Op.jmp_false));
+                const patch = self.buffer.items.len;
+                try self.appendInt(0);
+                try self.appendPosition(e.kind.whilee.condition.position);
+                try self.compileExpr(e.kind.whilee.body);
+                try self.buffer.append(@intFromEnum(Op.jmp));
+                try self.appendInt(@intCast(start));
+                try self.appendIntAt(@intCast(self.buffer.items.len), patch);
             },
         }
     }
