@@ -3,6 +3,7 @@ const std = @import("std");
 const AST = @import("./../ast.zig");
 pub const Errors = @import("./../errors.zig");
 pub const M = @import("./../ast-interpreter.zig");
+pub const B = @import("./../bc-interpreter.zig");
 pub const V = @import("./../value.zig");
 
 pub const ER = @import("./../error-reporting.zig");

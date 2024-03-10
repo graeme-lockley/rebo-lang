@@ -6,8 +6,9 @@ const Interpreter = @import("../bc-interpreter/interpreter.zig");
 
 pub fn compile(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const input = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
+    const name = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.StringKind, Helper.ValueValue.UnitKind });
 
-    const ast = try BCInterpreter.parse(machine, input.v.StringKind.slice());
+    const ast = try BCInterpreter.parse(machine, if (name.isString()) name.v.StringKind.slice() else "eval", input.v.StringKind.slice());
     defer ast.destroy(machine.allocator);
 
     const bytecode = try BCInterpreter.compile(machine.allocator, ast);

@@ -23,8 +23,8 @@ pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
     try Interpreter.eval(runtime, bytecode);
 }
 
-pub fn script(runtime: *Runtime, input: []const u8) !void {
-    const ast = try parse(runtime, input);
+pub fn script(runtime: *Runtime, name: []const u8, input: []const u8) !void {
+    const ast = try parse(runtime, name, input);
     defer ast.destroy(runtime.allocator);
 
     const bytecode = try compile(runtime.allocator, ast);
@@ -33,10 +33,10 @@ pub fn script(runtime: *Runtime, input: []const u8) !void {
     try Interpreter.eval(runtime, bytecode);
 }
 
-pub fn parse(runtime: *Runtime, input: []const u8) !*AST.Expression {
+pub fn parse(runtime: *Runtime, name: []const u8, input: []const u8) !*AST.Expression {
     var l = Lexer.Lexer.init(runtime.allocator);
 
-    l.initBuffer("test", input) catch |err| {
+    l.initBuffer(name, input) catch |err| {
         var e = l.grabErr().?;
         defer e.deinit();
 
@@ -58,6 +58,16 @@ pub fn parse(runtime: *Runtime, input: []const u8) !*AST.Expression {
     return ast;
 }
 
+pub fn execute(self: *Runtime, name: []const u8, buffer: []const u8) !void {
+    const ast = try parse(self, name, buffer);
+    defer ast.destroy(self.allocator);
+
+    const bytecode = try compile(self.allocator, ast);
+    defer self.allocator.free(bytecode);
+
+    try Interpreter.eval(self, bytecode);
+}
+
 fn expectExprEqual(input: []const u8, expected: []const u8) !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -68,7 +78,7 @@ fn expectExprEqual(input: []const u8, expected: []const u8) !void {
 
         try runtime.openScope();
 
-        script(&runtime, input) catch |err| {
+        script(&runtime, "test", input) catch |err| {
             std.log.err("Error: {}: {s}\n", .{ err, input });
             return error.TestingError;
         };
@@ -108,7 +118,7 @@ fn expectError(input: []const u8) !void {
 
         try runtime.openScope();
 
-        script(&runtime, input) catch {
+        script(&runtime, "test", input) catch {
             return;
         };
 
