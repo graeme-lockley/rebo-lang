@@ -22,6 +22,16 @@ let read = rebo.os.read
 let socket = rebo.os.socket
 let write = rebo.os.write
 
+let eval'(script, opts = {}) {
+   let __compile = rebo.os["bc.compile"]
+   let __eval(e, s) = rebo.os["bc.eval"](__compile(e), s ? scope())
+
+   let callerScope = opts.scope ? __caller_scope__
+   
+   if opts.persistent -> __eval(callerScope)
+    | __eval(e, rebo.lang["scope.open"](callerScope))
+}
+
 let eval(script, opts = {}) {
    let callerScope = opts.scope ? __caller_scope__
 
