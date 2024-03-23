@@ -97,6 +97,17 @@ pub const Runtime = struct {
         self.allocator.destroy(self.stringPool);
     }
 
+    pub fn eql(self: *Runtime, other: *Runtime) bool {
+        if (self.stack.items.len != other.stack.items.len) return false;
+        for (self.stack.items, 0..) |item, idx| {
+            if (!eqls(item, other.stack.items[idx])) {
+                return false;
+            }
+        }
+        if (self.scopes.items.len != other.scopes.items.len) return false;
+        return true;
+    }
+
     fn destroyFreeList(self: *Runtime) void {
         var runner: ?*V.Value = self.free;
         while (runner != null) {
@@ -400,13 +411,13 @@ pub const Runtime = struct {
         _ = self.scopes.pop();
     }
 
-    pub fn pushScope(self: *Runtime) !void {
-        self.scopes.items[self.scopes.items.len - 1] = try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, self.scopes.items[self.scopes.items.len - 1]) });
-    }
+    // pub fn pushScope(self: *Runtime) !void {
+    //     self.scopes.items[self.scopes.items.len - 1] = try self.newValue(V.ValueValue{ .ScopeKind = V.ScopeValue.init(self.allocator, self.scopes.items[self.scopes.items.len - 1]) });
+    // }
 
-    pub fn popScope(self: *Runtime) void {
-        self.scopes.items[self.scopes.items.len - 1] = self.scopes.items[self.scopes.items.len - 1].v.ScopeKind.parent.?;
-    }
+    // pub fn popScope(self: *Runtime) void {
+    //     self.scopes.items[self.scopes.items.len - 1] = self.scopes.items[self.scopes.items.len - 1].v.ScopeKind.parent.?;
+    // }
 
     pub fn addToScope(self: *Runtime, name: *SP.String, value: *V.Value) !void {
         try self.scope().?.v.ScopeKind.set(name, value);
@@ -1591,4 +1602,68 @@ fn setupRebo(state: *Runtime) !void {
 
     const reboImports = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
     try value.v.RecordKind.setU8(state.stringPool, "imports", reboImports);
+}
+
+pub fn eqls(a: *V.Value, b: *V.Value) bool {
+    if (@intFromPtr(a) == @intFromPtr(b)) return true;
+    if (@intFromEnum(a.v) != @intFromEnum(b.v)) {
+        switch (a.v) {
+            .IntKind => return b.v == .FloatKind and @as(V.FloatType, @floatFromInt(a.v.IntKind)) == b.v.FloatKind,
+            .FloatKind => return b.v == .IntKind and a.v.FloatKind == @as(V.FloatType, @floatFromInt(b.v.IntKind)),
+            else => {},
+        }
+    }
+
+    return true;
+
+    // switch (a.v) {
+    //     .ASTFunctionKind => return true,
+    //     .BCFunctionKind => return true,
+    //     .BoolKind => return a.v.BoolKind == b.v.BoolKind,
+    //     .BuiltinFunctionKind => return true,
+    //     .CharKind => return a.v.CharKind == b.v.CharKind,
+    //     .FileKind => return true,
+    //     .IntKind => return a.v.IntKind == b.v.IntKind,
+    //     .FloatKind => return a.v.FloatKind == b.v.FloatKind,
+    //     .HttpClientKind => unreachable,
+    //     .HttpClientRequestKind => unreachable,
+    //     .RecordKind => {
+    //         if (a.v.RecordKind.count() != b.v.RecordKind.count()) return false;
+
+    //         // var iterator = a.v.RecordKind.iterator();
+    //         // while (iterator.next()) |entry| {
+    //         //     var value = b.v.RecordKind.get(entry.key_ptr.*);
+    //         //     if (value == null) return false;
+
+    //         //     if (!eqls(entry.value_ptr.*, value.?)) return false;
+    //         // }
+
+    //         return true;
+    //     },
+    //     .ScopeKind => {
+    //         if (a.v.ScopeKind.values.count() != b.v.ScopeKind.values.count()) return false;
+
+    //         var iterator = a.v.ScopeKind.values.iterator();
+    //         while (iterator.next()) |entry| {
+    //             var value = b.v.ScopeKind.values.get(entry.key_ptr.*);
+    //             if (value == null) return false;
+
+    //             if (!eqls(entry.value_ptr.*, value.?)) return false;
+    //         }
+
+    //         return true;
+    //     },
+    //     .SequenceKind => {
+    //         if (a.v.SequenceKind.len() != b.v.SequenceKind.len()) return false;
+
+    //         for (a.v.SequenceKind.items(), 0..) |v, i| {
+    //             if (!eqls(v, b.v.SequenceKind.at(i))) return false;
+    //         }
+
+    //         return true;
+    //     },
+    //     .StreamKind => return true,
+    //     .StringKind => return std.mem.eql(u8, a.v.StringKind.slice(), b.v.StringKind.slice()),
+    //     .UnitKind => return true,
+    // }
 }

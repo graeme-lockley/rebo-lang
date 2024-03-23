@@ -77,7 +77,9 @@ fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         defer runtime.deinit();
 
         try runtime.openScope();
+        defer runtime.restoreScope();
 
+        const scopeSize = runtime.scopes.items.len;
         script(&runtime, "test", input) catch |err| {
             std.log.err("Error: {}: {s}\n", .{ err, input });
             return error.TestingError;
@@ -93,6 +95,10 @@ fn expectExprEqual(input: []const u8, expected: []const u8) !void {
             }
             if (runtime.stack.items.len != 1) {
                 std.log.err("Expected 1 value on the stack, got: {d}\n", .{runtime.stack.items.len});
+                return error.TestingError;
+            }
+            if (runtime.scopes.items.len != scopeSize) {
+                std.log.err("Expected {d} scope, got: {d}\n", .{ scopeSize, runtime.scopes.items.len });
                 return error.TestingError;
             }
         } else {

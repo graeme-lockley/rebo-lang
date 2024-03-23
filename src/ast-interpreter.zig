@@ -43,8 +43,8 @@ pub fn evalExpr(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void
 }
 
 fn evalExprInScope(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
-    if (e.kind == .exprs) try runtime.pushScope();
-    defer if (e.kind == .exprs) runtime.popScope();
+    if (e.kind == .exprs) try runtime.openScope();
+    defer if (e.kind == .exprs) runtime.restoreScope();
 
     try evalExpr(runtime, e);
 }
@@ -274,20 +274,20 @@ fn catche(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
         const value = runtime.peek(0);
 
         for (e.kind.catche.cases) |case| {
-            try runtime.pushScope();
+            try runtime.openScope();
 
             const matched = try matchPattern(runtime, case.pattern, value);
             if (matched) {
                 const result = evalExpr(runtime, case.body);
 
-                runtime.popScope();
+                runtime.restoreScope();
                 const v = runtime.pop();
                 runtime.stack.items.len = sp;
                 try runtime.push(v);
 
                 return result;
             }
-            runtime.popScope();
+            runtime.restoreScope();
         }
         return err;
     };
@@ -466,20 +466,20 @@ fn match(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     const value = runtime.peek(0);
 
     for (e.kind.match.cases) |case| {
-        try runtime.pushScope();
+        try runtime.openScope();
 
         const matched = try matchPattern(runtime, case.pattern, value);
         if (matched) {
             const result = evalExpr(runtime, case.body);
 
-            runtime.popScope();
+            runtime.restoreScope();
             const v = runtime.pop();
             _ = runtime.pop();
             try runtime.push(v);
 
             return result;
         }
-        runtime.popScope();
+        runtime.restoreScope();
     }
 
     try ER.raiseMatchError(runtime, e.position, value);

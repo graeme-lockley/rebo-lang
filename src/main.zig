@@ -1,7 +1,9 @@
 const std = @import("std");
 
 const API = @import("./api.zig").API;
+const BCInterpreter = @import("./bc-interpreter.zig");
 const Errors = @import("./errors.zig");
+const Runtime = @import("./runtime.zig").Runtime;
 const V = @import("./value.zig");
 
 const Editor = @import("zigline/main.zig").Editor;
@@ -135,7 +137,7 @@ fn runPrelude(rebo: *API) !void {
         try errorHandler(err, rebo);
     };
 
-    try rebo.runtime.pushScope();
+    try rebo.runtime.openScope();
 }
 
 fn prelude(rebo: *API) ![]u8 {
@@ -195,8 +197,22 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         defer rebo.deinit();
 
         try rebo.runtime.openScope();
+        defer rebo.runtime.restoreScope();
 
+        var runtime = try Runtime.init(allocator);
+        defer runtime.deinit();
+
+        try runtime.openScope();
+        defer runtime.restoreScope();
+
+        const astScopeSize = rebo.runtime.scopes.items.len;
         rebo.script(input) catch |err| {
+            std.log.err("Error: {}: {s}\n", .{ err, input });
+            return error.TestingError;
+        };
+
+        const bcScopeSize = runtime.scopes.items.len;
+        BCInterpreter.script(&runtime, "test", input) catch |err| {
             std.log.err("Error: {}: {s}\n", .{ err, input });
             return error.TestingError;
         };
@@ -206,15 +222,45 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
             defer allocator.free(result);
 
             if (!std.mem.eql(u8, result, expected)) {
-                std.log.err("Expected: '{s}', got: '{s}'\n", .{ expected, result });
+                std.log.err("AST: Expected: '{s}', got: '{s}'\n", .{ expected, result });
                 return error.TestingError;
             }
             if (rebo.stackDepth() != 1) {
-                std.log.err("Expected 1 value on the stack, got: {d}\n", .{rebo.stackDepth()});
+                std.log.err("AST: Expected 1 value on the stack, got: {d}\n", .{rebo.stackDepth()});
+                return error.TestingError;
+            }
+            if (rebo.runtime.scopes.items.len != astScopeSize) {
+                std.log.err("AST: Expected {d} scope, got: {d}\n", .{ astScopeSize, rebo.runtime.scopes.items.len });
                 return error.TestingError;
             }
         } else {
-            std.log.err("Expected a value on the stack\n", .{});
+            std.log.err("AST: Expected a value on the stack\n", .{});
+            return error.TestingError;
+        }
+
+        if (runtime.topOfStack()) |v| {
+            const result = try v.toString(allocator, V.Style.Pretty);
+            defer allocator.free(result);
+
+            if (!std.mem.eql(u8, result, expected)) {
+                std.log.err("BC: Expected: '{s}', got: '{s}'\n", .{ expected, result });
+                return error.TestingError;
+            }
+            if (runtime.stack.items.len != 1) {
+                std.log.err("BC: Expected 1 value on the stack, got: {d}\n", .{runtime.stack.items.len});
+                return error.TestingError;
+            }
+            if (runtime.scopes.items.len != bcScopeSize) {
+                std.log.err("BC: Expected {d} scope, got: {d}\n", .{ bcScopeSize, runtime.scopes.items.len });
+                return error.TestingError;
+            }
+        } else {
+            std.log.err("BC: Expected a value on the stack\n", .{});
+            return error.TestingError;
+        }
+
+        if (!rebo.runtime.eql(&runtime)) {
+            std.log.err("Expected runtime values to be equal\n", .{});
             return error.TestingError;
         }
     }

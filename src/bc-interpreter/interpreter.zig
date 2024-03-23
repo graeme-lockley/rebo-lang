@@ -135,7 +135,7 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                 ip += 1;
             },
             .close_scope => {
-                runtime.popScope();
+                runtime.restoreScope();
                 ip += 1;
             },
             Op.call => {
