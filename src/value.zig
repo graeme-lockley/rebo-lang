@@ -499,7 +499,7 @@ pub const RecordValue = struct {
         const spKey = try stringPool.intern(key);
         defer spKey.decRef();
 
-        return self.items.get(spKey);
+        return self.get(spKey);
     }
 
     pub fn count(self: *const RecordValue) usize {
@@ -561,6 +561,13 @@ pub const ScopeValue = struct {
                 return true;
             }
         }
+    }
+
+    pub fn getU8(self: *const ScopeValue, stringPool: *SP.StringPool, key: []const u8) !?*Value {
+        const spKey = try stringPool.intern(key);
+        defer spKey.decRef();
+
+        return self.get(spKey);
     }
 
     pub fn get(self: *const ScopeValue, key: *SP.String) ?*Value {
@@ -715,9 +722,7 @@ pub fn eq(a: *Value, b: *Value) bool {
         switch (a.v) {
             .IntKind => return b.v == .FloatKind and @as(FloatType, @floatFromInt(a.v.IntKind)) == b.v.FloatKind,
             .FloatKind => return b.v == .IntKind and a.v.FloatKind == @as(FloatType, @floatFromInt(b.v.IntKind)),
-            else => {
-                return false;
-            },
+            else => return false,
         }
     }
 

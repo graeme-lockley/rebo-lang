@@ -98,13 +98,37 @@ pub const Runtime = struct {
     }
 
     pub fn eql(self: *Runtime, other: *Runtime) bool {
-        if (self.stack.items.len != other.stack.items.len) return false;
+        if (self.stack.items.len != other.stack.items.len) {
+            std.log.err("eql: stack items different length", .{});
+            return false;
+        }
         for (self.stack.items, 0..) |item, idx| {
-            if (!eqls(item, other.stack.items[idx])) {
+            if (!eqls(self.stringPool, item, other.stack.items[idx])) {
+                var itemS = item.toString(self.allocator, V.Style.Pretty) catch return false;
+                defer self.allocator.free(itemS);
+                var otherS = other.stack.items[idx].toString(self.allocator, V.Style.Pretty) catch return false;
+                defer self.allocator.free(otherS);
+
+                std.log.err("eql: stack elements different value: [{s}]: [{s}]", .{ itemS, otherS });
                 return false;
             }
         }
-        if (self.scopes.items.len != other.scopes.items.len) return false;
+        if (self.scopes.items.len != other.scopes.items.len) {
+            std.log.err("eql:scope items of different length", .{});
+            return false;
+        }
+        for (self.scopes.items, 0..) |item, idx| {
+            if (!eqls(self.stringPool, item, other.scopes.items[idx])) {
+                var itemS = item.toString(self.allocator, V.Style.Pretty) catch return false;
+                defer self.allocator.free(itemS);
+                var otherS = other.scopes.items[idx].toString(self.allocator, V.Style.Pretty) catch return false;
+                defer self.allocator.free(otherS);
+
+                std.log.err("eql: scope elements different value: [{s}]: [{s}]", .{ itemS, otherS });
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -1604,66 +1628,120 @@ fn setupRebo(state: *Runtime) !void {
     try value.v.RecordKind.setU8(state.stringPool, "imports", reboImports);
 }
 
-pub fn eqls(a: *V.Value, b: *V.Value) bool {
+fn eqls(stringPool: *SP.StringPool, a: *V.Value, b: *V.Value) bool {
+    const result = eqlss(stringPool, a, b);
+
+    if (!result) {
+        var aS = a.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+        defer stringPool.allocator.free(aS);
+        var bS = b.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+        defer stringPool.allocator.free(bS);
+
+        std.log.err("eqls: different value: {}:[{s}] vs {}:[{s}]", .{ @intFromEnum(a.v), aS, @intFromEnum(b.v), bS });
+    }
+
+    return result;
+}
+
+fn eqlss(stringPool: *SP.StringPool, a: *V.Value, b: *V.Value) bool {
     if (@intFromPtr(a) == @intFromPtr(b)) return true;
     if (@intFromEnum(a.v) != @intFromEnum(b.v)) {
         switch (a.v) {
             .IntKind => return b.v == .FloatKind and @as(V.FloatType, @floatFromInt(a.v.IntKind)) == b.v.FloatKind,
             .FloatKind => return b.v == .IntKind and a.v.FloatKind == @as(V.FloatType, @floatFromInt(b.v.IntKind)),
-            else => {},
+            .ASTFunctionKind, .BCFunctionKind, .BuiltinFunctionKind => return b.v == .ASTFunctionKind or b.v == .BCFunctionKind or b.v == .BuiltinFunctionKind,
+            else => return false,
         }
     }
 
-    return true;
+    switch (a.v) {
+        .BoolKind => return a.v.BoolKind == b.v.BoolKind,
+        .CharKind => return a.v.CharKind == b.v.CharKind,
+        .IntKind => return a.v.IntKind == b.v.IntKind,
+        .FloatKind => return a.v.FloatKind == b.v.FloatKind,
+        .RecordKind => {
+            if (a.v.RecordKind.count() != b.v.RecordKind.count()) {
+                std.log.err("eqls: record sizes are different value: [{d}] vs [{d}]", .{ a.v.RecordKind.count(), b.v.RecordKind.count() });
+                return false;
+            }
 
-    // switch (a.v) {
-    //     .ASTFunctionKind => return true,
-    //     .BCFunctionKind => return true,
-    //     .BoolKind => return a.v.BoolKind == b.v.BoolKind,
-    //     .BuiltinFunctionKind => return true,
-    //     .CharKind => return a.v.CharKind == b.v.CharKind,
-    //     .FileKind => return true,
-    //     .IntKind => return a.v.IntKind == b.v.IntKind,
-    //     .FloatKind => return a.v.FloatKind == b.v.FloatKind,
-    //     .HttpClientKind => unreachable,
-    //     .HttpClientRequestKind => unreachable,
-    //     .RecordKind => {
-    //         if (a.v.RecordKind.count() != b.v.RecordKind.count()) return false;
+            var iterator = b.v.RecordKind.iterator();
+            while (iterator.next()) |entry| {
+                var value: ?*V.Value = null;
+                var iterator2 = a.v.RecordKind.iterator();
+                while (iterator2.next()) |item| {
+                    if (std.mem.eql(u8, item.key_ptr.*.slice(), entry.key_ptr.*.slice())) {
+                        value = item.value_ptr.*;
+                        break;
+                    }
+                }
+                if (value == null) {
+                    var itemS = a.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+                    defer stringPool.allocator.free(itemS);
 
-    //         // var iterator = a.v.RecordKind.iterator();
-    //         // while (iterator.next()) |entry| {
-    //         //     var value = b.v.RecordKind.get(entry.key_ptr.*);
-    //         //     if (value == null) return false;
+                    std.log.err("eqls: record: key not found: [{s}] in [{s}]", .{ entry.key_ptr.*.slice(), itemS });
+                    return false;
+                }
 
-    //         //     if (!eqls(entry.value_ptr.*, value.?)) return false;
-    //         // }
+                if (!eqls(stringPool, entry.value_ptr.*, value.?)) {
+                    var itemS = entry.value_ptr.*.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+                    defer stringPool.allocator.free(itemS);
+                    var otherS = value.?.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+                    defer stringPool.allocator.free(otherS);
 
-    //         return true;
-    //     },
-    //     .ScopeKind => {
-    //         if (a.v.ScopeKind.values.count() != b.v.ScopeKind.values.count()) return false;
+                    std.log.err("eqls: record: different value: [{s}]: [{s}] vs [{s}]", .{ entry.key_ptr.*.slice(), itemS, otherS });
+                    return false;
+                }
+            }
 
-    //         var iterator = a.v.ScopeKind.values.iterator();
-    //         while (iterator.next()) |entry| {
-    //             var value = b.v.ScopeKind.values.get(entry.key_ptr.*);
-    //             if (value == null) return false;
+            return true;
+        },
+        .ScopeKind => {
+            if (a.v.ScopeKind.values.count() != b.v.ScopeKind.values.count()) {
+                std.log.err("eqls: scope sizes are different value: [{d}] vs [{d}]", .{ a.v.ScopeKind.values.count(), b.v.ScopeKind.values.count() });
 
-    //             if (!eqls(entry.value_ptr.*, value.?)) return false;
-    //         }
+                return false;
+            }
 
-    //         return true;
-    //     },
-    //     .SequenceKind => {
-    //         if (a.v.SequenceKind.len() != b.v.SequenceKind.len()) return false;
+            var iterator = b.v.ScopeKind.values.iterator();
+            while (iterator.next()) |entry| {
+                var value = a.v.ScopeKind.getU8(stringPool, entry.key_ptr.*.slice()) catch return false;
+                if (value == null) {
+                    std.log.err("eqls: scope key: no value: [{s}]", .{entry.key_ptr.*.slice()});
+                    return false;
+                }
 
-    //         for (a.v.SequenceKind.items(), 0..) |v, i| {
-    //             if (!eqls(v, b.v.SequenceKind.at(i))) return false;
-    //         }
+                if (!eqls(stringPool, entry.value_ptr.*, value.?)) {
+                    var itemS = entry.value_ptr.*.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+                    defer stringPool.allocator.free(itemS);
+                    var otherS = value.?.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+                    defer stringPool.allocator.free(otherS);
 
-    //         return true;
-    //     },
-    //     .StreamKind => return true,
-    //     .StringKind => return std.mem.eql(u8, a.v.StringKind.slice(), b.v.StringKind.slice()),
-    //     .UnitKind => return true,
-    // }
+                    std.log.err("eqls: scope key: different value: [{s}]: [{s}] vs [{s}]", .{ entry.key_ptr.*.slice(), itemS, otherS });
+
+                    return false;
+                }
+            }
+
+            return true;
+        },
+        .SequenceKind => {
+            if (a.v.SequenceKind.len() != b.v.SequenceKind.len()) return false;
+
+            for (a.v.SequenceKind.items(), 0..) |v, i| {
+                if (!eqls(stringPool, v, b.v.SequenceKind.at(i))) return false;
+            }
+
+            return true;
+        },
+        .StringKind => {
+            if (std.mem.eql(u8, a.v.StringKind.slice(), b.v.StringKind.slice())) {
+                return true;
+            } else {
+                std.log.err("eqls: string value: [{s}] vs [{s}]", .{ a.v.StringKind.slice(), b.v.StringKind.slice() });
+                return false;
+            }
+        },
+        else => return true,
+    }
 }

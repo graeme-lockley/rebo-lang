@@ -693,6 +693,10 @@ test "catch-raise" {
     try expectExprEqual("{ raise \"Hello\" } catch \"Hello\" -> 1 | _ -> 2", "1");
     try expectExprEqual("{ raise \"Bye\" } catch \"Hello\" -> 1 | _ -> 2", "2");
     try expectExprEqual("{{ raise \"Bye\" } catch \"Hello\" -> 1} catch \"Bye\" -> 2", "2");
+    try expectExprEqual("{{ raise \"Hello\" } catch \"Hello\" -> 1} catch \"Bye\" -> 2", "1");
+
+    try expectExprEqual("let sh(s) if s == () -> 0 | 1 + sh(rebo.lang[\"scope.super\"](s)) ; sh(rebo.lang.scope())", "2");
+    try expectExprEqual("let sh(s) if s == () -> 0 | 1 + sh(rebo.lang[\"scope.super\"](s)) ; {{ raise \"Hello\" } catch \"Hello\" -> sh(rebo.lang.scope())} catch \"Bye\" -> 99", "3");
 }
 
 test "match" {
@@ -766,13 +770,4 @@ test "match" {
     try expectExprEqual("match {a: {x: 1, y: 2}, b: [1, 2]} | {a: {x, y}, b: [1, y']} -> x + 100 * (y + y') | {a: {x, y}, b: [x', y']} -> x + x' + 100 * (x' + y') | {a: {x, y}, b: [x', y'], c} -> x + x' + c * (x' + y')", "401");
     try expectExprEqual("match {a: {x: 1, y: 2}, b: [2, 3]} | {a: {x, y}, b: [1, y']} -> x + 100 * (y + y') | {a: {x, y}, b: [x', y']} -> x + x' + 100 * (x' + y') | {a: {x, y}, b: [x', y'], c} -> x + x' + c * (x' + y')", "503");
     try expectExprEqual("match {a: {x: 1, y: 2}, b: [2, 3], c: 100} | {a: {x, y}, b: [1, y']} -> x + 100 * (y + y') | {a: {x, y}, b: [x', y']} -> x + x' + 100 * (x' + y') | {a: {x, y}, b: [x', y'], c} -> x + x' + c * (x' + y')", "503");
-}
-
-test "bytecode" {
-    const BC = @import("bc-interpreter.zig");
-
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    var compiler = BC.Compiler.init(gpa.allocator());
-    defer compiler.deinit();
-    defer _ = gpa.deinit();
 }
