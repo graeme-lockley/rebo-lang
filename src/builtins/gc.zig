@@ -14,4 +14,5 @@ pub fn gc(runtime: *Helper.Runtime, numberOfArgs: usize) !void {
     try record.v.RecordKind.setU8(runtime.stringPool, "before", try runtime.newIntValue(result.oldSize));
     try record.v.RecordKind.setU8(runtime.stringPool, "after", try runtime.newIntValue(result.newSize));
     try record.v.RecordKind.setU8(runtime.stringPool, "duration", try runtime.newIntValue(@intCast(result.duration)));
+    try record.v.RecordKind.setU8(runtime.stringPool, "sp", try runtime.newIntValue(@intCast(runtime.stack.items.len)));
 }

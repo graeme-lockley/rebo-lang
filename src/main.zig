@@ -577,6 +577,12 @@ test "equality op" {
     try expectExprEqual("1.0 >= 0.0", "true");
 }
 
+test "exprs" {
+    try expectExprEqual("{ 1 }", "1");
+    try expectExprEqual("let x = 1 ; { let x = 2 ; x } ", "2");
+    try expectExprEqual("let x = 1 ; { let x = 2 } ; x", "1");
+}
+
 test "additive op" {
     try expectExprEqual("1 + 1", "2");
     try expectExprEqual("1 + 1.1", "2.1");
@@ -766,6 +772,9 @@ test "match" {
     try expectExprEqual("match {a: 2, b: 2} | {a: 2, b} -> b * 2 | {a: 1, b} -> b * 3 | {b} -> b * 4", "4");
     try expectExprEqual("match {a: 10, b: 2} | {a: 2, b} -> b * 2 | {a: 1, b} -> b * 3 | {b} -> b * 4", "8");
     try expectExprEqual("match {b: 2} | {a: 2, b} -> b * 2 | {a: 1, b} -> b * 3 | {b} -> b * 4", "8");
+
+    try expectExprEqual("let x = match {b: 2} | {a} @ arr -> {...arr, a: a * 2} | arr -> {...arr, a: 0} ; [x.a, x.b]", "[0, 2]");
+    try expectExprEqual("let x = match {a: 1, b: 2} | {a} @ arr -> {...arr, a: a * 2} | arr -> {...arr, a: 0} ; [x.a, x.b]", "[2, 2]");
 
     try expectExprEqual("match {a: {x: 1, y: 2}, b: [1, 2]} | {a: {x, y}, b: [1, y']} -> x + 100 * (y + y') | {a: {x, y}, b: [x', y']} -> x + x' + 100 * (x' + y') | {a: {x, y}, b: [x', y'], c} -> x + x' + c * (x' + y')", "401");
     try expectExprEqual("match {a: {x: 1, y: 2}, b: [2, 3]} | {a: {x, y}, b: [1, y']} -> x + 100 * (y + y') | {a: {x, y}, b: [x', y']} -> x + x' + 100 * (x' + y') | {a: {x, y}, b: [x', y'], c} -> x + x' + c * (x' + y')", "503");

@@ -266,7 +266,7 @@ pub const Runtime = struct {
             try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.RecordKind}, record.v);
         }
         if (!value.isRecord()) {
-            try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.StringKind}, value.v);
+            try ER.raiseExpectedTypeError(self, position, &[_]V.ValueKind{V.ValueValue.RecordKind}, value.v);
         }
 
         var iterator = value.v.RecordKind.iterator();

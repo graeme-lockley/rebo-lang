@@ -19,20 +19,20 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
     var ip: usize = startIp;
     while (true) {
         switch (@as(Op, @enumFromInt(bytecode[ip]))) {
-            Op.ret => return,
-            Op.push_char => {
+            .ret => return,
+            .push_char => {
                 try runtime.pushCharValue(bytecode[ip + 1]);
                 ip += 2;
             },
-            Op.push_false => {
+            .push_false => {
                 try runtime.pushBoolValue(false);
                 ip += 1;
             },
-            Op.push_float => {
+            .push_float => {
                 try runtime.pushFloatValue(readFloat(bytecode, ip + 1));
                 ip += 1 + FloatTypeSize;
             },
-            Op.push_identifier => {
+            .push_identifier => {
                 const len: usize = @intCast(readInt(bytecode, ip + 1));
                 const str = bytecode[ip + 9 .. ip + 9 + len];
                 const name = try runtime.stringPool.intern(str);
@@ -49,37 +49,37 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
 
                 ip += 1 + IntTypeSize + len + PositionTypeSize;
             },
-            Op.push_int => {
+            .push_int => {
                 try runtime.pushIntValue(readInt(bytecode, ip + 1));
                 ip += 1 + IntTypeSize;
             },
-            Op.push_function => {
+            .push_function => {
                 ip = try pushFunction(runtime, bytecode, ip);
             },
-            Op.push_record => {
+            .push_record => {
                 try runtime.pushEmptyRecordValue();
                 ip += 1;
             },
-            Op.push_sequence => {
+            .push_sequence => {
                 try runtime.pushEmptySequenceValue();
                 ip += 1;
             },
-            Op.push_string => {
+            .push_string => {
                 const len: usize = @intCast(readInt(bytecode, ip + 1));
                 const str = bytecode[ip + 9 .. ip + 9 + len];
                 try runtime.pushStringValue(str);
                 ip += 1 + IntTypeSize + len;
             },
-            Op.push_true => {
+            .push_true => {
                 try runtime.pushBoolValue(true);
                 ip += 1;
             },
-            Op.push_unit => {
+            .push_unit => {
                 try runtime.pushUnitValue();
                 ip += 1;
             },
-            Op.jmp => ip = @intCast(readInt(bytecode, ip + 1)),
-            Op.jmp_true => {
+            .jmp => ip = @intCast(readInt(bytecode, ip + 1)),
+            .jmp_true => {
                 const condition = runtime.pop();
                 if (!condition.isBool()) {
                     const position = readPosition(bytecode, ip + 1 + IntTypeSize);
@@ -92,7 +92,7 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                     ip += 1 + IntTypeSize + PositionTypeSize;
                 }
             },
-            Op.jmp_false => {
+            .jmp_false => {
                 const condition = runtime.pop();
                 if (!condition.isBool()) {
                     const position = readPosition(bytecode, ip + 1 + IntTypeSize);
@@ -105,12 +105,22 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                     ip = @intCast(readInt(bytecode, ip + 1));
                 }
             },
-            .raise => return Errors.RuntimeErrors.InterpreterError,
+            .raise => {
+                const position = readPosition(bytecode, ip + 1);
+                try ER.appendErrorPosition(runtime, position);
+                return Errors.RuntimeErrors.InterpreterError;
+            },
             .catche => {
                 const ipStart = ip;
+                const sp = runtime.stack.items.len;
+                const scopeP = runtime.scopes.items.len;
 
                 ip = @intCast(readInt(bytecode, ip + 1));
                 evalBlock(runtime, bytecode, ipStart + 1 + IntTypeSize + IntTypeSize) catch {
+                    const tos = runtime.pop();
+                    runtime.popn(runtime.stack.items.len - sp);
+                    runtime.scopes.items.len = scopeP;
+                    try runtime.push(tos);
                     ip = @intCast(readInt(bytecode, ipStart + 1 + IntTypeSize));
                 };
             },
@@ -138,7 +148,7 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                 runtime.restoreScope();
                 ip += 1;
             },
-            Op.call => {
+            .call => {
                 const numArgs = readInt(bytecode, ip + 1);
 
                 runtime.callFn(@intCast(numArgs)) catch |err| {
@@ -156,7 +166,7 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
             .assign_dot => {
                 const exprPosition = readPosition(bytecode, ip + 1);
                 const namePosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
-                try runtime.assignIndex(exprPosition, namePosition);
+                try runtime.assignDot(exprPosition, namePosition);
                 ip += 1 + PositionTypeSize + PositionTypeSize;
             },
             .assign_identifier => {
@@ -201,11 +211,11 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                 try runtime.assignRangeTo(exprPosition, toPosition, valuePosition);
                 ip += 1 + PositionTypeSize + PositionTypeSize + PositionTypeSize;
             },
-            Op.duplicate => {
+            .duplicate => {
                 try runtime.duplicate();
                 ip += 1;
             },
-            Op.discard => {
+            .discard => {
                 _ = runtime.pop();
                 ip += 1;
             },
@@ -213,100 +223,100 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                 try runtime.swap();
                 ip += 1;
             },
-            Op.append_sequence_item_bang => {
+            .append_sequence_item_bang => {
                 const seqPosition = readPosition(bytecode, ip + 1);
 
                 try runtime.appendSequenceItemBang(seqPosition);
                 ip += 1 + PositionTypeSize;
             },
-            Op.append_sequence_items_bang => {
+            .append_sequence_items_bang => {
                 const seqPosition = readPosition(bytecode, ip + 1);
                 const itemPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);
 
                 try runtime.appendSequenceItemsBang(seqPosition, itemPosition);
                 ip += 1 + PositionTypeSize + PositionTypeSize;
             },
-            Op.set_record_item_bang => {
+            .set_record_item_bang => {
                 const position = readPosition(bytecode, ip + 1);
 
                 try runtime.setRecordItemBang(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.set_record_items_bang => {
+            .set_record_items_bang => {
                 const position = readPosition(bytecode, ip + 1);
 
                 try runtime.setRecordItemsBang(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.equals => {
+            .equals => {
                 try runtime.equals();
                 ip += 1;
             },
-            Op.not_equals => {
+            .not_equals => {
                 try runtime.notEquals();
                 ip += 1;
             },
-            Op.less_than => {
+            .less_than => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.lessThan(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.less_equal => {
+            .less_equal => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.lessEqual(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.greater_than => {
+            .greater_than => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.greaterThan(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.greater_equal => {
+            .greater_equal => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.greaterEqual(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.add => {
+            .add => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.add(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.subtract => {
+            .subtract => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.subtract(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.multiply => {
+            .multiply => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.multiply(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.divide => {
+            .divide => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.divide(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.modulo => {
+            .modulo => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.modulo(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.seq_append => {
+            .seq_append => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.appendSequenceItem(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.seq_append_bang => {
+            .seq_append_bang => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.appendSequenceItemBang(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.seq_prepend => {
+            .seq_prepend => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.prependSequenceItem(position);
                 ip += 1 + PositionTypeSize;
             },
-            Op.seq_prepend_bang => {
+            .seq_prepend_bang => {
                 const position = readPosition(bytecode, ip + 1);
                 try runtime.prependSequenceItemBang(position);
                 ip += 1 + PositionTypeSize;
