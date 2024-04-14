@@ -28,26 +28,13 @@ pub const Runtime = struct {
     unitValue: ?*V.Value,
     trueValue: ?*V.Value,
     falseValue: ?*V.Value,
+    callerScopeSP: *SP.String,
 
     pub fn init(allocator: std.mem.Allocator) !Runtime {
         const stringPool = try allocator.create(SP.StringPool);
         stringPool.* = SP.StringPool.init(allocator);
 
-        var state = Runtime{
-            .allocator = allocator,
-            .stringPool = stringPool,
-            .stack = std.ArrayList(*V.Value).init(allocator),
-            .colour = V.Colour.White,
-            .root = null,
-            .free = null,
-            .memory_size = 0,
-            .memory_capacity = INITIAL_HEAP_SIZE,
-            .allocations = 0,
-            .scopes = std.ArrayList(*V.Value).init(allocator),
-            .unitValue = null,
-            .trueValue = null,
-            .falseValue = null,
-        };
+        var state = Runtime{ .allocator = allocator, .stringPool = stringPool, .stack = std.ArrayList(*V.Value).init(allocator), .colour = V.Colour.White, .root = null, .free = null, .memory_size = 0, .memory_capacity = INITIAL_HEAP_SIZE, .allocations = 0, .scopes = std.ArrayList(*V.Value).init(allocator), .unitValue = null, .trueValue = null, .falseValue = null, .callerScopeSP = try stringPool.intern("__caller_scope__") };
 
         state.unitValue = try state.newValue(V.ValueValue{ .UnitKind = void{} });
         state.trueValue = try state.newValue(V.ValueValue{ .BoolKind = true });
@@ -79,6 +66,7 @@ pub const Runtime = struct {
         self.unitValue = null;
         self.trueValue = null;
         self.falseValue = null;
+        self.callerScopeSP.decRef();
         self.scopes.deinit();
         self.scopes = std.ArrayList(*V.Value).init(self.allocator);
         self.stack.deinit();
@@ -1151,7 +1139,7 @@ pub const Runtime = struct {
         try self.openScopeFrom(callee.v.ASTFunctionKind.scope);
         defer self.restoreScope();
 
-        try self.addU8ToScope("__caller_scope__", enclosingScope);
+        try self.addToScope(self.callerScopeSP, enclosingScope);
 
         var lp: usize = 0;
         const maxArgs = @min(numberOfArgs, callee.v.ASTFunctionKind.arguments.len);
@@ -1187,7 +1175,7 @@ pub const Runtime = struct {
         try self.openScopeFrom(callee.v.BCFunctionKind.scope);
         defer self.restoreScope();
 
-        try self.addU8ToScope("__caller_scope__", enclosingScope);
+        try self.addToScope(self.callerScopeSP, enclosingScope);
 
         var lp: usize = 0;
         const maxArgs = @min(numberOfArgs, callee.v.BCFunctionKind.arguments.len);
