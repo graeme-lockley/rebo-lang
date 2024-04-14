@@ -25,7 +25,7 @@ let process(path, test, silent = false) {
             }
 
             cmd := cmd + " ; " + cmdSegment
-            let result = eval'(cmd, { scope: global() }) catch e -> e
+            let result = eval(cmd, { scope: global() }) catch e -> e
 
             let expected = ""
             while lp < len(code) && !Str.startsWith?(code[lp], ">") -> {
@@ -35,7 +35,7 @@ let process(path, test, silent = false) {
             
             if len(expected) > 0 -> {
                if typeof(result) == "Function" -> suite.eq(formatCmdSegment(cmdSegment), str(result), expected, cmd)
-                | suite.eq(formatCmdSegment(cmdSegment), result, eval'(expected), cmd)
+                | suite.eq(formatCmdSegment(cmdSegment), result, eval(expected), cmd)
             }
          } | {
             println("Error: ", path, ": ", startLine + lp, ": ", code[lp], " needed to start with '>'")

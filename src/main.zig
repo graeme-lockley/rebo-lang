@@ -133,7 +133,7 @@ fn runPrelude(rebo: *API) !void {
     const preludeSrc = try prelude(rebo);
     defer rebo.allocator().free(preludeSrc);
 
-    rebo.script("prelude.rebo", preludeSrc) catch |err| {
+    BCInterpreter.script(&rebo.runtime, "prelude.rebo", preludeSrc) catch |err| {
         try errorHandler(err, rebo);
     };
 
