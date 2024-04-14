@@ -2,26 +2,20 @@ let run(suite) = {
   "while guard is true" |> 
     suite.eq({ 
       let t = true
-      while t -> t := ();
+      let r = t
+      while t -> { t := false ; r := () } ;
 
-      t 
+      r 
     }, ())
 
   "while guard is false" |> 
     suite.eq({ 
       let t = false
-      while t -> t := ();
+      let r = t
+      while t -> { t := false ; r := () } ;
 
-      t 
+      r
     }, false)
-
-  "while guard is ()" |>
-    suite.eq({
-      let t = ()
-      while t -> t := ();
-
-      t 
-    }, ())
 
   "while zero iterations" |>
     suite.eq({

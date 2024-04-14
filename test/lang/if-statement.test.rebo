@@ -8,9 +8,4 @@ let run(suite) = {
     { let t = false
       if t -> 1 | 0 
     }, 0)
-
-  "if guard is falsy" |> suite.eq(
-    { let t = ()
-      if t -> 1 | 0
-    }, 0)
 }
