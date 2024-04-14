@@ -102,7 +102,8 @@ let import(name) {
             let script = readFile(name)
             let newScope = rebo.lang["scope.open"](callerScope)
             rebo.lang["scope.bind!"](newScope, "__FILE", name)
-            rebo.lang.eval(script, newScope)
+            # rebo.lang.eval(script, newScope)
+            eval(script, {scope: newScope, persistent: true})
             
             let bindings = {}
             newScope |> keys() |> each(fn(key) { if key[0] != '_' -> bindings[key] := newScope[key] })
