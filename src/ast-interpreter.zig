@@ -591,17 +591,17 @@ fn whilee(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
 
         const condition = runtime.pop();
 
-        if (condition.v != V.ValueValue.BoolKind or !condition.v.BoolKind) {
-            break;
-        }
-
-        // if (condition.v != V.ValueValue.BoolKind) {
-        //     try ER.raiseExpectedTypeError(runtime, e.kind.whilee.condition.position, &[_]V.ValueKind{V.ValueValue.BoolKind}, condition.v);
-        // }
-
-        // if (!condition.v.BoolKind) {
+        // if (condition.v != V.ValueValue.BoolKind or !condition.v.BoolKind) {
         //     break;
         // }
+
+        if (condition.v != V.ValueValue.BoolKind) {
+            try ER.raiseExpectedTypeError(runtime, e.kind.whilee.condition.position, &[_]V.ValueKind{V.ValueValue.BoolKind}, condition.v);
+        }
+
+        if (!condition.v.BoolKind) {
+            break;
+        }
 
         try evalExpr(runtime, e.kind.whilee.body);
 
