@@ -51,7 +51,7 @@ let process(path, test, silent = false) {
    let lp = 0
 
    while lp < len(content) -> {
-      if Str.startsWith?(content[lp], "```rebo-repl") ||  Str.startsWith?(content[lp], "``` rebo-repl")-> {
+      if Str.startsWith?(content[lp], "```rebo-repl") ||  Str.startsWith?(content[lp], "``` rebo-repl") -> {
          let upper = lp + 1
 
          while upper < len(content) && !Str.startsWith?(content[upper], "```") ->
