@@ -348,6 +348,15 @@ fn ifte(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
             try evalExpr(runtime, case.then);
             return;
         }
+
+        // if (condition.v == V.ValueValue.BoolKind) {
+        //     if (condition.v.BoolKind) {
+        //         try evalExpr(runtime, case.then);
+        //         return;
+        //     }
+        // } else {
+        //     try ER.raiseExpectedTypeError(runtime, case.condition.?.position, &[_]V.ValueKind{V.ValueValue.BoolKind}, condition.v);
+        // }
     }
 
     try runtime.pushUnitValue();
@@ -585,6 +594,14 @@ fn whilee(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
         if (condition.v != V.ValueValue.BoolKind or !condition.v.BoolKind) {
             break;
         }
+
+        // if (condition.v != V.ValueValue.BoolKind) {
+        //     try ER.raiseExpectedTypeError(runtime, e.kind.whilee.condition.position, &[_]V.ValueKind{V.ValueValue.BoolKind}, condition.v);
+        // }
+
+        // if (!condition.v.BoolKind) {
+        //     break;
+        // }
 
         try evalExpr(runtime, e.kind.whilee.body);
 
