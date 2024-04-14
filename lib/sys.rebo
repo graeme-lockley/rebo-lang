@@ -11,6 +11,8 @@ let binHome() {
     | Path.dir(exe)
 }
 
+let body = rebo.os["bc.body"]
+
 let compile = rebo.os["bc.compile"]
 
 let eval(bc, s) = rebo.os["bc.eval"](bc, s ? scope())

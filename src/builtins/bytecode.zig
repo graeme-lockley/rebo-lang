@@ -4,6 +4,12 @@ const Helper = @import("./helper.zig");
 const BCInterpreter = @import("../bc-interpreter.zig");
 const Interpreter = @import("../bc-interpreter/interpreter.zig");
 
+pub fn body(machine: *Helper.Runtime, numberOfArgs: usize) !void {
+    const function = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.BCFunctionKind});
+
+    try machine.pushStringValue(function.v.BCFunctionKind.body);
+}
+
 pub fn compile(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const input = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
     const name = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.StringKind, Helper.ValueValue.UnitKind });

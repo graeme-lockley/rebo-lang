@@ -1600,6 +1600,7 @@ fn setupRebo(state: *Runtime) !void {
     try reboOS.v.RecordKind.setU8(state.stringPool, "exit", try state.newBuiltinValue(@import("builtins/exit.zig").exit));
     try reboOS.v.RecordKind.setU8(state.stringPool, "fexists", try state.newBuiltinValue(@import("builtins/import.zig").exists));
 
+    try reboOS.v.RecordKind.setU8(state.stringPool, "bc.body", try state.newBuiltinValue(@import("builtins/bytecode.zig").body));
     try reboOS.v.RecordKind.setU8(state.stringPool, "bc.compile", try state.newBuiltinValue(@import("builtins/bytecode.zig").compile));
     try reboOS.v.RecordKind.setU8(state.stringPool, "bc.eval", try state.newBuiltinValue(@import("builtins/bytecode.zig").eval));
     try reboOS.v.RecordKind.setU8(state.stringPool, "bc.readFloat", try state.newBuiltinValue(@import("builtins/bytecode.zig").readFloat));
