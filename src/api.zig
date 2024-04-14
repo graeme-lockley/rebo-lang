@@ -43,8 +43,8 @@ pub const API = struct {
         try ASTInterpreter.execute(&self.runtime, path, buffer.items);
     }
 
-    pub fn script(self: *API, text: []const u8) !void {
-        try ASTInterpreter.execute(&self.runtime, "script", text);
+    pub fn script(self: *API, name: [] const u8, text: []const u8) !void {
+        try ASTInterpreter.execute(&self.runtime, name, text);
     }
 
     pub fn topOfStack(self: *API) ?*V.Value {

@@ -57,7 +57,7 @@ pub fn main() !void {
             }
 
             try editor.addToHistory(line);
-            rebo.script(line) catch |err| {
+            BCInterpreter.script(&rebo.runtime, "repl", line) catch |err| {
                 try errorHandler(err, &rebo);
                 continue;
             };
@@ -73,7 +73,7 @@ pub fn main() !void {
 
         try runPrelude(&rebo);
 
-        rebo.script(args[2]) catch |e| {
+        BCInterpreter.script(&rebo.runtime, "repl", args[2]) catch |e| {
             exitValue = 1;
             try errorHandler(e, &rebo);
         };
@@ -98,7 +98,7 @@ pub fn main() !void {
 }
 
 fn historyFileName(rebo: *API) ![]u8 {
-    try rebo.script("(rebo.env.HOME ? \".\") + \"/.rebo.repl.history\"");
+    try BCInterpreter.script(&rebo.runtime, "repl", "(rebo.env.HOME ? \".\") + \"/.rebo.repl.history\"");
     if (rebo.topOfStack()) |v| {
         const result = try rebo.allocator().dupe(u8, v.v.StringKind.slice());
         rebo.pop();
@@ -110,7 +110,7 @@ fn historyFileName(rebo: *API) ![]u8 {
 
 fn printResult(rebo: *API) !void {
     if (rebo.topOfStack()) |_| {
-        try rebo.script("import(import(\"sys\").binHome() + \"/src/repl-util.rebo\").printResult");
+        try BCInterpreter.script(&rebo.runtime, "repl", "import(import(\"sys\").binHome() + \"/src/repl-util.rebo\").printResult");
         try rebo.swap();
         try rebo.call(1);
     } else {
@@ -120,7 +120,7 @@ fn printResult(rebo: *API) !void {
 
 fn errorHandler(err: anyerror, rebo: *API) !void {
     if (err == Errors.RuntimeErrors.InterpreterError) {
-        try rebo.script("import(import(\"sys\").binHome() + \"/src/repl-util.rebo\").printError");
+        try BCInterpreter.script(&rebo.runtime, "repl", "import(import(\"sys\").binHome() + \"/src/repl-util.rebo\").printError");
         try rebo.swap();
         try rebo.call(1);
     } else {
@@ -133,7 +133,7 @@ fn runPrelude(rebo: *API) !void {
     const preludeSrc = try prelude(rebo);
     defer rebo.allocator().free(preludeSrc);
 
-    rebo.script(preludeSrc) catch |err| {
+    rebo.script("prelude.rebo", preludeSrc) catch |err| {
         try errorHandler(err, rebo);
     };
 
@@ -175,7 +175,7 @@ fn nike(input: []const u8) !void {
             var rebo = try API.init(allocator);
             defer rebo.deinit();
 
-            _ = rebo.script(s) catch {};
+            _ = rebo.script("test", s) catch {};
         }
 
         const err = gpa.deinit();
@@ -206,7 +206,7 @@ pub fn expectExprEqual(input: []const u8, expected: []const u8) !void {
         defer runtime.restoreScope();
 
         const astScopeSize = rebo.runtime.scopes.items.len;
-        rebo.script(input) catch |err| {
+        rebo.script("test", input) catch |err| {
             std.log.err("Error: {}: {s}\n", .{ err, input });
             return error.TestingError;
         };
@@ -284,7 +284,7 @@ fn expectError(input: []const u8) !void {
 
         try rebo.runtime.openScope();
 
-        rebo.script(input) catch {
+        rebo.script("test", input) catch {
             return;
         };
 
