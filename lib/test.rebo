@@ -68,7 +68,7 @@ let _reportSuite(title, silent, tests, totals, startTime) {
 
   tests 
     |> filter(_suite?) 
-    |> each(fn(suite) _addTotal!(suiteTotals, suite.report(title, silent)))
+    |> each(fn(suite) _addTotal!(suiteTotals, suite.report(false, silent)))
 
   if totals -> {
     println()
