@@ -284,7 +284,7 @@ fn expectError(input: []const u8) !void {
 
         try rebo.runtime.openScope();
 
-        rebo.script("test", input) catch {
+        BCInterpreter.script(&rebo.runtime, "test", input) catch {
             return;
         };
 
