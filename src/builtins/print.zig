@@ -50,6 +50,7 @@ fn printValue(stdout: std.fs.File.Writer, v: *const Helper.Value) !void {
         .BoolKind => try stdout.print("{s}", .{if (v.v.BoolKind) "true" else "false"}),
         .BuiltinFunctionKind => try stdout.print("fn(...)", .{}),
         .CharKind => try stdout.print("{c}", .{v.v.CharKind}),
+        .CodeKind => try stdout.print("code: {d}", .{v.v.CodeKind.code.len}),
         .FileKind => try stdout.print("file: {d}", .{v.v.FileKind.file.handle}),
         .FloatKind => try stdout.print("{d}", .{v.v.FloatKind}),
         .HttpClientKind => try stdout.print("<http client>", .{}),

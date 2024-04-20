@@ -21,6 +21,10 @@ pub fn compile(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     defer machine.allocator.free(bytecode);
 
     try machine.pushStringValue(bytecode);
+
+    // defer bytecode.decRef(machine.allocator);
+
+    // try machine.pushCodeValue(bytecode);
 }
 
 pub fn eval(machine: *Helper.Runtime, numberOfArgs: usize) !void {

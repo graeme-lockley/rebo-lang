@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const AST = @import("./ast.zig");
+const BCInterpreter = @import("./bc-interpreter.zig");
 const ER = @import("./error-reporting.zig");
 const Errors = @import("./errors.zig");
 const SP = @import("./string_pool.zig");
@@ -333,6 +334,10 @@ pub const Runtime = struct {
 
     pub fn pushCharValue(self: *Runtime, v: u8) !void {
         _ = try self.pushValue(V.ValueValue{ .CharKind = v });
+    }
+
+    pub fn pushCodeValue(self: *Runtime, v: *BCInterpreter.Code) !void {
+        _ = try self.pushValue(V.ValueValue{ .CodeKind = v.incRefR() });
     }
 
     pub fn pushFloatValue(self: *Runtime, v: V.FloatType) !void {
@@ -1431,7 +1436,7 @@ fn markValue(possible_value: ?*V.Value, colour: V.Colour) void {
                 }
             }
         },
-        .BoolKind, .BuiltinFunctionKind, .CharKind, .IntKind, .FileKind, .FloatKind, .StreamKind, .StringKind, .UnitKind => {},
+        .BoolKind, .BuiltinFunctionKind, .CharKind, .CodeKind, .IntKind, .FileKind, .FloatKind, .StreamKind, .StringKind, .UnitKind => {},
         .HttpClientKind => {},
         .HttpClientRequestKind => {},
         .RecordKind => {
