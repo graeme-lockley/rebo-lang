@@ -1,38 +1,46 @@
 let sys = import("sys")
 
+let fib1(n) = if n < 2 -> 1 | fib1(n - 1) + fib1(n - 2)
+
+let fib2 =
+   "let fib2(n) = if n < 2 -> 1 | fib2(n - 1) + fib2(n - 2); fib2" 
+   |> sys.compile() 
+   |> sys.eval()
+
 let timeTrial(n) {
-    let fib1(n) = if n < 2 -> 1 | fib1(n - 1) + fib1(n - 2)
-
-    let content = "let fib2(n) = if n < 2 -> 1 | fib2(n - 1) + fib2(n - 2); fib2(" + str(n) + ")"
-    let bc = sys.compile(content)
-
-    # sys.dis(bc)
-
-    gc()
-    let t1 = milliTimestamp()
-    let v1 = fib1(n)
-    let t2 = milliTimestamp()
+   gc()
+   let t1 = milliTimestamp()
+   let v1 = fib1(n)
+   let t2 = milliTimestamp()
     
-    gc()
-    let t3 = milliTimestamp()
-    let v2 = sys.eval(bc)
-    let t4 = milliTimestamp()
+   gc()
+   let t3 = milliTimestamp()
+   let v2 = fib2(n)
+   let t4 = milliTimestamp()
 
-    if v1 != v2 -> raise { kind: "Mismatch", fib1: v1, fib2: v2 }
+   if v1 != v2 -> raise { kind: "Mismatch", fib1: v1, fib2: v2 }
 
-    println("n: ", n, ", fib(n) = ", v1, ", Fib1: ", t2 - t1, "ms, Fib2: ", t4 - t3, "ms, ratio: ", if t2 - t1 > 0 -> (0.0 + t4 - t3) / (0.0 + t2 - t1) | "∞")
+   println("n: ", n, ", fib(n) = ", v1, ", Fib1: ", t2 - t1, "ms, Fib2: ", t4 - t3, "ms, ratio: ", if t2 - t1 > 0 -> (0.0 + t4 - t3) / (0.0 + t2 - t1) | "∞")
 
-    {
-        n: n,
-        fib1: t2 - t1,
-        fib2: t4 - t3
-    }
+   {
+      n: n,
+      fib1: t2 - t1,
+      fib2: t4 - t3
+   }
 }
 
 let padLeft(n, s) =
-    " " * (n - len(s)) + s
+   " " * (n - len(s)) + s
 
-range(1, 25)
-    |> map(timeTrial)
-    |> each(fn(r) println(padLeft(2, str(r.n)), padLeft(8, str(r.fib1)), padLeft(8, str(r.fib2)), padLeft(23, if r.fib1 > 0 -> str((0.0 + r.fib2) / (0.0 + r.fib1)) | "∞")))
+println("---- fib1")
+sys.body(fib1) |> sys.dis()
+println("---- fib2")
+sys.body(fib2) |> sys.dis()
 
+range(1, 26)
+   |> map(timeTrial)
+   |> each(fn(r) println(padLeft(2, str(r.n)), padLeft(8, str(r.fib1)), padLeft(8, str(r.fib2)), padLeft(23, if r.fib1 > 0 -> str((0.0 + r.fib2) / (0.0 + r.fib1)) | "∞")))
+
+range(1, 26)
+   |> map(timeTrial)
+   |> each(fn(r) println(padLeft(2, str(r.n)), padLeft(8, str(r.fib1)), padLeft(8, str(r.fib2)), padLeft(23, if r.fib1 > 0 -> str((0.0 + r.fib2) / (0.0 + r.fib1)) | "∞")))
