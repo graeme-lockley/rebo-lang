@@ -21,6 +21,18 @@ pub fn compile(allocator: std.mem.Allocator, ast: *AST.Expression) ![]u8 {
     return try compiler.compile(ast);
 }
 
+// pub fn compile(allocator: std.mem.Allocator, ast: *AST.Expression) !*Block {
+//     var compiler = Compiler.init(allocator);
+//     defer compiler.deinit();
+
+//     const code = try compiler.compile(ast);
+
+//     const result = try allocator.create(Block);
+//     result.* = Block.init(code);
+
+//     return result;
+// }
+
 pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
     try Interpreter.eval(runtime, bytecode);
 }
@@ -59,6 +71,41 @@ pub fn parse(runtime: *Runtime, name: []const u8, input: []const u8) !*AST.Expre
 
     return ast;
 }
+
+pub const Code = struct {
+    code: []const u8,
+    count: u32,
+
+    pub fn init(code: []const u8) Code {
+        return Code{
+            .code = code,
+            .count = 1,
+        };
+    }
+
+    pub fn deinit(this: *Code, allocator: std.mem.Allocator) void {
+        free(this.data, allocator);
+    }
+
+    pub fn incRef(this: *Code) void {
+        if (this.count == std.math.maxInt(u32)) {
+            this.count = 0;
+        } else if (this.count > 0) {
+            this.count += 1;
+        }
+    }
+
+    pub fn decRef(this: *Code, allocator: std.mem.Allocator) void {
+        if (this.count == 1) {
+            this.deinit(allocator);
+            allocator.destroy(this);
+
+            return;
+        } else if (this.count != 0) {
+            this.count -= 1;
+        }
+    }
+};
 
 pub fn execute(self: *Runtime, name: []const u8, buffer: []const u8) !void {
     const ast = try parse(self, name, buffer);
