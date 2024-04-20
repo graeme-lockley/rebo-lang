@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const AST = @import("./ast.zig");
+const BCInterpreter = @import("./bc-interpreter.zig");
 const Errors = @import("./errors.zig");
 const Runtime = @import("./runtime.zig").Runtime;
 const SP = @import("./string_pool.zig");
@@ -332,7 +333,7 @@ pub const BCFunctionValue = struct {
             self.restOfArguments.?.decRef();
         }
         allocator.free(self.arguments);
-        allocator.free(self.body);
+        BCInterpreter.free(self.body, allocator);
     }
 };
 

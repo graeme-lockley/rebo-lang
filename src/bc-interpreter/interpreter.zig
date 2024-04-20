@@ -7,9 +7,9 @@ const Runtime = @import("./../runtime.zig").Runtime;
 const Op = @import("./ops.zig").Op;
 const V = @import("./../value.zig");
 
-const IntTypeSize: usize = 8;
-const FloatTypeSize: usize = 8;
-const PositionTypeSize: usize = 2 * IntTypeSize;
+pub const IntTypeSize: usize = 8;
+pub const FloatTypeSize: usize = 8;
+pub const PositionTypeSize: usize = 2 * IntTypeSize;
 
 pub fn eval(runtime: *Runtime, bytecode: []const u8) Errors.RuntimeErrors!void {
     try evalBlock(runtime, bytecode, 0);
