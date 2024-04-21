@@ -6,6 +6,7 @@ const ER = @import("./../error-reporting.zig");
 const Errors = @import("./../errors.zig");
 const Runtime = @import("./../runtime.zig").Runtime;
 const Op = @import("./ops.zig").Op;
+const SP = @import("./../string_pool.zig");
 const V = @import("./../value.zig");
 
 pub const IntTypeSize: usize = 8;
@@ -34,21 +35,20 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                 ip += 1 + FloatTypeSize;
             },
             .push_identifier => {
-                const len: usize = @intCast(readInt(bytecode, ip + 1));
-                const str = bytecode[ip + 9 .. ip + 9 + len];
-                const name = try runtime.stringPool.intern(str);
-                defer name.decRef();
+                ip += 1;
+                const name = @as(*SP.String, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip)))));
+                ip += IntTypeSize;
 
                 if (runtime.getFromScope(name)) |result| {
                     try runtime.push(result);
                 } else {
-                    const position = readPosition(bytecode, ip + 1 + IntTypeSize + len);
+                    const position = readPosition(bytecode, ip);
                     const rec = try ER.pushNamedUserError(runtime, "UnknownIdentifierError", position);
                     try rec.v.RecordKind.setU8(runtime.stringPool, "identifier", try runtime.newStringPoolValue(name));
                     return Errors.RuntimeErrors.InterpreterError;
                 }
 
-                ip += 1 + IntTypeSize + len + PositionTypeSize;
+                ip += PositionTypeSize;
             },
             .push_int => {
                 try runtime.pushIntValue(readInt(bytecode, ip + 1));

@@ -4,14 +4,17 @@ const AST = @import("./../ast.zig");
 const Code = @import("./../bc-interpreter.zig").Code;
 const Errors = @import("./../errors.zig");
 const Op = @import("./ops.zig").Op;
+const SP = @import("./../string_pool.zig");
 const V = @import("./../value.zig");
 
 pub const Compiler = struct {
+    stringPool: *SP.StringPool,
     allocator: std.mem.Allocator,
     buffer: std.ArrayList(u8),
 
-    pub fn init(allocator: std.mem.Allocator) Compiler {
+    pub fn init(stringPool: *SP.StringPool, allocator: std.mem.Allocator) Compiler {
         return .{
+            .stringPool = stringPool,
             .allocator = allocator,
             .buffer = std.ArrayList(u8).init(allocator),
         };
@@ -112,7 +115,7 @@ pub const Compiler = struct {
                         try self.appendPosition(e.position);
 
                         try self.buffer.append(@intFromEnum(Op.push_identifier));
-                        try self.appendString("rebo");
+                        try self.appendSPU8("rebo");
                         try self.appendPosition(e.position);
                         try self.appendPushLiteralString("lang");
                         try self.buffer.append(@intFromEnum(Op.dot));
@@ -358,7 +361,7 @@ pub const Compiler = struct {
             },
             .identifier => {
                 try self.buffer.append(@intFromEnum(Op.push_identifier));
-                try self.appendString(e.kind.identifier.slice());
+                try self.appendSP(e.kind.identifier);
                 try self.appendPosition(e.position);
             },
             .ifte => {
@@ -548,7 +551,7 @@ pub const Compiler = struct {
                 try self.appendPosition(e.position);
 
                 try self.buffer.append(@intFromEnum(Op.push_identifier));
-                try self.appendString("rebo");
+                try self.appendSPU8("rebo");
                 try self.appendPosition(e.position);
                 try self.appendPushLiteralString("lang");
                 try self.buffer.append(@intFromEnum(Op.dot));
@@ -605,7 +608,7 @@ pub const Compiler = struct {
                 try self.appendPosition(e.position);
 
                 try self.buffer.append(@intFromEnum(Op.push_identifier));
-                try self.appendString("rebo");
+                try self.appendSPU8("rebo");
                 try self.appendPosition(e.position);
                 try self.appendPushLiteralString("lang");
                 try self.buffer.append(@intFromEnum(Op.dot));
@@ -849,7 +852,7 @@ pub const Compiler = struct {
     fn compileCodeBlock(self: *Compiler, block: *AST.Expression) !void {
         // std.io.getStdOut().writer().print("Compiling code block: ip: {d}\n", .{self.buffer.items.len}) catch {};
 
-        var compiler = Compiler.init(self.allocator);
+        var compiler = Compiler.init(self.stringPool, self.allocator);
         defer compiler.deinit();
 
         const bytecode = try compiler.compile(block);
@@ -919,6 +922,18 @@ pub const Compiler = struct {
     fn appendPushLiteralString(self: *Compiler, s: []const u8) !void {
         try self.buffer.append(@intFromEnum(Op.push_string));
         try self.appendString(s);
+    }
+
+    fn appendSP(self: *Compiler, s: *SP.String) !void {
+        try self.appendInt(@as(V.IntType, @bitCast(@intFromPtr(s))));
+        s.incRef();
+    }
+
+    fn appendSPU8(self: *Compiler, s: []const u8) !void {
+        const string = try self.stringPool.intern(s);
+        errdefer string.decRef();
+
+        try self.appendInt(@as(V.IntType, @bitCast(@intFromPtr(string))));
     }
 
     fn appendString(self: *Compiler, s: []const u8) !void {

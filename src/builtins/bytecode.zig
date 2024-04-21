@@ -17,7 +17,7 @@ pub fn compile(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const ast = try BCInterpreter.parse(machine, if (name.isString()) name.v.StringKind.slice() else "eval", input.v.StringKind.slice());
     defer ast.destroy(machine.allocator);
 
-    const bytecode = try BCInterpreter.compile(machine.allocator, ast);
+    const bytecode = try BCInterpreter.compile(machine.stringPool, machine.allocator, ast);
     defer bytecode.decRef(machine.allocator);
 
     try machine.pushCodeValue(bytecode);

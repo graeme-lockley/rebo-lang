@@ -14,8 +14,8 @@ const ER = @import("error-reporting.zig");
 pub const Compiler = @import("./bc-interpreter/compiler.zig").Compiler;
 const Interpreter = @import("./bc-interpreter/interpreter.zig");
 
-pub fn compile(allocator: std.mem.Allocator, ast: *AST.Expression) !*Code {
-    var compiler = Compiler.init(allocator);
+pub fn compile(stringPool: *SP.StringPool, allocator: std.mem.Allocator, ast: *AST.Expression) !*Code {
+    var compiler = Compiler.init(stringPool, allocator);
     defer compiler.deinit();
 
     const bytecode = try compiler.compile(ast);
@@ -35,7 +35,7 @@ pub fn script(runtime: *Runtime, name: []const u8, input: []const u8) !void {
     const ast = try parse(runtime, name, input);
     defer ast.destroy(runtime.allocator);
 
-    var code = try compile(runtime.allocator, ast);
+    var code = try compile(runtime.stringPool, runtime.allocator, ast);
     defer code.decRef(runtime.allocator);
 
     try code.eval(runtime);
@@ -136,8 +136,9 @@ fn freeBlock(bytecode: []const u8, startIp: usize, upper: usize, allocator: std.
             .push_false => ip += 1,
             .push_float => ip += 1 + Interpreter.FloatTypeSize,
             .push_identifier => {
-                const len: usize = @intCast(Interpreter.readInt(bytecode, ip + 1));
-                ip += 1 + Interpreter.IntTypeSize + len + Interpreter.PositionTypeSize;
+                const name = @as(*SP.String, @ptrFromInt(@as(usize, @bitCast(Interpreter.readInt(bytecode, ip + 1)))));
+                name.decRef();
+                ip += 1 + Interpreter.IntTypeSize + Interpreter.PositionTypeSize;
             },
             .push_int => ip += 1 + Interpreter.IntTypeSize,
             .push_function => ip = freeFunction(bytecode, ip, allocator),
