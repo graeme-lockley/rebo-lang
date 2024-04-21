@@ -115,7 +115,7 @@ pub const Compiler = struct {
                         try self.appendPosition(e.position);
 
                         try self.buffer.append(@intFromEnum(Op.push_identifier));
-                        try self.appendSPU8("rebo");
+                        try self.appendString("rebo");
                         try self.appendPosition(e.position);
                         try self.appendPushLiteralString("lang");
                         try self.buffer.append(@intFromEnum(Op.dot));
@@ -551,7 +551,7 @@ pub const Compiler = struct {
                 try self.appendPosition(e.position);
 
                 try self.buffer.append(@intFromEnum(Op.push_identifier));
-                try self.appendSPU8("rebo");
+                try self.appendString("rebo");
                 try self.appendPosition(e.position);
                 try self.appendPushLiteralString("lang");
                 try self.buffer.append(@intFromEnum(Op.dot));
@@ -608,7 +608,7 @@ pub const Compiler = struct {
                 try self.appendPosition(e.position);
 
                 try self.buffer.append(@intFromEnum(Op.push_identifier));
-                try self.appendSPU8("rebo");
+                try self.appendString("rebo");
                 try self.appendPosition(e.position);
                 try self.appendPushLiteralString("lang");
                 try self.buffer.append(@intFromEnum(Op.dot));
@@ -921,7 +921,7 @@ pub const Compiler = struct {
 
     fn appendPushLiteralString(self: *Compiler, s: []const u8) !void {
         try self.buffer.append(@intFromEnum(Op.push_string));
-        try self.appendSPU8(s);
+        try self.appendString(s);
     }
 
     fn appendSP(self: *Compiler, s: *SP.String) !void {
@@ -929,16 +929,11 @@ pub const Compiler = struct {
         s.incRef();
     }
 
-    fn appendSPU8(self: *Compiler, s: []const u8) !void {
+    fn appendString(self: *Compiler, s: []const u8) !void {
         const string = try self.stringPool.intern(s);
         errdefer string.decRef();
 
         try self.appendInt(@as(V.IntType, @bitCast(@intFromPtr(string))));
-    }
-
-    fn appendString(self: *Compiler, s: []const u8) !void {
-        try self.appendInt(@intCast(s.len));
-        try self.buffer.appendSlice(s);
     }
 
     fn appendPosition(self: *Compiler, position: Errors.Position) !void {

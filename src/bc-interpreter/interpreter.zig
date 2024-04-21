@@ -398,9 +398,8 @@ fn readPosition(bytecode: []const u8, ip: usize) Errors.Position {
     };
 }
 
-fn readString(bytecode: []const u8, ip: usize) []const u8 {
-    const len: usize = @intCast(readInt(bytecode, ip));
-    return bytecode[ip + 8 .. ip + 8 + len];
+fn readString(bytecode: []const u8, ip: usize) ?*SP.String {
+    return @as(?*SP.String, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip)))));
 }
 
 fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize {
@@ -416,8 +415,7 @@ fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize 
 
     for (0..numberOfParameters) |index| {
         const name = readString(bytecode, ip);
-        const codePtr = @as(?*Code, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip + IntTypeSize + name.len)))));
-        // const code = readString(bytecode, ip + IntTypeSize + name.len);
+        const codePtr = @as(?*Code, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip + IntTypeSize)))));
 
         if (codePtr) |code| {
             try code.eval(runtime);
@@ -425,16 +423,16 @@ fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize 
             const vv = try v.toString(runtime.allocator, V.Style.Pretty);
             defer runtime.allocator.free(vv);
 
-            parameters[index] = V.FunctionArgument{ .name = try runtime.stringPool.intern(name), .default = runtime.peek(0) };
+            parameters[index] = V.FunctionArgument{ .name = name.?.incRefR(), .default = runtime.peek(0) };
         } else {
-            parameters[index] = V.FunctionArgument{ .name = try runtime.stringPool.intern(name), .default = null };
+            parameters[index] = V.FunctionArgument{ .name = name.?.incRefR(), .default = null };
         }
 
-        ip += IntTypeSize + name.len + IntTypeSize;
+        ip += IntTypeSize + IntTypeSize;
     }
 
     const restName = readString(bytecode, ip);
-    ip += IntTypeSize + restName.len;
+    ip += IntTypeSize;
 
     const code = @as(*Code, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip)))));
     ip += IntTypeSize;
@@ -442,7 +440,7 @@ fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize 
     const result = try runtime.pushValue(V.ValueValue{ .BCFunctionKind = V.BCFunctionValue{
         .scope = runtime.scope(),
         .arguments = parameters,
-        .restOfArguments = if (restName.len == 0) null else try runtime.stringPool.intern(restName),
+        .restOfArguments = if (restName) |n| n.incRefR() else null,
         .code = code.incRefR(),
     } });
 

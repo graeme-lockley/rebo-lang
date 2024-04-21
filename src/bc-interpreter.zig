@@ -215,8 +215,10 @@ fn freeFunction(bytecode: []const u8, startIp: usize, allocator: std.mem.Allocat
     ip += 1 + Interpreter.IntTypeSize;
 
     for (0..numberOfParameters) |_| {
-        const nameLen: usize = @intCast(Interpreter.readInt(bytecode, ip));
-        ip += Interpreter.IntTypeSize + nameLen;
+        const namePtr = @as(*SP.String, @ptrFromInt(@as(usize, @bitCast(Interpreter.readInt(bytecode, ip)))));
+        ip += Interpreter.IntTypeSize;
+
+        namePtr.decRef();
 
         const codePtr = @as(?*Code, @ptrFromInt(@as(usize, @bitCast(Interpreter.readInt(bytecode, ip)))));
         ip += Interpreter.IntTypeSize;
@@ -226,8 +228,12 @@ fn freeFunction(bytecode: []const u8, startIp: usize, allocator: std.mem.Allocat
         }
     }
 
-    const restNameLen: usize = @intCast(Interpreter.readInt(bytecode, ip));
-    ip += Interpreter.IntTypeSize + restNameLen;
+    const restNamePtr = @as(?*SP.String, @ptrFromInt(@as(usize, @bitCast(Interpreter.readInt(bytecode, ip)))));
+    ip += Interpreter.IntTypeSize;
+
+    if (restNamePtr) |name| {
+        name.decRef();
+    }
 
     const code = @as(*Code, @ptrFromInt(@as(usize, @bitCast(Interpreter.readInt(bytecode, ip)))));
     ip += Interpreter.IntTypeSize;
