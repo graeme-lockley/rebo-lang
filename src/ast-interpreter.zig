@@ -319,8 +319,7 @@ fn exprs(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
 
 fn idDeclaration(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     try evalExpr(runtime, e.kind.idDeclaration.value);
-    try runtime.pushStringPoolValue(e.kind.idDeclaration.name);
-    try runtime.bind();
+    try runtime.bindIdentifier(e.kind.idDeclaration.name);
 }
 
 fn identifier(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {

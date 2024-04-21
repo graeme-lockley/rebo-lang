@@ -1242,7 +1242,7 @@ pub const Runtime = struct {
         }
     }
 
-    pub inline fn bind_identifier(self: *Runtime, name: *SP.String) !void {
+    pub inline fn bindIdentifier(self: *Runtime, name: *SP.String) !void {
         const v = self.peek(0);
 
         try self.addToScope(name, v);
