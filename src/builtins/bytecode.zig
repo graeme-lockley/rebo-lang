@@ -37,14 +37,19 @@ pub fn eval(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     }
 }
 
-pub fn readInt(machine: *Helper.Runtime, numberOfArgs: usize) !void {
+pub fn readCode(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const bytecode = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.CodeKind});
     const offset = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueValue.UnitKind });
 
     const ip = if (offset.isInt()) offset.v.IntKind else 0;
 
-    const result = Interpreter.readInt(bytecode.v.CodeKind.code, @intCast(ip));
-    try machine.pushIntValue(result);
+    const result = @as(?*BCInterpreter.Code, @ptrFromInt(@as(usize, @bitCast(Interpreter.readInt(bytecode.v.CodeKind.code, @intCast(ip))))));
+
+    if (result == null) {
+        try machine.pushUnitValue();
+    } else {
+        try machine.pushCodeValue(result.?);
+    }
 }
 
 pub fn readFloat(machine: *Helper.Runtime, numberOfArgs: usize) !void {
@@ -55,6 +60,16 @@ pub fn readFloat(machine: *Helper.Runtime, numberOfArgs: usize) !void {
 
     const result = Interpreter.readFloat(bytecode.v.CodeKind.code, @intCast(ip));
     try machine.pushFloatValue(result);
+}
+
+pub fn readInt(machine: *Helper.Runtime, numberOfArgs: usize) !void {
+    const bytecode = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.CodeKind});
+    const offset = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueValue.UnitKind });
+
+    const ip = if (offset.isInt()) offset.v.IntKind else 0;
+
+    const result = Interpreter.readInt(bytecode.v.CodeKind.code, @intCast(ip));
+    try machine.pushIntValue(result);
 }
 
 pub fn readString(machine: *Helper.Runtime, numberOfArgs: usize) !void {

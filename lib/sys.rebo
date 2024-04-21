@@ -72,7 +72,7 @@ let dis(bc, indent = "") {
                   print(indent, "          ...", restName)
                }
 
-               let body = _readString(bc, ip)
+               let body = _readCode(bc, ip)
                ip := _advanceOverString(ip, body)
 
                println()
@@ -85,9 +85,11 @@ let dis(bc, indent = "") {
    }
 }
 
-let _readInt = rebo.os["bc.readInt"]
+let _readCode = rebo.os["bc.readCode"]
 
 let _readFloat = rebo.os["bc.readFloat"]
+
+let _readInt = rebo.os["bc.readInt"]
 
 let _readString = rebo.os["bc.readString"]
 
