@@ -1,6 +1,10 @@
 let sys = import("sys")
 
-let fib1(n) = if n < 2 -> 1 | fib1(n - 1) + fib1(n - 2)
+let upper = 25
+
+let fib1 = 
+   "let fib1(n) = if n < 2 -> 1 | fib1(n - 1) + fib1(n - 2) ; fib1"
+   |> rebo.lang.eval(scope())
 
 let fib2 =
    "let fib2(n) = if n < 2 -> 1 | fib2(n - 1) + fib2(n - 2); fib2" 
@@ -32,15 +36,13 @@ let timeTrial(n) {
 let padLeft(n, s) =
    " " * (n - len(s)) + s
 
-println("---- fib1")
-sys.body(fib1) |> sys.dis()
-println("---- fib2")
+println("---- fib disassembly ----")
 sys.body(fib2) |> sys.dis()
 
-range(1, 26)
+range(1, upper)
    |> map(timeTrial)
    |> each(fn(r) println(padLeft(2, str(r.n)), padLeft(8, str(r.fib1)), padLeft(8, str(r.fib2)), padLeft(23, if r.fib1 > 0 -> str((0.0 + r.fib2) / (0.0 + r.fib1)) | "∞")))
 
-range(1, 26)
+range(1, upper)
    |> map(timeTrial)
    |> each(fn(r) println(padLeft(2, str(r.n)), padLeft(8, str(r.fib1)), padLeft(8, str(r.fib2)), padLeft(23, if r.fib1 > 0 -> str((0.0 + r.fib2) / (0.0 + r.fib1)) | "∞")))
