@@ -343,11 +343,6 @@ fn ifte(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
 
         const condition = runtime.pop();
 
-        // if (condition.v == V.ValueValue.BoolKind and condition.v.BoolKind) {
-        //     try evalExpr(runtime, case.then);
-        //     return;
-        // }
-
         if (condition.v == V.ValueValue.BoolKind) {
             if (condition.v.BoolKind) {
                 try evalExpr(runtime, case.then);
@@ -589,10 +584,6 @@ fn whilee(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
         try evalExpr(runtime, e.kind.whilee.condition);
 
         const condition = runtime.pop();
-
-        // if (condition.v != V.ValueValue.BoolKind or !condition.v.BoolKind) {
-        //     break;
-        // }
 
         if (condition.v != V.ValueValue.BoolKind) {
             try ER.raiseExpectedTypeError(runtime, e.kind.whilee.condition.position, &[_]V.ValueKind{V.ValueValue.BoolKind}, condition.v);
