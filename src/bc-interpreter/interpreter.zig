@@ -185,6 +185,12 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                 try runtime.assign();
                 ip += 1;
             },
+            .assign_identifier => {
+                ip += 1;
+                const name = @as(*SP.String, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip)))));
+                ip += IntTypeSize;
+                try runtime.assignIdentifier(name);
+            },
             .assign_index => {
                 const exprPosition = readPosition(bytecode, ip + 1);
                 const indexPosition = readPosition(bytecode, ip + 1 + PositionTypeSize);

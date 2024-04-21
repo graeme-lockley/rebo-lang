@@ -34,6 +34,7 @@ pub const Op = enum(u8) {
 
     assign,
     assign_dot, // PP
+    assign_identifier, // S
     assign_index, // PP
     assign_range, // PPPP
     assign_range_all, // PP

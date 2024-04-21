@@ -58,9 +58,9 @@ pub const Compiler = struct {
                         try self.appendPosition(e.position);
                     },
                     .identifier => {
-                        try self.appendPushLiteralString(e.kind.assignment.lhs.kind.identifier.slice());
                         try self.compileExpr(e.kind.assignment.value);
-                        try self.buffer.append(@intFromEnum(Op.assign));
+                        try self.buffer.append(@intFromEnum(Op.assign_identifier));
+                        try self.appendSP(e.kind.assignment.lhs.kind.identifier);
                     },
                     .indexRange => {
                         if (e.kind.assignment.lhs.kind.indexRange.start == null) {

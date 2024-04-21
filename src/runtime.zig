@@ -1274,6 +1274,16 @@ pub const Runtime = struct {
         }
     }
 
+    pub fn assignIdentifier(self: *Runtime, name: *SP.String) !void {
+        const v = self.peek(0);
+
+        if (!(try self.updateInScope(name, v))) {
+            const rec = try ER.pushNamedUserError(self, "UnknownIdentifierError", null);
+            try rec.v.RecordKind.setU8(self.stringPool, "identifier", try self.newStringPoolValue(name));
+            return Errors.RuntimeErrors.InterpreterError;
+        }
+    }
+
     pub fn assignDot(self: *Runtime, recordPosition: Errors.Position, namePosition: Errors.Position) !void {
         const record = self.peek(2);
         const name = self.peek(1);

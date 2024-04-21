@@ -52,9 +52,8 @@ fn evalExprInScope(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!v
 fn assignment(runtime: *Runtime, lhs: *AST.Expression, value: *AST.Expression) Errors.RuntimeErrors!void {
     switch (lhs.kind) {
         .identifier => {
-            try runtime.pushStringPoolValue(lhs.kind.identifier);
             try evalExpr(runtime, value);
-            try runtime.assign();
+            try runtime.assignIdentifier(lhs.kind.identifier);
         },
         .dot => {
             try evalExpr(runtime, lhs.kind.dot.record);
