@@ -403,10 +403,10 @@ pub fn readString(bytecode: []const u8, ip: usize) ?*SP.String {
 }
 
 fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize {
-    var ip = ipStart;
+    var ip = ipStart + 1;
 
-    const numberOfParameters: usize = @intCast(readInt(bytecode, ip + 1));
-    ip = ip + 1 + IntTypeSize;
+    const numberOfParameters: usize = @intCast(readInt(bytecode, ip));
+    ip += IntTypeSize;
 
     var parameters: []V.FunctionArgument = try runtime.allocator.alloc(V.FunctionArgument, numberOfParameters);
     errdefer runtime.allocator.free(parameters);
@@ -414,8 +414,10 @@ fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize 
     const sp = runtime.stack.items.len;
 
     for (0..numberOfParameters) |index| {
-        const name = readString(bytecode, ip);
-        const codePtr = @as(?*Code, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip + IntTypeSize)))));
+        const name = readString(bytecode, ip).?;
+        ip += IntTypeSize;
+        const codePtr = @as(?*Code, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip)))));
+        ip += IntTypeSize;
 
         if (codePtr) |code| {
             try code.eval(runtime);
@@ -423,12 +425,10 @@ fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize 
             const vv = try v.toString(runtime.allocator, V.Style.Pretty);
             defer runtime.allocator.free(vv);
 
-            parameters[index] = V.FunctionArgument{ .name = name.?.incRefR(), .default = runtime.peek(0) };
+            parameters[index] = V.FunctionArgument{ .name = name.incRefR(), .default = runtime.peek(0) };
         } else {
-            parameters[index] = V.FunctionArgument{ .name = name.?.incRefR(), .default = null };
+            parameters[index] = V.FunctionArgument{ .name = name.incRefR(), .default = null };
         }
-
-        ip += IntTypeSize + IntTypeSize;
     }
 
     const restName = readString(bytecode, ip);
