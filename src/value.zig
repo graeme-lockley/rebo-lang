@@ -328,7 +328,7 @@ pub const BCFunctionValue = struct {
     scope: ?*Value,
     arguments: []FunctionArgument,
     restOfArguments: ?*SP.String,
-    body: []u8,
+    code: []u8,
 
     pub fn deinit(self: *BCFunctionValue, allocator: std.mem.Allocator) void {
         for (self.arguments) |*argument| {
@@ -338,7 +338,7 @@ pub const BCFunctionValue = struct {
             self.restOfArguments.?.decRef();
         }
         allocator.free(self.arguments);
-        BCInterpreter.free(self.body, allocator);
+        BCInterpreter.free(self.code, allocator);
     }
 };
 

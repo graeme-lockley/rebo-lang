@@ -441,7 +441,7 @@ fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize 
         .scope = runtime.scope(),
         .arguments = parameters,
         .restOfArguments = if (restName.len == 0) null else try runtime.stringPool.intern(restName),
-        .body = try runtime.allocator.dupe(u8, body),
+        .code = try runtime.allocator.dupe(u8, body),
     } });
 
     runtime.popn(runtime.stack.items.len - sp);
