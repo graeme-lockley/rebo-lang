@@ -38,21 +38,35 @@ pub fn eval(machine: *Helper.Runtime, numberOfArgs: usize) !void {
 }
 
 pub fn readInt(machine: *Helper.Runtime, numberOfArgs: usize) !void {
-    const bytecode = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
+    const bytecode = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.CodeKind});
     const offset = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueValue.UnitKind });
 
     const ip = if (offset.isInt()) offset.v.IntKind else 0;
 
-    const result = Interpreter.readInt(bytecode.v.StringKind.slice(), @intCast(ip));
+    const result = Interpreter.readInt(bytecode.v.CodeKind.code, @intCast(ip));
     try machine.pushIntValue(result);
 }
 
 pub fn readFloat(machine: *Helper.Runtime, numberOfArgs: usize) !void {
-    const bytecode = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
+    const bytecode = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.CodeKind});
     const offset = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueValue.UnitKind });
 
     const ip = if (offset.isInt()) offset.v.IntKind else 0;
 
-    const result = Interpreter.readFloat(bytecode.v.StringKind.slice(), @intCast(ip));
+    const result = Interpreter.readFloat(bytecode.v.CodeKind.code, @intCast(ip));
     try machine.pushFloatValue(result);
+}
+
+pub fn readString(machine: *Helper.Runtime, numberOfArgs: usize) !void {
+    const bytecode = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.CodeKind});
+    const offset = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{ Helper.ValueValue.IntKind, Helper.ValueValue.UnitKind });
+
+    const ip = if (offset.isInt()) offset.v.IntKind else 0;
+
+    const result = Interpreter.readString(bytecode.v.CodeKind.code, @intCast(ip));
+    if (result == null) {
+        try machine.pushUnitValue();
+    } else {
+        try machine.pushStringPoolValue(result.?);
+    }
 }

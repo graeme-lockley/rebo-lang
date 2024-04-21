@@ -89,12 +89,9 @@ let _readInt = rebo.os["bc.readInt"]
 
 let _readFloat = rebo.os["bc.readFloat"]
 
-let _readString(bc, ip) {
-   let len = _readInt(bc, ip)
-   bc[ip + 8:ip + 8 + len]
-}
+let _readString = rebo.os["bc.readString"]
 
-let _advanceOverString(ip, str) = ip + 8 + len(str)
+let _advanceOverString(ip, str) = ip + 8
 
 let _position(bc, ip) {
    let start = _readInt(bc, ip)

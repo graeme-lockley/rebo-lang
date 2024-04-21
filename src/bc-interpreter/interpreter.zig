@@ -398,7 +398,7 @@ fn readPosition(bytecode: []const u8, ip: usize) Errors.Position {
     };
 }
 
-fn readString(bytecode: []const u8, ip: usize) ?*SP.String {
+pub fn readString(bytecode: []const u8, ip: usize) ?*SP.String {
     return @as(?*SP.String, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip)))));
 }
 

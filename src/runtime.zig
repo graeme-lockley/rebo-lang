@@ -1038,6 +1038,22 @@ pub const Runtime = struct {
         const index = self.peek(0);
 
         switch (expr.v) {
+            V.ValueValue.CodeKind => {
+                if (index.v != V.ValueValue.IntKind) {
+                    try ER.raiseExpectedTypeError(self, indexPosition, &[_]V.ValueKind{V.ValueValue.IntKind}, index.v);
+                }
+
+                self.popn(2);
+
+                const str = expr.v.CodeKind.code;
+                const idx = index.v.IntKind;
+
+                if (idx < 0 or idx >= str.len) {
+                    try self.pushUnitValue();
+                } else {
+                    try self.pushCharValue(str[@intCast(idx)]);
+                }
+            },
             V.ValueValue.RecordKind => {
                 if (index.v != V.ValueValue.StringKind) {
                     try ER.raiseExpectedTypeError(self, indexPosition, &[_]V.ValueKind{V.ValueValue.StringKind}, index.v);
@@ -1102,7 +1118,7 @@ pub const Runtime = struct {
             },
             else => {
                 self.popn(2);
-                try ER.raiseExpectedTypeError(self, exprPosition, &[_]V.ValueKind{ V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
+                try ER.raiseExpectedTypeError(self, exprPosition, &[_]V.ValueKind{ V.ValueValue.CodeKind, V.ValueValue.RecordKind, V.ValueValue.SequenceKind, V.ValueValue.StringKind }, expr.v);
             },
         }
     }
@@ -1598,6 +1614,7 @@ fn setupRebo(state: *Runtime) !void {
     try reboOS.v.RecordKind.setU8(state.stringPool, "bc.eval", try state.newBuiltinValue(@import("builtins/bytecode.zig").eval));
     try reboOS.v.RecordKind.setU8(state.stringPool, "bc.readFloat", try state.newBuiltinValue(@import("builtins/bytecode.zig").readFloat));
     try reboOS.v.RecordKind.setU8(state.stringPool, "bc.readInt", try state.newBuiltinValue(@import("builtins/bytecode.zig").readInt));
+    try reboOS.v.RecordKind.setU8(state.stringPool, "bc.readString", try state.newBuiltinValue(@import("builtins/bytecode.zig").readString));
     var client = try state.allocator.create(std.http.Client);
     client.* = std.http.Client{ .allocator = state.allocator };
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client", try state.newValue(V.ValueValue{ .HttpClientKind = V.HttpClientValue.init(client) }));
