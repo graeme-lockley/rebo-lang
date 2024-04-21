@@ -163,6 +163,12 @@ fn freeBlock(bytecode: []const u8, startIp: usize, upper: usize, allocator: std.
             .close_scope => ip += 1,
             .call => ip += 1 + Interpreter.IntTypeSize + Interpreter.PositionTypeSize,
             .bind => ip += 1,
+            .bind_identifier => {
+                ip += 1;
+                const name = @as(*SP.String, @ptrFromInt(@as(usize, @bitCast(Interpreter.readInt(bytecode, ip)))));
+                name.decRef();
+                ip += Interpreter.IntTypeSize;
+            },
             .assign_dot => ip += 1 + Interpreter.PositionTypeSize + Interpreter.PositionTypeSize,
             .assign_identifier => ip += 1,
             .assign_index => ip += 1 + Interpreter.PositionTypeSize + Interpreter.PositionTypeSize,

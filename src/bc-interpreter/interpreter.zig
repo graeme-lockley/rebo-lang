@@ -162,6 +162,12 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                 try runtime.bind();
                 ip += 1;
             },
+            .bind_identifier => {
+                ip += 1;
+                const name = @as(*SP.String, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip)))));
+                ip += IntTypeSize;
+                try runtime.bind_identifier(name);
+            },
             .assign_dot => {
                 const exprPosition = readPosition(bytecode, ip + 1);
                 const namePosition = readPosition(bytecode, ip + 1 + PositionTypeSize);

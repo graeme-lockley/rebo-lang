@@ -1242,6 +1242,12 @@ pub const Runtime = struct {
         }
     }
 
+    pub inline fn bind_identifier(self: *Runtime, name: *SP.String) !void {
+        const v = self.peek(0);
+
+        try self.addToScope(name, v);
+    }
+
     pub fn swap(self: *Runtime) !void {
         const a = self.peek(1);
         const b = self.peek(0);

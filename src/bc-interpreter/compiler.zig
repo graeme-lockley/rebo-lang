@@ -356,8 +356,8 @@ pub const Compiler = struct {
             },
             .idDeclaration => {
                 try self.compileExpr(e.kind.idDeclaration.value);
-                try self.appendPushLiteralString(e.kind.idDeclaration.name.slice());
-                try self.buffer.append(@intFromEnum(Op.bind));
+                try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                try self.appendString(e.kind.idDeclaration.name.slice());
             },
             .identifier => {
                 try self.buffer.append(@intFromEnum(Op.push_identifier));
@@ -659,8 +659,8 @@ pub const Compiler = struct {
             .identifier => {
                 if (!std.mem.eql(u8, pattern.kind.identifier.slice(), "_")) {
                     try self.buffer.append(@intFromEnum(Op.duplicate));
-                    try self.appendPushLiteralString(pattern.kind.identifier.slice());
-                    try self.buffer.append(@intFromEnum(Op.bind));
+                    try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                    try self.appendSP(pattern.kind.identifier);
                     try self.buffer.append(@intFromEnum(Op.discard));
                 }
             },
@@ -743,17 +743,17 @@ pub const Compiler = struct {
                     if (entry.pattern) |p| {
                         try self.compilePattern(p, &doubleNestedCasePatches);
                     } else if (entry.id) |id| {
-                        try self.appendPushLiteralString(id.slice());
-                        try self.buffer.append(@intFromEnum(Op.bind));
+                        try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                        try self.appendSP(id);
                     } else {
-                        try self.appendPushLiteralString(entry.key.slice());
-                        try self.buffer.append(@intFromEnum(Op.bind));
+                        try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                        try self.appendSP(entry.key);
                     }
                     try self.buffer.append(@intFromEnum(Op.discard));
                 }
                 if (pattern.kind.record.id != null) {
-                    try self.appendPushLiteralString(pattern.kind.record.id.?.slice());
-                    try self.buffer.append(@intFromEnum(Op.bind));
+                    try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                    try self.appendSP(pattern.kind.record.id.?);
                 }
 
                 if (doubleNestedCasePatches.items.len > 0) {
@@ -809,14 +809,14 @@ pub const Compiler = struct {
                     try self.buffer.append(@intFromEnum(Op.rangeFrom));
                     try self.appendPosition(pattern.position);
                     try self.appendPosition(pattern.position);
-                    try self.appendPushLiteralString(pattern.kind.sequence.restOfPatterns.?.slice());
-                    try self.buffer.append(@intFromEnum(Op.bind));
+                    try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                    try self.appendSP(pattern.kind.sequence.restOfPatterns.?);
                     try self.buffer.append(@intFromEnum(Op.discard));
                 }
 
                 if (pattern.kind.sequence.id != null) {
-                    try self.appendPushLiteralString(pattern.kind.sequence.id.?.slice());
-                    try self.buffer.append(@intFromEnum(Op.bind));
+                    try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                    try self.appendSP(pattern.kind.sequence.id.?);
                 }
 
                 if (nestedCasePatches.items.len > 0) {
