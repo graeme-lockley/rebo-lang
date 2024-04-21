@@ -14,24 +14,17 @@ const ER = @import("error-reporting.zig");
 pub const Compiler = @import("./bc-interpreter/compiler.zig").Compiler;
 const Interpreter = @import("./bc-interpreter/interpreter.zig");
 
-pub fn compile(allocator: std.mem.Allocator, ast: *AST.Expression) ![]u8 {
+pub fn compile(allocator: std.mem.Allocator, ast: *AST.Expression) !*Code {
     var compiler = Compiler.init(allocator);
     defer compiler.deinit();
 
-    return try compiler.compile(ast);
+    const bytecode = try compiler.compile(ast);
+
+    const result = try allocator.create(Code);
+    result.* = Code.init(bytecode);
+
+    return result;
 }
-
-// pub fn compile(allocator: std.mem.Allocator, ast: *AST.Expression) !*Code {
-//     var compiler = Compiler.init(allocator);
-//     defer compiler.deinit();
-
-//     const code = try compiler.compile(ast);
-
-//     const result = try allocator.create(Code);
-//     result.* = Code.init(code);
-
-//     return result;
-// }
 
 pub fn eval(runtime: *Runtime, bytecode: []const u8) !void {
     try Interpreter.eval(runtime, bytecode);
@@ -41,13 +34,10 @@ pub fn script(runtime: *Runtime, name: []const u8, input: []const u8) !void {
     const ast = try parse(runtime, name, input);
     defer ast.destroy(runtime.allocator);
 
-    var bytecode = try compile(runtime.allocator, ast);
-    defer runtime.allocator.free(bytecode);
+    var code = try compile(runtime.allocator, ast);
+    defer code.decRef(runtime.allocator);
 
-    try Interpreter.eval(runtime, bytecode);
-
-    // defer bytecode.decRef(runtime.allocator);
-    // try bytecode.eval(runtime);
+    try code.eval(runtime);
 }
 
 pub fn parse(runtime: *Runtime, name: []const u8, input: []const u8) !*AST.Expression {

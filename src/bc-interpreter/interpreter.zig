@@ -53,9 +53,7 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                 try runtime.pushIntValue(readInt(bytecode, ip + 1));
                 ip += 1 + IntTypeSize;
             },
-            .push_function => {
-                ip = try pushFunction(runtime, bytecode, ip);
-            },
+            .push_function => ip = try pushFunction(runtime, bytecode, ip),
             .push_record => {
                 try runtime.pushEmptyRecordValue();
                 ip += 1;
@@ -404,7 +402,7 @@ fn readString(bytecode: []const u8, ip: usize) []const u8 {
     return bytecode[ip + 8 .. ip + 8 + len];
 }
 
-inline fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize {
+fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize {
     var ip = ipStart;
 
     const numberOfParameters: usize = @intCast(readInt(bytecode, ip + 1));

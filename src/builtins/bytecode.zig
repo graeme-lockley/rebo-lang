@@ -18,23 +18,23 @@ pub fn compile(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     defer ast.destroy(machine.allocator);
 
     const bytecode = try BCInterpreter.compile(machine.allocator, ast);
-    defer machine.allocator.free(bytecode);
+    defer bytecode.decRef(machine.allocator);
 
-    try machine.pushStringValue(bytecode);
-
-    // defer bytecode.decRef(machine.allocator);
-
-    // try machine.pushCodeValue(bytecode);
+    try machine.pushCodeValue(bytecode);
 }
 
 pub fn eval(machine: *Helper.Runtime, numberOfArgs: usize) !void {
-    const bytecode = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
+    const bytecode = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{ Helper.ValueValue.CodeKind, Helper.ValueValue.StringKind });
     const scope = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{Helper.ValueValue.ScopeKind});
 
     try machine.openScopeUsing(scope);
     defer machine.restoreScope();
 
-    try BCInterpreter.eval(machine, bytecode.v.StringKind.slice());
+    if (bytecode.isString()) {
+        try BCInterpreter.eval(machine, bytecode.v.StringKind.slice());
+    } else {
+        try bytecode.v.CodeKind.eval(machine);
+    }
 }
 
 pub fn readInt(machine: *Helper.Runtime, numberOfArgs: usize) !void {
