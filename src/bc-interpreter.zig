@@ -120,13 +120,13 @@ pub fn execute(self: *Runtime, name: []const u8, buffer: []const u8) !void {
     try Interpreter.eval(self, bytecode);
 }
 
-pub fn free(bytecode: []const u8, allocator: std.mem.Allocator) void {
-    freeBlock(bytecode, 0, bytecode.len);
+fn free(bytecode: []const u8, allocator: std.mem.Allocator) void {
+    freeBlock(bytecode, 0, bytecode.len, allocator);
 
     allocator.free(bytecode);
 }
 
-fn freeBlock(bytecode: []const u8, startIp: usize, upper: usize) void {
+fn freeBlock(bytecode: []const u8, startIp: usize, upper: usize, allocator: std.mem.Allocator) void {
     var ip: usize = startIp;
     while (ip < upper) {
         // std.io.getStdOut().writer().print("ip: {d}: {d}\n", .{ ip, bytecode[ip] }) catch {};
@@ -140,7 +140,7 @@ fn freeBlock(bytecode: []const u8, startIp: usize, upper: usize) void {
                 ip += 1 + Interpreter.IntTypeSize + len + Interpreter.PositionTypeSize;
             },
             .push_int => ip += 1 + Interpreter.IntTypeSize,
-            .push_function => ip = freeFunction(bytecode, ip),
+            .push_function => ip = freeFunction(bytecode, ip, allocator),
             .push_record => ip += 1,
             .push_sequence => ip += 1,
             .push_string => {
@@ -206,7 +206,7 @@ fn freeBlock(bytecode: []const u8, startIp: usize, upper: usize) void {
     }
 }
 
-fn freeFunction(bytecode: []const u8, startIp: usize) usize {
+fn freeFunction(bytecode: []const u8, startIp: usize, allocator: std.mem.Allocator) usize {
     var ip = startIp;
 
     const numberOfParameters: usize = @intCast(Interpreter.readInt(bytecode, ip + 1));
@@ -216,23 +216,21 @@ fn freeFunction(bytecode: []const u8, startIp: usize) usize {
         const nameLen: usize = @intCast(Interpreter.readInt(bytecode, ip));
         ip += Interpreter.IntTypeSize + nameLen;
 
-        const codeLen: usize = @intCast(Interpreter.readInt(bytecode, ip));
+        const codePtr = @as(?*Code, @ptrFromInt(@as(usize, @bitCast(Interpreter.readInt(bytecode, ip)))));
         ip += Interpreter.IntTypeSize;
 
-        if (codeLen > 0) {
-            freeBlock(bytecode, ip, ip + codeLen);
-            ip += codeLen;
+        if (codePtr) |code| {
+            code.decRef(allocator);
         }
     }
 
     const restNameLen: usize = @intCast(Interpreter.readInt(bytecode, ip));
     ip += Interpreter.IntTypeSize + restNameLen;
 
-    const bodyLen: usize = @intCast(Interpreter.readInt(bytecode, ip));
+    const code = @as(*Code, @ptrFromInt(@as(usize, @bitCast(Interpreter.readInt(bytecode, ip)))));
     ip += Interpreter.IntTypeSize;
 
-    freeBlock(bytecode, ip, ip + bodyLen);
-    ip += bodyLen;
+    code.decRef(allocator);
 
     return ip;
 }

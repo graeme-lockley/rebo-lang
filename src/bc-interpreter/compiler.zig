@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const AST = @import("./../ast.zig");
+const Code = @import("./../bc-interpreter.zig").Code;
 const Errors = @import("./../errors.zig");
 const Op = @import("./ops.zig").Op;
 const V = @import("./../value.zig");
@@ -851,17 +852,24 @@ pub const Compiler = struct {
         var compiler = Compiler.init(self.allocator);
         defer compiler.deinit();
 
-        const bc = try compiler.compile(block);
-        defer self.allocator.free(bc);
+        const bytecode = try compiler.compile(block);
+        errdefer self.allocator.free(bytecode);
 
-        try self.appendInt(@intCast(bc.len));
-        try self.buffer.appendSlice(bc);
+        try self.appendCode(bytecode);
     }
 
     fn appendDebug(self: *Compiler, stackDepth: usize, msg: []const u8) !void {
         try self.buffer.append(@intFromEnum(Op.debug));
         try self.appendInt(@intCast(stackDepth));
         try self.appendString(msg);
+    }
+
+    fn appendCode(self: *Compiler, bytecode: []const u8) !void {
+        const code = try self.allocator.create(Code);
+        code.* = Code.init(bytecode);
+        errdefer code.decRef(self.allocator);
+
+        try self.appendInt(@as(V.IntType, @bitCast(@intFromPtr(code))));
     }
 
     fn appendFloat(self: *Compiler, v: V.FloatType) !void {

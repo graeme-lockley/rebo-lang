@@ -1205,7 +1205,7 @@ pub const Runtime = struct {
             }
         }
 
-        try evalBC(self, callee.v.BCFunctionKind.code);
+        try callee.v.BCFunctionKind.code.eval(self);
     }
 
     fn callBuiltinFn(self: *Runtime, numberOfArgs: usize) !void {

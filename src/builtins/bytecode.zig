@@ -7,7 +7,7 @@ const Interpreter = @import("../bc-interpreter/interpreter.zig");
 pub fn body(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const function = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.BCFunctionKind});
 
-    try machine.pushStringValue(function.v.BCFunctionKind.code);
+    try machine.pushCodeValue(function.v.BCFunctionKind.code);
 }
 
 pub fn compile(machine: *Helper.Runtime, numberOfArgs: usize) !void {

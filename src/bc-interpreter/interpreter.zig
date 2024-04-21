@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const Code = @import("./../bc-interpreter.zig").Code;
 const Debug = @import("./../debug.zig");
 const ER = @import("./../error-reporting.zig");
 const Errors = @import("./../errors.zig");
@@ -415,33 +416,34 @@ fn pushFunction(runtime: *Runtime, bytecode: []const u8, ipStart: usize) !usize 
 
     for (0..numberOfParameters) |index| {
         const name = readString(bytecode, ip);
-        const code = readString(bytecode, ip + IntTypeSize + name.len);
+        const codePtr = @as(?*Code, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip + IntTypeSize + name.len)))));
+        // const code = readString(bytecode, ip + IntTypeSize + name.len);
 
-        if (code.len == 0) {
-            parameters[index] = V.FunctionArgument{ .name = try runtime.stringPool.intern(name), .default = null };
-        } else {
-            try eval(runtime, code);
+        if (codePtr) |code| {
+            try code.eval(runtime);
             const v = runtime.peek(0);
             const vv = try v.toString(runtime.allocator, V.Style.Pretty);
             defer runtime.allocator.free(vv);
 
             parameters[index] = V.FunctionArgument{ .name = try runtime.stringPool.intern(name), .default = runtime.peek(0) };
+        } else {
+            parameters[index] = V.FunctionArgument{ .name = try runtime.stringPool.intern(name), .default = null };
         }
 
-        ip += IntTypeSize + name.len + IntTypeSize + code.len;
+        ip += IntTypeSize + name.len + IntTypeSize;
     }
 
     const restName = readString(bytecode, ip);
     ip += IntTypeSize + restName.len;
 
-    const body = readString(bytecode, ip);
-    ip += IntTypeSize + body.len;
+    const code = @as(*Code, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip)))));
+    ip += IntTypeSize;
 
     const result = try runtime.pushValue(V.ValueValue{ .BCFunctionKind = V.BCFunctionValue{
         .scope = runtime.scope(),
         .arguments = parameters,
         .restOfArguments = if (restName.len == 0) null else try runtime.stringPool.intern(restName),
-        .code = try runtime.allocator.dupe(u8, body),
+        .code = code.incRefR(),
     } });
 
     runtime.popn(runtime.stack.items.len - sp);
