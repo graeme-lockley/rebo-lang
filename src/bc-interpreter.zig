@@ -175,8 +175,8 @@ fn freeBlock(bytecode: []const u8, startIp: usize, upper: usize, allocator: std.
                 name.decRef();
                 ip += Interpreter.IntTypeSize;
             },
+            .assign => ip += 1,
             .assign_dot => ip += 1 + Interpreter.PositionTypeSize + Interpreter.PositionTypeSize,
-            .assign_identifier => ip += 1,
             .assign_index => ip += 1 + Interpreter.PositionTypeSize + Interpreter.PositionTypeSize,
             .assign_range => ip += 1 + Interpreter.PositionTypeSize + Interpreter.PositionTypeSize + Interpreter.PositionTypeSize + Interpreter.PositionTypeSize,
             .assign_range_all => ip += 1 + Interpreter.PositionTypeSize + Interpreter.PositionTypeSize,

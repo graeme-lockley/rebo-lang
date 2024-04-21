@@ -32,8 +32,8 @@ pub const Op = enum(u8) {
     bind_identifier, // S
     bind_identifier_discard, // S
 
+    assign,
     assign_dot, // PP
-    assign_identifier,
     assign_index, // PP
     assign_range, // PPPP
     assign_range_all, // PP

@@ -181,8 +181,8 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                 try runtime.assignDot(exprPosition, namePosition);
                 ip += 1 + PositionTypeSize + PositionTypeSize;
             },
-            .assign_identifier => {
-                try runtime.assignIdentifier();
+            .assign => {
+                try runtime.assign();
                 ip += 1;
             },
             .assign_index => {

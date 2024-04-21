@@ -60,7 +60,7 @@ pub const Compiler = struct {
                     .identifier => {
                         try self.appendPushLiteralString(e.kind.assignment.lhs.kind.identifier.slice());
                         try self.compileExpr(e.kind.assignment.value);
-                        try self.buffer.append(@intFromEnum(Op.assign_identifier));
+                        try self.buffer.append(@intFromEnum(Op.assign));
                     },
                     .indexRange => {
                         if (e.kind.assignment.lhs.kind.indexRange.start == null) {
