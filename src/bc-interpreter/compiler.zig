@@ -365,6 +365,7 @@ pub const Compiler = struct {
                 try self.appendPosition(e.position);
             },
             .ifte => {
+                var done = false;
                 var previousPatch: ?usize = null;
                 var endPatches = std.ArrayList(usize).init(self.allocator);
                 defer {
@@ -380,29 +381,31 @@ pub const Compiler = struct {
                         previousPatch = null;
                     }
 
-                    if (case.condition == null) {
-                        try self.compileExpr(case.then);
-                        try self.buffer.append(@intFromEnum(Op.jmp));
-                        try endPatches.append(self.buffer.items.len);
-                        try self.appendInt(0);
-                    } else {
-                        try self.compileExpr(case.condition.?);
-                        try self.buffer.append(@intFromEnum(Op.jmp_false));
-                        previousPatch = self.buffer.items.len;
-                        try self.appendInt(0);
-                        try self.appendPosition(case.condition.?.position);
+                    if (!done) {
+                        if (case.condition == null) {
+                            try self.compileExpr(case.then);
+                            done = true;
+                        } else {
+                            try self.compileExpr(case.condition.?);
+                            try self.buffer.append(@intFromEnum(Op.jmp_false));
+                            previousPatch = self.buffer.items.len;
+                            try self.appendInt(0);
+                            try self.appendPosition(case.condition.?.position);
 
-                        try self.compileExpr(case.then);
-                        try self.buffer.append(@intFromEnum(Op.jmp));
-                        try endPatches.append(self.buffer.items.len);
-                        try self.appendInt(0);
+                            try self.compileExpr(case.then);
+                            try self.buffer.append(@intFromEnum(Op.jmp));
+                            try endPatches.append(self.buffer.items.len);
+                            try self.appendInt(0);
+                        }
                     }
                 }
 
                 if (previousPatch != null) {
                     try self.appendIntAt(@intCast(self.buffer.items.len), previousPatch.?);
                 }
-                try self.buffer.append(@intFromEnum(Op.push_unit));
+                if (!done) {
+                    try self.buffer.append(@intFromEnum(Op.push_unit));
+                }
             },
             .indexRange => {
                 try self.compileExpr(e.kind.indexRange.expr);
@@ -659,9 +662,8 @@ pub const Compiler = struct {
             .identifier => {
                 if (!std.mem.eql(u8, pattern.kind.identifier.slice(), "_")) {
                     try self.buffer.append(@intFromEnum(Op.duplicate));
-                    try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                    try self.buffer.append(@intFromEnum(Op.bind_identifier_discard));
                     try self.appendSP(pattern.kind.identifier);
-                    try self.buffer.append(@intFromEnum(Op.discard));
                 }
             },
             .literalBool => {
@@ -742,14 +744,14 @@ pub const Compiler = struct {
                     try self.appendPosition(pattern.position);
                     if (entry.pattern) |p| {
                         try self.compilePattern(p, &doubleNestedCasePatches);
+                        try self.buffer.append(@intFromEnum(Op.discard));
                     } else if (entry.id) |id| {
-                        try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                        try self.buffer.append(@intFromEnum(Op.bind_identifier_discard));
                         try self.appendSP(id);
                     } else {
-                        try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                        try self.buffer.append(@intFromEnum(Op.bind_identifier_discard));
                         try self.appendSP(entry.key);
                     }
-                    try self.buffer.append(@intFromEnum(Op.discard));
                 }
                 if (pattern.kind.record.id != null) {
                     try self.buffer.append(@intFromEnum(Op.bind_identifier));
@@ -809,9 +811,8 @@ pub const Compiler = struct {
                     try self.buffer.append(@intFromEnum(Op.rangeFrom));
                     try self.appendPosition(pattern.position);
                     try self.appendPosition(pattern.position);
-                    try self.buffer.append(@intFromEnum(Op.bind_identifier));
+                    try self.buffer.append(@intFromEnum(Op.bind_identifier_discard));
                     try self.appendSP(pattern.kind.sequence.restOfPatterns.?);
-                    try self.buffer.append(@intFromEnum(Op.discard));
                 }
 
                 if (pattern.kind.sequence.id != null) {
