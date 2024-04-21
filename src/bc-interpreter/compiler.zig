@@ -921,7 +921,7 @@ pub const Compiler = struct {
 
     fn appendPushLiteralString(self: *Compiler, s: []const u8) !void {
         try self.buffer.append(@intFromEnum(Op.push_string));
-        try self.appendString(s);
+        try self.appendSPU8(s);
     }
 
     fn appendSP(self: *Compiler, s: *SP.String) !void {

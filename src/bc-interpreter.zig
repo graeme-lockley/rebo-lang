@@ -145,8 +145,9 @@ fn freeBlock(bytecode: []const u8, startIp: usize, upper: usize, allocator: std.
             .push_record => ip += 1,
             .push_sequence => ip += 1,
             .push_string => {
-                const len: usize = @intCast(Interpreter.readInt(bytecode, ip + 1));
-                ip += 1 + Interpreter.IntTypeSize + len;
+                const str = @as(*SP.String, @ptrFromInt(@as(usize, @bitCast(Interpreter.readInt(bytecode, ip + 1)))));
+                str.decRef();
+                ip += 1 + Interpreter.IntTypeSize;
             },
             .push_true => ip += 1,
             .push_unit => ip += 1,

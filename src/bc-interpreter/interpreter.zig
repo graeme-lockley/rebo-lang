@@ -64,10 +64,10 @@ fn evalBlock(runtime: *Runtime, bytecode: []const u8, startIp: usize) Errors.Run
                 ip += 1;
             },
             .push_string => {
-                const len: usize = @intCast(readInt(bytecode, ip + 1));
-                const str = bytecode[ip + 9 .. ip + 9 + len];
-                try runtime.pushStringValue(str);
-                ip += 1 + IntTypeSize + len;
+                ip += 1;
+                const str = @as(*SP.String, @ptrFromInt(@as(usize, @bitCast(readInt(bytecode, ip)))));
+                ip += IntTypeSize;
+                try runtime.pushStringPoolValue(str);
             },
             .push_true => {
                 try runtime.pushBoolValue(true);
