@@ -19,6 +19,7 @@ pub fn compile(allocator: std.mem.Allocator, ast: *AST.Expression) !*Code {
     defer compiler.deinit();
 
     const bytecode = try compiler.compile(ast);
+    errdefer free(bytecode, allocator);
 
     const result = try allocator.create(Code);
     result.* = Code.init(bytecode);
