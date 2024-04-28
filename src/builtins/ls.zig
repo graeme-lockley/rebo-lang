@@ -7,7 +7,7 @@ pub fn ls(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const path = if (v.v == Helper.ValueKind.StringKind) v.v.StringKind.slice() else "./";
     try machine.pushEmptySequenceValue();
 
-    var dir = std.fs.cwd().openDir(path, .{}) catch |err| return Helper.raiseOsError(machine, "ls", err);
+    var dir = std.fs.cwd().openDir(path, .{ .iterate = true }) catch |err| return Helper.raiseOsError(machine, "ls", err);
     defer dir.close();
 
     const result = machine.peek(0);
