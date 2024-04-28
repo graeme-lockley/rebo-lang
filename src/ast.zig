@@ -64,7 +64,7 @@ pub const Expression = struct {
     }
 
     pub fn create(allocator: std.mem.Allocator, kind: ExpressionKind, position: Errors.Position) !*Expression {
-        var expr = try allocator.create(Expression);
+        const expr = try allocator.create(Expression);
         expr.* = Expression.init(kind, position);
 
         return expr;
@@ -375,7 +375,7 @@ pub const Pattern = struct {
     }
 
     pub fn create(allocator: std.mem.Allocator, kind: PatternKind, position: Errors.Position) !*Pattern {
-        var expr = try allocator.create(Pattern);
+        const expr = try allocator.create(Pattern);
         expr.* = Pattern.init(kind, position);
 
         return expr;

@@ -22,15 +22,15 @@ pub fn httpRequest(machine: *Helper.Runtime, numberOfArgs: usize) !void {
         return Helper.Errors.RuntimeErrors.InterpreterError;
     };
 
-    var requestHeaders = std.http.Headers{ .allocator = machine.allocator };
-    errdefer requestHeaders.deinit();
+    var requestHeaders = std.ArrayList(std.http.Header).init(machine.allocator);
+    defer requestHeaders.deinit();
 
     if (headers.isRecord()) {
         var iterator = headers.v.RecordKind.iterator();
 
         while (iterator.next()) |entry| {
             if (entry.value_ptr.*.isString()) {
-                try requestHeaders.append(entry.key_ptr.*.slice(), entry.value_ptr.*.v.StringKind.slice());
+                try requestHeaders.append(std.http.Header{ .name = entry.key_ptr.*.slice(), .value = entry.value_ptr.*.v.StringKind.slice() });
             }
         }
     }
@@ -43,13 +43,18 @@ pub fn httpRequest(machine: *Helper.Runtime, numberOfArgs: usize) !void {
         return Helper.Errors.RuntimeErrors.InterpreterError;
     };
 
+    const headerBuffer = try machine.allocator.alloc(u8, 1024);
+    defer machine.allocator.free(headerBuffer);
+
     var request = try machine.allocator.create(std.http.Client.Request);
     errdefer machine.allocator.destroy(request);
 
-    request.* = client.request(requestMethod, uri, requestHeaders, .{}) catch |err| return Helper.raiseOsError(machine, "httpRequest", err);
+    request.* = client.open(requestMethod, uri, std.http.Client.RequestOptions{ .server_header_buffer = headerBuffer, .headers = std.http.Client.Request.Headers{ .content_type = .{ .override = "application/json" } }, .extra_headers = requestHeaders.items }) catch |err| return Helper.raiseOsError(machine, "httpRequest", err);
     errdefer request.deinit();
 
-    try machine.push(try machine.newValue(Helper.ValueValue{ .HttpClientRequestKind = Helper.V.HttpClientRequestValue.init(requestHeaders, request) }));
+    request.send() catch |err| return Helper.raiseOsError(machine, "rebo.os[\"http.client.request\"]", err);
+
+    try machine.push(try machine.newValue(Helper.ValueValue{ .HttpClientRequestKind = Helper.V.HttpClientRequestValue.init(try requestHeaders.toOwnedSlice(), request) }));
 }
 
 pub fn httpResponse(machine: *Helper.Runtime, numberOfArgs: usize) !void {
@@ -69,22 +74,20 @@ pub fn httpResponse(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     if (request.v.HttpClientRequestKind.request.response.content_length != null) {
         try record.v.RecordKind.setU8(machine.stringPool, "contentLength", try machine.newIntValue(@intCast(request.v.HttpClientRequestKind.request.response.content_length.?)));
     }
-    if (request.v.HttpClientRequestKind.request.response.transfer_encoding != null) {
-        try record.v.RecordKind.setU8(machine.stringPool, "transferEncoding", try machine.newStringValue(@tagName(request.v.HttpClientRequestKind.request.response.transfer_encoding.?)));
+    if (request.v.HttpClientRequestKind.request.response.transfer_encoding != .none) {
+        try record.v.RecordKind.setU8(machine.stringPool, "transferEncoding", try machine.newStringValue(@tagName(request.v.HttpClientRequestKind.request.response.transfer_encoding)));
     }
-    if (request.v.HttpClientRequestKind.request.response.transfer_compression != null) {
-        try record.v.RecordKind.setU8(machine.stringPool, "transferCompression", try machine.newStringValue(@tagName(request.v.HttpClientRequestKind.request.response.transfer_compression.?)));
-    }
+    try record.v.RecordKind.setU8(machine.stringPool, "transferCompression", try machine.newStringValue(@tagName(request.v.HttpClientRequestKind.request.response.transfer_compression)));
 
     const header = try machine.newEmptySequenceValue();
     try record.v.RecordKind.setU8(machine.stringPool, "header", header);
 
-    for (request.v.HttpClientRequestKind.request.response.headers.list.items) |field| {
-        const headerField = try machine.newEmptySequenceValue();
-        try header.v.SequenceKind.appendItem(headerField);
-        try headerField.v.SequenceKind.appendItem(try machine.newStringValue(field.name));
-        try headerField.v.SequenceKind.appendItem(try machine.newStringValue(field.value));
-    }
+    // for (request.v.HttpClientRequestKind.request.response.headers.list.items) |field| {
+    //     const headerField = try machine.newEmptySequenceValue();
+    //     try header.v.SequenceKind.appendItem(headerField);
+    //     try headerField.v.SequenceKind.appendItem(try machine.newStringValue(field.name));
+    //     try headerField.v.SequenceKind.appendItem(try machine.newStringValue(field.value));
+    // }
 }
 
 pub fn httpStatus(machine: *Helper.Runtime, numberOfArgs: usize) !void {
@@ -95,14 +98,6 @@ pub fn httpStatus(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     }
 
     try machine.pushIntValue(@intFromEnum(request.v.HttpClientRequestKind.request.response.status));
-}
-
-pub fn httpStart(machine: *Helper.Runtime, numberOfArgs: usize) !void {
-    const request = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.HttpClientRequestKind});
-
-    request.v.HttpClientRequestKind.start() catch |err| return Helper.raiseOsError(machine, "rebo.os[\"http.client.start\"]", err);
-
-    try machine.pushUnitValue();
 }
 
 pub fn httpFinish(machine: *Helper.Runtime, numberOfArgs: usize) !void {

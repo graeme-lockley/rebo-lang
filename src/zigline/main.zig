@@ -15,7 +15,6 @@ const should_enable_signal_handling = !is_windows and builtin.os.tag != .wasi;
 
 const logger = std.log.scoped(.zigline);
 
-// std.os is a LIE!
 const SystemCapabilities = switch (builtin.os.tag) {
     // FIXME: Windows' console handling is a mess, and std doesn't have
     //        the necessary bindings to emulate termios on Windows.
@@ -70,130 +69,74 @@ const SystemCapabilities = switch (builtin.os.tag) {
             };
         }
 
-        pub const POLL_IN = std.os.system.POLL.RDNORM;
+        pub const POLL_IN = std.posix.POLL.RDNORM;
 
-        pub fn setPollFd(p: *std.os.system.pollfd, f: *anyopaque) void {
+        pub fn setPollFd(p: *std.posix.pollfd, f: *anyopaque) void {
             p.fd = @ptrCast(f);
         }
 
-        pub fn poll(fds: [*]std.os.system.pollfd, n: std.os.system.nfds_t, timeout: i32) c_int {
-            // std.os.system.poll() doesn't actually exist on windows lul
+        pub fn poll(fds: [*]std.posix.pollfd, n: std.posix.nfds_t, timeout: i32) c_int {
+            // std.posix.poll() has a Windows implementation but doesn't accept the second arg, only a slice.
             _ = timeout;
             fds[n - 1].revents = Self.POLL_IN;
             return 1;
         }
 
         const pipe = (if (is_windows) struct {
-            pub fn pipe() ![2]std.os.fd_t {
+            pub fn pipe() ![2]std.posix.fd_t {
                 var rd: std.os.windows.HANDLE = undefined;
                 var wr: std.os.windows.HANDLE = undefined;
                 var attrs: std.os.windows.SECURITY_ATTRIBUTES = undefined;
                 attrs.nLength = 0;
                 try std.os.windows.CreatePipe(&rd, &wr, &attrs);
-                return [2]std.os.fd_t{ @ptrCast(rd), @ptrCast(wr) };
+                return [2]std.posix.fd_t{ @ptrCast(rd), @ptrCast(wr) };
             }
         } else struct {
-            pub fn pipe() ![2]std.os.fd_t {
-                return std.os.pipe();
+            pub fn pipe() ![2]std.posix.fd_t {
+                return std.posix.pipe();
             }
         }).pipe;
     },
-    .macos => struct {
-        const Self = @This();
-        pub const Sigaction = std.os.Sigaction;
-
-        pub const termios = std.os.termios;
-
-        pub const V = struct {
-            const EOF = 0;
-            const EOL = 1;
-            const ERASE = 3;
-            const INTR = 8;
-            const KILL = 5;
-            const MIN = 16;
-            const QUIT = 9;
-            const START = 12;
-            const STOP = 13;
-            const SUSP = 10;
-            const TIME = 17;
-        };
-        const ECHO: u32 = 0x8;
-        const ICANON: u32 = 0x100;
-        const ISIG: u32 = 0x80;
-
-        pub const default_operation_mode = Configuration.OperationMode.Full;
-
-        pub fn getTermios() !Self.termios {
-            return try std.os.tcgetattr(std.os.STDIN_FILENO);
-        }
-
-        pub fn setTermios(t: Self.termios) !void {
-            try std.os.tcsetattr(std.os.STDIN_FILENO, std.os.system.TCSA.NOW, t);
-        }
-
-        pub fn clearEchoAndICanon(t: *Self.termios) void {
-            t.lflag &= ~ECHO & ~ICANON & ~ISIG;
-        }
-
-        pub fn getTermiosCC(t: Self.termios, cc: u32) u8 {
-            return t.cc[cc];
-        }
-
-        pub const POLL_IN = std.os.system.POLL.IN;
-
-        pub fn setPollFd(p: *std.os.system.pollfd, f: std.os.fd_t) void {
-            p.fd = f;
-        }
-
-        const PollReturnType = if (builtin.link_libc) c_int else usize; // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        pub fn poll(fds: [*]std.os.system.pollfd, n: std.os.system.nfds_t, timeout: i32) PollReturnType {
-            return std.os.system.poll(fds, n, timeout);
-        }
-
-        pub const pipe = std.os.pipe;
-    },
     else => struct {
         const Self = @This();
-        pub const Sigaction = std.os.Sigaction;
+        pub const Sigaction = std.posix.Sigaction;
 
-        pub const termios = std.os.termios;
+        pub const termios = std.posix.termios;
 
-        // FIXME: Non-linux systems...?
-        pub const V = std.os.linux.V;
-        const ECHO = std.os.linux.ECHO;
-        const ICANON = std.os.linux.ICANON;
-        const ISIG = std.os.linux.ISIG;
+        pub const V = std.posix.V;
 
         pub const default_operation_mode = Configuration.OperationMode.Full;
 
         pub fn getTermios() !Self.termios {
-            return try std.os.tcgetattr(std.os.STDIN_FILENO);
+            return try std.posix.tcgetattr(std.posix.STDIN_FILENO);
         }
 
         pub fn setTermios(t: Self.termios) !void {
-            try std.os.tcsetattr(std.os.STDIN_FILENO, std.os.system.TCSA.NOW, t);
+            try std.posix.tcsetattr(std.posix.STDIN_FILENO, std.posix.TCSA.NOW, t);
         }
 
         pub fn clearEchoAndICanon(t: *Self.termios) void {
-            t.lflag &= ~ECHO & ~ICANON & ~ISIG;
+            t.lflag.ECHO = false;
+            t.lflag.ICANON = false;
+            t.lflag.ISIG = false;
         }
 
-        pub fn getTermiosCC(t: Self.termios, cc: u32) u8 {
-            return t.cc[cc];
+        pub fn getTermiosCC(t: Self.termios, cc: Self.V) u8 {
+            return t.cc[@intFromEnum(cc)];
         }
 
-        pub const POLL_IN = std.os.system.POLL.IN;
+        pub const POLL_IN = std.posix.POLL.IN;
 
-        pub fn setPollFd(p: *std.os.system.pollfd, f: std.os.fd_t) void {
+        pub fn setPollFd(p: *std.posix.pollfd, f: std.posix.fd_t) void {
             p.fd = f;
         }
 
         const PollReturnType = if (builtin.link_libc) c_int else usize; // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        pub fn poll(fds: [*]std.os.system.pollfd, n: std.os.system.nfds_t, timeout: i32) PollReturnType {
-            return std.os.system.poll(fds, n, timeout);
+        pub fn poll(fds: [*]std.posix.pollfd, n: std.posix.nfds_t, timeout: i32) PollReturnType {
+            return std.posix.system.poll(fds, n, timeout);
         }
 
-        pub const pipe = std.os.pipe;
+        pub const pipe = std.posix.pipe;
     },
 };
 
@@ -675,33 +618,29 @@ fn vtMoveRelative(row: i64, col: i64) !void {
 
 var signalHandlingData: ?struct {
     pipe: struct {
-        write: std.os.fd_t,
-        read: std.os.fd_t,
+        write: std.posix.fd_t,
+        read: std.posix.fd_t,
     },
     old_sigint: ?SystemCapabilities.Sigaction = null,
     old_sigwinch: ?SystemCapabilities.Sigaction = null,
 
     pub fn handleSignal(signo: i32) callconv(.C) void {
-        var f = std.fs.File{
-            .handle = signalHandlingData.?.pipe.write,
-            .capable_io_mode = .blocking,
-            .intended_io_mode = .blocking,
-        };
-        f.writer().writeInt(i32, signo, .Little) catch {};
+        var f = std.fs.File{ .handle = signalHandlingData.?.pipe.write };
+        f.writer().writeInt(i32, signo, .little) catch {};
     }
 } = null;
 
 pub const Editor = struct {
     pub const Error =
         std.mem.Allocator.Error ||
-        std.os.MMapError ||
-        std.os.OpenError ||
-        std.os.PipeError ||
-        std.os.ReadError ||
-        std.os.RealPathError ||
-        std.os.TermiosGetError ||
-        std.os.TermiosSetError ||
-        std.os.WriteError ||
+        std.posix.MMapError ||
+        std.posix.OpenError ||
+        std.posix.PipeError ||
+        std.posix.ReadError ||
+        std.posix.RealPathError ||
+        std.posix.TermiosGetError ||
+        std.posix.TermiosSetError ||
+        std.posix.WriteError ||
         error{ CodepointTooLarge, Utf8CannotEncodeSurrogateHalf } ||
         error{ Empty, Eof, ReadFailure } ||
         error{ EndOfStream, StreamTooLong, OperationNotSupported } ||
@@ -887,8 +826,8 @@ pub const Editor = struct {
     control_thread: ?Thread = null,
     control_thread_exited: bool = false,
     thread_kill_pipe: ?struct {
-        write: std.os.fd_t,
-        read: std.os.fd_t,
+        write: std.posix.fd_t,
+        read: std.posix.fd_t,
     } = null,
 
     queue_cond_mutex: Mutex = .{},
@@ -1082,7 +1021,7 @@ pub const Editor = struct {
 
         // In the absence of way to interrupt threads, we're just gonna write to it and hope it dies on its own pace.
         if (self.thread_kill_pipe) |pipes| {
-            _ = std.os.write(pipes.write, "x") catch 0;
+            _ = std.posix.write(pipes.write, "x") catch 0;
         }
     }
 
@@ -1116,14 +1055,14 @@ pub const Editor = struct {
 
                     signalHandlingData.?.old_sigint = @as(SystemCapabilities.Sigaction, undefined);
                     signalHandlingData.?.old_sigwinch = @as(SystemCapabilities.Sigaction, undefined);
-                    try std.os.sigaction(
-                        std.os.SIG.INT,
-                        &SystemCapabilities.Sigaction{ .handler = .{ .handler = @TypeOf(signalHandlingData.?).handleSignal }, .mask = std.os.empty_sigset, .flags = 0 },
+                    try std.posix.sigaction(
+                        std.posix.SIG.INT,
+                        &SystemCapabilities.Sigaction{ .handler = .{ .handler = @TypeOf(signalHandlingData.?).handleSignal }, .mask = std.posix.empty_sigset, .flags = 0 },
                         &signalHandlingData.?.old_sigint.?,
                     );
-                    try std.os.sigaction(
-                        std.os.SIG.WINCH,
-                        &SystemCapabilities.Sigaction{ .handler = .{ .handler = @TypeOf(signalHandlingData.?).handleSignal }, .mask = std.os.empty_sigset, .flags = 0 },
+                    try std.posix.sigaction(
+                        std.posix.SIG.WINCH,
+                        &SystemCapabilities.Sigaction{ .handler = .{ .handler = @TypeOf(signalHandlingData.?).handleSignal }, .mask = std.posix.empty_sigset, .flags = 0 },
                         &signalHandlingData.?.old_sigwinch.?,
                     );
                 }
@@ -1235,14 +1174,14 @@ pub const Editor = struct {
 
         std.debug.assert(self.thread_kill_pipe != null);
 
-        var pollfds = [_]std.os.system.pollfd{ undefined, undefined, undefined };
+        var pollfds = [_]std.posix.pollfd{ undefined, undefined, undefined };
         SystemCapabilities.setPollFd(&pollfds[0], stdin.handle);
         SystemCapabilities.setPollFd(&pollfds[1], self.thread_kill_pipe.?.read);
         pollfds[0].events = SystemCapabilities.POLL_IN;
         pollfds[1].events = SystemCapabilities.POLL_IN;
         pollfds[2].events = 0;
 
-        var nfds: std.os.nfds_t = 2;
+        var nfds: std.posix.nfds_t = 2;
 
         if (self.configuration.enable_signal_handling) {
             SystemCapabilities.setPollFd(&pollfds[2], signalHandlingData.?.pipe.read);
@@ -1259,7 +1198,7 @@ pub const Editor = struct {
                 defer self.logic_cond_mutex.unlock();
                 const rc = SystemCapabilities.poll(&pollfds, nfds, std.math.maxInt(i32));
                 if (rc < 0) {
-                    self.input_error = switch (std.os.errno(rc)) {
+                    self.input_error = switch (std.posix.errno(rc)) {
                         .INTR => {
                             continue;
                         },
@@ -1279,23 +1218,19 @@ pub const Editor = struct {
             if (pollfds[1].revents & SystemCapabilities.POLL_IN != 0) {
                 // We're supposed to die...after draining the pipe.
                 var buf = [_]u8{0} ** 8;
-                _ = std.os.read(self.thread_kill_pipe.?.read, &buf) catch 0;
+                _ = std.posix.read(self.thread_kill_pipe.?.read, &buf) catch 0;
                 break;
             }
 
             if (!is_windows) {
                 if (pollfds[2].revents & SystemCapabilities.POLL_IN != 0) no_read: {
                     // A signal! Let's handle it.
-                    var f = std.fs.File{
-                        .handle = signalHandlingData.?.pipe.read,
-                        .capable_io_mode = .blocking,
-                        .intended_io_mode = .blocking,
-                    };
-                    const signo = f.reader().readInt(i32, .Little) catch {
+                    var f = std.fs.File{ .handle = signalHandlingData.?.pipe.read };
+                    const signo = f.reader().readInt(i32, .little) catch {
                         break :no_read;
                     };
                     switch (signo) {
-                        std.os.SIG.WINCH => {
+                        std.posix.SIG.WINCH => {
                             self.signal_queue.enqueue(.SIGWINCH) catch {
                                 break :no_read;
                             };
@@ -2110,9 +2045,9 @@ pub const Editor = struct {
         var buf = [16]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         var more_junk_to_read = false;
         var stdin = std.io.getStdIn();
-        var pollfds = [1]std.os.system.pollfd{undefined};
+        var pollfds = [1]std.posix.pollfd{undefined};
         {
-            var pollfd: std.os.system.pollfd = undefined;
+            var pollfd: std.posix.pollfd = undefined;
             SystemCapabilities.setPollFd(&pollfd, stdin.handle);
             pollfd.events = SystemCapabilities.POLL_IN;
             pollfd.revents = 0;
@@ -2718,13 +2653,13 @@ pub const Editor = struct {
         self.num_columns = 80;
         self.num_lines = 24;
         if (!is_windows) {
-            const system = if (builtin.link_libc and builtin.os.tag == .linux) std.os.linux else std.os.system;
-            var ws: system.winsize = undefined;
-            if (std.os.system.ioctl(std.io.getStdIn().handle, system.T.IOCGWINSZ, @intFromPtr(&ws)) != 0) {
-                const fd = std.os.system.open("/dev/tty", std.os.system.O.RDONLY, @as(std.os.mode_t, 0));
+            const ioctl = if (builtin.os.tag == .linux) std.os.linux.ioctl else std.c.ioctl;
+            var ws: std.posix.winsize = undefined;
+            if (ioctl(std.io.getStdIn().handle, std.posix.T.IOCGWINSZ, @intFromPtr(&ws)) != 0) {
+                const fd = std.posix.open("/dev/tty", .{ .ACCMODE = .RDONLY }, @as(std.posix.mode_t, 0)) catch return;
                 if (fd != -1) {
-                    _ = std.os.system.ioctl(@intCast(fd), system.T.IOCGWINSZ, @intFromPtr(&ws));
-                    _ = std.os.system.close(@intCast(fd));
+                    _ = ioctl(@intCast(fd), std.posix.T.IOCGWINSZ, @intFromPtr(&ws));
+                    _ = std.posix.close(@intCast(fd));
                 } else {
                     return;
                 }

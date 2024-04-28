@@ -12,7 +12,7 @@ let delete(url, headers = {}) = _bodyLess(url, "DELETE", headers)
 let _bodyLess(url, method, headers) {
    let response = rebo.os["http.client.request"](url, method, headers)
 
-   rebo.os["http.client.start"](response)
+   rebo.os["http.client.finish"](response)
    rebo.os["http.client.wait"](response)
 
    let status = rebo.os["http.client.status"](response)
@@ -49,7 +49,6 @@ let _body(url, method, body, headers ) {
     }
 
    let response = rebo.os["http.client.request"](url, method, headers)
-   rebo.os["http.client.start"](response)
 
    if body == () -> {
       let self = {

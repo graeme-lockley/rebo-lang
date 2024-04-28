@@ -248,10 +248,10 @@ pub const ValueKind = enum {
     HttpClientRequestKind,
     IntKind,
     RecordKind,
+    ScopeKind,
     SequenceKind,
     StreamKind,
     StringKind,
-    ScopeKind,
     UnitKind,
 
     pub fn toString(self: ValueKind) []const u8 {
@@ -286,9 +286,9 @@ pub const ValueValue = union(ValueKind) {
     CodeKind: *BCInterpreter.Code,
     FileKind: FileValue,
     FloatKind: FloatType,
-    IntKind: IntType,
     HttpClientKind: HttpClientValue,
     HttpClientRequestKind: HttpClientRequestValue,
+    IntKind: IntType,
     RecordKind: RecordValue,
     ScopeKind: ScopeValue,
     SequenceKind: SequenceValue,
@@ -383,7 +383,6 @@ pub const HttpClientValue = struct {
 };
 
 pub const HttpClientRequestState = enum {
-    Created,
     Started,
     Finished,
     Waiting,
@@ -392,23 +391,23 @@ pub const HttpClientRequestState = enum {
 
 pub const HttpClientRequestValue = struct {
     state: HttpClientRequestState,
-    headers: std.http.Headers,
+    headers: []std.http.Header,
     request: *std.http.Client.Request,
 
-    pub fn init(headers: std.http.Headers, request: *std.http.Client.Request) HttpClientRequestValue {
-        return HttpClientRequestValue{ .state = .Created, .headers = headers, .request = request };
+    pub fn init(headers: []std.http.Header, request: *std.http.Client.Request) HttpClientRequestValue {
+        return HttpClientRequestValue{ .state = .Started, .headers = headers, .request = request };
     }
 
     pub fn deinit(self: *HttpClientRequestValue, allocator: std.mem.Allocator) void {
-        self.headers.deinit();
+        allocator.free(self.headers);
         self.request.deinit();
         allocator.destroy(self.request);
     }
 
-    pub fn start(self: *HttpClientRequestValue) !void {
+    pub fn send(self: *HttpClientRequestValue) !void {
         if (self.state == .Created) {
-            try self.request.start();
-            self.state = .Started;
+            try self.request.send();
+            self.state = .Finished;
         } else {
             return error.IllegalState;
         }
@@ -616,7 +615,7 @@ pub const SequenceValue = struct {
     values: std.ArrayList(*Value),
 
     pub fn init(allocator: std.mem.Allocator) !SequenceValue {
-        var result = SequenceValue{
+        const result = SequenceValue{
             .values = std.ArrayList(*Value).init(allocator),
         };
 
@@ -749,7 +748,7 @@ pub fn eq(a: *Value, b: *Value) bool {
 
             var iterator = a.v.RecordKind.iterator();
             while (iterator.next()) |entry| {
-                var value = b.v.RecordKind.get(entry.key_ptr.*);
+                const value = b.v.RecordKind.get(entry.key_ptr.*);
                 if (value == null) return false;
 
                 if (!eq(entry.value_ptr.*, value.?)) return false;
@@ -762,7 +761,7 @@ pub fn eq(a: *Value, b: *Value) bool {
 
             var iterator = a.v.ScopeKind.values.iterator();
             while (iterator.next()) |entry| {
-                var value = b.v.ScopeKind.values.get(entry.key_ptr.*);
+                const value = b.v.ScopeKind.values.get(entry.key_ptr.*);
                 if (value == null) return false;
 
                 if (!eq(entry.value_ptr.*, value.?)) return false;

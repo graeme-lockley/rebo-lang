@@ -147,7 +147,7 @@ pub const Lexer = struct {
                     self.skipCharacter();
                 }
 
-                var text = self.source[tokenStart..self.offset];
+                const text = self.source[tokenStart..self.offset];
 
                 self.current = Token{ .kind = keywords.get(text) orelse TokenKind.Identifier, .start = tokenStart, .end = self.offset };
             },

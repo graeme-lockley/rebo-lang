@@ -24,7 +24,7 @@ pub const StringPool = struct {
             s.incRef();
             return s;
         } else {
-            var string = try self.allocator.create(String);
+            const string = try self.allocator.create(String);
 
             const dataDup = try self.allocator.dupe(u8, data);
             string.* = String.init(self, dataDup);
@@ -40,7 +40,7 @@ pub const StringPool = struct {
             self.allocator.free(data);
             return s;
         } else {
-            var string = try self.allocator.create(String);
+            const string = try self.allocator.create(String);
             string.* = String.init(self, data);
             try self.items.put(string.data, string);
             return string;

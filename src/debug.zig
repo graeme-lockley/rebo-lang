@@ -13,7 +13,7 @@ pub fn showStack(runtime: *Runtime, depth: usize, msg: []const u8) !void {
 
     while (d < stack.len) {
         const frame = stack[d];
-        var value = try frame.toString(runtime.allocator, Value.Style.Pretty);
+        const value = try frame.toString(runtime.allocator, Value.Style.Pretty);
         defer runtime.allocator.free(value);
 
         try stdout.print("  {d} [{d}]: {s}\n", .{ d, stack.len - d - 1, value });

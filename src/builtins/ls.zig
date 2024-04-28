@@ -7,7 +7,7 @@ pub fn ls(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const path = if (v.v == Helper.ValueKind.StringKind) v.v.StringKind.slice() else "./";
     try machine.pushEmptySequenceValue();
 
-    var dir = std.fs.cwd().openIterableDir(path, .{}) catch |err| return Helper.raiseOsError(machine, "ls", err);
+    var dir = std.fs.cwd().openDir(path, .{}) catch |err| return Helper.raiseOsError(machine, "ls", err);
     defer dir.close();
 
     const result = machine.peek(0);
@@ -24,17 +24,17 @@ pub fn ls(machine: *Helper.Runtime, numberOfArgs: usize) !void {
         try record.v.RecordKind.setU8(machine.stringPool, "name", try machine.newStringValue(entry.name));
 
         const kind = switch (entry.kind) {
-            std.fs.IterableDir.Entry.Kind.block_device => "block_device",
-            std.fs.IterableDir.Entry.Kind.character_device => "character_device",
-            std.fs.IterableDir.Entry.Kind.directory => "directory",
-            std.fs.IterableDir.Entry.Kind.door => "door",
-            std.fs.IterableDir.Entry.Kind.event_port => "event_port",
-            std.fs.IterableDir.Entry.Kind.file => "file",
-            std.fs.IterableDir.Entry.Kind.named_pipe => "named_pipe",
-            std.fs.IterableDir.Entry.Kind.sym_link => "sym_link",
-            std.fs.IterableDir.Entry.Kind.unix_domain_socket => "unix_domain_socket",
-            std.fs.IterableDir.Entry.Kind.unknown => "unknown",
-            std.fs.IterableDir.Entry.Kind.whiteout => "whiteout",
+            .block_device => "block_device",
+            .character_device => "character_device",
+            .directory => "directory",
+            .door => "door",
+            .event_port => "event_port",
+            .file => "file",
+            .named_pipe => "named_pipe",
+            .sym_link => "sym_link",
+            .unix_domain_socket => "unix_domain_socket",
+            .unknown => "unknown",
+            .whiteout => "whiteout",
         };
         try record.v.RecordKind.setU8(machine.stringPool, "kind", try machine.newStringValue(kind));
     }

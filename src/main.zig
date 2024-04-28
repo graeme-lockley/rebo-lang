@@ -21,7 +21,7 @@ pub fn main() !void {
         }
     }
 
-    var args = try std.process.argsAlloc(allocator);
+    const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
     if (args.len == 2 and std.mem.eql(u8, args[1], "help")) {
@@ -34,7 +34,7 @@ pub fn main() !void {
         var rebo = try API.init(allocator);
         defer rebo.deinit();
 
-        var historyFile = try historyFileName(&rebo);
+        const historyFile = try historyFileName(&rebo);
         defer allocator.free(historyFile);
 
         try editor.loadHistory(historyFile);
@@ -79,7 +79,7 @@ pub fn main() !void {
         };
         try printResult(&rebo);
 
-        std.os.exit(exitValue);
+        std.posix.exit(exitValue);
     } else {
         const startTime = std.time.milliTimestamp();
 
@@ -299,7 +299,7 @@ fn expectError(input: []const u8) !void {
         return error.TestingError;
     }
 
-    var err = gpa.deinit();
+    const err = gpa.deinit();
     if (err == std.heap.Check.leak) {
         std.log.err("Failed to deinit allocator\n", .{});
         return error.TestingError;

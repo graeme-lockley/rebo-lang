@@ -48,7 +48,7 @@ pub const Runtime = struct {
     }
 
     pub fn deinit(self: *Runtime) void {
-        var count = self.stack.items.len;
+        const count = self.stack.items.len;
 
         _ = force_gc(self);
 
@@ -93,9 +93,9 @@ pub const Runtime = struct {
         }
         for (self.stack.items, 0..) |item, idx| {
             if (!eqls(self.stringPool, item, other.stack.items[idx])) {
-                var itemS = item.toString(self.allocator, V.Style.Pretty) catch return false;
+                const itemS = item.toString(self.allocator, V.Style.Pretty) catch return false;
                 defer self.allocator.free(itemS);
-                var otherS = other.stack.items[idx].toString(self.allocator, V.Style.Pretty) catch return false;
+                const otherS = other.stack.items[idx].toString(self.allocator, V.Style.Pretty) catch return false;
                 defer self.allocator.free(otherS);
 
                 std.log.err("eql: stack elements different value: [{s}]: [{s}]", .{ itemS, otherS });
@@ -108,9 +108,9 @@ pub const Runtime = struct {
         }
         for (self.scopes.items, 0..) |item, idx| {
             if (!eqls(self.stringPool, item, other.scopes.items[idx])) {
-                var itemS = item.toString(self.allocator, V.Style.Pretty) catch return false;
+                const itemS = item.toString(self.allocator, V.Style.Pretty) catch return false;
                 defer self.allocator.free(itemS);
-                var otherS = other.scopes.items[idx].toString(self.allocator, V.Style.Pretty) catch return false;
+                const otherS = other.scopes.items[idx].toString(self.allocator, V.Style.Pretty) catch return false;
                 defer self.allocator.free(otherS);
 
                 std.log.err("eql: scope elements different value: [{s}]: [{s}]", .{ itemS, otherS });
@@ -1572,7 +1572,7 @@ fn gc(state: *Runtime) void {
 }
 
 fn setupRebo(state: *Runtime) !void {
-    var args = try std.process.argsAlloc(state.allocator);
+    const args = try std.process.argsAlloc(state.allocator);
     defer std.process.argsFree(state.allocator, args);
 
     const value = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
@@ -1632,10 +1632,9 @@ fn setupRebo(state: *Runtime) !void {
     try reboOS.v.RecordKind.setU8(state.stringPool, "bc.readFloat", try state.newBuiltinValue(@import("builtins/bytecode.zig").readFloat));
     try reboOS.v.RecordKind.setU8(state.stringPool, "bc.readInt", try state.newBuiltinValue(@import("builtins/bytecode.zig").readInt));
     try reboOS.v.RecordKind.setU8(state.stringPool, "bc.readString", try state.newBuiltinValue(@import("builtins/bytecode.zig").readString));
-    var client = try state.allocator.create(std.http.Client);
+    const client = try state.allocator.create(std.http.Client);
     client.* = std.http.Client{ .allocator = state.allocator };
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client", try state.newValue(V.ValueValue{ .HttpClientKind = V.HttpClientValue.init(client) }));
-    try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.start", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpStart));
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.status", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpStatus));
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.request", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpRequest));
     try reboOS.v.RecordKind.setU8(state.stringPool, "http.client.response", try state.newBuiltinValue(@import("builtins/httpRequest.zig").httpResponse));
@@ -1660,9 +1659,9 @@ fn eqls(stringPool: *SP.StringPool, a: *V.Value, b: *V.Value) bool {
     const result = eqlss(stringPool, a, b);
 
     if (!result) {
-        var aS = a.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+        const aS = a.toString(stringPool.allocator, V.Style.Pretty) catch return false;
         defer stringPool.allocator.free(aS);
-        var bS = b.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+        const bS = b.toString(stringPool.allocator, V.Style.Pretty) catch return false;
         defer stringPool.allocator.free(bS);
 
         std.log.err("eqls: different value: {}:[{s}] vs {}:[{s}]", .{ @intFromEnum(a.v), aS, @intFromEnum(b.v), bS });
@@ -1704,7 +1703,7 @@ fn eqlss(stringPool: *SP.StringPool, a: *V.Value, b: *V.Value) bool {
                     }
                 }
                 if (value == null) {
-                    var itemS = a.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+                    const itemS = a.toString(stringPool.allocator, V.Style.Pretty) catch return false;
                     defer stringPool.allocator.free(itemS);
 
                     std.log.err("eqls: record: key not found: [{s}] in [{s}]", .{ entry.key_ptr.*.slice(), itemS });
@@ -1712,9 +1711,9 @@ fn eqlss(stringPool: *SP.StringPool, a: *V.Value, b: *V.Value) bool {
                 }
 
                 if (!eqls(stringPool, entry.value_ptr.*, value.?)) {
-                    var itemS = entry.value_ptr.*.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+                    const itemS = entry.value_ptr.*.toString(stringPool.allocator, V.Style.Pretty) catch return false;
                     defer stringPool.allocator.free(itemS);
-                    var otherS = value.?.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+                    const otherS = value.?.toString(stringPool.allocator, V.Style.Pretty) catch return false;
                     defer stringPool.allocator.free(otherS);
 
                     std.log.err("eqls: record: different value: [{s}]: [{s}] vs [{s}]", .{ entry.key_ptr.*.slice(), itemS, otherS });
@@ -1740,9 +1739,9 @@ fn eqlss(stringPool: *SP.StringPool, a: *V.Value, b: *V.Value) bool {
                 }
 
                 if (!eqls(stringPool, entry.value_ptr.*, value.?)) {
-                    var itemS = entry.value_ptr.*.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+                    const itemS = entry.value_ptr.*.toString(stringPool.allocator, V.Style.Pretty) catch return false;
                     defer stringPool.allocator.free(itemS);
-                    var otherS = value.?.toString(stringPool.allocator, V.Style.Pretty) catch return false;
+                    const otherS = value.?.toString(stringPool.allocator, V.Style.Pretty) catch return false;
                     defer stringPool.allocator.free(otherS);
 
                     std.log.err("eqls: scope key: different value: [{s}]: [{s}] vs [{s}]", .{ entry.key_ptr.*.slice(), itemS, otherS });

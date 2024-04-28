@@ -849,7 +849,7 @@ pub const Parser = struct {
                 restOfParams.?.decRef();
             }
         }
-        var params = try self.parameters(&restOfParams);
+        const params = try self.parameters(&restOfParams);
         errdefer {
             for (params) |*param| {
                 param.deinit(self.allocator);
