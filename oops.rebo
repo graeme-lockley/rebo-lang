@@ -1,3 +1,5 @@
+#!env rebo
+
 let sys = import("sys")
 
 let upper = 25
