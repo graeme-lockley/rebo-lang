@@ -28,7 +28,11 @@ let whitespace?(c) =
 
 # `alpha?` returns true if `c` is an alphabetic character.
 let alpha?(c) =
-  c != () && (int(c) >= 65 && int(c) <= 90 || int(c) >= 97 && int(c) <= 122)
+  if c == () -> false
+   | {
+        let i = int(c) 
+        i >= 65 && i <= 90 || i >= 97 && i <= 122
+     }
 
 # `isDigit` returns true if `c` is a digit.
 let digit?(c) = 
