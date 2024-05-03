@@ -26,6 +26,10 @@ let takeWhile(s, p) {
 let whitespace?(c) = 
   c != () && int(c) <= 32
 
+# `alpha?` returns true if `c` is an alphabetic character.
+let alpha?(c) =
+  c != () && (int(c) >= 65 && int(c) <= 90 || int(c) >= 97 && int(c) <= 122)
+
 # `isDigit` returns true if `c` is a digit.
 let digit?(c) = 
   c != () && int(c) >= 48 && int(c) <= 57
