@@ -1601,6 +1601,7 @@ fn setupRebo(state: *Runtime) !void {
 
     const reboLang = try state.newValue(V.ValueValue{ .RecordKind = V.RecordValue.init(state.allocator) });
     try value.v.RecordKind.setU8(state.stringPool, "lang", reboLang);
+    try reboLang.v.RecordKind.setU8(state.stringPool, "char", try state.newBuiltinValue(@import("builtins/char.zig").char));
     try reboLang.v.RecordKind.setU8(state.stringPool, "eval", try state.newBuiltinValue(@import("builtins/eval.zig").eval));
     try reboLang.v.RecordKind.setU8(state.stringPool, "gc", try state.newBuiltinValue(@import("builtins/gc.zig").gc));
     try reboLang.v.RecordKind.setU8(state.stringPool, "int", try state.newBuiltinValue(@import("builtins/int.zig").int));

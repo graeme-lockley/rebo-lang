@@ -1,3 +1,4 @@
+let char = rebo.lang.char
 let float = rebo.lang.float
 let gc = rebo.lang.gc
 let int = rebo.lang.int
