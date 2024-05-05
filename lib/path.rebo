@@ -13,3 +13,25 @@ let dir(path) {
    | lastSlash == 0 -> "/"
    | path[0:lastSlash]
 }
+
+let split(path) {
+   path := path |> Str.trimRight(fn(c) c == '/')
+
+   let lastSlash = path |> lastIndexOf('/')
+
+   let [dir, name] = 
+      if lastSlash == () -> [".", path]
+       | lastSlash == 0 -> ["/", path[1:]]
+       | [path[0:lastSlash], path[lastSlash+1:]]
+
+   let [baseName, ext] = {
+      let lastDot = name |> lastIndexOf('.')
+      
+      if lastDot == () -> [name, ""]
+       | [name[0:lastDot], name[lastDot+1:]]
+   }
+   ; [dir, baseName, ext]
+}
+
+let join(path, name, extension) =
+   (if path == "" || path == () -> "." | path) + "/" + name + (if extension == "" || extension == () -> "" | "." + extension)

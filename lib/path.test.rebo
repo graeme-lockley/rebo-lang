@@ -2,10 +2,35 @@ let Path = import("path")
 
 let run(suite) {
   _dir(suite.suite("dir"))
+  _split(suite.suite("split"))
+  _join(suite.suite("join"))
 }
 
 let _dir(suite) {
-  suite.eq("/foo/bar", Path.dir("/foo/bar"), "/foo")
-  suite.eq("/foo/bar/", Path.dir("/foo/bar/"), "/foo")
-  suite.eq("bar.fred", Path.dir("bar.fred"), ".")
+  let _test(path, expected) = suite.eq(path, Path.dir(path), expected)
+
+  _test("/foo/bar", "/foo")
+  _test("/foo/bar.fred", "/foo")
+  _test("/foo/bar/", "/foo")
+  _test("bar.fred", ".")
 }
+
+let _split(suite) {
+  let _test(path, expected) = suite.eq(path, Path.split(path), expected)
+
+  _test("/foo/bar", ["/foo", "bar", ""])
+  _test("/foo/bar.fred", ["/foo", "bar", "fred"])
+  _test("/foo/bar/", ["/foo", "bar", ""])
+  _test("/foo/bar", ["/foo", "bar", ""])
+  _test("bar.fred", [".", "bar", "fred"])
+}
+
+let _join(suite) {
+  let _test(parts, expected) = suite.eq(parts, Path.join(parts[0], parts[1], parts[2]), expected)
+
+  _test(["/foo", "bar", "fred"], "/foo/bar.fred")
+  _test(["/foo", "bar", ""], "/foo/bar")
+  _test([".", "bar", "fred"], "./bar.fred")
+  _test(["", "bar", "fred"], "./bar.fred")
+  _test(["/foo", "bar", ""], "/foo/bar")
+} 
