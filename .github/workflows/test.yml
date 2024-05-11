@@ -58,7 +58,6 @@ jobs:
 
       - name: Upload artifact
         run: |
-          cd ./components/bci-zig
           az storage blob upload \
             --account-name littlelanguages \
             --container-name rebo \
