@@ -27,3 +27,50 @@ jobs:
       - name: Test Rebo suite and markdown code blocks
         run: |
           zig build run -- ./bin/rebo-test
+
+  'upload-darwin-xxxxxx-artefact':
+    runs-on: macos-latest
+    needs: 
+      - build
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Install zig
+        uses: korandoru/setup-zig@v1
+        with:
+          zig-version: 0.12.1 # released versions or master
+
+      - name: Build binary
+        run: |
+          zig build-exe ./src/main.zig -O ReleaseFast -fstrip
+
+      - name: Show hardware info
+        run: |
+          cd ./components/bci-zig
+          uname -a
+          uname -m
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Upload artifact
+        run: |
+          cd ./components/bci-zig
+          az storage blob upload \
+            --account-name littlelanguages \
+            --container-name rebo \
+            --name darwin-x86_64 \
+            --type block \
+            --tier hot \
+            --file ./main --overwrite
+          az storage blob upload \
+            --account-name littlelanguages \
+            --container-name rebo \
+            --name darwin-aarch64 \
+            --type block \
+            --tier hot \
+            --file ./main --overwrite
