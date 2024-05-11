@@ -1,5 +1,15 @@
 There is so much to do.  The following is my work list on this project.  I will continuously juggle the sequence of these tasks as I work on them depending on what I would like to get working next.
 
+# Installation script
+
+Now that I have started using rebo for my own projects it is necessary to create an installation script so that, in particular, I can add rebo into my pipelines.  The installation script should be able to install rebo on any platform that has a bash shell.
+
+The tasks below are centered around the work on this process.
+
+Decisions:
+
+- The installation script just installs - it does not upgrade.  The upgrade process is achieved through call a rebo program because, at that point in time, it is assumed that rebo is already installed.
+
 # Feature: Move `import` into user space
 
 The first implementation of `import` was as a builtin which was perfect to get started.  However imports can be so much more.  For example, using [Scanpiler's](https://github.com/littlelanguages/scanpiler) notation, I can write a a lexical definition for a language and place it in the file `scanner.llex`.  It would be super cool to be able to use these definitions in my code with the following statement:
@@ -23,21 +33,9 @@ This is a very powerful feature that would allow `rebo` to be used to build a wi
 
 ## Tasks
 
-- [X] Add ReferenceCounting into AST nodes and wire into the entire system
-- [X] Remove the "Annie" code from the `import` builtin and system `execute` 
-- [X] Move the collection of imported modules to `rebo.imports`
-- [X] Allow a function in execution to access the caller's scope - __caller_scope__
-- Update and add builtin functions to work with scope:
-   - [X] `len`
-   - [X] `[]`
-   - [X] `[] :=`
-   - [X] `keys`
-   - [x] `scope` - `rebo.lang.scope`
-   - [X] `super` - `rebo.lang["scope.super"]`
-   - [X] `super :=` - `rebo.lang["scope.assign"]`: this is super dangerous as it can break EVERYTHING
-   - [X] `rebo.lang["scope.open"]`
-   - [X] `rebo.lang["scope.delete!"]`
-- [X] Add a form of `fexists` into the `os` builtin
-- [X] Create a `prelude.rebo` file that sets up the top-level scope before user code runs
-- [X] Move all of the builtins into rebo.lang and rebo.os, and initialise them in `prelude.rebo`
-- [ ] Document each builtin in `docs/builtins.md`
+- [ ] Update pipeline to place rebo binaries into my Azure storage account.  The different kind of binaries are:
+   - [ ] Linux
+   - [X] MacOS Intel
+   - [ ] MacOS Apple Silicon
+- [ ] Create an install.sh script that will install rebo on any platform that has a bash shell.
+- [ ] Create a rebo-refresh script that will refresh the rebo binaries and libraries.
