@@ -48,7 +48,6 @@ jobs:
 
       - name: Show hardware info
         run: |
-          cd ./components/bci-zig
           uname -a
           uname -m
 
