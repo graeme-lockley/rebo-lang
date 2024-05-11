@@ -40,7 +40,7 @@ jobs:
       - name: Install zig
         uses: korandoru/setup-zig@v1
         with:
-          zig-version: 0.12.1 # released versions or master
+          zig-version: 0.12.0 # released versions or master
 
       - name: Build binary
         run: |
