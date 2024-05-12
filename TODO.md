@@ -8,7 +8,7 @@ The tasks below are centered around the work on this process.
 
 Decisions:
 
-- The installation script just installs - it does not upgrade.  The upgrade process is achieved through call a rebo program because, at that point in time, it is assumed that rebo is already installed.
+- The installation script just installs - it does not upgrade.  The upgrade process is achieved through a call to a rebo program because, at that point in time, it is assumed that rebo is already installed.
 
 # Feature: Move `import` into user space
 
@@ -33,9 +33,9 @@ This is a very powerful feature that would allow `rebo` to be used to build a wi
 
 ## Tasks
 
-- [ ] Update pipeline to place rebo binaries into my Azure storage account.  The different kind of binaries are:
-   - [ ] Linux
+- [X] Update pipeline to place rebo binaries into my Azure storage account.  The different kind of binaries are:
+   - [X] Linux
    - [X] MacOS Intel
-   - [ ] MacOS Apple Silicon
-- [ ] Create an install.sh script that will install rebo on any platform that has a bash shell.
+   - [X] MacOS Apple Silicon
+- [X] Create an install.sh script that will install rebo on any platform that has a bash shell.
 - [ ] Create a rebo-refresh script that will refresh the rebo binaries and libraries.

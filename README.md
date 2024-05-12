@@ -67,6 +67,22 @@ server.route("/hello/:name") <| fn(params) =
 server.start(9999)
 ```
 
+## Installation
+
+I have created an installation script that will install Rebo on any platform that has a bash shell.  The installation script is available at [https://raw.githubusercontent.com/graeme-lockley/rebo-lang/main/tasks/install.sh]( https://raw.githubusercontent.com/graeme-lockley/rebo-lang/main/tasks/install.sh).  To install Rebo, execute the following command:
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/graeme-lockley/rebo-lang/main/tasks/install.sh)" -- ~/rebo
+```
+
+The installation script will install Rebo in the directory `~/rebo`.  If you would like to install Rebo in a different directory, replace `~/rebo` with the directory where you would like the installation to be placed.
+
+Note that you will need to manually add the Rebo binary to your path.  In the example above that would be
+
+```bash
+export PATH=$PATH:~/rebo/bin
+```
+
 ## See also
 
 - Where does the name "Rebo" come from?  I am an annoying Star Wars fan and it is a reference to the [Max Rebo Band](https://starwars.fandom.com/wiki/Max_Rebo_Band) from Return of the Jedi.
