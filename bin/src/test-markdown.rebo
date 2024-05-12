@@ -9,7 +9,7 @@ let process(path, test, silent = false) {
    }
 
    let execute(suite, path, startLine, endLine, code) {
-      let cmd = "()"
+      let cmd = "let __FILE = \"" + path + "\""
       let lp = 0
 
       while lp < len(code) -> {
