@@ -1,4 +1,4 @@
-#!env rebo
+#!/usr/bin/env rebo
 
 let CLI = import("cli")
 let Str = import("str")
