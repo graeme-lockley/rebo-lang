@@ -31,8 +31,8 @@ Idiomatically, rather than returning a string as the exception message, we retur
 > head([1, 2, 3]) catch _ -> ()
 1
 
-> head([]) catch { kind: "EmptyList", stack } -> stack
-[{from: {offset: 39}, to: {offset: 66}, file: "repl"}, {from: {offset: 162}, to: {offset: 170}, file: "repl"}]
+> head([]) catch { kind: "EmptyList", stack } -> map(stack, fn(item) { item.file := () ; item })
+[{from: {column: 73, line: 1, offset: 72}, to: {column: 99, line: 1, offset: 99}}, {from: {column: 1, line: 2, offset: 195}, to: {column: 7, line: 3, offset: 203}}]
 ```
 
 There are some standard errors that are raised in the runtime system.  These errors are layed out through code examples.
