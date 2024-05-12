@@ -53,7 +53,7 @@ cd "$INSTALL_DIR" || print_error "Failed to change to installation directory."
 
 SYSTEM=$(uname -s | tr '[:upper:]' '[:lower:]')
 MACHINE=$(uname -m | tr '[:upper:]' '[:lower:]')
-REBO_URL="https://littlelanguages.blob.core.windows.net/rebo/${SYSTEM}-${MACHINE}"
+REBO_URL="https://littlelanguages.blob.core.windows.net/rebo/${MACHINE}-${SYSTEM}"
 
 mkdir ./bin || print_error "Failed to create ./bin directory."
 mkdir ./bin/src || print_error "Failed to create ./bin/src directory."
@@ -66,7 +66,6 @@ chmod u+x ./bin/rebo || print_error "Failed to make ./bin/rebo executable."
 download_file "bin/prelude.rebo" "./bin/prelude.rebo"
 download_file "bin/rebo-test" "./bin/rebo-test"
 chmod u+x ./bin/rebo-test || print_error "Failed to make rebo-test executable."
-
 
 download_file "bin/src/repl-util.rebo" "./bin/src/repl-util.rebo"
 download_file "bin/src/test-markdown.rebo" "./bin/src/test-markdown.rebo"
