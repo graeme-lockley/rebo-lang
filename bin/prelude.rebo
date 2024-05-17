@@ -10,6 +10,7 @@ let typeof = rebo.lang.typeof
 
 let close = rebo.os.close
 let cwd = rebo.os.cwd
+let exec = rebo.os.exec
 let exit = rebo.os.exit
 let fexists = rebo.os.fexists
 let listen = rebo.os.listen
