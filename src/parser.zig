@@ -179,9 +179,9 @@ pub const Parser = struct {
 
             if (self.currentTokenKind() == Lexer.TokenKind.ColonEqual) {
                 try self.skipToken();
-                const value = try self.expression();
+                const rhs = try self.expression();
 
-                lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .assignment = AST.AssignmentExpression{ .lhs = lhs, .value = value } }, Errors.Position{ .start = lhs.position.start, .end = value.position.end });
+                lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .assignment = AST.AssignmentExpression{ .lhs = lhs, .rhs = rhs } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
             }
 
             return lhs;

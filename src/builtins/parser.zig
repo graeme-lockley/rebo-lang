@@ -19,6 +19,21 @@ const pos = Helper.Errors.Position{ .start = 0, .end = 0 };
 
 fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
     switch (ast.kind) {
+        .assignment => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("assignment");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("lhs");
+            try emit(machine, ast.kind.assignment.lhs, position);
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("rhs");
+            try emit(machine, ast.kind.assignment.rhs, position);
+            try machine.setRecordItemBang(pos);
+        },
         .binaryOp => {
             try machine.pushEmptyRecordValue();
 
@@ -51,6 +66,17 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
                 try emit(machine, expr, position);
                 try machine.appendSequenceItemBang(pos);
             }
+            try machine.setRecordItemBang(pos);
+        },
+        .identifier => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("identifier");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("name");
+            try machine.pushStringValue(ast.kind.identifier.slice());
             try machine.setRecordItemBang(pos);
         },
         .literalInt => {

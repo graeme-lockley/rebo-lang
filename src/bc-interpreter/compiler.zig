@@ -52,13 +52,13 @@ pub const Compiler = struct {
                     .dot => {
                         try self.compileExpr(e.kind.assignment.lhs.kind.dot.record);
                         try self.appendPushLiteralString(e.kind.assignment.lhs.kind.dot.field.slice());
-                        try self.compileExpr(e.kind.assignment.value);
+                        try self.compileExpr(e.kind.assignment.rhs);
                         try self.buffer.append(@intFromEnum(Op.assign_dot));
                         try self.appendPosition(e.kind.assignment.lhs.kind.dot.record.position);
                         try self.appendPosition(e.position);
                     },
                     .identifier => {
-                        try self.compileExpr(e.kind.assignment.value);
+                        try self.compileExpr(e.kind.assignment.rhs);
                         try self.buffer.append(@intFromEnum(Op.assign_identifier));
                         try self.appendSP(e.kind.assignment.lhs.kind.identifier);
                     },
@@ -66,43 +66,43 @@ pub const Compiler = struct {
                         if (e.kind.assignment.lhs.kind.indexRange.start == null) {
                             if (e.kind.assignment.lhs.kind.indexRange.end == null) {
                                 try self.compileExpr(e.kind.assignment.lhs.kind.indexRange.expr);
-                                try self.compileExpr(e.kind.assignment.value);
+                                try self.compileExpr(e.kind.assignment.rhs);
                                 try self.buffer.append(@intFromEnum(Op.assign_range_all));
                                 try self.appendPosition(e.kind.assignment.lhs.kind.indexRange.expr.position);
-                                try self.appendPosition(e.kind.assignment.value.position);
+                                try self.appendPosition(e.kind.assignment.rhs.position);
                             } else {
                                 try self.compileExpr(e.kind.assignment.lhs.kind.indexRange.expr);
                                 try self.compileExpr(e.kind.assignment.lhs.kind.indexRange.end.?);
-                                try self.compileExpr(e.kind.assignment.value);
+                                try self.compileExpr(e.kind.assignment.rhs);
                                 try self.buffer.append(@intFromEnum(Op.assign_range_to));
                                 try self.appendPosition(e.kind.assignment.lhs.kind.indexRange.expr.position);
                                 try self.appendPosition(e.kind.assignment.lhs.kind.indexRange.end.?.position);
-                                try self.appendPosition(e.kind.assignment.value.position);
+                                try self.appendPosition(e.kind.assignment.rhs.position);
                             }
                         } else if (e.kind.assignment.lhs.kind.indexRange.end == null) {
                             try self.compileExpr(e.kind.assignment.lhs.kind.indexRange.expr);
                             try self.compileExpr(e.kind.assignment.lhs.kind.indexRange.start.?);
-                            try self.compileExpr(e.kind.assignment.value);
+                            try self.compileExpr(e.kind.assignment.rhs);
                             try self.buffer.append(@intFromEnum(Op.assign_range_from));
                             try self.appendPosition(e.kind.assignment.lhs.kind.indexRange.expr.position);
                             try self.appendPosition(e.kind.assignment.lhs.kind.indexRange.start.?.position);
-                            try self.appendPosition(e.kind.assignment.value.position);
+                            try self.appendPosition(e.kind.assignment.rhs.position);
                         } else {
                             try self.compileExpr(e.kind.assignment.lhs.kind.indexRange.expr);
                             try self.compileExpr(e.kind.assignment.lhs.kind.indexRange.start.?);
                             try self.compileExpr(e.kind.assignment.lhs.kind.indexRange.end.?);
-                            try self.compileExpr(e.kind.assignment.value);
+                            try self.compileExpr(e.kind.assignment.rhs);
                             try self.buffer.append(@intFromEnum(Op.assign_range));
                             try self.appendPosition(e.kind.assignment.lhs.kind.indexRange.expr.position);
                             try self.appendPosition(e.kind.assignment.lhs.kind.indexRange.start.?.position);
                             try self.appendPosition(e.kind.assignment.lhs.kind.indexRange.end.?.position);
-                            try self.appendPosition(e.kind.assignment.value.position);
+                            try self.appendPosition(e.kind.assignment.rhs.position);
                         }
                     },
                     .indexValue => {
                         try self.compileExpr(e.kind.assignment.lhs.kind.indexValue.expr);
                         try self.compileExpr(e.kind.assignment.lhs.kind.indexValue.index);
-                        try self.compileExpr(e.kind.assignment.value);
+                        try self.compileExpr(e.kind.assignment.rhs);
                         try self.buffer.append(@intFromEnum(Op.assign_index));
                         try self.appendPosition(e.kind.assignment.lhs.kind.indexValue.expr.position);
                         try self.appendPosition(e.kind.assignment.lhs.kind.indexValue.index.position);

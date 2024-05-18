@@ -42,3 +42,19 @@ The littering of `position` fields in the AST is optional and, going through the
   ]
 }
 ```
+
+Now that we have the basic mechanism in place, let's systematically go through the different parts of the parser.
+
+## Assignment
+
+```rebo-repl
+> rebo.lang.parse("x := 1")
+{ kind: "exprs"
+, value: 
+  [ { kind: "assignment"
+    , lhs: { kind: "identifier", name: "x" }
+    , rhs: { kind: "literalInt", value: 1 }
+    }
+  ]
+}
+```

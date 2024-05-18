@@ -119,7 +119,7 @@ pub const ExpressionKind = union(enum) {
 
 pub const AssignmentExpression = struct {
     lhs: *Expression,
-    value: *Expression,
+    rhs: *Expression,
 };
 
 pub const BinaryOpExpression = struct {
@@ -264,7 +264,7 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
         switch (expr.kind) {
             .assignment => {
                 destroyExpr(allocator, expr.kind.assignment.lhs);
-                destroyExpr(allocator, expr.kind.assignment.value);
+                destroyExpr(allocator, expr.kind.assignment.rhs);
             },
             .binaryOp => {
                 destroyExpr(allocator, expr.kind.binaryOp.left);

@@ -14,7 +14,7 @@ const Runtime = MS.Runtime;
 
 pub fn evalExpr(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
     switch (e.kind) {
-        .assignment => try assignment(runtime, e.kind.assignment.lhs, e.kind.assignment.value),
+        .assignment => try assignment(runtime, e.kind.assignment.lhs, e.kind.assignment.rhs),
         .binaryOp => try binaryOp(runtime, e),
         .call => try call(runtime, e, e.kind.call.callee, e.kind.call.args),
         .catche => try catche(runtime, e),
