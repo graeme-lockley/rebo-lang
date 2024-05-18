@@ -58,3 +58,17 @@ pub fn getArgument(runtime: *Runtime, numberOfArgs: usize, position: usize, expe
 
     return runtime.unitValue.?;
 }
+
+pub fn booleanOption(stringPool: *StringPool, options: *Value, name: []const u8, default: bool) !bool {
+    if (options.v != ValueValue.RecordKind) {
+        return default;
+    }
+
+    const option = try options.v.RecordKind.getU8(stringPool, name);
+
+    if (option == null or option.?.v != ValueKind.BoolKind) {
+        return default;
+    }
+
+    return option.?.v.BoolKind;
+}

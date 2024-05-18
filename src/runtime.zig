@@ -1608,6 +1608,7 @@ fn setupRebo(state: *Runtime) !void {
     try reboLang.v.RecordKind.setU8(state.stringPool, "float", try state.newBuiltinValue(@import("builtins/float.zig").float));
     try reboLang.v.RecordKind.setU8(state.stringPool, "keys", try state.newBuiltinValue(@import("builtins/keys.zig").keys));
     try reboLang.v.RecordKind.setU8(state.stringPool, "len", try state.newBuiltinValue(@import("builtins/len.zig").len));
+    try reboLang.v.RecordKind.setU8(state.stringPool, "parse", try state.newBuiltinValue(@import("builtins/parser.zig").parse));
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope", try state.newBuiltinValue(@import("builtins/scope.zig").scope));
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope.bind!", try state.newBuiltinValue(@import("builtins/scope.zig").bind));
     try reboLang.v.RecordKind.setU8(state.stringPool, "scope.delete!", try state.newBuiltinValue(@import("builtins/scope.zig").delete));

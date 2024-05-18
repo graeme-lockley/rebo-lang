@@ -1,20 +1,6 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-fn booleanOption(stringPool: *Helper.StringPool, options: *Helper.Value, name: []const u8, default: bool) !bool {
-    if (options.v != Helper.ValueValue.RecordKind) {
-        return default;
-    }
-
-    const option = try options.v.RecordKind.getU8(stringPool, name);
-
-    if (option == null or option.?.v != Helper.ValueKind.BoolKind) {
-        return default;
-    }
-
-    return option.?.v.BoolKind;
-}
-
 pub fn eval(machine: *Helper.Runtime, numberOfArgs: usize) !void {
     const code = try Helper.getArgument(machine, numberOfArgs, 0, &[_]Helper.ValueKind{Helper.ValueValue.StringKind});
     const scope = try Helper.getArgument(machine, numberOfArgs, 1, &[_]Helper.ValueKind{Helper.ValueValue.ScopeKind});
