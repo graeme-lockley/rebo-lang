@@ -142,46 +142,46 @@ pub const Compiler = struct {
             .binaryOp => {
                 switch (e.kind.binaryOp.op) {
                     .Equal => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.equals));
                     },
                     .GreaterThan => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.greater_than));
                         try self.appendPosition(e.position);
                     },
                     .GreaterEqual => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.greater_equal));
                         try self.appendPosition(e.position);
                     },
                     .LessThan => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.less_than));
                         try self.appendPosition(e.position);
                     },
                     .LessEqual => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.less_equal));
                         try self.appendPosition(e.position);
                     },
                     .NotEqual => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.not_equals));
                     },
                     .And => {
-                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
                         try self.buffer.append(@intFromEnum(Op.jmp_false));
                         const patch1 = self.buffer.items.len;
                         try self.appendInt(0);
-                        try self.appendPosition(e.kind.binaryOp.left.position);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.appendPosition(e.kind.binaryOp.lhs.position);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.jmp));
                         const patch2 = self.buffer.items.len;
                         try self.appendInt(0);
@@ -190,12 +190,12 @@ pub const Compiler = struct {
                         try self.appendIntAt(@intCast(self.buffer.items.len), patch2);
                     },
                     .Or => {
-                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
                         try self.buffer.append(@intFromEnum(Op.jmp_true));
                         const patch1 = self.buffer.items.len;
                         try self.appendInt(0);
-                        try self.appendPosition(e.kind.binaryOp.left.position);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.appendPosition(e.kind.binaryOp.lhs.position);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.jmp));
                         const patch2 = self.buffer.items.len;
                         try self.appendInt(0);
@@ -204,70 +204,70 @@ pub const Compiler = struct {
                         try self.appendIntAt(@intCast(self.buffer.items.len), patch2);
                     },
                     .Plus => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.add));
                         try self.appendPosition(e.position);
                     },
                     .Minus => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.subtract));
                         try self.appendPosition(e.position);
                     },
                     .Times => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.multiply));
                         try self.appendPosition(e.position);
                     },
                     .Divide => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.divide));
                         try self.appendPosition(e.position);
                     },
                     .Modulo => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.modulo));
                         try self.appendPosition(e.position);
                     },
                     .Append => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.seq_append));
                         try self.appendPosition(e.position);
                     },
                     .AppendUpdate => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.seq_append_bang));
                         try self.appendPosition(e.position);
                     },
                     .Prepend => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.seq_prepend));
                         try self.appendPosition(e.position);
                     },
                     .PrependUpdate => {
-                        try self.compileExpr(e.kind.binaryOp.left);
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.buffer.append(@intFromEnum(Op.seq_prepend_bang));
                         try self.appendPosition(e.position);
                     },
                     .Hook => {
-                        try self.compileExpr(e.kind.binaryOp.left);
+                        try self.compileExpr(e.kind.binaryOp.lhs);
                         try self.buffer.append(@intFromEnum(Op.duplicate));
                         try self.buffer.append(@intFromEnum(Op.push_unit));
                         try self.buffer.append(@intFromEnum(Op.equals));
                         try self.buffer.append(@intFromEnum(Op.jmp_false));
                         const patch = self.buffer.items.len;
                         try self.appendInt(0);
-                        try self.appendPosition(e.kind.binaryOp.left.position);
+                        try self.appendPosition(e.kind.binaryOp.lhs.position);
                         try self.buffer.append(@intFromEnum(Op.discard));
-                        try self.compileExpr(e.kind.binaryOp.right);
+                        try self.compileExpr(e.kind.binaryOp.rhs);
                         try self.appendIntAt(@intCast(self.buffer.items.len), patch);
                     },
                     else => {

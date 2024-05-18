@@ -52,7 +52,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 { kind: "exprs"
 , value: 
   [ { kind: "assignment"
-    , lhs: { kind: "identifier", name: "x" }
+    , lhs: { kind: "identifier", value: "x" }
     , rhs: { kind: "literalInt", value: 1 }
     }
   ]

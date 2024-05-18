@@ -46,11 +46,11 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             try machine.setRecordItemBang(pos);
 
             try machine.pushStringValue("lhs");
-            try emit(machine, ast.kind.binaryOp.left, position);
+            try emit(machine, ast.kind.binaryOp.lhs, position);
             try machine.setRecordItemBang(pos);
 
             try machine.pushStringValue("rhs");
-            try emit(machine, ast.kind.binaryOp.right, position);
+            try emit(machine, ast.kind.binaryOp.rhs, position);
             try machine.setRecordItemBang(pos);
         },
         .exprs => {
@@ -75,7 +75,7 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             try machine.pushStringValue("identifier");
             try machine.setRecordItemBang(pos);
 
-            try machine.pushStringValue("name");
+            try machine.pushStringValue("value");
             try machine.pushStringValue(ast.kind.identifier.slice());
             try machine.setRecordItemBang(pos);
         },

@@ -100,9 +100,9 @@ fn assignment(runtime: *Runtime, lhs: *AST.Expression, value: *AST.Expression) E
 }
 
 fn binaryOp(runtime: *Runtime, e: *AST.Expression) Errors.RuntimeErrors!void {
-    const leftAST = e.kind.binaryOp.left;
+    const leftAST = e.kind.binaryOp.lhs;
     const op = e.kind.binaryOp.op;
-    const rightAST = e.kind.binaryOp.right;
+    const rightAST = e.kind.binaryOp.rhs;
 
     switch (op) {
         AST.Operator.Plus => {

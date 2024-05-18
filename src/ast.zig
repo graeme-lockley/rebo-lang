@@ -123,9 +123,9 @@ pub const AssignmentExpression = struct {
 };
 
 pub const BinaryOpExpression = struct {
-    left: *Expression,
+    lhs: *Expression,
     op: Operator,
-    right: *Expression,
+    rhs: *Expression,
 };
 
 pub const CallExpression = struct {
@@ -267,8 +267,8 @@ fn destroyExpr(allocator: std.mem.Allocator, expr: *Expression) void {
                 destroyExpr(allocator, expr.kind.assignment.rhs);
             },
             .binaryOp => {
-                destroyExpr(allocator, expr.kind.binaryOp.left);
-                destroyExpr(allocator, expr.kind.binaryOp.right);
+                destroyExpr(allocator, expr.kind.binaryOp.lhs);
+                destroyExpr(allocator, expr.kind.binaryOp.rhs);
             },
             .call => {
                 destroyExpr(allocator, expr.kind.call.callee);

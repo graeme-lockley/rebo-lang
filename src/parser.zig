@@ -297,7 +297,7 @@ pub const Parser = struct {
             const rhs = try self.andExpr();
             errdefer rhs.destroy(self.allocator);
 
-            lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Or } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
+            lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .lhs = lhs, .rhs = rhs, .op = AST.Operator.Or } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
         }
 
         return lhs;
@@ -313,7 +313,7 @@ pub const Parser = struct {
             const rhs = try self.equality();
             errdefer rhs.destroy(self.allocator);
 
-            lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.And } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
+            lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .lhs = lhs, .rhs = rhs, .op = AST.Operator.And } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
         }
 
         return lhs;
@@ -341,7 +341,7 @@ pub const Parser = struct {
                 else => unreachable,
             };
 
-            lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
+            lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .lhs = lhs, .rhs = rhs, .op = op } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
         }
 
         return lhs;
@@ -367,7 +367,7 @@ pub const Parser = struct {
                 else => unreachable,
             };
 
-            lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
+            lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .lhs = lhs, .rhs = rhs, .op = op } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
 
             kind = self.currentTokenKind();
         }
@@ -390,7 +390,7 @@ pub const Parser = struct {
 
                 const op = if (kind == Lexer.TokenKind.Plus) AST.Operator.Plus else AST.Operator.Minus;
 
-                lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
+                lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .lhs = lhs, .rhs = rhs, .op = op } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
             } else {
                 break;
             }
@@ -414,7 +414,7 @@ pub const Parser = struct {
 
                 const op = if (kind == Lexer.TokenKind.Star) AST.Operator.Times else if (kind == Lexer.TokenKind.Slash) AST.Operator.Divide else AST.Operator.Modulo;
 
-                lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = op } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
+                lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .lhs = lhs, .rhs = rhs, .op = op } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
             } else {
                 break;
             }
@@ -433,7 +433,7 @@ pub const Parser = struct {
             const rhs = try self.nullDefault();
             errdefer rhs.destroy(self.allocator);
 
-            lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Power } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
+            lhs = try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .lhs = lhs, .rhs = rhs, .op = AST.Operator.Power } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
         }
 
         return lhs;
@@ -451,7 +451,7 @@ pub const Parser = struct {
             const rhs = try self.qualifier();
             errdefer rhs.destroy(self.allocator);
 
-            return try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .left = lhs, .right = rhs, .op = AST.Operator.Hook } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
+            return try AST.Expression.create(self.allocator, AST.ExpressionKind{ .binaryOp = AST.BinaryOpExpression{ .lhs = lhs, .rhs = rhs, .op = AST.Operator.Hook } }, Errors.Position{ .start = lhs.position.start, .end = rhs.position.end });
         } else {
             return lhs;
         }
