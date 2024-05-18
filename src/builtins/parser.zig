@@ -53,6 +53,25 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             try emit(machine, ast.kind.binaryOp.rhs, position);
             try machine.setRecordItemBang(pos);
         },
+        .call => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("call");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("callee");
+            try emit(machine, ast.kind.call.callee, position);
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("args");
+            try machine.pushEmptySequenceValue();
+            for (ast.kind.call.args) |arg| {
+                try emit(machine, arg, position);
+                try machine.appendSequenceItemBang(pos);
+            }
+            try machine.setRecordItemBang(pos);
+        },
         .exprs => {
             try machine.pushEmptyRecordValue();
 

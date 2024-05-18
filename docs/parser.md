@@ -58,3 +58,40 @@ Now that we have the basic mechanism in place, let's systematically go through t
   ]
 }
 ```
+
+## BinaryOp
+
+```rebo-repl
+> rebo.lang.parse("1 - 2 / 3")
+{ kind: "exprs"
+, value: 
+  [ { kind: "binaryOp"
+    , op: "-"
+    , lhs: { kind: "literalInt", value: 1 }
+    , rhs: 
+      { kind: "binaryOp"
+      , op: "/"
+      , lhs: { kind: "literalInt", value: 2 }
+      , rhs: { kind: "literalInt", value: 3 }
+      }
+    }
+  ]
+}
+```
+
+## Call
+
+```rebo-repl
+> rebo.lang.parse("f(1, 2)")
+{ kind: "exprs"
+, value: 
+  [ { kind: "call"
+    , callee: { kind: "identifier", value: "f" }
+    , args: 
+      [ { kind: "literalInt", value: 1 }
+      , { kind: "literalInt", value: 2 }
+      ]
+    }
+  ]
+}
+```
