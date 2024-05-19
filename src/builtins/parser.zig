@@ -217,6 +217,63 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             try emit(machine, ast.kind.indexValue.index, position);
             try machine.setRecordItemBang(pos);
         },
+        .literalBool => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalBool");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try machine.pushBoolValue(ast.kind.literalBool);
+            try machine.setRecordItemBang(pos);
+        },
+        .literalChar => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalChar");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try machine.pushCharValue(ast.kind.literalChar);
+            try machine.setRecordItemBang(pos);
+        },
+        .literalFunction => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalFunction");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("params");
+            try machine.pushEmptySequenceValue();
+            for (ast.kind.literalFunction.params) |param| {
+                try machine.pushEmptyRecordValue();
+                try machine.pushStringValue("name");
+                try machine.pushStringValue(param.name.slice());
+                try machine.setRecordItemBang(pos);
+
+                if (param.default != null) {
+                    try machine.pushStringValue("default");
+                    try emit(machine, param.default.?, position);
+                    try machine.setRecordItemBang(pos);
+                }
+
+                try machine.appendSequenceItemBang(pos);
+            }
+            try machine.setRecordItemBang(pos);
+
+            if (ast.kind.literalFunction.restOfParams != null) {
+                try machine.pushStringValue("restOfParams");
+                try machine.pushStringValue(ast.kind.literalFunction.restOfParams.?.slice());
+                try machine.setRecordItemBang(pos);
+            }
+
+            try machine.pushStringValue("body");
+            try emit(machine, ast.kind.literalFunction.body, position);
+            try machine.setRecordItemBang(pos);
+        },
         .literalInt => {
             try machine.pushEmptyRecordValue();
 
@@ -226,6 +283,106 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
 
             try machine.pushStringValue("value");
             try machine.pushIntValue(ast.kind.literalInt);
+            try machine.setRecordItemBang(pos);
+        },
+        .literalFloat => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalFloat");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try machine.pushFloatValue(ast.kind.literalFloat);
+            try machine.setRecordItemBang(pos);
+        },
+        .literalRecord => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalRecord");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("fields");
+            try machine.pushEmptySequenceValue();
+            for (ast.kind.literalRecord) |field| {
+                try machine.pushEmptyRecordValue();
+
+                if (field == .value) {
+                    try machine.pushStringValue("kind");
+                    try machine.pushStringValue("value");
+                    try machine.setRecordItemBang(pos);
+
+                    try machine.pushStringValue("key");
+                    try machine.pushStringValue(field.value.key.slice());
+                    try machine.setRecordItemBang(pos);
+
+                    try machine.pushStringValue("value");
+                    try emit(machine, field.value.value, position);
+                    try machine.setRecordItemBang(pos);
+                } else {
+                    try machine.pushStringValue("kind");
+                    try machine.pushStringValue("record");
+                    try machine.setRecordItemBang(pos);
+
+                    try machine.pushStringValue("value");
+                    try emit(machine, field.record, position);
+                    try machine.setRecordItemBang(pos);
+                }
+
+                try machine.appendSequenceItemBang(pos);
+            }
+            try machine.setRecordItemBang(pos);
+        },
+        .literalSequence => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalSequence");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("values");
+            try machine.pushEmptySequenceValue();
+            for (ast.kind.literalSequence) |value| {
+                try machine.pushEmptyRecordValue();
+
+                if (value == .value) {
+                    try machine.pushStringValue("kind");
+                    try machine.pushStringValue("value");
+                    try machine.setRecordItemBang(pos);
+
+                    try machine.pushStringValue("value");
+                    try emit(machine, value.value, position);
+                    try machine.setRecordItemBang(pos);
+                } else {
+                    try machine.pushStringValue("kind");
+                    try machine.pushStringValue("sequence");
+                    try machine.setRecordItemBang(pos);
+
+                    try machine.pushStringValue("value");
+                    try emit(machine, value.sequence, position);
+                    try machine.setRecordItemBang(pos);
+                }
+                try machine.appendSequenceItemBang(pos);
+            }
+            try machine.setRecordItemBang(pos);
+        },
+        .literalString => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalString");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try machine.pushStringValue(ast.kind.literalString.slice());
+            try machine.setRecordItemBang(pos);
+        },
+        .literalVoid => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalUnit");
             try machine.setRecordItemBang(pos);
         },
         else => {

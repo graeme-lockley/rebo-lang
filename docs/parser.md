@@ -232,3 +232,192 @@ Now that we have the basic mechanism in place, let's systematically go through t
   ]
 }
 ```
+
+## Literal Bool
+
+```rebo-repl
+> rebo.lang.parse("true")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalBool", value: true }
+  ]
+}
+```
+
+## Literal Char
+
+```rebo-repl
+> rebo.lang.parse("'a'")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalChar", value: 'a' }
+  ]
+}
+```
+
+## Literal Function
+
+```rebo-repl
+> rebo.lang.parse("fn() 1")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalFunction"
+    , params: []
+    , body: { kind: "literalInt", value: 1 }
+    }
+  ]
+}
+
+> rebo.lang.parse("fn(a) a")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalFunction"
+    , params: 
+      [ { name: "a" }
+      ]
+    , body: { kind: "identifier", value: "a" }
+    }
+  ]
+}
+
+> rebo.lang.parse("fn(a = 10) a")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalFunction"
+    , params: 
+      [ { name: "a" 
+        , default: { kind: "literalInt", value: 10 }
+        }
+      ]
+    , body: { kind: "identifier", value: "a" }
+    }
+  ]
+}
+
+> rebo.lang.parse("fn(a = 10, ...rest) rest << a")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalFunction"
+    , params: 
+      [ { name: "a" 
+        , default: { kind: "literalInt", value: 10 }
+        }
+      ]
+    , restOfParams: "rest"
+    , body: 
+      { kind: "binaryOp"
+      , op: "<<"
+      , lhs: { kind: "identifier", value: "rest" }
+      , rhs: { kind: "identifier", value: "a" }
+      }
+    }
+  ]
+}
+```
+
+## Literal Int
+
+```rebo-repl
+> rebo.lang.parse("10")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalInt", value: 10 }
+  ]
+}
+```
+
+
+## Literal Float
+
+```rebo-repl
+> rebo.lang.parse("10.0")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalFloat", value: 10.0 }
+  ]
+}
+```
+
+## Literal Record
+
+```rebo-repl
+> rebo.lang.parse("{ a: 1, b: 2 }")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalRecord"
+    , fields: 
+      [ { kind: "value", key: "a", value: { kind: "literalInt", value: 1 } }
+      , { kind: "value", key: "b", value: { kind: "literalInt", value: 2 } }
+      ]
+    }
+  ]
+}
+
+> rebo.lang.parse("{ ...x, a: 1, ...y, b: 2 }")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalRecord"
+    , fields: 
+      [ { kind: "record", value: { kind: "identifier", value: "x" } }
+      , { kind: "value", key: "a", value: { kind: "literalInt", value: 1 } }
+      , { kind: "record", value: { kind: "identifier", value: "y" } }
+      , { kind: "value", key: "b", value: { kind: "literalInt", value: 2 } }
+      ]
+    }
+  ]
+}
+```
+
+## Literal Sequence
+
+```rebo-repl
+> rebo.lang.parse("[1, 2, 3]")
+{ kind: "exprs"
+, value:
+  [ { kind: "literalSequence"
+    , values: 
+      [ { kind: "value", value: { kind: "literalInt", value: 1 } }
+      , { kind: "value", value: { kind: "literalInt", value: 2 } }
+      , { kind: "value", value: { kind: "literalInt", value: 3 } }
+      ]
+    }
+  ]
+}
+
+> rebo.lang.parse("[...x, 1, ...y, 2, 3]")
+{ kind: "exprs"
+, value:
+  [ { kind: "literalSequence"
+    , values: 
+      [ { kind: "sequence", value: { kind: "identifier", value: "x" } }
+      , { kind: "value", value: { kind: "literalInt", value: 1 } }
+      , { kind: "sequence", value: { kind: "identifier", value: "y" } }
+      , { kind: "value", value: { kind: "literalInt", value: 2 } }
+      , { kind: "value", value: { kind: "literalInt", value: 3 } }
+      ]
+    }
+  ]
+}
+```
+
+## Literal String
+
+```rebo-repl
+> rebo.lang.parse("\"hello\"")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalString", value: "hello" }
+  ]
+}
+```
+
+## Literal Unit
+
+```rebo-repl
+> rebo.lang.parse("()")
+{ kind: "exprs"
+, value: 
+  [ { kind: "literalUnit" }
+  ]
+}
+```
