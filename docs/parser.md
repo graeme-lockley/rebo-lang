@@ -508,3 +508,16 @@ Now that we have the basic mechanism in place, let's systematically go through t
   ]
 }
 ```
+
+## Raise
+
+```rebo-repl
+> rebo.lang.parse("raise 10")
+{ kind: "exprs"
+, value: 
+  [ { kind: "raise"
+    , expr: { kind: "literalInt", value: 10 }
+    }
+  ]
+}
+```

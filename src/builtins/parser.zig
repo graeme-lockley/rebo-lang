@@ -439,6 +439,17 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             try emit(machine, ast.kind.patternDeclaration.value, position);
             try machine.setRecordItemBang(pos);
         },
+        .raise => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("raise");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("expr");
+            try emit(machine, ast.kind.raise.expr, position);
+            try machine.setRecordItemBang(pos);
+        },
         else => {
             std.io.getStdErr().writer().print("unreachable: {}\n", .{ast.kind}) catch {};
             unreachable;
