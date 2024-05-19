@@ -152,3 +152,26 @@ Now that we have the basic mechanism in place, let's systematically go through t
   ]
 }
 ```
+
+## If Then Else
+
+```rebo-repl
+> rebo.lang.parse("if a -> 1 | b -> 2 | 3")
+{ kind: "exprs"
+, value: 
+  [ { kind: "ifThenElse"
+    , cases:
+      [ { condition: { kind: "identifier", value: "a" }
+        , then: { kind: "literalInt", value: 1 }
+        }
+      , { condition: { kind: "identifier", value: "b" }
+        , then: { kind: "literalInt", value: 2 }
+        }
+      , { then: { kind: "literalInt", value: 3 }
+        }
+      ]
+    }
+  ]
+}
+```
+

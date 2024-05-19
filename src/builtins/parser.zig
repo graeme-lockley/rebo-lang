@@ -156,6 +156,30 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             try machine.pushStringValue(ast.kind.identifier.slice());
             try machine.setRecordItemBang(pos);
         },
+        .ifte => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("ifThenElse");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("cases");
+            try machine.pushEmptySequenceValue();
+            for (ast.kind.ifte) |value| {
+                try machine.pushEmptyRecordValue();
+                if (value.condition != null) {
+                    try machine.pushStringValue("condition");
+                    try emit(machine, value.condition.?, position);
+                    try machine.setRecordItemBang(pos);
+                }
+                try machine.pushStringValue("then");
+                try emit(machine, value.then, position);
+                try machine.setRecordItemBang(pos);
+
+                try machine.appendSequenceItemBang(pos);
+            }
+            try machine.setRecordItemBang(pos);
+        },
         .literalInt => {
             try machine.pushEmptyRecordValue();
 
