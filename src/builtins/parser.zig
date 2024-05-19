@@ -130,6 +130,21 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             }
             try machine.setRecordItemBang(pos);
         },
+        .idDeclaration => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("idDeclaration");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("id");
+            try machine.pushStringValue(ast.kind.idDeclaration.name.slice());
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try emit(machine, ast.kind.idDeclaration.value, position);
+            try machine.setRecordItemBang(pos);
+        },
         .identifier => {
             try machine.pushEmptyRecordValue();
 

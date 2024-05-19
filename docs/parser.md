@@ -127,3 +127,17 @@ Now that we have the basic mechanism in place, let's systematically go through t
   ]
 }
 ```
+
+## ID Declaration
+
+```rebo-repl
+> rebo.lang.parse("let x = 1")
+{ kind: "exprs"
+, value: 
+  [ { kind: "idDeclaration"
+    , id: "x"
+    , value: { kind: "literalInt", value: 1 }
+    }
+  ]
+}
+```
