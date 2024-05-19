@@ -458,3 +458,53 @@ Now that we have the basic mechanism in place, let's systematically go through t
   ]
 }
 ```
+
+## Pattern Declaration
+
+```rebo-repl
+> rebo.lang.parse("let [a, b] = [1, 2]")
+{ kind: "exprs"
+, value: 
+  [ { kind: "patternDeclaration"
+    , pattern: 
+      { kind: "sequence"
+      , values: 
+        [ { kind: "identifier", value: "a" }
+        , { kind: "identifier", value: "b" }
+        ]
+      }
+    , value: 
+      { kind: "literalSequence"
+      , values: 
+        [ { kind: "value", value: { kind: "literalInt", value: 1 } }
+        , { kind: "value", value: { kind: "literalInt", value: 2 } }
+        ]
+      }
+    }
+  ]
+}
+
+> rebo.lang.parse("let [a, b, ...c] @ d = [1, 2]")
+{ kind: "exprs"
+, value: 
+  [ { kind: "patternDeclaration"
+    , pattern: 
+      { kind: "sequence"
+      , values: 
+        [ { kind: "identifier", value: "a" }
+        , { kind: "identifier", value: "b" }
+        ]
+      , restOfPatterns: "c"
+      , id: "d"
+      }
+    , value: 
+      { kind: "literalSequence"
+      , values: 
+        [ { kind: "value", value: { kind: "literalInt", value: 1 } }
+        , { kind: "value", value: { kind: "literalInt", value: 2 } }
+        ]
+      }
+    }
+  ]
+}
+```

@@ -424,6 +424,21 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             try emit(machine, ast.kind.notOp.value, position);
             try machine.setRecordItemBang(pos);
         },
+        .patternDeclaration => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("patternDeclaration");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("pattern");
+            try emitPattern(machine, ast.kind.patternDeclaration.pattern, position);
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try emit(machine, ast.kind.patternDeclaration.value, position);
+            try machine.setRecordItemBang(pos);
+        },
         else => {
             std.io.getStdErr().writer().print("unreachable: {}\n", .{ast.kind}) catch {};
             unreachable;
@@ -464,6 +479,32 @@ fn emitPattern(machine: *Helper.Runtime, ast: *AST.Pattern, position: bool) !voi
             try machine.pushStringValue("value");
             try machine.pushIntValue(ast.kind.literalInt);
             try machine.setRecordItemBang(pos);
+        },
+        .sequence => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("sequence");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("values");
+            try machine.pushEmptySequenceValue();
+            for (ast.kind.sequence.patterns) |value| {
+                try emitPattern(machine, value, position);
+                try machine.appendSequenceItemBang(pos);
+            }
+            try machine.setRecordItemBang(pos);
+
+            if (ast.kind.sequence.restOfPatterns) |restOfPatterns| {
+                try machine.pushStringValue("restOfPatterns");
+                try machine.pushStringValue(restOfPatterns.slice());
+                try machine.setRecordItemBang(pos);
+            }
+            if (ast.kind.sequence.id) |id| {
+                try machine.pushStringValue("id");
+                try machine.pushStringValue(id.slice());
+                try machine.setRecordItemBang(pos);
+            }
         },
         else => {
             std.io.getStdErr().writer().print("unreachable: {}\n", .{ast.kind}) catch {};
