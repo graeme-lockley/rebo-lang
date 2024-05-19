@@ -445,3 +445,16 @@ Now that we have the basic mechanism in place, let's systematically go through t
   ]
 }
 ```
+
+## Not UnaryOp
+
+```rebo-repl
+> rebo.lang.parse("!true")
+{ kind: "exprs"
+, value: 
+  [ { kind: "not"
+    , expr: { kind: "literalBool", value: true }
+    }
+  ]
+}
+```
