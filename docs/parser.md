@@ -421,3 +421,27 @@ Now that we have the basic mechanism in place, let's systematically go through t
   ]
 }
 ```
+
+## Match
+
+```rebo-repl
+> rebo.lang.parse("match 10 | 10 -> 1 | 20 -> 2 | _ -> 3")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "literalInt", value: 10 }
+    , cases:
+      [ { pattern: { kind: "literalInt", value: 10 }
+        , body: { kind: "literalInt", value: 1 }
+        }
+      , { pattern: { kind: "literalInt", value: 20 }
+        , body: { kind: "literalInt", value: 2 }
+        }
+      , { pattern: { kind: "identifier", value: "_" }
+        , body: { kind: "literalInt", value: 3 }
+        }
+      ]
+    }
+  ]
+}
+```

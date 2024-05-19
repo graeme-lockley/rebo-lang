@@ -385,6 +385,34 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             try machine.pushStringValue("literalUnit");
             try machine.setRecordItemBang(pos);
         },
+        .match => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("match");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try emit(machine, ast.kind.match.value, position);
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("cases");
+            try machine.pushEmptySequenceValue();
+            for (ast.kind.match.cases) |case| {
+                try machine.pushEmptyRecordValue();
+
+                try machine.pushStringValue("pattern");
+                try emitPattern(machine, case.pattern, position);
+                try machine.setRecordItemBang(pos);
+
+                try machine.pushStringValue("body");
+                try emit(machine, case.body, position);
+                try machine.setRecordItemBang(pos);
+
+                try machine.appendSequenceItemBang(pos);
+            }
+            try machine.setRecordItemBang(pos);
+        },
         else => {
             std.io.getStdErr().writer().print("unreachable: {}\n", .{ast.kind}) catch {};
             unreachable;
@@ -413,6 +441,17 @@ fn emitPattern(machine: *Helper.Runtime, ast: *AST.Pattern, position: bool) !voi
 
             try machine.pushStringValue("value");
             try machine.pushStringValue(ast.kind.identifier.slice());
+            try machine.setRecordItemBang(pos);
+        },
+        .literalInt => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalInt");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try machine.pushIntValue(ast.kind.literalInt);
             try machine.setRecordItemBang(pos);
         },
         else => {
