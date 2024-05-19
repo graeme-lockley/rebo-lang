@@ -175,3 +175,60 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
+## Index Range
+
+```rebo-repl
+> rebo.lang.parse("a[1:2]")
+{ kind: "exprs"
+, value: 
+  [ { kind: "indexRange"
+    , expr: { kind: "identifier", value: "a" }
+    , start: { kind: "literalInt", value: 1 }
+    , end: { kind: "literalInt", value: 2 }
+    }
+  ]
+}
+
+> rebo.lang.parse("a[:2]")
+{ kind: "exprs"
+, value: 
+  [ { kind: "indexRange"
+    , expr: { kind: "identifier", value: "a" }
+    , end: { kind: "literalInt", value: 2 }
+    }
+  ]
+}
+
+> rebo.lang.parse("a[1:]")
+{ kind: "exprs"
+, value: 
+  [ { kind: "indexRange"
+    , expr: { kind: "identifier", value: "a" }
+    , start: { kind: "literalInt", value: 1 }
+    }
+  ]
+}
+
+> rebo.lang.parse("a[:]")
+{ kind: "exprs"
+, value: 
+  [ { kind: "indexRange"
+    , expr: { kind: "identifier", value: "a" }
+    }
+  ]
+}
+```
+
+## Index Value
+  
+```rebo-repl
+> rebo.lang.parse("a[1]")
+{ kind: "exprs"
+, value: 
+  [ { kind: "indexValue"
+    , expr: { kind: "identifier", value: "a" }
+    , index: { kind: "literalInt", value: 1 }
+    }
+  ]
+}
+```

@@ -180,6 +180,43 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             }
             try machine.setRecordItemBang(pos);
         },
+        .indexRange => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("indexRange");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("expr");
+            try emit(machine, ast.kind.indexRange.expr, position);
+            try machine.setRecordItemBang(pos);
+
+            if (ast.kind.indexRange.start != null) {
+                try machine.pushStringValue("start");
+                try emit(machine, ast.kind.indexRange.start.?, position);
+                try machine.setRecordItemBang(pos);
+            }
+            if (ast.kind.indexRange.end != null) {
+                try machine.pushStringValue("end");
+                try emit(machine, ast.kind.indexRange.end.?, position);
+                try machine.setRecordItemBang(pos);
+            }
+        },
+        .indexValue => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("indexValue");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("expr");
+            try emit(machine, ast.kind.indexValue.expr, position);
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("index");
+            try emit(machine, ast.kind.indexValue.index, position);
+            try machine.setRecordItemBang(pos);
+        },
         .literalInt => {
             try machine.pushEmptyRecordValue();
 
