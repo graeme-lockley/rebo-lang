@@ -141,3 +141,14 @@ Now that we have the basic mechanism in place, let's systematically go through t
   ]
 }
 ```
+
+## Identifier
+
+```rebo-repl
+> rebo.lang.parse("x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "identifier", value: "x" }
+  ]
+}
+```
