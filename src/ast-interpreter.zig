@@ -500,6 +500,7 @@ fn matchPattern(runtime: *Runtime, p: *AST.Pattern, v: *V.Value) !bool {
         .literalFloat => return v.v == V.ValueValue.FloatKind and v.v.FloatKind == p.kind.literalFloat or v.v == V.ValueValue.IntKind and v.v.IntKind == @as(V.IntType, @intFromFloat(p.kind.literalFloat)),
         .literalInt => return v.v == V.ValueValue.IntKind and v.v.IntKind == p.kind.literalInt or v.v == V.ValueValue.FloatKind and v.v.FloatKind == @as(V.FloatType, @floatFromInt(p.kind.literalInt)),
         .literalString => return v.v == V.ValueValue.StringKind and std.mem.eql(u8, v.v.StringKind.slice(), p.kind.literalString.slice()),
+        .literalUnit => return v.v == V.ValueValue.UnitKind,
         .record => {
             if (v.v != V.ValueValue.RecordKind) return false;
 
@@ -551,7 +552,6 @@ fn matchPattern(runtime: *Runtime, p: *AST.Pattern, v: *V.Value) !bool {
 
             return true;
         },
-        .unit => return v.v == V.ValueValue.UnitKind,
     };
 }
 

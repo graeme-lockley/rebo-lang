@@ -953,7 +953,7 @@ pub const Parser = struct {
 
                     return try AST.Pattern.create(
                         self.allocator,
-                        AST.PatternKind{ .unit = void{} },
+                        AST.PatternKind{ .literalUnit = void{} },
                         Errors.Position{ .start = lparen.start, .end = rparen.end },
                     );
                 }

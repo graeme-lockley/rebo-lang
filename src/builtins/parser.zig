@@ -450,10 +450,25 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             try emit(machine, ast.kind.raise.expr, position);
             try machine.setRecordItemBang(pos);
         },
-        else => {
-            std.io.getStdErr().writer().print("unreachable: {}\n", .{ast.kind}) catch {};
-            unreachable;
+        .whilee => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("while");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("condition");
+            try emit(machine, ast.kind.whilee.condition, position);
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("body");
+            try emit(machine, ast.kind.whilee.body, position);
+            try machine.setRecordItemBang(pos);
         },
+        // else => {
+        //     std.io.getStdErr().writer().print("unreachable: {}\n", .{ast.kind}) catch {};
+        //     unreachable;
+        // },
     }
 
     if (position) {
@@ -480,6 +495,39 @@ fn emitPattern(machine: *Helper.Runtime, ast: *AST.Pattern, position: bool) !voi
             try machine.pushStringValue(ast.kind.identifier.slice());
             try machine.setRecordItemBang(pos);
         },
+        .literalBool => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalBool");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try machine.pushBoolValue(ast.kind.literalBool);
+            try machine.setRecordItemBang(pos);
+        },
+        .literalChar => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalChar");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try machine.pushCharValue(ast.kind.literalChar);
+            try machine.setRecordItemBang(pos);
+        },
+        .literalFloat => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalFloat");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try machine.pushFloatValue(ast.kind.literalFloat);
+            try machine.setRecordItemBang(pos);
+        },
         .literalInt => {
             try machine.pushEmptyRecordValue();
 
@@ -490,6 +538,61 @@ fn emitPattern(machine: *Helper.Runtime, ast: *AST.Pattern, position: bool) !voi
             try machine.pushStringValue("value");
             try machine.pushIntValue(ast.kind.literalInt);
             try machine.setRecordItemBang(pos);
+        },
+        .literalString => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalString");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try machine.pushStringValue(ast.kind.literalString.slice());
+            try machine.setRecordItemBang(pos);
+        },
+        .literalUnit => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("literalUnit");
+            try machine.setRecordItemBang(pos);
+        },
+        .record => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("record");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("fields");
+            try machine.pushEmptySequenceValue();
+            for (ast.kind.record.entries) |field| {
+                try machine.pushEmptyRecordValue();
+
+                try machine.pushStringValue("key");
+                try machine.pushStringValue(field.key.slice());
+                try machine.setRecordItemBang(pos);
+
+                if (field.pattern) |pattern| {
+                    try machine.pushStringValue("pattern");
+                    try emitPattern(machine, pattern, position);
+                    try machine.setRecordItemBang(pos);
+                }
+
+                if (field.id) |id| {
+                    try machine.pushStringValue("id");
+                    try machine.pushStringValue(id.slice());
+                    try machine.setRecordItemBang(pos);
+                }
+
+                try machine.appendSequenceItemBang(pos);
+            }
+            try machine.setRecordItemBang(pos);
+            if (ast.kind.record.id) |id| {
+                try machine.pushStringValue("id");
+                try machine.pushStringValue(id.slice());
+                try machine.setRecordItemBang(pos);
+            }
         },
         .sequence => {
             try machine.pushEmptyRecordValue();
@@ -517,10 +620,10 @@ fn emitPattern(machine: *Helper.Runtime, ast: *AST.Pattern, position: bool) !voi
                 try machine.setRecordItemBang(pos);
             }
         },
-        else => {
-            std.io.getStdErr().writer().print("unreachable: {}\n", .{ast.kind}) catch {};
-            unreachable;
-        },
+        // else => {
+        //     std.io.getStdErr().writer().print("unreachable: {}\n", .{ast.kind}) catch {};
+        //     unreachable;
+        // },
     }
 
     if (position) {

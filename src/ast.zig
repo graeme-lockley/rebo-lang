@@ -388,14 +388,14 @@ pub const Pattern = struct {
 
 pub const PatternKind = union(enum) {
     identifier: *SP.String,
-    literalChar: u8,
     literalBool: bool,
+    literalChar: u8,
     literalFloat: Value.FloatType,
     literalInt: Value.IntType,
     literalString: *SP.String,
+    literalUnit: void,
     record: RecordPattern,
     sequence: SequencePattern,
-    unit: void,
 };
 
 pub const SequencePattern = struct {
@@ -452,7 +452,7 @@ pub const RecordPatternEntry = struct {
 fn destroyPattern(allocator: std.mem.Allocator, pattern: *Pattern) void {
     switch (pattern.kind) {
         .identifier => pattern.kind.identifier.decRef(),
-        .literalChar, .literalFloat, .literalInt, .literalBool, .unit => {},
+        .literalChar, .literalFloat, .literalInt, .literalBool, .literalUnit => {},
         .literalString => pattern.kind.literalString.decRef(),
         .record => pattern.kind.record.deinit(allocator),
         .sequence => pattern.kind.sequence.deinit(allocator),

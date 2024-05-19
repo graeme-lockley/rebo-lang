@@ -719,6 +719,16 @@ pub const Compiler = struct {
                 try self.appendInt(0);
                 try self.appendPosition(pattern.position);
             },
+            .literalUnit => {
+                try self.buffer.append(@intFromEnum(Op.duplicate));
+                try self.buffer.append(@intFromEnum(Op.push_unit));
+                try self.buffer.append(@intFromEnum(Op.equals));
+
+                try self.buffer.append(@intFromEnum(Op.jmp_false));
+                try casePatches.append(self.buffer.items.len);
+                try self.appendInt(0);
+                try self.appendPosition(pattern.position);
+            },
             .record => {
                 var doubleNestedCasePatches = std.ArrayList(usize).init(self.allocator);
                 defer doubleNestedCasePatches.deinit();
@@ -836,16 +846,6 @@ pub const Compiler = struct {
 
                     try self.appendIntAt(@intCast(self.buffer.items.len), patch);
                 }
-            },
-            .unit => {
-                try self.buffer.append(@intFromEnum(Op.duplicate));
-                try self.buffer.append(@intFromEnum(Op.push_unit));
-                try self.buffer.append(@intFromEnum(Op.equals));
-
-                try self.buffer.append(@intFromEnum(Op.jmp_false));
-                try casePatches.append(self.buffer.items.len);
-                try self.appendInt(0);
-                try self.appendPosition(pattern.position);
             },
         }
     }

@@ -45,7 +45,11 @@ The littering of `position` fields in the AST is optional and, going through the
 
 Now that we have the basic mechanism in place, let's systematically go through the different parts of the parser.
 
-## Assignment
+## Expressions
+
+The following lists the different expression scenarios.
+
+### Assignment
 
 ```rebo-repl
 > rebo.lang.parse("x := 1")
@@ -59,7 +63,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## BinaryOp
+### BinaryOp
 
 ```rebo-repl
 > rebo.lang.parse("1 - 2 / 3")
@@ -79,7 +83,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Call
+### Call
 
 ```rebo-repl
 > rebo.lang.parse("f(1, 2)")
@@ -96,7 +100,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Catch
+### Catch
 
 ```rebo-repl
 > rebo.lang.parse("10 catch e -> e")
@@ -114,7 +118,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Dot
+### Dot
 
 ```rebo-repl
 > rebo.lang.parse("a.b")
@@ -128,7 +132,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## ID Declaration
+### ID Declaration
 
 ```rebo-repl
 > rebo.lang.parse("let x = 1")
@@ -142,7 +146,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Identifier
+### Identifier
 
 ```rebo-repl
 > rebo.lang.parse("x")
@@ -153,7 +157,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## If Then Else
+### If Then Else
 
 ```rebo-repl
 > rebo.lang.parse("if a -> 1 | b -> 2 | 3")
@@ -175,7 +179,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Index Range
+### Index Range
 
 ```rebo-repl
 > rebo.lang.parse("a[1:2]")
@@ -219,7 +223,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Index Value
+### Index Value
   
 ```rebo-repl
 > rebo.lang.parse("a[1]")
@@ -233,7 +237,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Literal Bool
+### Literal Bool
 
 ```rebo-repl
 > rebo.lang.parse("true")
@@ -244,7 +248,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Literal Char
+### Literal Char
 
 ```rebo-repl
 > rebo.lang.parse("'a'")
@@ -255,7 +259,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Literal Function
+### Literal Function
 
 ```rebo-repl
 > rebo.lang.parse("fn() 1")
@@ -315,7 +319,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Literal Int
+### Literal Int
 
 ```rebo-repl
 > rebo.lang.parse("10")
@@ -327,7 +331,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 ```
 
 
-## Literal Float
+### Literal Float
 
 ```rebo-repl
 > rebo.lang.parse("10.0")
@@ -338,7 +342,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Literal Record
+### Literal Record
 
 ```rebo-repl
 > rebo.lang.parse("{ a: 1, b: 2 }")
@@ -368,7 +372,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Literal Sequence
+### Literal Sequence
 
 ```rebo-repl
 > rebo.lang.parse("[1, 2, 3]")
@@ -400,7 +404,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Literal String
+### Literal String
 
 ```rebo-repl
 > rebo.lang.parse("\"hello\"")
@@ -411,7 +415,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Literal Unit
+### Literal Unit
 
 ```rebo-repl
 > rebo.lang.parse("()")
@@ -422,7 +426,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Match
+### Match
 
 ```rebo-repl
 > rebo.lang.parse("match 10 | 10 -> 1 | 20 -> 2 | _ -> 3")
@@ -446,7 +450,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Not UnaryOp
+### Not UnaryOp
 
 ```rebo-repl
 > rebo.lang.parse("!true")
@@ -459,7 +463,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Pattern Declaration
+### Pattern Declaration
 
 ```rebo-repl
 > rebo.lang.parse("let [a, b] = [1, 2]")
@@ -509,7 +513,7 @@ Now that we have the basic mechanism in place, let's systematically go through t
 }
 ```
 
-## Raise
+### Raise
 
 ```rebo-repl
 > rebo.lang.parse("raise 10")
@@ -517,6 +521,282 @@ Now that we have the basic mechanism in place, let's systematically go through t
 , value: 
   [ { kind: "raise"
     , expr: { kind: "literalInt", value: 10 }
+    }
+  ]
+}
+```
+
+### While
+
+```rebo-repl
+> rebo.lang.parse("while true -> 1")
+{ kind: "exprs"
+, value: 
+  [ { kind: "while"
+    , condition: { kind: "literalBool", value: true }
+    , body: { kind: "literalInt", value: 1 }
+    }
+  ]
+}
+```
+
+## Patterns
+
+There are a few different patterns that can be used in the language.  The following is a list of each of the different pattern scenarios.
+
+### Identifier
+
+```rebo-repl
+> rebo.lang.parse("match 1 | x -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "literalInt", value: 1 }
+    , cases:
+      [ { pattern: { kind: "identifier", value: "x" }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Literal Bool
+
+```rebo-repl
+> rebo.lang.parse("match x | true -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: { kind: "literalBool", value: true }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Literal Char
+
+```rebo-repl
+> rebo.lang.parse("match x | 'a' -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: { kind: "literalChar", value: 'a' }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Literal Float
+
+```rebo-repl
+> rebo.lang.parse("match x | 10.0 -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: { kind: "literalFloat", value: 10.0 }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Literal Int
+
+```rebo-repl
+> rebo.lang.parse("match x | 10 -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: { kind: "literalInt", value: 10 }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Literal String
+
+```rebo-repl
+> rebo.lang.parse("match x | \"hello\" -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: { kind: "literalString", value: "hello" }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Literal Unit
+
+```rebo-repl
+> rebo.lang.parse("match x | () -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: { kind: "literalUnit" }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Record
+
+```rebo-repl
+> rebo.lang.parse("match x | { a, b } -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: 
+          { kind: "record"
+          , fields: 
+            [ { key: "a" }
+            , { key: "b" }
+            ]
+          }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+
+> rebo.lang.parse("match x | { a: 1, b } -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: 
+          { kind: "record"
+          , fields: 
+            [ { key: "a", pattern: { kind: "literalInt", value: 1 } }
+            , { key: "b" }
+            ]
+          }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+
+> rebo.lang.parse("match x | { a: 1, b @ c} @ y -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: 
+          { kind: "record"
+          , fields: 
+            [ { key: "a", pattern: { kind: "literalInt", value: 1 } }
+            , { key: "b", id: "c" }
+            ]
+          , id: "y"
+          }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Sequence
+
+```rebo-repl
+> rebo.lang.parse("match x | [a, b] -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: 
+          { kind: "sequence"
+          , values: 
+            [ { kind: "identifier", value: "a" }
+            , { kind: "identifier", value: "b" }
+            ]
+          }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+
+> rebo.lang.parse("match x | [a, b, ...c] -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: 
+          { kind: "sequence"
+          , values: 
+            [ { kind: "identifier", value: "a" }
+            , { kind: "identifier", value: "b" }
+            ]
+          , restOfPatterns: "c"
+          }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
+    }
+  ]
+}
+
+> rebo.lang.parse("match x | [a, b, ...c] @ d -> x")
+{ kind: "exprs"
+, value: 
+  [ { kind: "match"
+    , value: { kind: "identifier", value: "x" }
+    , cases:
+      [ { pattern: 
+          { kind: "sequence"
+          , values: 
+            [ { kind: "identifier", value: "a" }
+            , { kind: "identifier", value: "b" }
+            ]
+          , restOfPatterns: "c"
+          , id: "d"
+          }
+        , body: { kind: "identifier", value: "x" }
+        }
+      ]
     }
   ]
 }
