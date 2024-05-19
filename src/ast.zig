@@ -133,16 +133,6 @@ pub const CallExpression = struct {
     args: []*Expression,
 };
 
-pub const IdDeclarationExpression = struct {
-    name: *SP.String,
-    value: *Expression,
-
-    pub fn deinit(self: *IdDeclarationExpression, allocator: std.mem.Allocator) void {
-        self.name.decRef();
-        destroyExpr(allocator, self.value);
-    }
-};
-
 pub const CatchExpression = struct {
     value: *Expression,
     cases: []MatchCase,
@@ -155,6 +145,16 @@ pub const DotExpression = struct {
     pub fn deinit(self: *DotExpression, allocator: std.mem.Allocator) void {
         destroyExpr(allocator, self.record);
         self.field.decRef();
+    }
+};
+
+pub const IdDeclarationExpression = struct {
+    name: *SP.String,
+    value: *Expression,
+
+    pub fn deinit(self: *IdDeclarationExpression, allocator: std.mem.Allocator) void {
+        self.name.decRef();
+        destroyExpr(allocator, self.value);
     }
 };
 

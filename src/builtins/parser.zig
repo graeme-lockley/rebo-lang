@@ -72,6 +72,49 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
             }
             try machine.setRecordItemBang(pos);
         },
+        .catche => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("catche");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try emit(machine, ast.kind.catche.value, position);
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("cases");
+            try machine.pushEmptySequenceValue();
+            for (ast.kind.catche.cases) |case| {
+                try machine.pushEmptyRecordValue();
+
+                try machine.pushStringValue("pattern");
+                try emitPattern(machine, case.pattern, position);
+                try machine.setRecordItemBang(pos);
+
+                try machine.pushStringValue("body");
+                try emit(machine, case.body, position);
+                try machine.setRecordItemBang(pos);
+
+                try machine.appendSequenceItemBang(pos);
+            }
+            try machine.setRecordItemBang(pos);
+        },
+        .dot => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("dot");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("record");
+            try emit(machine, ast.kind.dot.record, position);
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("field");
+            try machine.pushStringValue(ast.kind.dot.field.slice());
+            try machine.setRecordItemBang(pos);
+        },
         .exprs => {
             try machine.pushEmptyRecordValue();
 
@@ -107,6 +150,36 @@ fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
 
             try machine.pushStringValue("value");
             try machine.pushIntValue(ast.kind.literalInt);
+            try machine.setRecordItemBang(pos);
+        },
+        else => {
+            std.io.getStdErr().writer().print("unreachable: {}\n", .{ast.kind}) catch {};
+            unreachable;
+        },
+    }
+
+    if (position) {
+        try machine.pushStringValue("position");
+        try machine.pushEmptySequenceValue();
+        try machine.pushIntValue(@intCast(ast.position.start));
+        try machine.appendSequenceItemBang(pos);
+        try machine.pushIntValue(@intCast(ast.position.end));
+        try machine.appendSequenceItemBang(pos);
+        try machine.setRecordItemBang(pos);
+    }
+}
+
+fn emitPattern(machine: *Helper.Runtime, ast: *AST.Pattern, position: bool) !void {
+    switch (ast.kind) {
+        .identifier => {
+            try machine.pushEmptyRecordValue();
+
+            try machine.pushStringValue("kind");
+            try machine.pushStringValue("identifier");
+            try machine.setRecordItemBang(pos);
+
+            try machine.pushStringValue("value");
+            try machine.pushStringValue(ast.kind.identifier.slice());
             try machine.setRecordItemBang(pos);
         },
         else => {

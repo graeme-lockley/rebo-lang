@@ -95,3 +95,35 @@ Now that we have the basic mechanism in place, let's systematically go through t
   ]
 }
 ```
+
+## Catch
+
+```rebo-repl
+> rebo.lang.parse("10 catch e -> e")
+{ kind: "exprs"
+, value: 
+  [ { kind: "catche"
+    , value: { kind: "literalInt", value: 10 }
+    , cases:
+      [ { pattern: { kind: "identifier", value: "e" }
+        , body: { kind: "identifier", value: "e" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Dot
+
+```rebo-repl
+> rebo.lang.parse("a.b")
+{ kind: "exprs"
+, value: 
+  [ { kind: "dot"
+    , record: { kind: "identifier", value: "a" }
+    , field: "b"
+    }
+  ]
+}
+```
