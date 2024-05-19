@@ -15,6 +15,7 @@ pub fn parse(machine: *Helper.Runtime, numberOfArgs: usize) !void {
 
     try emit(machine, ast, position);
 }
+
 const pos = Helper.Errors.Position{ .start = 0, .end = 0 };
 
 fn emit(machine: *Helper.Runtime, ast: *AST.Expression, position: bool) !void {
