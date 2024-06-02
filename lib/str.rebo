@@ -34,6 +34,22 @@ let alpha?(c) =
         i >= 65 && i <= 90 || i >= 97 && i <= 122
      }
 
+# `lowerAlpha?` returns true if `c` is a lowercase alphabetic character.
+let lowerAlpha?(c) =
+  if c == () -> false
+   | {
+        let i = int(c) 
+        i >= 97 && i <= 122
+     }
+
+# `upperAlpha?` returns true if `c` is an uppercase alphabetic character.
+let upperAlpha?(c) =
+  if c == () -> false
+   | {
+        let i = int(c) 
+        i >= 65 && i <= 90
+     }
+
 # `isDigit` returns true if `c` is a digit.
 let digit?(c) = 
   c != () && int(c) >= 48 && int(c) <= 57
