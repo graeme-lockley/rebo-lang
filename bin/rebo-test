@@ -17,7 +17,7 @@ let cli = CLI.parse({
 })
 
 if len(cli.args) == 0 -> 
-   cli.args := import("../lib/fs.rebo").files(".", { predicate: fn(n) Str.endsWith?(n, ".test.rebo") || Str.endsWith?(n, ".md")})
+   cli.args := import("fs").files(".", { predicate: fn(n) Str.endsWith?(n, ".test.rebo") || Str.endsWith?(n, ".md")})
 
 let test = Test.harness("suite")
 
