@@ -13,7 +13,7 @@ pub const Token = struct {
     }
 };
 
-const keywords = std.ComptimeStringMap(TokenKind, .{
+const keywords = std.StaticStringMap(TokenKind).initComptime(.{
     .{ "catch", TokenKind.Catch },
     .{ "false", TokenKind.LiteralBoolFalse },
     .{ "fn", TokenKind.Fn },

@@ -16,7 +16,7 @@ pub fn exec(machine: *Helper.Runtime, numberOfArgs: usize) Helper.Errors.Runtime
         try buffer.append(try cmd.toString(machine.allocator, .Raw));
     }
 
-    const proc = std.ChildProcess.run(.{
+    const proc = std.process.Child.run(.{
         .allocator = machine.allocator,
         .argv = buffer.items,
     }) catch |err| return Helper.raiseOsError(machine, "exec", err);

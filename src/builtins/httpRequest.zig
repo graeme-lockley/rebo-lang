@@ -1,7 +1,7 @@
 const std = @import("std");
 const Helper = @import("./helper.zig");
 
-pub const protocol_map = std.ComptimeStringMap(std.http.Method, .{
+pub const protocol_map = std.StaticStringMap(std.http.Method).initComptime(.{
     .{ "GET", .GET },
     .{ "POST", .POST },
     .{ "PUT", .PUT },
