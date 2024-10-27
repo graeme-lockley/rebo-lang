@@ -1651,6 +1651,7 @@ fn setupRebo(state: *Runtime) !void {
     try reboOS.v.RecordKind.setU8(state.stringPool, "print", try state.newBuiltinValue(@import("builtins/print.zig").print));
     try reboOS.v.RecordKind.setU8(state.stringPool, "println", try state.newBuiltinValue(@import("builtins/print.zig").println));
     try reboOS.v.RecordKind.setU8(state.stringPool, "read", try state.newBuiltinValue(@import("builtins/read.zig").read));
+    try reboOS.v.RecordKind.setU8(state.stringPool, "fstat", try state.newBuiltinValue(@import("builtins/fstat.zig").fstat));
     try reboOS.v.RecordKind.setU8(state.stringPool, "socket", try state.newBuiltinValue(@import("builtins/socket.zig").socket));
     try reboOS.v.RecordKind.setU8(state.stringPool, "write", try state.newBuiltinValue(@import("builtins/write.zig").write));
 
