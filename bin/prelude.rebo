@@ -137,7 +137,7 @@ let import(name) {
 }
 
 # Default the displaying of imports to true.
-rebo.lang["import.verbose"] := true
+rebo.lang["import.verbose"] := false
 
 # Add all values in "std" to the top-level scope.  The consequence is any 
 # declaration in "std" will be shadowed by a declaration in the top-level 
