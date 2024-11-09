@@ -86,6 +86,7 @@ let _element(reader) {
 
 let _array(reader) {
    reader.next()
+   reader.skipWhitespace()
 
    let result = []
 
