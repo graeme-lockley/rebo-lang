@@ -114,3 +114,15 @@ let replaceFirst(s, from, to) {
   if found -> s[0:i] + str(to, false) + s[i+1:]
    | s
 }
+
+# `upper` returns `s` with all lowercase characters converted to uppercase.
+let upper(s) =
+  if typeof(s) == "String" -> map(s, fn(c) upper(c) |> str(false)) |> join()
+  | typeof(s) == "Char" && lowerAlpha?(s) -> char(int(s) - 32)
+  | s
+
+# `lower` returns `s` with all uppercase characters converted to lowercase.
+let lower(s) =
+  if typeof(s) == "String" -> map(s, fn(c) lower(c) |> str(false)) |> join()
+  |  typeof(s) == "Char" && upperAlpha?(s) -> char(int(s) + 32) 
+  | s
