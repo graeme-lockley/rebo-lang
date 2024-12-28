@@ -27,7 +27,14 @@ pub fn exec(machine: *Helper.Runtime, numberOfArgs: usize) Helper.Errors.Runtime
 
     const record = machine.peek(0);
 
+    const code: u32 = switch (proc.term) {
+        .Exited => @intCast(proc.term.Exited),
+        .Signal => proc.term.Signal,
+        .Stopped => proc.term.Stopped,
+        .Unknown => proc.term.Unknown,
+    };
+
     try record.v.RecordKind.setU8(machine.stringPool, "stdout", try machine.newStringValue(proc.stdout));
     try record.v.RecordKind.setU8(machine.stringPool, "stderr", try machine.newStringValue(proc.stderr));
-    try record.v.RecordKind.setU8(machine.stringPool, "code", try machine.newIntValue(@intFromEnum(proc.term)));
+    try record.v.RecordKind.setU8(machine.stringPool, "code", try machine.newIntValue(code));
 }
